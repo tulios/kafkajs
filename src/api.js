@@ -1,34 +1,36 @@
 const { SUCCESS_CODE, KafkaProtocolError } = require('./protocol/error')
-const { apiName } = require('./protocol/apiKeys')
-
-const APIVersionsProtocol = require('./protocol/requests/apiVersions')
-const MetadataProtocol = require('./protocol/requests/metadata')
+const { requests, lookup } = require('./protocol/requests')
+const apiKeys = require('./protocol/requests/apiKeys')
 
 const success = code => code === SUCCESS_CODE
 
 module.exports = class API {
   constructor(connection) {
     this.connection = connection
+    this.lookupRequest = null
   }
 
-  async apiVersions() {
-    const apiVersions = APIVersionsProtocol({ version: 0 })
+  async load() {
+    const apiVersions = requests.ApiVersions.protocol({ version: 0 })
     const response = await this.connection.send(apiVersions())
     if (!success(response.errorCode)) {
       throw new KafkaProtocolError(response.errorCode)
     }
 
-    const versions = response.apiVersions.map(version =>
-      Object.assign(version, {
-        apiName: apiName(version.apiKey),
+    const versions = response.apiVersions.reduce((obj, version) =>
+      Object.assign(obj, {
+        [version.apiKey]: {
+          minVersion: version.minVersion,
+          maxVersion: version.maxVersion,
+        },
       })
     )
 
-    return versions
+    this.lookupRequest = lookup(versions)
   }
 
   async metadata(topics) {
-    const metadata = MetadataProtocol({ version: 2 })
+    const metadata = this.lookupRequest(apiKeys.Metadata, requests.Metadata)
     const response = await this.connection.send(metadata(topics))
     console.log(JSON.stringify(response))
   }

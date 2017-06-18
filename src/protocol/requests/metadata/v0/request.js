@@ -1,5 +1,5 @@
 const Encoder = require('../../../encoder')
-const { definition: { Metadata: apiKey } } = require('../../../apiKeys')
+const { Metadata: apiKey } = require('../../apiKeys')
 
 /**
  * Metadata Request (Version: 0) => [topics]
@@ -9,7 +9,8 @@ const { definition: { Metadata: apiKey } } = require('../../../apiKeys')
 module.exports = topics => ({
   apiKey,
   apiVersion: 0,
-  protocol: () => {
+  apiName: 'Metadata',
+  encode: () => {
     return new Encoder().writeArray(topics)
   },
 })

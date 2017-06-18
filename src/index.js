@@ -6,7 +6,7 @@ connection
   .connect()
   .then(async () => {
     const api = new API(connection)
-    await api.apiVersions()
+    await api.load()
     await api.metadata(['topic1'])
   })
   .catch(error => {

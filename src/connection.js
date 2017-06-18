@@ -1,5 +1,4 @@
 const net = require('net')
-const { apiName } = require('./protocol/apiKeys')
 const createRequest = require('./protocol/request')
 const Encoder = require('./protocol/encoder')
 const Decoder = require('./protocol/decoder')
@@ -43,7 +42,7 @@ module.exports = class Connection {
         }
 
         console.log(
-          `Response ${entry.apiName}(${entry.apiKey}) correlationId: ${correlationId} - ${size} bytes`
+          `Response ${entry.apiName}(key: ${entry.apiKey}, version: ${entry.apiVersion}) correlationId: ${correlationId} - ${size} bytes`
         )
         entry.handler(response)
       })
@@ -72,26 +71,28 @@ module.exports = class Connection {
     console.log('disconnected')
   }
 
-  send(message) {
-    const name = apiName(message.request.apiKey)
+  send({ request, response }) {
     const correlationId = this.nextCorrelationId()
 
-    console.log(`Request ${name}(${message.request.apiKey}) correlationId: ${correlationId}`)
+    console.log(
+      `Request ${request.apiName}(key: ${request.apiKey}, version: ${request.apiVersion}) correlationId: ${correlationId}`
+    )
 
     const encoder = new Encoder()
-    const request = createRequest({
-      message: message.request,
+    const requestPayload = createRequest({
+      request,
       correlationId,
       clientId: 'abc',
     })
 
     return new Promise(resolve => {
       this.queue[correlationId] = {
-        apiName: name,
-        apiKey: message.request.apiKey,
-        handler: data => resolve(message.response(data)),
+        apiKey: request.apiKey,
+        apiName: request.apiName,
+        apiVersion: request.apiVersion,
+        handler: data => resolve(response(data)),
       }
-      this.socket.write(request.buffer, 'binary')
+      this.socket.write(requestPayload.buffer, 'binary')
     })
   }
 }

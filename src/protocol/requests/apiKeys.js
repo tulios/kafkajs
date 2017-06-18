@@ -1,4 +1,4 @@
-const definition = {
+module.exports = {
   Produce: 0,
   Fetch: 1,
   Offsets: 2,
@@ -20,16 +20,4 @@ const definition = {
   ApiVersions: 18,
   CreateTopics: 19,
   DeleteTopics: 20,
-}
-
-const apiNames = Object.values(definition)
-const apiKeys = Object.keys(definition)
-
-const apiName = apiKey => {
-  return apiKeys[apiNames.indexOf(apiKey)]
-}
-
-module.exports = {
-  definition,
-  apiName,
 }
