@@ -1,0 +1,15 @@
+{
+  "name": "kafka-protocol",
+  "version": "0.1.0",
+  "main": "src/index.js",
+  "license": "MIT",
+  "scripts": {
+    "test": "./node_modules/.bin/jest"
+  },
+  "devDependencies": {
+    "jest": "^20.0.4"
+  },
+  "dependencies": {
+    "buffer-crc32": "^0.2.13"
+  }
+}

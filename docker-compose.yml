@@ -1,0 +1,17 @@
+version: '2'
+services:
+  zk:
+    image: jplock/zookeeper:3.4.6
+    ports:
+      - "2181:2181"
+  kafka:
+    image: ches/kafka:0.10.2.1
+    ports:
+      - "9092:9092"
+    links:
+      - zk
+    environment:
+      KAFKA_BROKER_ID: 0
+      KAFKA_ADVERTISED_HOST_NAME: localhost
+      KAFKA_ADVERTISED_PORT: 9092
+      ZOOKEEPER_CONNECTION_STRING: zk:2181
