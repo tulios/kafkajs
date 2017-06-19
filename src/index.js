@@ -7,7 +7,8 @@ connection
   .then(async () => {
     const api = new API(connection)
     await api.load()
-    await api.metadata(['topic1'])
+    const r = await api.metadata(['topic1'])
+    console.log(JSON.stringify(r))
   })
   .catch(error => {
     console.error(error)

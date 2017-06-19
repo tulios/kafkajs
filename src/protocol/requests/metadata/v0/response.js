@@ -1,4 +1,5 @@
 const Decoder = require('../../../decoder')
+const { failure, KafkaProtocolError } = require('../../../error')
 
 /**
  * Metadata Response (Version: 0) => [brokers] [topic_metadata]
@@ -37,10 +38,37 @@ const partitionMetadata = decoder => ({
   isr: decoder.readInt32(),
 })
 
-module.exports = data => {
-  const decoder = new Decoder(data)
+const decode = rawData => {
+  const decoder = new Decoder(rawData)
   return {
     brokers: decoder.readArray(broker),
     topicMetadata: decoder.readArray(topicMetadata),
   }
+}
+
+const flatten = arrays => [].concat.apply([], arrays)
+
+const parse = data => {
+  const topicsWithErrors = data.topicMetadata.filter(topic => failure(topic.topicErrorCode))
+  if (topicsWithErrors.length > 0) {
+    const { topicErrorCode } = topicsWithErrors[0]
+    throw new KafkaProtocolError(topicErrorCode)
+  }
+
+  const partitionsWithErrors = data.topicMetadata.map(topic => {
+    return topic.partitionMetadata.filter(partition => failure(partition.partitionErrorCode))
+  })
+
+  const errors = flatten(partitionsWithErrors)
+  if (errors.length > 0) {
+    const { partitionErrorCode } = error[0]
+    throw new KafkaProtocolError(partitionErrorCode)
+  }
+
+  return data
+}
+
+module.exports = {
+  decode,
+  parse,
 }

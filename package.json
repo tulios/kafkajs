@@ -9,7 +9,5 @@
   "devDependencies": {
     "jest": "^20.0.4"
   },
-  "dependencies": {
-    "buffer-crc32": "^0.2.13"
-  }
+  "dependencies": {}
 }

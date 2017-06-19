@@ -280,6 +280,7 @@ const errorCodes = [
 
 const SUCCESS_CODE = 0
 const errorValues = Object.values(errorCodes)
+const failure = code => code !== SUCCESS_CODE
 
 class KafkaProtocolError extends Error {
   constructor(code) {
@@ -292,7 +293,7 @@ class KafkaProtocolError extends Error {
 }
 
 module.exports = {
-  SUCCESS_CODE,
+  failure,
   errorCodes,
   KafkaProtocolError,
 }

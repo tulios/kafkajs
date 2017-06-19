@@ -1,4 +1,5 @@
 const Decoder = require('../../../decoder')
+const { parse: parseV0 } = require('../v0/response')
 
 /**
  * Metadata Response (Version: 2) => [brokers] cluster_id controller_id [topic_metadata]
@@ -43,7 +44,7 @@ const partitionMetadata = decoder => ({
   isr: decoder.readInt32(),
 })
 
-module.exports = data => {
+const decode = data => {
   const decoder = new Decoder(data)
   return {
     brokers: decoder.readArray(broker),
@@ -51,4 +52,9 @@ module.exports = data => {
     controllerId: decoder.readInt32(),
     topicMetadata: decoder.readArray(topicMetadata),
   }
+}
+
+module.exports = {
+  decode,
+  parse: parseV0,
 }

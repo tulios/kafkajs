@@ -1,4 +1,5 @@
 const Decoder = require('../../../decoder')
+const { failure, KafkaProtocolError } = require('../../../error')
 
 /**
  * ApiVersionResponse => ApiVersions
@@ -16,10 +17,23 @@ const apiVersion = decoder => ({
   maxVersion: decoder.readInt16(),
 })
 
-module.exports = data => {
-  const decoder = new Decoder(data)
+const decode = rawData => {
+  const decoder = new Decoder(rawData)
   return {
     errorCode: decoder.readInt16(),
     apiVersions: decoder.readArray(apiVersion),
   }
+}
+
+const parse = data => {
+  if (failure(data.errorCode)) {
+    throw new KafkaProtocolError(data.errorCode)
+  }
+
+  return data
+}
+
+module.exports = {
+  decode,
+  parse,
 }
