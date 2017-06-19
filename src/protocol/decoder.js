@@ -1,3 +1,5 @@
+const Long = require('long')
+
 const INT8_SIZE = 1
 const INT16_SIZE = 2
 const INT32_SIZE = 4
@@ -24,6 +26,14 @@ module.exports = class Decoder {
   readInt32() {
     const value = this.buffer.readInt32BE(this.offset)
     this.offset += INT32_SIZE
+    return value
+  }
+
+  readInt64() {
+    const lowBits = this.buffer.readInt32BE(this.offset + 4)
+    const highBits = this.buffer.readInt32BE(this.offset)
+    const value = new Long(lowBits, highBits)
+    this.offset += INT64_SIZE
     return value
   }
 

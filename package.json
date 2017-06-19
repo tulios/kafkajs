@@ -9,5 +9,7 @@
   "devDependencies": {
     "jest": "^20.0.4"
   },
-  "dependencies": {}
+  "dependencies": {
+    "long": "^3.2.0"
+  }
 }

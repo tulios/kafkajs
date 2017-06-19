@@ -1,3 +1,5 @@
+const Long = require('long')
+
 const INT8_SIZE = 1
 const INT16_SIZE = 2
 const INT32_SIZE = 4
@@ -31,7 +33,9 @@ module.exports = class Encoder {
 
   writeInt64(value) {
     const tempBuffer = Buffer.alloc(INT64_SIZE)
-    tempBuffer.writeInt64BE(value)
+    const longValue = Long.fromValue(value)
+    tempBuffer.writeInt32BE(longValue.getHighBitsUnsigned(), 0)
+    tempBuffer.writeInt32BE(longValue.getLowBitsUnsigned(), 4)
     this.buffer = Buffer.concat([this.buffer, tempBuffer])
     return this
   }
@@ -80,6 +84,9 @@ module.exports = class Encoder {
       switch (typeof value) {
         case 'string':
           this.writeString(value)
+          break
+        case 'function':
+          this.writeEncoder(value)
           break
       }
     })
