@@ -11,13 +11,15 @@ module.exports = class API {
   async load() {
     const apiVersions = requests.ApiVersions.protocol({ version: 0 })
     const response = await this.connection.send(apiVersions())
-    const versions = response.apiVersions.reduce((obj, version) =>
-      Object.assign(obj, {
-        [version.apiKey]: {
-          minVersion: version.minVersion,
-          maxVersion: version.maxVersion,
-        },
-      })
+    const versions = response.apiVersions.reduce(
+      (obj, version) =>
+        Object.assign(obj, {
+          [version.apiKey]: {
+            minVersion: version.minVersion,
+            maxVersion: version.maxVersion,
+          },
+        }),
+      {}
     )
 
     this.lookupRequest = lookup(versions)
