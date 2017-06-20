@@ -85,7 +85,7 @@ module.exports = class Encoder {
         case 'string':
           this.writeString(value)
           break
-        case 'function':
+        case 'object':
           this.writeEncoder(value)
           break
       }
