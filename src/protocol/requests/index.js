@@ -1,5 +1,5 @@
 const requests = {
-  Produce: {},
+  Produce: require('./produce'),
   Fetch: {},
   Offsets: {},
   Metadata: require('./metadata'),

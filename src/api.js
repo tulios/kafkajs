@@ -29,4 +29,9 @@ module.exports = class API {
     const metadata = this.lookupRequest(apiKeys.Metadata, requests.Metadata)
     return await this.connection.send(metadata(topics))
   }
+
+  async produce({ acks = -1, timeout = 30000, topicData }) {
+    const produce = this.lookupRequest(apiKeys.Produce, requests.Produce)
+    return await this.connection.send(produce({ acks, timeout, topicData }))
+  }
 }
