@@ -34,8 +34,8 @@ module.exports = class Encoder {
   writeInt64(value) {
     const tempBuffer = Buffer.alloc(INT64_SIZE)
     const longValue = Long.fromValue(value)
-    tempBuffer.writeInt32BE(longValue.getHighBitsUnsigned(), 0)
-    tempBuffer.writeInt32BE(longValue.getLowBitsUnsigned(), 4)
+    tempBuffer.writeInt32BE(longValue.getHighBits(), 0)
+    tempBuffer.writeInt32BE(longValue.getLowBits(), 4)
     this.buffer = Buffer.concat([this.buffer, tempBuffer])
     return this
   }
