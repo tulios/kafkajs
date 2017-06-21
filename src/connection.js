@@ -32,6 +32,7 @@ module.exports = class Connection {
     this.port = port
     this.logger = logger
     this.retrier = createRetry(retry)
+    this.broker = `${host}:${port}`
 
     this.connected = false
     this.correlationId = 0
@@ -48,6 +49,7 @@ module.exports = class Connection {
 
   connect() {
     return new Promise((resolve, reject) => {
+      this.logger.debug(`Connecting`, { broker: this.broker })
       this.socket = net.connect({ host: this.host, port: this.port }, () => {
         this.connected = true
         resolve()
@@ -55,12 +57,12 @@ module.exports = class Connection {
 
       this.socket.on('data', processData(this.pendingQueue))
       this.socket.on('end', () => {
-        this.logger.error('Kafka server has closed connection')
-        this.disconnect()
+        this.logger.error('Kafka server has closed connection', { broker: this.broker })
+        this.connected = false
       })
 
       this.socket.on('error', e => {
-        this.logger.error(`Connection error`, { error: e.message })
+        this.logger.error(`Connection error`, { broker: this.broker, error: e.message })
         reject(e)
         this.disconnect()
       })
@@ -68,10 +70,13 @@ module.exports = class Connection {
   }
 
   disconnect() {
-    this.logger.debug('disconnecting...')
-    this.connected && this.socket.end()
-    this.connected = false
-    this.logger.debug('disconnected')
+    if (this.connected) {
+      this.logger.debug('disconnecting...', { broker: this.broker })
+      this.socket.end()
+      this.connected = false
+    }
+
+    this.logger.debug('disconnected', { broker: this.broker })
   }
 
   send({ request, response }) {
@@ -80,7 +85,7 @@ module.exports = class Connection {
 
       this.logger.debug(
         `Request ${request.apiName}(key: ${request.apiKey}, version: ${request.apiVersion})`,
-        { correlationId }
+        { broker: this.broker, correlationId }
       )
 
       const encoder = new Encoder()
@@ -108,14 +113,24 @@ module.exports = class Connection {
 
         this.logger.debug(
           `Response ${entry.apiName}(key: ${entry.apiKey}, version: ${entry.apiVersion})`,
-          { correlationId, size }
+          { broker: this.broker, correlationId, size, data }
         )
 
         return data
       } catch (e) {
         this.logger.error(
           `Response ${entry.apiName}(key: ${entry.apiKey}, version: ${entry.apiVersion}) error`,
-          Object.assign({ correlationId, retryCount, retryTime, size, error: e.message }, e)
+          Object.assign(
+            {
+              broker: this.broker,
+              correlationId,
+              retryCount,
+              retryTime,
+              size,
+              error: e.message,
+            },
+            e
+          )
         )
 
         if (e.retriable) throw e
