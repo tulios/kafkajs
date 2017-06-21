@@ -1,6 +1,6 @@
-const { failure, KafkaProtocolError } = require('./protocol/error')
-const { requests, lookup } = require('./protocol/requests')
-const apiKeys = require('./protocol/requests/apiKeys')
+const { failure, KafkaProtocolError } = require('../protocol/error')
+const { requests, lookup } = require('../protocol/requests')
+const apiKeys = require('../protocol/requests/apiKeys')
 
 const loadVersions = async connection => {
   const apiVersions = requests.ApiVersions.protocol({ version: 0 })
@@ -18,9 +18,10 @@ const loadVersions = async connection => {
 }
 
 class API {
-  constructor(connection, lookupRequest) {
+  constructor(connection, versions) {
     this.connection = connection
-    this.lookupRequest = lookupRequest
+    this.versions = versions
+    this.lookupRequest = lookup(this.versions)
   }
 
   async metadata(topics) {
@@ -36,6 +37,5 @@ class API {
 
 module.exports = async connection => {
   const versions = await loadVersions(connection)
-  const lookupRequest = lookup(versions)
-  return new API(connection, lookupRequest)
+  return new API(connection, versions)
 }
