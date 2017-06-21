@@ -53,9 +53,11 @@ fi
 wait_for_kafka
 echo -e "Kafka container ${CONTAINER_ID} is running"
 create_topic
+echo
 
 eval "${testCommand} ${extraArgs}"
 TEST_EXIT=$?
+echo
 
 if [ -z ${DO_NOT_STOP} ]; then
   docker-compose down
