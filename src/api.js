@@ -2,27 +2,25 @@ const { failure, KafkaProtocolError } = require('./protocol/error')
 const { requests, lookup } = require('./protocol/requests')
 const apiKeys = require('./protocol/requests/apiKeys')
 
-module.exports = class API {
-  constructor(connection, opts = {}) {
+const loadVersions = async connection => {
+  const apiVersions = requests.ApiVersions.protocol({ version: 0 })
+  const response = await connection.send(apiVersions())
+  return response.apiVersions.reduce(
+    (obj, version) =>
+      Object.assign(obj, {
+        [version.apiKey]: {
+          minVersion: version.minVersion,
+          maxVersion: version.maxVersion,
+        },
+      }),
+    {}
+  )
+}
+
+class API {
+  constructor(connection, lookupRequest) {
     this.connection = connection
-    this.lookupRequest = null
-  }
-
-  async load() {
-    const apiVersions = requests.ApiVersions.protocol({ version: 0 })
-    const response = await this.connection.send(apiVersions())
-    const versions = response.apiVersions.reduce(
-      (obj, version) =>
-        Object.assign(obj, {
-          [version.apiKey]: {
-            minVersion: version.minVersion,
-            maxVersion: version.maxVersion,
-          },
-        }),
-      {}
-    )
-
-    this.lookupRequest = lookup(versions)
+    this.lookupRequest = lookupRequest
   }
 
   async metadata(topics) {
@@ -34,4 +32,10 @@ module.exports = class API {
     const produce = this.lookupRequest(apiKeys.Produce, requests.Produce)
     return await this.connection.send(produce({ acks, timeout, topicData }))
   }
+}
+
+module.exports = async connection => {
+  const versions = await loadVersions(connection)
+  const lookupRequest = lookup(versions)
+  return new API(connection, lookupRequest)
 }

@@ -1,12 +1,11 @@
 const Connection = require('./connection')
-const API = require('./api')
+const loadAPI = require('./api')
 
 const connection = new Connection({ host: 'localhost', port: 9092 })
 connection
   .connect()
   .then(async () => {
-    const api = new API(connection)
-    await api.load()
+    const api = await loadAPI(connection)
 
     const r1 = await api.metadata(['topic1'])
     console.log(JSON.stringify(r1))
