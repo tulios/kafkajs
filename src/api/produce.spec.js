@@ -1,6 +1,5 @@
-const Connection = require('../connection')
 const loadAPI = require('./index')
-const { secureRandom } = require('testHelpers')
+const { secureRandom, createConnection } = require('testHelpers')
 
 describe('API > Produce', () => {
   let connection, api, topicName
@@ -23,7 +22,7 @@ describe('API > Produce', () => {
 
   beforeAll(async () => {
     topicName = `test-topic-${secureRandom()}`
-    connection = new Connection({ host: 'localhost', port: 9092 })
+    connection = createConnection()
     await connection.connect()
     api = await loadAPI(connection)
   })

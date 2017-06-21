@@ -1,14 +1,17 @@
+const { createLogger, LEVELS: { DEBUG } } = require('./loggers/console')
 const Connection = require('./connection')
 const loadAPI = require('./api')
 
-const connection = new Connection({ host: 'localhost', port: 9092 })
+const logger = createLogger({ level: DEBUG })
+const connection = new Connection({ host: 'localhost', port: 9092, logger })
+
 connection
   .connect()
   .then(async () => {
     const api = await loadAPI(connection)
 
     const r1 = await api.metadata(['topic1'])
-    console.log(JSON.stringify(r1))
+    logger.info(JSON.stringify(r1))
 
     const topicData = [
       {
@@ -27,10 +30,10 @@ connection
     ]
 
     const r2 = await api.produce({ topicData })
-    console.log(JSON.stringify(r2))
+    logger.info(JSON.stringify(r2))
   })
-  .catch(error => {
-    console.error(error)
+  .catch(e => {
+    logger.error(e.message, e)
     connection.disconnect()
   })
 

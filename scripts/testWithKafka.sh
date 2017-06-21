@@ -41,7 +41,7 @@ CONTAINER_ID=$(find_container_id)
 
 if [ -z ${CONTAINER_ID} ]; then
   echo -e "Start kafka docker container"
-  docker-compose up -d
+  docker-compose up --force-recreate -d
   if [ "1" = "$?" ]; then
     echo -e "Failed to start kafka image"
     exit 1

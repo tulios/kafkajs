@@ -14,7 +14,7 @@ const processData = pendingQueue => data => {
   delete pendingQueue[correlationId]
 
   if (!entry) {
-    console.error(`Response without match`, { correlationId })
+    this.logger.debug(`Response without match`, { correlationId })
     return
   }
 
@@ -27,9 +27,10 @@ const processData = pendingQueue => data => {
 }
 
 module.exports = class Connection {
-  constructor({ host, port, retry = {} }) {
+  constructor({ host, port, logger, retry = {} }) {
     this.host = host
     this.port = port
+    this.logger = logger
     this.retrier = createRetry(retry)
 
     this.connected = false
@@ -54,31 +55,32 @@ module.exports = class Connection {
 
       this.socket.on('data', processData(this.pendingQueue))
       this.socket.on('end', () => {
-        console.log('Kafka server has closed connection')
+        this.logger.error('Kafka server has closed connection')
         this.disconnect()
       })
 
-      this.socket.on('error', error => {
-        console.error(`Connection error`, error)
-        reject(error)
+      this.socket.on('error', e => {
+        this.logger.error(`Connection error`, { error: e.message })
+        reject(e)
         this.disconnect()
       })
     })
   }
 
   disconnect() {
-    console.log('disconnecting...')
+    this.logger.debug('disconnecting...')
     this.connected && this.socket.end()
     this.connected = false
-    console.log('disconnected')
+    this.logger.debug('disconnected')
   }
 
   send({ request, response }) {
     const sendRequest = async () => {
       const correlationId = this.nextCorrelationId()
 
-      console.log(
-        `Request ${request.apiName}(key: ${request.apiKey}, version: ${request.apiVersion}) correlationId: ${correlationId}`
+      this.logger.debug(
+        `Request ${request.apiName}(key: ${request.apiKey}, version: ${request.apiVersion})`,
+        { correlationId }
       )
 
       const encoder = new Encoder()
@@ -104,16 +106,16 @@ module.exports = class Connection {
       try {
         const data = response.parse(response.decode(payload))
 
-        console.log(
+        this.logger.debug(
           `Response ${entry.apiName}(key: ${entry.apiKey}, version: ${entry.apiVersion})`,
           { correlationId, size }
         )
 
         return data
       } catch (e) {
-        console.error(
-          `Response ${entry.apiName}(key: ${entry.apiKey}, version: ${entry.apiVersion}) - Error: ${e.message}`,
-          { correlationId, retryCount, retryTime, size }
+        this.logger.error(
+          `Response ${entry.apiName}(key: ${entry.apiKey}, version: ${entry.apiVersion}) error`,
+          Object.assign({ correlationId, retryCount, retryTime, size, error: e.message }, e)
         )
 
         if (e.retriable) throw e

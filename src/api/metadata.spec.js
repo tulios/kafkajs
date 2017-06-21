@@ -1,11 +1,11 @@
-const Connection = require('../connection')
 const loadAPI = require('./index')
+const { createConnection } = require('testHelpers')
 
 describe('API > Metadata', () => {
   let connection, api
 
   beforeAll(async () => {
-    connection = new Connection({ host: 'localhost', port: 9092 })
+    connection = createConnection()
     await connection.connect()
     api = await loadAPI(connection)
   })
