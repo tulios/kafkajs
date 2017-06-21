@@ -61,7 +61,7 @@ const parse = data => {
 
   const errors = flatten(partitionsWithErrors)
   if (errors.length > 0) {
-    const { partitionErrorCode } = error[0]
+    const { partitionErrorCode } = errors[0]
     throw new KafkaProtocolError(partitionErrorCode)
   }
 

@@ -40,6 +40,11 @@ module.exports = class Encoder {
     return this
   }
 
+  writeBoolean(value) {
+    value ? this.writeInt8(1) : this.writeInt8(0)
+    return this
+  }
+
   writeString(value) {
     if (value == null) {
       this.writeInt16(-1)
@@ -95,5 +100,9 @@ module.exports = class Encoder {
 
   size() {
     return Buffer.byteLength(this.buffer)
+  }
+
+  toJSON() {
+    return this.buffer.toJSON()
   }
 }

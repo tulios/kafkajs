@@ -30,7 +30,6 @@ const decode = rawData => {
 
 const flatten = arrays => [].concat.apply([], arrays)
 
-// {"topics":[{"topicName":"topic1","partitions":[{"partition":0,"errorCode":0,"offset":"4"}]}]}
 const parse = data => {
   const partitionsWithError = data.topics.map(topic => {
     return topic.partitions.filter(partition => failure(partition.errorCode))
@@ -38,7 +37,7 @@ const parse = data => {
 
   const errors = flatten(partitionsWithError)
   if (errors.length > 0) {
-    const { errorCode } = error[0]
+    const { errorCode } = errors[0]
     throw new KafkaProtocolError(errorCode)
   }
 

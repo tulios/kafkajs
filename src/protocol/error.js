@@ -279,12 +279,11 @@ const errorCodes = [
 ]
 
 const SUCCESS_CODE = 0
-const errorValues = Object.values(errorCodes)
 const failure = code => code !== SUCCESS_CODE
 
 class KafkaProtocolError extends Error {
   constructor(code) {
-    const error = errorValues.find(e => e.code === code)
+    const error = errorCodes.find(e => e.code === code)
     super(error.message)
     this.type = error.type
     this.code = error.code
