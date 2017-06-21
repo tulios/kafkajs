@@ -36,11 +36,13 @@ describe('API > Produce', () => {
     const response1 = await api.produce({ topicData: createTopicData() })
     expect(response1).toEqual({
       topics: [{ topicName, partitions: [{ errorCode: 0, offset: '0', partition: 0 }] }],
+      throttleTime: 0,
     })
 
     const response2 = await api.produce({ topicData: createTopicData() })
     expect(response2).toEqual({
       topics: [{ topicName, partitions: [{ errorCode: 0, offset: '3', partition: 0 }] }],
+      throttleTime: 0,
     })
   })
 })

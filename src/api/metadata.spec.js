@@ -18,7 +18,7 @@ describe('API > Metadata', () => {
     const response = await api.metadata(['test-topic-1'])
     expect(response).toEqual({
       brokers: [{ host: 'localhost', nodeId: 0, port: 9092, rack: null }],
-      clusterId: expect.stringMatching(/[a-zA-Z0-9]-[a-zA-Z0-9]/),
+      clusterId: expect.stringMatching(/[a-zA-Z0-9\-]/),
       controllerId: 0,
       topicMetadata: [
         {

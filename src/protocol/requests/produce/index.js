@@ -4,6 +4,11 @@ const versions = {
     const response = require('./v0/response')
     return { request: request({ acks, timeout, topicData }), response }
   },
+  1: ({ acks, timeout, topicData }) => {
+    const request = require('./v1/request')
+    const response = require('./v1/response')
+    return { request: request({ acks, timeout, topicData }), response }
+  },
 }
 
 module.exports = {
