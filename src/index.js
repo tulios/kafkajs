@@ -1,9 +1,11 @@
+const ip = require('ip')
 const { createLogger, LEVELS: { DEBUG } } = require('./loggers/console')
 const Connection = require('./connection')
 const loadAPI = require('./api')
 
 const logger = createLogger({ level: DEBUG })
-const connection = new Connection({ host: 'localhost', port: 9092, logger })
+const host = process.env.HOST_IP || ip.address()
+const connection = new Connection({ host, port: 9092, logger })
 
 connection
   .connect()

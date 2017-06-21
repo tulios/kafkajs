@@ -9,6 +9,7 @@
     "test": "JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh './node_modules/.bin/jest'"
   },
   "devDependencies": {
+    "ip": "^1.1.5",
     "jest": "^20.0.4",
     "jest-junit": "^1.5.1"
   },

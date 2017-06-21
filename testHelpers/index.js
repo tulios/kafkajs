@@ -1,3 +1,4 @@
+const ip = require('ip')
 const crypto = require('crypto')
 const Connection = require('../src/connection')
 const { createLogger, LEVELS: { NOTHING } } = require('../src/loggers/console')
@@ -7,7 +8,7 @@ const createConnection = (opts = {}) =>
   new Connection(
     Object.assign(
       {
-        host: 'localhost',
+        host: process.env.HOST_IP || ip.address(),
         port: 9092,
         logger: createLogger({ level: NOTHING }),
       },

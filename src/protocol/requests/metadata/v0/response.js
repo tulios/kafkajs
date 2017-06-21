@@ -33,7 +33,7 @@ const topicMetadata = decoder => ({
 const partitionMetadata = decoder => ({
   partitionErrorCode: decoder.readInt16(),
   partitionId: decoder.readInt32(),
-  leader: decoder.readInt32(),
+  leader: decoder.readInt32(), // The node id for the kafka broker currently acting as leader for this partition
   replicas: decoder.readInt32(),
   isr: decoder.readInt32(),
 })
