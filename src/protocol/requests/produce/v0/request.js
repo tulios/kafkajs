@@ -74,6 +74,6 @@ const encodeTopic = ({ topic, partitions }) => {
 }
 
 const encodePartitions = ({ partition, messages }) => {
-  const messageSet = MessageSet({ entries: messages })
+  const messageSet = MessageSet({ messageVersion: 0, entries: messages })
   return new Encoder().writeInt32(partition).writeInt32(messageSet.size()).writeEncoder(messageSet)
 }
