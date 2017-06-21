@@ -4,10 +4,13 @@
   "main": "src/index.js",
   "license": "MIT",
   "scripts": {
-    "test": "./node_modules/.bin/jest"
+    "test:local:watch": "yarn test:local -- --watch",
+    "test:local": "./node_modules/.bin/jest",
+    "test": "JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh './node_modules/.bin/jest'"
   },
   "devDependencies": {
-    "jest": "^20.0.4"
+    "jest": "^20.0.4",
+    "jest-junit": "^1.5.1"
   },
   "dependencies": {
     "long": "^3.2.0"
