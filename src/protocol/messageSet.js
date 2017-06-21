@@ -1,5 +1,5 @@
 const Encoder = require('./encoder')
-const Message = require('./message')
+const MessageProtocol = require('./message')
 
 /**
  * MessageSet => [Offset MessageSize Message]
@@ -14,7 +14,8 @@ const Message = require('./message')
  *   { key: "<value>", value: "<value>" },
  * ]
  */
-module.exports = ({ entries }) => {
+module.exports = ({ messageVersion = 0, entries }) => {
+  const Message = MessageProtocol({ version: messageVersion })
   const encoder = new Encoder()
 
   // Messages in a message set are __not__ encoded as an array.
