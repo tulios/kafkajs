@@ -20,12 +20,15 @@ const createLevel = (label, level, currentLevel, loggerFunction) => (message, ex
   loggerFunction(JSON.stringify(logData))
 }
 
-const createLogger = ({ level = parseInt(process.env.LOG_LEVEL, 10) || LEVELS.INFO } = {}) => ({
-  info: createLevel('INFO', LEVELS.INFO, level, console.info),
-  error: createLevel('ERROR', LEVELS.ERROR, level, console.error),
-  warn: createLevel('WARN', LEVELS.WARN, level, console.warn),
-  debug: createLevel('DEBUG', LEVELS.DEBUG, level, console.log),
-})
+const createLogger = ({ level = LEVELS.INFO } = {}) => {
+  const logLevel = parseInt(process.env.LOG_LEVEL, 10) || level
+  return {
+    info: createLevel('INFO', LEVELS.INFO, logLevel, console.info),
+    error: createLevel('ERROR', LEVELS.ERROR, logLevel, console.error),
+    warn: createLevel('WARN', LEVELS.WARN, logLevel, console.warn),
+    debug: createLevel('DEBUG', LEVELS.DEBUG, logLevel, console.log),
+  }
+}
 
 module.exports = {
   LEVELS,
