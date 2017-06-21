@@ -1,11 +1,10 @@
-const crypto = require('crypto')
 const Connection = require('../connection')
 const loadAPI = require('./index')
+const { secureRandom } = require('testHelpers')
 
 describe('API > Produce', () => {
   let connection, api, topicName
 
-  const secureRandom = (length = 10) => crypto.randomBytes(length).toString('hex')
   const createTopicData = () => [
     {
       topic: topicName,
