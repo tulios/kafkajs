@@ -1,8 +1,9 @@
-const loadAPI = require('./index')
+const Broker = require('./index')
+const loadApiVersions = require('./apiVersions')
 const { secureRandom, createConnection } = require('testHelpers')
 
-describe('API > Produce', () => {
-  let connection, connection2, api, topicName
+describe('Broker > Produce', () => {
+  let connection, connection2, broker, topicName, versions
 
   const createTopicData = () => [
     {
@@ -24,7 +25,8 @@ describe('API > Produce', () => {
     topicName = `test-topic-${secureRandom()}`
     connection = createConnection()
     await connection.connect()
-    api = await loadAPI(connection)
+    versions = await loadApiVersions(connection)
+    broker = new Broker(connection, versions)
   })
 
   afterAll(() => {
@@ -33,19 +35,18 @@ describe('API > Produce', () => {
   })
 
   test('request', async () => {
-    const metadata = await api.metadata([topicName])
+    const metadata = await broker.metadata([topicName])
     // Find leader of partition
     const partitionBroker = metadata.topicMetadata[0].partitionMetadata[0].leader
-    const broker = metadata.brokers.find(b => b.nodeId === partitionBroker)
+    const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
 
     // Connect to the correct broker to produce message
-    connection2 = createConnection(broker)
+    connection2 = createConnection(newBrokerData)
     await connection2.connect()
 
-    const api2 = await loadAPI(connection2)
-    await api2.metadata([topicName])
+    const broker2 = new Broker(connection2, versions)
 
-    const response1 = await api2.produce({ topicData: createTopicData() })
+    const response1 = await broker2.produce({ topicData: createTopicData() })
     expect(response1).toEqual({
       topics: [
         { topicName, partitions: [{ errorCode: 0, offset: '0', partition: 0, timestamp: '-1' }] },
@@ -53,7 +54,7 @@ describe('API > Produce', () => {
       throttleTime: 0,
     })
 
-    const response2 = await api2.produce({ topicData: createTopicData() })
+    const response2 = await broker2.produce({ topicData: createTopicData() })
     expect(response2).toEqual({
       topics: [
         { topicName, partitions: [{ errorCode: 0, offset: '3', partition: 0, timestamp: '-1' }] },

@@ -1,14 +1,16 @@
-const loadAPI = require('./index')
+const Broker = require('./index')
+const loadApiVersions = require('./apiVersions')
 const { secureRandom, createConnection } = require('testHelpers')
 
-describe('API > Metadata', () => {
-  let connection, topicName, api
+describe('Broker > Metadata', () => {
+  let connection, topicName, versions, broker
 
   beforeAll(async () => {
     topicName = `test-topic-${secureRandom()}`
     connection = createConnection()
     await connection.connect()
-    api = await loadAPI(connection)
+    versions = await loadApiVersions(connection)
+    broker = new Broker(connection, versions)
   })
 
   afterAll(() => {
@@ -16,7 +18,7 @@ describe('API > Metadata', () => {
   })
 
   test('request', async () => {
-    const response = await api.metadata([topicName])
+    const response = await broker.metadata([topicName])
     expect(response).toEqual({
       brokers: [
         {
@@ -45,11 +47,11 @@ describe('API > Metadata', () => {
           isInternal: false,
           partitionMetadata: [
             {
-              isr: expect.any(Number),
+              isr: expect.any(Array),
               leader: expect.any(Number),
               partitionErrorCode: 0,
               partitionId: 0,
-              replicas: 1,
+              replicas: expect.any(Array),
             },
           ],
           topic: topicName,
