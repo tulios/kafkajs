@@ -8,11 +8,12 @@ module.exports = class Client {
     this.logger = createLogger({ level: logLevel })
   }
 
-  producer() {
+  producer({ createPartitioner } = {}) {
     return createProducer({
       host: this.host,
       port: this.port,
       logger: this.logger,
+      createPartitioner,
     })
   }
 }
