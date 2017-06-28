@@ -40,8 +40,8 @@ const partitionMetadata = decoder => ({
   partitionErrorCode: decoder.readInt16(),
   partitionId: decoder.readInt32(),
   leader: decoder.readInt32(),
-  replicas: decoder.readInt32(),
-  isr: decoder.readInt32(),
+  replicas: decoder.readArray(d => d.readInt32()),
+  isr: decoder.readArray(d => d.readInt32()),
 })
 
 const decode = data => {

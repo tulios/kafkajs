@@ -14,7 +14,7 @@ describe('Protocol > Requests > Metadata > v0', () => {
           topicErrorCode: 0,
           topic: 'test-topic-1',
           partitionMetadata: [
-            { partitionErrorCode: 0, partitionId: 1, leader: 2, replicas: 3, isr: 4 },
+            { partitionErrorCode: 0, partitionId: 1, leader: 2, replicas: [3], isr: [4] },
           ],
         },
       ],
@@ -30,7 +30,12 @@ describe('Protocol > Requests > Metadata > v0', () => {
             .writeInt16(0)
             .writeString('test-topic-1')
             .writeArray([
-              new Encoder().writeInt16(0).writeInt32(1).writeInt32(2).writeInt32(3).writeInt32(4),
+              new Encoder()
+                .writeInt16(0)
+                .writeInt32(1)
+                .writeInt32(2)
+                .writeArray([3], 'int32')
+                .writeArray([4], 'int32'),
             ]),
         ])
 

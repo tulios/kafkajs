@@ -83,10 +83,13 @@ module.exports = class Encoder {
     return this
   }
 
-  writeArray(array) {
+  writeArray(array, type) {
     this.writeInt32(array.length)
     array.forEach(value => {
-      switch (typeof value) {
+      switch (type || typeof value) {
+        case 'int32':
+          this.writeInt32(value)
+          break
         case 'string':
           this.writeString(value)
           break
