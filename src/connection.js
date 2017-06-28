@@ -49,6 +49,10 @@ module.exports = class Connection {
 
   connect() {
     return new Promise((resolve, reject) => {
+      if (this.connected) {
+        return resolve()
+      }
+
       this.logger.debug(`Connecting`, { broker: this.broker })
       this.socket = net.connect({ host: this.host, port: this.port }, () => {
         this.connected = true
@@ -70,12 +74,13 @@ module.exports = class Connection {
   }
 
   disconnect() {
-    if (this.connected) {
-      this.logger.debug('disconnecting...', { broker: this.broker })
-      this.socket.end()
-      this.connected = false
+    if (!this.connected) {
+      return
     }
 
+    this.logger.debug('disconnecting...', { broker: this.broker })
+    this.socket.end()
+    this.connected = false
     this.logger.debug('disconnected', { broker: this.broker })
   }
 
