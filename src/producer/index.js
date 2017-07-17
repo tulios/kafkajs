@@ -1,14 +1,6 @@
 const Cluster = require('../cluster')
-const crypto = require('crypto')
 const createDefaultPartitioner = require('./partitioners/default')
-
-const groupMessagesPerPartition = ({ topic, partitionMetadata, messages, partitioner }) => {
-  return messages.reduce((result, message) => {
-    const partition = partitioner({ topic, partitionMetadata, message })
-    const current = result[partition] || []
-    return Object.assign(result, { [partition]: [...current, message] })
-  }, {})
-}
+const groupMessagesPerPartition = require('./groupMessagesPerPartition')
 
 const createTopicData = ({ topic, partitions, messagesPerPartition }) => [
   {

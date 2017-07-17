@@ -46,9 +46,11 @@ module.exports = class Cluster {
   }
 
   async addTargetTopic(topic) {
-    const hasTopic = Array.from(this.targetTopics).includes(topic)
-    if (!hasTopic) {
-      this.targetTopics.add(topic)
+    const previousSize = this.targetTopics.size
+    this.targetTopics.add(topic)
+    const hasChanged = previousSize !== this.targetTopics.size
+
+    if (hasChanged) {
       await this.refreshMetadata()
     }
   }
