@@ -1,8 +1,5 @@
 const groupMessagesPerPartition = require('./groupMessagesPerPartition')
-
-const dummyPartitioner = () => ({ message }) => {
-  return parseInt(message.key, 10) % 3
-}
+const { createModPartitioner } = require('testHelpers')
 
 describe('Producer > groupMessagesPerPartition', () => {
   let topic, partitionMetadata, messages, partitioner
@@ -26,7 +23,7 @@ describe('Producer > groupMessagesPerPartition', () => {
       { key: '8' },
       { key: '9' },
     ]
-    partitioner = dummyPartitioner()
+    partitioner = createModPartitioner()
   })
 
   test('group messages per partition', () => {

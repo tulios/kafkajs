@@ -1,4 +1,5 @@
 const Cluster = require('../cluster')
+const flatten = require('../utils/flatten')
 const createDefaultPartitioner = require('./partitioners/default')
 const groupMessagesPerPartition = require('./groupMessagesPerPartition')
 
@@ -11,6 +12,13 @@ const createTopicData = ({ topic, partitions, messagesPerPartition }) => [
     })),
   },
 ]
+
+const responseSerializer = ({ topics }) => {
+  const partitions = topics.map(({ topicName, partitions }) =>
+    partitions.map(partition => Object.assign({ topicName }, partition))
+  )
+  return flatten(partitions)
+}
 
 module.exports = ({ host, port, logger, createPartitioner = createDefaultPartitioner }) => {
   const cluster = new Cluster({ host, port, logger })
@@ -38,10 +46,11 @@ module.exports = ({ host, port, logger, createPartitioner = createDefaultPartiti
         const partitions = partitionsPerLeader[nodeId]
         const topicData = createTopicData({ topic, partitions, messagesPerPartition })
         const broker = await cluster.findBroker({ nodeId })
-        return await broker.produce({ topicData })
+        const response = await broker.produce({ topicData })
+        return responseSerializer(response)
       })
 
-      return await Promise.all(requests)
+      return flatten(await Promise.all(requests))
     },
   }
 }
