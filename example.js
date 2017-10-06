@@ -1,5 +1,6 @@
 const ip = require('ip')
 const Kafka = require('./src/index')
+const { Types } = require('./src/protocol/message/compression')
 const { LEVELS: { DEBUG } } = require('./src/loggers/console')
 
 const kafka = new Kafka({
@@ -14,6 +15,7 @@ producer
   .then(async () => {
     const r0 = await producer.send({
       topic: 'test-topic',
+      compression: Types.GZIP,
       messages: new Array(100).fill().map(() => {
         const num = Math.round(Math.random(10) * 1000)
         return { key: `key-${num}`, value: `some-value-${num}` }

@@ -27,7 +27,7 @@ module.exports = ({ host, port, logger, createPartitioner = createDefaultPartiti
   return {
     connect: async () => await cluster.connect(),
     disconnect: async () => await cluster.disconnect(),
-    send: async ({ topic, messages }) => {
+    send: async ({ topic, messages, acks, timeout, compression }) => {
       await cluster.addTargetTopic(topic)
       const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
       const messagesPerPartition = groupMessagesPerPartition({
@@ -46,7 +46,7 @@ module.exports = ({ host, port, logger, createPartitioner = createDefaultPartiti
         const partitions = partitionsPerLeader[nodeId]
         const topicData = createTopicData({ topic, partitions, messagesPerPartition })
         const broker = await cluster.findBroker({ nodeId })
-        const response = await broker.produce({ topicData })
+        const response = await broker.produce({ acks, timeout, compression, topicData })
         return responseSerializer(response)
       })
 

@@ -4,6 +4,7 @@ const RETRY_DEFAULT = {
   factor: 0.2, // randomization factor
   multiplier: 2, // exponential factor
   retries: Infinity, // max retries
+  logger: null,
 }
 
 const random = (min, max) => {
@@ -38,9 +39,14 @@ const createRetriable = (configs, resolve, reject, fn) => {
       setTimeout(() => retry(nextRetryTime, retryCount + 1), retryTime)
     }
 
-    fn(bail, retryCount, retryTime).then(resolve).catch(e => {
-      shouldRetry ? scheduleRetry() : reject(e)
-    })
+    fn(bail, retryCount, retryTime)
+      .then(resolve)
+      .catch(e => {
+        if (configs.logger) {
+          configs.logger.error(e.message, { stack: e.stack })
+        }
+        shouldRetry ? scheduleRetry() : reject(e)
+      })
   }
 
   return retry
@@ -48,7 +54,7 @@ const createRetriable = (configs, resolve, reject, fn) => {
 
 module.exports = (opts = {}) => fn => {
   return new Promise((resolve, reject) => {
-    const configs = Object.assign(opts, RETRY_DEFAULT)
+    const configs = Object.assign({}, RETRY_DEFAULT, opts)
     const start = createRetriable(configs, resolve, reject, fn)
     start(randomFromRetryTime(configs.factor, configs.initialRetryTime))
   })

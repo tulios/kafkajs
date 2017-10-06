@@ -65,12 +65,19 @@ module.exports = class Encoder {
       return this
     }
 
-    const valueToWrite = String(value)
-    const byteLength = Buffer.byteLength(valueToWrite, 'utf8')
-    this.writeInt32(byteLength)
-    const tempBuffer = Buffer.alloc(byteLength)
-    tempBuffer.write(valueToWrite, 0, byteLength, 'utf8')
-    this.buffer = Buffer.concat([this.buffer, tempBuffer])
+    if (Buffer.isBuffer(value)) {
+      // raw bytes
+      this.writeInt32(value.length)
+      this.buffer = Buffer.concat([this.buffer, value])
+    } else {
+      const valueToWrite = String(value)
+      const byteLength = Buffer.byteLength(valueToWrite, 'utf8')
+      this.writeInt32(byteLength)
+      const tempBuffer = Buffer.alloc(byteLength)
+      tempBuffer.write(valueToWrite, 0, byteLength, 'utf8')
+      this.buffer = Buffer.concat([this.buffer, tempBuffer])
+    }
+
     return this
   }
 

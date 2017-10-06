@@ -31,7 +31,7 @@ module.exports = class Connection {
     this.host = host
     this.port = port
     this.logger = logger
-    this.retrier = createRetry(retry)
+    this.retrier = createRetry(Object.assign({}, retry, { logger }))
     this.broker = `${host}:${port}`
 
     this.connected = false
@@ -85,12 +85,12 @@ module.exports = class Connection {
   }
 
   send({ request, response }) {
-    const sendRequest = async () => {
+    const sendRequest = async (retryCount, retryTime) => {
       const correlationId = this.nextCorrelationId()
 
       this.logger.debug(
         `Request ${request.apiName}(key: ${request.apiKey}, version: ${request.apiVersion})`,
-        { broker: this.broker, correlationId }
+        { broker: this.broker, correlationId, retryCount, retryTime }
       )
 
       const encoder = new Encoder()
@@ -112,7 +112,7 @@ module.exports = class Connection {
     }
 
     return this.retrier(async (bail, retryCount, retryTime) => {
-      const { correlationId, size, entry, payload } = await sendRequest()
+      const { correlationId, size, entry, payload } = await sendRequest(retryCount, retryTime)
       try {
         const data = response.parse(response.decode(payload))
 

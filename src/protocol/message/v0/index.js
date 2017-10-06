@@ -1,6 +1,6 @@
 const Encoder = require('../../encoder')
 const crc32 = require('../../crc32')
-const Compression = require('../compression')
+const { Types: Compression } = require('../compression')
 
 /**
  * v0
