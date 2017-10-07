@@ -1,11 +1,11 @@
 version: '2'
 services:
   zk:
-    image: jplock/zookeeper:3.4.6
+    image: wurstmeister/zookeeper:latest
     ports:
       - "2181:2181"
   kafka1:
-    image: ches/kafka:0.10.2.1
+    image: wurstmeister/kafka:0.10.2.1
     ports:
       - "9092:9092"
     links:
@@ -14,9 +14,12 @@ services:
       KAFKA_BROKER_ID: 0
       KAFKA_ADVERTISED_HOST_NAME: ${HOST_IP}
       KAFKA_ADVERTISED_PORT: 9092
-      ZOOKEEPER_CONNECTION_STRING: zk:2181
+      KAFKA_ZOOKEEPER_CONNECT: zk:2181
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
   kafka2:
-    image: ches/kafka:0.10.2.1
+    image: wurstmeister/kafka:0.10.2.1
     ports:
       - "9093:9092"
     links:
@@ -25,9 +28,12 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ADVERTISED_HOST_NAME: ${HOST_IP}
       KAFKA_ADVERTISED_PORT: 9093
-      ZOOKEEPER_CONNECTION_STRING: zk:2181
+      KAFKA_ZOOKEEPER_CONNECT: zk:2181
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
   kafka3:
-    image: ches/kafka:0.10.2.1
+    image: wurstmeister/kafka:0.10.2.1
     ports:
       - "9094:9092"
     links:
@@ -36,4 +42,7 @@ services:
       KAFKA_BROKER_ID: 2
       KAFKA_ADVERTISED_HOST_NAME: ${HOST_IP}
       KAFKA_ADVERTISED_PORT: 9094
-      ZOOKEEPER_CONNECTION_STRING: zk:2181
+      KAFKA_ZOOKEEPER_CONNECT: zk:2181
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

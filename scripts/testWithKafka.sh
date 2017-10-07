@@ -8,14 +8,14 @@ export HOST_IP=$(ifconfig | grep -E "([0-9]{1,3}\.){3}[0-9]{1,3}" | grep -v 127.
 wait_for_kafka() {
   docker exec \
     ${CONTAINER_ID} \
-    bash -c "JMX_PORT=9998 /kafka/bin/kafka-topics.sh --zookeeper zk:2181 --list 2> /dev/null"
+    bash -c "JMX_PORT=9998 /opt/kafka/bin/kafka-topics.sh --zookeeper zk:2181 --list 2> /dev/null"
   sleep 3 # this seems to be ready a tidy bit before the actual kafka api
 }
 
 create_topic() {
   docker exec \
     ${CONTAINER_ID} \
-    bash -c "JMX_PORT=9998 /kafka/bin/kafka-topics.sh --create --if-not-exists --topic test-topic-already-exists --replication-factor 1 --partitions 2 --zookeeper zk:2181 2> /dev/null"
+    bash -c "JMX_PORT=9998 /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --topic test-topic-already-exists --replication-factor 1 --partitions 2 --zookeeper zk:2181 2> /dev/null"
 }
 
 find_container_id() {
