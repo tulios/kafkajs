@@ -1,39 +1,38 @@
 const net = require('net')
+const tls = require('tls')
+
 const createRequest = require('./protocol/request')
 const Encoder = require('./protocol/encoder')
 const Decoder = require('./protocol/decoder')
 const createRetry = require('./retry')
 
-const processData = pendingQueue => data => {
-  const decoder = new Decoder(data)
-  const size = decoder.readInt32()
-  const correlationId = decoder.readInt32()
-  const payload = decoder.readAll()
+const KEEP_ALIVE_DELAY = 60000 // in ms
 
-  const entry = pendingQueue[correlationId]
-  delete pendingQueue[correlationId]
-
-  if (!entry) {
-    this.logger.debug(`Response without match`, { correlationId })
-    return
+const createSocket = (host, port, ssl, onConnect) => {
+  if (ssl) {
+    return tls.connect(Object.assign({ host, port }, ssl), onConnect)
   }
 
-  entry.resolve({
-    correlationId,
-    size,
-    entry,
-    payload,
-  })
+  return net.connect({ host, port }, onConnect)
 }
 
+/**
+ * @param {string} host
+ * @param {number} port
+ * @param {Object} logger
+ * @param {Object} [ssl=null]
+ * @param {object} [retry={}]
+ */
 module.exports = class Connection {
-  constructor({ host, port, logger, retry = {} }) {
+  constructor({ host, port, logger, ssl = null, retry = {} }) {
     this.host = host
     this.port = port
     this.logger = logger
+    this.ssl = ssl
     this.retrier = createRetry(Object.assign({}, retry, { logger }))
     this.broker = `${host}:${port}`
 
+    this.buffer = Buffer.alloc(0)
     this.connected = false
     this.correlationId = 0
     this.pendingQueue = {}
@@ -53,13 +52,15 @@ module.exports = class Connection {
         return resolve()
       }
 
-      this.logger.debug(`Connecting`, { broker: this.broker })
-      this.socket = net.connect({ host: this.host, port: this.port }, () => {
+      this.logger.debug(`Connecting`, { broker: this.broker, ssl: !!this.ssl })
+      this.socket = createSocket(this.host, this.port, this.ssl, () => {
         this.connected = true
         resolve()
       })
 
-      this.socket.on('data', processData(this.pendingQueue))
+      this.socket.setKeepAlive(true, KEEP_ALIVE_DELAY)
+      this.socket.on('data', data => this.processData(data))
+
       this.socket.on('end', () => {
         this.logger.error('Kafka server has closed connection', { broker: this.broker })
         this.connected = false
@@ -67,8 +68,8 @@ module.exports = class Connection {
 
       this.socket.on('error', e => {
         this.logger.error(`Connection error`, { broker: this.broker, error: e.message })
-        reject(e)
         this.disconnect()
+        reject(e)
       })
     })
   }
@@ -125,22 +126,49 @@ module.exports = class Connection {
       } catch (e) {
         this.logger.error(
           `Response ${entry.apiName}(key: ${entry.apiKey}, version: ${entry.apiVersion}) error`,
-          Object.assign(
-            {
-              broker: this.broker,
-              correlationId,
-              retryCount,
-              retryTime,
-              size,
-              error: e.message,
-            },
-            e
-          )
+          {
+            broker: this.broker,
+            correlationId,
+            retryCount,
+            retryTime,
+            size,
+            error: e.message,
+          }
         )
 
         if (e.retriable) throw e
         bail(e)
       }
+    })
+  }
+
+  processData(rawData) {
+    this.buffer = Buffer.concat([this.buffer, rawData])
+    if (Buffer.byteLength(this.buffer) <= Decoder.int32Size()) {
+      return
+    }
+
+    const data = Buffer.from(this.buffer)
+    this.buffer = Buffer.alloc(0)
+
+    const decoder = new Decoder(data)
+    const size = decoder.readInt32()
+    const correlationId = decoder.readInt32()
+    const payload = decoder.readAll()
+
+    const entry = this.pendingQueue[correlationId]
+    delete this.pendingQueue[correlationId]
+
+    if (!entry) {
+      this.logger.debug(`Response without match`, { broker: this.broker, correlationId })
+      return
+    }
+
+    entry.resolve({
+      correlationId,
+      size,
+      entry,
+      payload,
     })
   }
 }

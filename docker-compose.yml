@@ -26,6 +26,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./testHelpers/certs:/var/private/ssl/certs
+      # - ./testHelpers/log4j.properties:/opt/kafka/config/log4j.properties
   kafka2:
     image: wurstmeister/kafka:0.10.2.1
     ports:
@@ -48,6 +49,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./testHelpers/certs:/var/private/ssl/certs
+      # - ./testHelpers/log4j.properties:/opt/kafka/config/log4j.properties
   kafka3:
     image: wurstmeister/kafka:0.10.2.1
     ports:
@@ -70,3 +72,4 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./testHelpers/certs:/var/private/ssl/certs
+      # - ./testHelpers/log4j.properties:/opt/kafka/config/log4j.properties

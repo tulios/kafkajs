@@ -20,8 +20,8 @@ const responseSerializer = ({ topics }) => {
   return flatten(partitions)
 }
 
-module.exports = ({ host, port, logger, createPartitioner = createDefaultPartitioner }) => {
-  const cluster = new Cluster({ host, port, logger })
+module.exports = ({ host, port, ssl, logger, createPartitioner = createDefaultPartitioner }) => {
+  const cluster = new Cluster({ host, port, ssl, logger })
   const partitioner = createPartitioner()
 
   return {

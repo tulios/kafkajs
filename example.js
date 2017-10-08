@@ -1,12 +1,19 @@
+const fs = require('fs')
 const ip = require('ip')
 const Kafka = require('./src/index')
 const { Types } = require('./src/protocol/message/compression')
 const { LEVELS: { DEBUG } } = require('./src/loggers/console')
 
 const kafka = new Kafka({
-  host: process.env.HOST_IP || ip.address(),
-  port: 9092,
   logLevel: DEBUG,
+  host: process.env.HOST_IP || ip.address(),
+  port: 9093,
+  ssl: {
+    servername: 'localhost',
+    cert: fs.readFileSync('./testHelpers/certs/client_cert.pem', 'utf-8'),
+    key: fs.readFileSync('./testHelpers/certs/client_key.pem', 'utf-8'),
+    ca: [fs.readFileSync('./testHelpers/certs/ca_cert.pem', 'utf-8')],
+  },
 })
 
 const producer = kafka.producer()
@@ -24,9 +31,9 @@ producer
 
     console.log(JSON.stringify(r0))
   })
-  .catch(e => {
+  .catch(async e => {
     console.error(e)
-    producer.disconnect()
+    await producer.disconnect()
   })
 
 const errorTypes = ['unhandledRejection', 'uncaughtException']
@@ -35,7 +42,7 @@ const signalTraps = ['exit', 'SIGTERM', 'SIGINT', 'SIGUSR2']
 errorTypes.map(type => {
   process.on(type, async () => {
     try {
-      producer.disconnect()
+      await producer.disconnect()
       process.exit(0)
     } catch (_) {
       process.exit(1)
@@ -46,7 +53,7 @@ errorTypes.map(type => {
 signalTraps.map(type => {
   process.once(type, async () => {
     try {
-      producer.disconnect()
+      await producer.disconnect()
     } finally {
       process.kill(process.pid, type)
     }

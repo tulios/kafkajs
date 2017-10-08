@@ -4,7 +4,6 @@ const RETRY_DEFAULT = {
   factor: 0.2, // randomization factor
   multiplier: 2, // exponential factor
   retries: Infinity, // max retries
-  logger: null,
 }
 
 const random = (min, max) => {
@@ -42,9 +41,6 @@ const createRetriable = (configs, resolve, reject, fn) => {
     fn(bail, retryCount, retryTime)
       .then(resolve)
       .catch(e => {
-        if (configs.logger) {
-          configs.logger.error(e.message, { stack: e.stack })
-        }
         shouldRetry ? scheduleRetry() : reject(e)
       })
   }

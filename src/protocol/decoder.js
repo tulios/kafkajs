@@ -6,6 +6,10 @@ const INT32_SIZE = 4
 const INT64_SIZE = 8
 
 module.exports = class Decoder {
+  static int32Size() {
+    return INT32_SIZE
+  }
+
   constructor(buffer) {
     this.buffer = buffer
     this.offset = 0

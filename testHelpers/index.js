@@ -13,7 +13,7 @@ const createConnection = (opts = {}) => new Connection(Object.assign(connectionO
 const createModPartitioner = () => ({ partitionMetadata, message }) => {
   const numPartitions = partitionMetadata.length
   const key = parseInt(message.key.replace(/[^\d]/g, ''), 10)
-  return (key || 0) % 3 % numPartitions
+  return ((key || 0) % 3) % numPartitions
 }
 
 module.exports = {
