@@ -13,8 +13,8 @@ describe('Broker > Metadata', () => {
     broker = new Broker(connection, versions)
   })
 
-  afterAll(() => {
-    connection.disconnect()
+  afterAll(async () => {
+    await connection.disconnect()
   })
 
   test('request', async () => {

@@ -15,7 +15,7 @@ module.exports = class Broker {
   }
 
   async disconnect() {
-    this.connection.disconnect()
+    await this.connection.disconnect()
   }
 
   async metadata(topics = []) {
