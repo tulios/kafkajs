@@ -1,11 +1,28 @@
 const createProducer = require('./index')
-const { secureRandom, connectionOpts, createModPartitioner } = require('testHelpers')
+const {
+  secureRandom,
+  connectionOpts,
+  sslConnectionOpts,
+  createModPartitioner,
+} = require('testHelpers')
 
 describe('Producer', () => {
   let topicName, producer
 
-  beforeEach(async () => {
+  beforeEach(() => {
     topicName = `test-topic-${secureRandom()}`
+  })
+
+  afterEach(async () => {
+    await producer.disconnect()
+  })
+
+  test('support SSL connections', async () => {
+    producer = createProducer(sslConnectionOpts())
+    await producer.connect()
+  })
+
+  test('produce messages', async () => {
     producer = createProducer(
       Object.assign(connectionOpts(), {
         createPartitioner: createModPartitioner,
@@ -13,13 +30,7 @@ describe('Producer', () => {
     )
 
     await producer.connect()
-  })
 
-  afterEach(async () => {
-    await producer.disconnect()
-  })
-
-  test('produce messages', async () => {
     const sendMessages = async () =>
       await producer.send({
         topic: topicName,
