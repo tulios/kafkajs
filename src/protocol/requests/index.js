@@ -16,7 +16,7 @@ const requests = {
   SyncGroup: {},
   DescribeGroups: {},
   ListGroups: {},
-  SaslHandshake: {},
+  SaslHandshake: require('./saslhandshake'),
   ApiVersions: require('./apiVersions'),
   CreateTopics: {},
   DeleteTopics: {},

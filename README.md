@@ -11,4 +11,11 @@ To try the project locally:
 yarn test:local
 ```
 
+or
+
+```sh
+yarn test
+```
+
 Password for test keystore and certificates: `testtest`
+Password for SASL `test:testtest`

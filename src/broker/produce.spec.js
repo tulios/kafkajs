@@ -1,10 +1,9 @@
 const Broker = require('./index')
 const { Types: Compression } = require('../protocol/message/compression')
-const loadApiVersions = require('./apiVersions')
 const { secureRandom, createConnection } = require('testHelpers')
 
 describe('Broker > Produce', () => {
-  let connection, connection2, broker, topicName, versions
+  let topicName, broker, broker2
 
   const createTopicData = () => [
     {
@@ -28,10 +27,8 @@ describe('Broker > Produce', () => {
 
   test('request', async () => {
     try {
-      connection = createConnection()
-      await connection.connect()
-      versions = await loadApiVersions(connection)
-      broker = new Broker(connection, versions)
+      broker = new Broker(createConnection())
+      await broker.connect()
 
       const metadata = await broker.metadata([topicName])
       // Find leader of partition
@@ -39,10 +36,8 @@ describe('Broker > Produce', () => {
       const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
 
       // Connect to the correct broker to produce message
-      connection2 = createConnection(newBrokerData)
-      await connection2.connect()
-
-      const broker2 = new Broker(connection2, versions)
+      broker2 = new Broker(createConnection(newBrokerData))
+      await broker2.connect()
 
       const response1 = await broker2.produce({ topicData: createTopicData() })
       expect(response1).toEqual({
@@ -60,17 +55,15 @@ describe('Broker > Produce', () => {
         throttleTime: 0,
       })
     } finally {
-      await connection.disconnect()
-      connection2 && (await connection2.disconnect())
+      await broker.disconnect()
+      broker2 && (await broker2.disconnect())
     }
   })
 
   test('request with GZIP', async () => {
     try {
-      connection = createConnection()
-      await connection.connect()
-      versions = await loadApiVersions(connection)
-      broker = new Broker(connection, versions)
+      broker = new Broker(createConnection())
+      await broker.connect()
 
       const metadata = await broker.metadata([topicName])
       // Find leader of partition
@@ -78,10 +71,8 @@ describe('Broker > Produce', () => {
       const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
 
       // Connect to the correct broker to produce message
-      connection2 = createConnection(newBrokerData)
-      await connection2.connect()
-
-      const broker2 = new Broker(connection2, versions)
+      broker2 = new Broker(createConnection(newBrokerData))
+      await broker2.connect()
 
       const response1 = await broker2.produce({
         compression: Compression.GZIP,
@@ -95,8 +86,8 @@ describe('Broker > Produce', () => {
         throttleTime: 0,
       })
     } finally {
-      await connection.disconnect()
-      connection2 && (await connection2.disconnect())
+      await broker.disconnect()
+      broker2 && (await broker2.disconnect())
     }
   })
 })

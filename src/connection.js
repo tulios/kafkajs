@@ -21,14 +21,18 @@ const createSocket = (host, port, ssl, onConnect) => {
  * @param {number} port
  * @param {Object} logger
  * @param {Object} [ssl=null]
+ * @param {Object} [sasl=null]
  * @param {object} [retry={}]
  */
 module.exports = class Connection {
-  constructor({ host, port, logger, ssl = null, retry = {} }) {
+  constructor({ host, port, logger, ssl = null, sasl = null, retry = {} }) {
     this.host = host
     this.port = port
     this.logger = logger
+
     this.ssl = ssl
+    this.sasl = sasl
+
     this.retrier = createRetry(Object.assign({}, retry, { logger }))
     this.broker = `${host}:${port}`
 
@@ -36,6 +40,7 @@ module.exports = class Connection {
     this.connected = false
     this.correlationId = 0
     this.pendingQueue = {}
+    this.authHandlers = null
   }
 
   nextCorrelationId() {
@@ -52,7 +57,7 @@ module.exports = class Connection {
         return resolve()
       }
 
-      this.logger.debug(`Connecting`, { broker: this.broker, ssl: !!this.ssl })
+      this.logger.debug(`Connecting`, { broker: this.broker, ssl: !!this.ssl, sasl: !!this.sasl })
       this.socket = createSocket(this.host, this.port, this.ssl, () => {
         this.connected = true
         resolve()
@@ -62,8 +67,12 @@ module.exports = class Connection {
       this.socket.on('data', data => this.processData(data))
 
       this.socket.on('end', () => {
-        this.logger.error('Kafka server has closed connection', { broker: this.broker })
         this.connected = false
+        if (this.authHandlers) {
+          this.authHandlers.onError()
+        } else {
+          this.logger.error('Kafka server has closed connection', { broker: this.broker })
+        }
       })
 
       this.socket.on('error', e => {
@@ -83,6 +92,24 @@ module.exports = class Connection {
     this.socket.end()
     this.connected = false
     this.logger.debug('disconnected', { broker: this.broker })
+  }
+
+  authenticate({ request, response }) {
+    return new Promise((resolve, reject) => {
+      this.authHandlers = {
+        onSuccess: rawData => {
+          this.authHandlers = null
+          resolve(response.parse(response.decode(rawData)))
+        },
+        onError: () => {
+          this.authHandlers = null
+          reject(new Error('Connection closed by the server'))
+        },
+      }
+
+      const requestPayload = request.encode()
+      this.socket.write(requestPayload.buffer, 'binary')
+    })
   }
 
   send({ request, response }) {
@@ -143,6 +170,10 @@ module.exports = class Connection {
   }
 
   processData(rawData) {
+    if (this.authHandlers) {
+      return this.authHandlers.onSuccess(rawData)
+    }
+
     this.buffer = Buffer.concat([this.buffer, rawData])
     if (Buffer.byteLength(this.buffer) <= Decoder.int32Size()) {
       return

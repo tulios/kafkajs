@@ -1,30 +1,39 @@
 const Connection = require('./connection')
 const Broker = require('./broker')
-const loadApiVersions = require('./broker/apiVersions')
+
+const createConnection = (cluster, { host, port, rack }) =>
+  new Connection({
+    host,
+    port,
+    rack,
+    ssl: cluster.ssl,
+    sasl: cluster.sasl,
+    logger: cluster.logger,
+  })
 
 module.exports = class Cluster {
-  constructor({ host, port, ssl, logger }) {
+  constructor({ host, port, ssl, sasl, logger }) {
     this.host = host
     this.port = port
     this.ssl = ssl
+    this.sasl = sasl
     this.logger = logger
 
-    this.seedConnection = new Connection({ host, port, ssl, logger: this.logger })
+    this.seedBroker = new Broker(createConnection(this, { host, port }))
     this.targetTopics = new Set()
-    this.seedBroker = null
+    this.brokerPool = {}
+
     this.versions = null
     this.metadata = null
-    this.brokerPool = {}
   }
 
   async connect() {
-    await this.seedConnection.connect()
-    this.versions = await loadApiVersions(this.seedConnection)
-    this.seedBroker = new Broker(this.seedConnection, this.versions)
+    await this.seedBroker.connect()
+    this.versions = this.seedBroker.versions
   }
 
   async disconnect() {
-    await this.seedConnection.disconnect()
+    await this.seedBroker.disconnect()
     await Promise.all(Object.values(this.brokerPool).map(broker => broker.disconnect()))
     this.brokerPool = {}
     this.metadata = {}
@@ -37,11 +46,9 @@ module.exports = class Cluster {
         return result
       }
 
+      const connection = createConnection(this, { host, port, rack })
       return Object.assign(result, {
-        [nodeId]: new Broker(
-          new Connection({ host, port, ssl: this.ssl, rack, logger: this.logger }),
-          this.versions
-        ),
+        [nodeId]: new Broker(connection, this.versions),
       })
     }, this.brokerPool)
   }

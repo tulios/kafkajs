@@ -7,12 +7,17 @@ const { LEVELS: { DEBUG } } = require('./src/loggers/console')
 const kafka = new Kafka({
   logLevel: DEBUG,
   host: process.env.HOST_IP || ip.address(),
-  port: 9093,
+  port: 9094,
   ssl: {
     servername: 'localhost',
     cert: fs.readFileSync('./testHelpers/certs/client_cert.pem', 'utf-8'),
     key: fs.readFileSync('./testHelpers/certs/client_key.pem', 'utf-8'),
     ca: [fs.readFileSync('./testHelpers/certs/ca_cert.pem', 'utf-8')],
+  },
+  sasl: {
+    mechanism: 'plain',
+    username: 'test',
+    password: 'testtest',
   },
 })
 
@@ -37,11 +42,12 @@ producer
   })
 
 const errorTypes = ['unhandledRejection', 'uncaughtException']
-const signalTraps = ['exit', 'SIGTERM', 'SIGINT', 'SIGUSR2']
+const signalTraps = ['SIGTERM', 'SIGINT', 'SIGUSR2']
 
 errorTypes.map(type => {
   process.on(type, async () => {
     try {
+      console.log(`process.on ${type}`)
       await producer.disconnect()
       process.exit(0)
     } catch (_) {

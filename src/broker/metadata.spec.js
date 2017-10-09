@@ -1,20 +1,17 @@
 const Broker = require('./index')
-const loadApiVersions = require('./apiVersions')
 const { secureRandom, createConnection } = require('testHelpers')
 
 describe('Broker > Metadata', () => {
-  let connection, topicName, versions, broker
+  let topicName, broker
 
   beforeAll(async () => {
     topicName = `test-topic-${secureRandom()}`
-    connection = createConnection()
-    await connection.connect()
-    versions = await loadApiVersions(connection)
-    broker = new Broker(connection, versions)
+    broker = new Broker(createConnection())
+    await broker.connect()
   })
 
   afterAll(async () => {
-    await connection.disconnect()
+    await broker.disconnect()
   })
 
   test('request', async () => {
