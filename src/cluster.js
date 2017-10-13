@@ -1,4 +1,4 @@
-const Connection = require('./connection')
+const Connection = require('./network/connection')
 const Broker = require('./broker')
 
 const createConnection = (cluster, { host, port, rack }) =>
