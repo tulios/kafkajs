@@ -6,7 +6,7 @@
   "scripts": {
     "test:local:watch": "yarn test:local --watch",
     "test:local": "./node_modules/.bin/jest",
-    "test": "JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh './node_modules/.bin/jest'"
+    "test": "JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh './node_modules/.bin/jest --coverage'"
   },
   "devDependencies": {
     "ip": "^1.1.5",
