@@ -16,7 +16,7 @@ const Decoder = require('../protocol/decoder')
  *                             key "mechanism". Connection is not actively using the SASL attributes
  *                             but acting as a data object for this information
  * @param {number} [connectionTimeout=1000] The connection timeout, in milliseconds
- * @param {object} [retry=null] Configurations for the built-in retry mechanism. More information at the
+ * @param {Object} [retry=null] Configurations for the built-in retry mechanism. More information at the
  *                              retry module inside network
  */
 module.exports = class Connection {
@@ -51,7 +51,7 @@ module.exports = class Connection {
 
     const log = level => (message, extra = {}) => {
       const logFn = this.logger[level]
-      logFn(message, Object.assign({ broker: `${this.host}:${this.port}` }, extra))
+      logFn(message, Object.assign({ broker: `${this.host}:${this.port}`, clientId }, extra))
     }
 
     this.logDebug = log('debug')
@@ -176,6 +176,10 @@ module.exports = class Connection {
    * @returns {Promise<data>} where data is the return of "response#parse"
    */
   send({ request, response }) {
+    if (!this.connected) {
+      return Promise.reject(new Error('Not connected'))
+    }
+
     const requestInfo = ({ apiName, apiKey, apiVersion }) =>
       `${apiName}(key: ${apiKey}, version: ${apiVersion})`
 
@@ -188,7 +192,7 @@ module.exports = class Connection {
 
       this.logDebug(`Request ${requestInfo(request)}`, { correlationId, retryCount, retryTime })
 
-      return new Promise(resolve => {
+      return new Promise((resolve, reject) => {
         this.pendingQueue[correlationId] = { apiKey, apiName, apiVersion, resolve }
         this.socket.write(requestPayload.buffer, 'binary')
       })

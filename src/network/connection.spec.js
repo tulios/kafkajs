@@ -79,6 +79,13 @@ describe('Network > Connection', () => {
       await expect(connection.send(metadataProtocol([topicName]))).resolves.toBeTruthy()
     })
 
+    test('rejects the Promise if it is not connected', async () => {
+      expect(connection.connected).toEqual(false)
+      await expect(connection.send(metadataProtocol([topicName]))).rejects.toEqual(
+        new Error('Not connected')
+      )
+    })
+
     test('rejects the Promise in case of a non-retriable error', async () => {
       const protocol = metadataProtocol([topicName])
       protocol.response.parse = () => {
