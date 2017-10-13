@@ -1,20 +1,25 @@
 const Broker = require('./index')
 const { secureRandom, createConnection } = require('testHelpers')
+const Connection = require('../network/connection')
 
 describe('Broker > Metadata', () => {
   let topicName, broker
 
-  beforeAll(async () => {
+  beforeEach(() => {
     topicName = `test-topic-${secureRandom()}`
     broker = new Broker(createConnection())
-    await broker.connect()
   })
 
-  afterAll(async () => {
-    await broker.disconnect()
+  afterEach(async () => {
+    broker && (await broker.disconnect())
+  })
+
+  test('rejects the Promise if lookupRequest is not defined', async () => {
+    await expect(broker.metadata()).rejects.toEqual(new Error('Broker not connected'))
   })
 
   test('request', async () => {
+    await broker.connect()
     const response = await broker.metadata([topicName])
     expect(response).toEqual({
       brokers: [

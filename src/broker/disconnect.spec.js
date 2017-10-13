@@ -2,7 +2,7 @@ const { createConnection, connectionOpts, saslConnectionOpts } = require('../../
 const { requests, lookup } = require('../protocol/requests')
 const Broker = require('./index')
 
-describe('Broker > connect', () => {
+describe('Broker > disconnect', () => {
   let broker
 
   beforeEach(() => {
@@ -13,21 +13,18 @@ describe('Broker > connect', () => {
     broker && (await broker.disconnect())
   })
 
-  test('establish the connection', async () => {
-    await expect(broker.connect()).resolves.toEqual(true)
-    expect(broker.connection.connected).toEqual(true)
-  })
-
-  test('load api versions if not provided', async () => {
-    expect(broker.versions).toEqual(null)
+  test('disconnect', async () => {
     await broker.connect()
-    expect(broker.versions).toBeTruthy()
+    expect(broker.connection.connected).toEqual(true)
+    await broker.disconnect()
+    expect(broker.connection.connected).toEqual(false)
   })
 
-  test('authenticate with SASL if configured', async () => {
+  test('when authenticated with SASL set authenticated to false', async () => {
     broker = new Broker(createConnection(saslConnectionOpts()))
-    expect(broker.authenticated).toEqual(false)
     await broker.connect()
     expect(broker.authenticated).toEqual(true)
+    await broker.disconnect()
+    expect(broker.authenticated).toEqual(false)
   })
 })
