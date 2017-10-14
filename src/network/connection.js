@@ -40,7 +40,8 @@ module.exports = class Connection {
     this.ssl = ssl
     this.sasl = sasl
 
-    this.retrier = createRetry(Object.assign({}, retry, { logger }))
+    this.retry = retry
+    this.retrier = createRetry(Object.assign({}, this.retry, { logger }))
     this.connectionTimeout = connectionTimeout
 
     this.buffer = Buffer.alloc(0)
