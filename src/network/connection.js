@@ -80,9 +80,9 @@ module.exports = class Connection {
         this.processData(data)
       }
 
-      const onEnd = () => {
+      const onEnd = async () => {
         const wasConnected = this.connected
-        this.connected = false
+        await this.disconnect()
 
         if (this.authHandlers) {
           this.authHandlers.onError()
@@ -91,15 +91,15 @@ module.exports = class Connection {
         }
       }
 
-      const onError = e => {
+      const onError = async e => {
         const error = new Error(`Connection error: ${e.message}`)
         this.logError(error.message)
-        this.disconnect()
+        await this.disconnect()
         reject(error)
       }
 
-      const onTimeout = () => {
-        this.disconnect()
+      const onTimeout = async () => {
+        await this.disconnect()
         const error = new Error('Connection timeout')
         this.logError(error.message)
         reject(error)
