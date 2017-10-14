@@ -1,22 +1,23 @@
 const { createLogger, LEVELS: { INFO } } = require('./loggers/console')
+const Cluster = require('./cluster')
 const createProducer = require('./producer')
 
 module.exports = class Client {
-  constructor({ host, port, ssl, sasl, logLevel = INFO }) {
-    this.host = host
-    this.port = port
-    this.ssl = ssl
-    this.sasl = sasl
+  constructor({ host, port, ssl, sasl, clientId, connectionTimeout, retry, logLevel = INFO }) {
     this.logger = createLogger({ level: logLevel })
+    this.cluster = new Cluster({
+      host,
+      port,
+      ssl,
+      sasl,
+      retry,
+      logger: this.logger,
+    })
   }
 
-  producer({ createPartitioner } = {}) {
+  producer({ createPartitioner, retry } = {}) {
     return createProducer({
-      host: this.host,
-      port: this.port,
-      ssl: this.ssl,
-      sasl: this.sasl,
-      logger: this.logger,
+      cluster: this.cluster,
       createPartitioner,
     })
   }

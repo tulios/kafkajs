@@ -1,34 +1,10 @@
-const Cluster = require('../cluster')
 const flatten = require('../utils/flatten')
 const createDefaultPartitioner = require('./partitioners/default')
 const groupMessagesPerPartition = require('./groupMessagesPerPartition')
+const createTopicData = require('./createTopicData')
+const responseSerializer = require('./responseSerializer')
 
-const createTopicData = ({ topic, partitions, messagesPerPartition }) => [
-  {
-    topic,
-    partitions: partitions.map(partition => ({
-      partition,
-      messages: messagesPerPartition[partition],
-    })),
-  },
-]
-
-const responseSerializer = ({ topics }) => {
-  const partitions = topics.map(({ topicName, partitions }) =>
-    partitions.map(partition => Object.assign({ topicName }, partition))
-  )
-  return flatten(partitions)
-}
-
-module.exports = ({
-  host,
-  port,
-  ssl,
-  sasl,
-  logger,
-  createPartitioner = createDefaultPartitioner,
-}) => {
-  const cluster = new Cluster({ host, port, ssl, sasl, logger })
+module.exports = ({ cluster, createPartitioner = createDefaultPartitioner }) => {
   const partitioner = createPartitioner()
 
   return {

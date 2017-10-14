@@ -3,6 +3,7 @@ const {
   secureRandom,
   connectionOpts,
   sslConnectionOpts,
+  createCluster,
   createModPartitioner,
 } = require('testHelpers')
 
@@ -18,12 +19,13 @@ describe('Producer', () => {
   })
 
   test('support SSL connections', async () => {
-    producer = createProducer(sslConnectionOpts())
+    const cluster = createCluster(sslConnectionOpts())
+    producer = createProducer({ cluster })
     await producer.connect()
   })
 
   test('support SASL PLAIN connections', async () => {
-    producer = createProducer(
+    const cluster = createCluster(
       Object.assign(sslConnectionOpts(), {
         port: 9094,
         sasl: {
@@ -33,11 +35,12 @@ describe('Producer', () => {
         },
       })
     )
+    producer = createProducer({ cluster })
     await producer.connect()
   })
 
   test('throws an error if SASL PLAIN fails to authenticate', async () => {
-    producer = createProducer(
+    const cluster = createCluster(
       Object.assign(sslConnectionOpts(), {
         port: 9094,
         sasl: {
@@ -48,18 +51,20 @@ describe('Producer', () => {
       })
     )
 
+    producer = createProducer({ cluster })
     await expect(producer.connect()).rejects.toEqual(
       new Error('SASL PLAIN authentication failed: Connection closed by the server')
     )
   })
 
   test('produce messages', async () => {
-    producer = createProducer(
+    const cluster = createCluster(
       Object.assign(connectionOpts(), {
         createPartitioner: createModPartitioner,
       })
     )
 
+    producer = createProducer({ cluster })
     await producer.connect()
 
     const sendMessages = async () =>
