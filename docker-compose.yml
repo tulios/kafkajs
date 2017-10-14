@@ -31,6 +31,7 @@ services:
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: "PLAIN"
       KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN"
       KAFKA_OPTS: "-Djava.security.auth.login.config=/opt/kafka/config/server-jaas.conf"
+      KAFKA_CREATE_TOPICS: "topic-test:6:3"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./testHelpers/certs:/var/private/ssl/certs
@@ -59,6 +60,7 @@ services:
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: "PLAIN"
       KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN"
       KAFKA_OPTS: "-Djava.security.auth.login.config=/opt/kafka/config/server-jaas.conf"
+      KAFKA_CREATE_TOPICS: "topic-test:6:3"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./testHelpers/certs:/var/private/ssl/certs
@@ -87,6 +89,7 @@ services:
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: "PLAIN"
       KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN"
       KAFKA_OPTS: "-Djava.security.auth.login.config=/opt/kafka/config/server-jaas.conf"
+      KAFKA_CREATE_TOPICS: "topic-test:6:3"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./testHelpers/certs:/var/private/ssl/certs
