@@ -13,6 +13,8 @@ const connectionBuilder = require('./connectionBuilder')
  */
 module.exports = class Cluster {
   constructor({ host, port, ssl, sasl, clientId, connectionTimeout, retry, logger }) {
+    this.retry = retry
+    this.logger = logger
     this.connectionBuilder = connectionBuilder({
       host,
       port,

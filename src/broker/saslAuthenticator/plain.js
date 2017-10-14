@@ -8,14 +8,17 @@ module.exports = class PlainAuthenticator {
   async authenticate() {
     const request = plain.request(this.connection.sasl)
     const response = plain.response
-    const { logger } = this.connection
+    const { logger, host, port } = this.connection
+    const broker = `${host}:${port}`
 
     try {
-      logger.debug('Authenticate with SASL PLAIN', { broker: this.connection.broker })
+      logger.debug('Authenticate with SASL PLAIN', { broker })
       await this.connection.authenticate({ request, response })
-      logger.debug('SASL PLAIN authentication successful', { broker: this.connection.broker })
+      logger.debug('SASL PLAIN authentication successful', { broker })
     } catch (e) {
-      throw new Error(`SASL PLAIN authentication failed: ${e.message}`)
+      const error = new Error(`SASL PLAIN authentication failed: ${e.message}`)
+      logger.error(error.message, { broker })
+      throw error
     }
   }
 }

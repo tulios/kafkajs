@@ -3,7 +3,7 @@ const RETRY_DEFAULT = {
   initialRetryTime: 300,
   factor: 0.2, // randomization factor
   multiplier: 2, // exponential factor
-  retries: Infinity, // max retries
+  retries: 5, // max retries
 }
 
 const random = (min, max) => {

@@ -19,6 +19,7 @@ module.exports = class Client {
     return createProducer({
       cluster: this.cluster,
       createPartitioner,
+      retry,
     })
   }
 }

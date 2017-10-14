@@ -1,39 +1,64 @@
-const flatten = require('../utils/flatten')
+const { KafkaProtocolError } = require('../protocol/error')
+const createRetry = require('../retry')
 const createDefaultPartitioner = require('./partitioners/default')
-const groupMessagesPerPartition = require('./groupMessagesPerPartition')
-const createTopicData = require('./createTopicData')
-const responseSerializer = require('./responseSerializer')
+const createSendMessages = require('./sendMessages')
 
-module.exports = ({ cluster, createPartitioner = createDefaultPartitioner }) => {
+module.exports = ({
+  cluster,
+  createPartitioner = createDefaultPartitioner,
+  retry = { retries: 2 },
+}) => {
   const partitioner = createPartitioner()
+  const retrier = createRetry(Object.assign({}, cluster.retry, retry))
+  const sendMessages = createSendMessages({ cluster, partitioner })
+  const { logger } = cluster
 
   return {
+    /**
+     * @returns {Promise}
+     */
     connect: async () => await cluster.connect(),
+
+    /**
+     * @return {Promise}
+     */
     disconnect: async () => await cluster.disconnect(),
+
+    /**
+     * @param {string} topic
+     * @param {Array} messages An array of objects with "key" and "value", example:
+     *                         [{ key: 'my-key', value: 'my-value'}]
+     * @param {number} [acks=-1] Control the number of required acks.
+     *                           -1 = all replicas must acknowledge
+     *                            0 = no acknowledgments
+     *                            1 = only waits for the leader to acknowledge
+     * @param {number} [timeout=30000] The time to await a response in ms
+     * @param {Compression.Types} [compression=Compression.Types.None] Compression codec
+     * @returns {Promise}
+     */
     send: async ({ topic, messages, acks, timeout, compression }) => {
-      await cluster.addTargetTopic(topic)
-      const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
-      const messagesPerPartition = groupMessagesPerPartition({
-        topic,
-        partitionMetadata,
-        messages,
-        partitioner,
+      return retrier(async (bail, retryCount, retryTime) => {
+        try {
+          return sendMessages({
+            topic,
+            messages,
+            acks,
+            timeout,
+            compression,
+          })
+        } catch (error) {
+          // This is necessary in case the metadata is stale and the number of partitions
+          // for this topic has increased in the meantime
+          if (error instanceof KafkaProtocolError) {
+            logger.error(`Failed to send messages: ${e.message}`, { retryCount, retryTime })
+            await cluster.refreshMetadata()
+            throw error
+          }
+
+          // Skip retries for errors not related to the Kafka protocol
+          bail(error)
+        }
       })
-
-      const partitionsPerLeader = cluster.findLeaderForPartitions(
-        topic,
-        Object.keys(messagesPerPartition)
-      )
-
-      const requests = Object.keys(partitionsPerLeader).map(async nodeId => {
-        const partitions = partitionsPerLeader[nodeId]
-        const topicData = createTopicData({ topic, partitions, messagesPerPartition })
-        const broker = await cluster.findBroker({ nodeId })
-        const response = await broker.produce({ acks, timeout, compression, topicData })
-        return responseSerializer(response)
-      })
-
-      return flatten(await Promise.all(requests))
     },
   }
 }
