@@ -30,4 +30,40 @@ describe('Broker > connect', () => {
     await broker.connect()
     expect(broker.authenticated).toEqual(true)
   })
+
+  test('switches the authenticated flag to false', async () => {
+    const error = new Error('not connected')
+    broker.authenticated = true
+    broker.connection.connect = jest.fn(() => {
+      throw error
+    })
+
+    expect(broker.authenticated).toEqual(true)
+    await expect(broker.connect()).rejects.toEqual(error)
+    expect(broker.authenticated).toEqual(false)
+  })
+
+  describe('#isConnected', () => {
+    test('returns false when not connected', () => {
+      expect(broker.isConnected()).toEqual(false)
+    })
+
+    test('returns false when connected but not authenticated on connections with SASL', async () => {
+      broker = new Broker(createConnection(saslConnectionOpts()))
+      expect(broker.isConnected()).toEqual(false)
+      await broker.connection.connect()
+      expect(broker.isConnected()).toEqual(false)
+    })
+
+    test('returns true when connected', async () => {
+      await broker.connect()
+      expect(broker.isConnected()).toEqual(true)
+    })
+
+    test('returns true when connected and authenticated on connections with SASL', async () => {
+      broker = new Broker(createConnection(saslConnectionOpts()))
+      await broker.connect()
+      expect(broker.isConnected()).toEqual(true)
+    })
+  })
 })

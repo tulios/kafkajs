@@ -24,9 +24,19 @@ module.exports = class Broker {
 
   /**
    * @public
+   * @returns {boolean}
+   */
+  isConnected() {
+    const { connected, sasl } = this.connection
+    return sasl ? connected && this.authenticated : connected
+  }
+
+  /**
+   * @public
    * @returns {Promise}
    */
   async connect() {
+    this.authenticated = false
     await this.connection.connect()
 
     if (!this.versions) {
