@@ -21,25 +21,32 @@ const kafka = new Kafka({
   },
 })
 
+const topic = 'topic-test'
 const producer = kafka.producer()
-producer
-  .connect()
-  .then(async () => {
-    const r0 = await producer.send({
-      topic: 'test-topic',
-      compression: Types.GZIP,
-      messages: new Array(100).fill().map(() => {
-        const num = Math.round(Math.random(10) * 1000)
-        return { key: `key-${num}`, value: `some-value-${num}` }
-      }),
-    })
 
-    console.log(JSON.stringify(r0))
-  })
-  .catch(async e => {
-    console.error(e)
-    await producer.disconnect()
-  })
+const getRandomNumber = () => Math.round(Math.random(10) * 1000)
+const createMessage = num => ({
+  key: `key-${num}`,
+  value: `value-${num}-${new Date().toISOString()}`,
+})
+
+const sendMessage = () => {
+  producer
+    .send({
+      topic,
+      compression: Types.GZIP,
+      messages: [createMessage(getRandomNumber())],
+    })
+    .then(console.log)
+    .catch(console.error)
+}
+
+const run = async () => {
+  await producer.connect()
+  setInterval(sendMessage, 1000)
+}
+
+run().catch(console.error)
 
 const errorTypes = ['unhandledRejection', 'uncaughtException']
 const signalTraps = ['SIGTERM', 'SIGINT', 'SIGUSR2']
