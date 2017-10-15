@@ -1,8 +1,20 @@
 {
-  "name": "kafka-protocol",
+  "name": "kafkajs",
   "version": "0.1.0",
+  "author": "Tulio Ornelas <ornelas.tulio@gmail.com>",
   "main": "src/index.js",
   "license": "MIT",
+  "keywords": [
+    "kafka"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tulios/kafkajs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tulios/kafkajs/issues"
+  },
+  "homepage": "https://github.com/tulios/kafkajs",
   "scripts": {
     "test:local:watch": "yarn test:local --watch",
     "test:local": "./node_modules/.bin/jest",

@@ -1,11 +1,11 @@
 const fs = require('fs')
 const ip = require('ip')
 const Kafka = require('./src/index')
-const { Types } = require('./src/protocol/message/compression')
-const { LEVELS: { DEBUG } } = require('./src/loggers/console')
+const { Types } = require('./src/compression')
+const { LEVELS } = require('./src/loggers/console')
 
 const kafka = new Kafka({
-  logLevel: DEBUG,
+  logLevel: LEVELS.DEBUG,
   host: process.env.HOST_IP || ip.address(),
   port: 9094,
   ssl: {
