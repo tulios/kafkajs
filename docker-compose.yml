@@ -7,7 +7,7 @@ services:
     environment:
       JMX_OPTS: "-Djava.security.auth.login.config=/etc/kafka/server-jaas.conf"
     volumes:
-      - ./server-jaas.conf:/etc/kafka/server-jaas.conf
+      - ./testHelpers/kafka/server-jaas.conf:/etc/kafka/server-jaas.conf
   kafka1:
     image: wurstmeister/kafka:0.10.2.1
     ports:
