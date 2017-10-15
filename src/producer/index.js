@@ -49,7 +49,7 @@ module.exports = ({
         } catch (error) {
           // This is necessary in case the metadata is stale and the number of partitions
           // for this topic has increased in the meantime
-          if (error instanceof KafkaProtocolError) {
+          if (error instanceof KafkaProtocolError && error.retriable) {
             logger.error(`Failed to send messages: ${e.message}`, { retryCount, retryTime })
             await cluster.refreshMetadata()
             throw error
