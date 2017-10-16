@@ -8,7 +8,7 @@ describe('Cluster > findTopicPartitionMetadata', () => {
     cluster = createCluster()
   })
 
-  test('returns the partition metadata of a topic', async () => {
+  test('returns the partition metadata of a topic', () => {
     const partitionMetadata = {
       isr: [2],
       leader: 2,
@@ -16,7 +16,19 @@ describe('Cluster > findTopicPartitionMetadata', () => {
       partitionId: 0,
       replicas: [2],
     }
-    cluster.metadata.topicMetadata = [{ topic, partitionMetadata }]
+    cluster.metadata = { topicMetadata: [{ topic, partitionMetadata }] }
     expect(cluster.findTopicPartitionMetadata(topic)).toEqual(partitionMetadata)
+  })
+
+  test('throws and error if the topicMetadata is not loaded', () => {
+    cluster.metadata = null
+    expect(() => cluster.findTopicPartitionMetadata(topic)).toThrowError(
+      /Topic metadata not loaded/
+    )
+
+    cluster.metadata = {}
+    expect(() => cluster.findTopicPartitionMetadata(topic)).toThrowError(
+      /Topic metadata not loaded/
+    )
   })
 })

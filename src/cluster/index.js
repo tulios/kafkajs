@@ -1,5 +1,6 @@
 const Broker = require('../broker')
 const connectionBuilder = require('./connectionBuilder')
+const { KafkaJSError } = require('../errors')
 
 /**
  * @param {string} host
@@ -131,6 +132,10 @@ module.exports = class Cluster {
    *                   }
    */
   findTopicPartitionMetadata(topic) {
+    if (!this.metadata || !this.metadata.topicMetadata) {
+      throw new KafkaJSError('Topic metadata not loaded')
+    }
+
     return this.metadata.topicMetadata.find(t => t.topic === topic).partitionMetadata
   }
 
