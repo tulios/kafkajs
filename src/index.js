@@ -10,6 +10,8 @@ module.exports = class Client {
       port,
       ssl,
       sasl,
+      clientId,
+      connectionTimeout,
       retry,
       logger: this.logger,
     })
