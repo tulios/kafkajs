@@ -6,6 +6,7 @@ describe('Cluster > addTargetTopic', () => {
   beforeEach(async () => {
     cluster = createCluster()
     await cluster.connect()
+    cluster.metadata = { some: 'metadata' }
   })
 
   afterEach(async () => {
@@ -30,5 +31,17 @@ describe('Cluster > addTargetTopic', () => {
     const topic1 = `topic-${secureRandom()}`
     await cluster.addTargetTopic(topic1)
     expect(cluster.refreshMetadata).toHaveBeenCalled()
+  })
+
+  test('refresh metadata if no metadata was loaded before', async () => {
+    cluster.refreshMetadata = jest.fn()
+    const topic1 = `topic-${secureRandom()}`
+    await cluster.addTargetTopic(topic1)
+    await cluster.addTargetTopic(topic1)
+    expect(cluster.refreshMetadata).toHaveBeenCalledTimes(1)
+
+    cluster.metadata = null
+    await cluster.addTargetTopic(topic1)
+    expect(cluster.refreshMetadata).toHaveBeenCalledTimes(2)
   })
 })

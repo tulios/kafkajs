@@ -29,8 +29,8 @@ module.exports = class Cluster {
     this.seedBroker = new Broker(this.connectionBuilder.build())
     this.targetTopics = new Set()
     this.brokerPool = {}
-    this.metadata = {}
 
+    this.metadata = null
     this.versions = null
   }
 
@@ -59,7 +59,7 @@ module.exports = class Cluster {
     await this.seedBroker.disconnect()
     await Promise.all(Object.values(this.brokerPool).map(broker => broker.disconnect()))
     this.brokerPool = {}
-    this.metadata = {}
+    this.metadata = null
   }
 
   /**
@@ -96,7 +96,7 @@ module.exports = class Cluster {
   async addTargetTopic(topic) {
     const previousSize = this.targetTopics.size
     this.targetTopics.add(topic)
-    const hasChanged = previousSize !== this.targetTopics.size
+    const hasChanged = previousSize !== this.targetTopics.size || !this.metadata
 
     if (hasChanged) {
       await this.refreshMetadata()

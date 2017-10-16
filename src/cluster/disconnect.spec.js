@@ -40,11 +40,11 @@ describe('Cluster > connect', () => {
 
   test('erase metadata and broker pool information', async () => {
     await cluster.refreshMetadata()
-    expect(cluster.metadata).not.toEqual({})
+    expect(cluster.metadata).not.toEqual(null)
     expect(cluster.brokerPool).not.toEqual({})
 
     await cluster.disconnect()
-    expect(cluster.metadata).toEqual({})
+    expect(cluster.metadata).toEqual(null)
     expect(cluster.brokerPool).toEqual({})
   })
 })
