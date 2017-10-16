@@ -15,6 +15,8 @@ const randomFromRetryTime = (factor, retryTime) => {
   return Math.ceil(random(retryTime - delta, retryTime + delta))
 }
 
+const isErrorRetriable = error => error.retriable || error.retriable !== false
+
 const createRetriable = (configs, resolve, reject, fn) => {
   let aborted = false
   const { factor, multiplier, maxRetryTime, retries } = configs
@@ -41,7 +43,7 @@ const createRetriable = (configs, resolve, reject, fn) => {
     fn(bail, retryCount, retryTime)
       .then(resolve)
       .catch(e => {
-        shouldRetry ? scheduleRetry() : reject(e)
+        shouldRetry && isErrorRetriable(e) ? scheduleRetry() : reject(e)
       })
   }
 

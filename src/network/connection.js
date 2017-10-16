@@ -2,6 +2,7 @@ const createRetry = require('../retry')
 const createSocket = require('./socket')
 const createRequest = require('../protocol/request')
 const Decoder = require('../protocol/decoder')
+const { KafkaJSError } = require('../errors')
 
 /**
  * @param {string} host
@@ -178,7 +179,7 @@ module.exports = class Connection {
    */
   send({ request, response }) {
     if (!this.connected) {
-      return Promise.reject(new Error('Not connected'))
+      return Promise.reject(new KafkaJSError('Not connected'))
     }
 
     const requestInfo = ({ apiName, apiKey, apiVersion }) =>
