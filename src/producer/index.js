@@ -39,7 +39,7 @@ module.exports = ({
     send: async ({ topic, messages, acks, timeout, compression }) => {
       return retrier(async (bail, retryCount, retryTime) => {
         try {
-          return sendMessages({
+          return await sendMessages({
             topic,
             messages,
             acks,
@@ -47,6 +47,15 @@ module.exports = ({
             compression,
           })
         } catch (error) {
+          if (!cluster.isConnected()) {
+            logger.debug(`Cluster has disconnected, reconnecting: ${error.message}`, {
+              retryCount,
+              retryTime,
+            })
+            await cluster.connect()
+            throw error
+          }
+
           // This is necessary in case the metadata is stale and the number of partitions
           // for this topic has increased in the meantime
           if (error instanceof KafkaProtocolError && error.retriable) {

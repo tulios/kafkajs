@@ -57,6 +57,32 @@ describe('Producer', () => {
     )
   })
 
+  test('reconnects the cluster if disconnected', async () => {
+    const cluster = createCluster(
+      Object.assign(connectionOpts(), {
+        createPartitioner: createModPartitioner,
+      })
+    )
+
+    producer = createProducer({ cluster })
+    await producer.connect()
+    await producer.send({
+      topic: topicName,
+      messages: [{ key: '1', value: '1' }],
+    })
+
+    expect(cluster.isConnected()).toEqual(true)
+    await cluster.disconnect()
+    expect(cluster.isConnected()).toEqual(false)
+
+    await producer.send({
+      topic: topicName,
+      messages: [{ key: '2', value: '2' }],
+    })
+
+    expect(cluster.isConnected()).toEqual(true)
+  })
+
   test('produce messages', async () => {
     const cluster = createCluster(
       Object.assign(connectionOpts(), {
