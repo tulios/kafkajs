@@ -36,6 +36,14 @@ module.exports = class Cluster {
 
   /**
    * @public
+   * @returns {boolean}
+   */
+  isConnected() {
+    return this.seedBroker.isConnected()
+  }
+
+  /**
+   * @public
    * @returns {Promise}
    */
   async connect() {
