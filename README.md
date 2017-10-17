@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/tulios/kafkajs.svg?branch=master)](https://travis-ci.org/tulios/kafkajs)
+
 # KafkaJS
 
 __In active development - early alpha__
