@@ -138,4 +138,29 @@ module.exports = class Broker {
     const produce = this.lookupRequest(apiKeys.Produce, requests.Produce)
     return await this.connection.send(produce({ acks, timeout, compression, topicData }))
   }
+
+  /**
+   * @public
+   * @param {number} replicaId=-1 Broker id of the follower. For normal consumers, use -1
+   * @param {number} maxWaitTime=5 Maximum time in ms to wait for the response
+   * @param {number} minBytes=1 Minimum bytes to accumulate in the response
+   * @param {Array} topics Topics to fetch
+   *                        [
+   *                          {
+   *                            topic: 'topic-name',
+   *                            partitions: [
+   *                              {
+   *                                partition: 0,
+   *                                fetchOffset: '4124',
+   *                                maxBytes: 2048
+   *                              }
+   *                            ]
+   *                          }
+   *                        ]
+   * @returns {Promise}
+   */
+  async fetch({ replicaId, maxWaitTime, minBytes, topics }) {
+    const fetch = this.lookupRequest(apiKeys.Fetch, requests.Fetch)
+    return await this.connection.send(fetch({ replicaId, maxWaitTime, minBytes, topics }))
+  }
 }

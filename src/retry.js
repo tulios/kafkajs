@@ -15,7 +15,10 @@ const randomFromRetryTime = (factor, retryTime) => {
   return Math.ceil(random(retryTime - delta, retryTime + delta))
 }
 
-const isErrorRetriable = error => error.retriable || error.retriable !== false
+const UNRECOVERABLE_ERRORS = ['RangeError', 'ReferenceError', 'SyntaxError', 'TypeError']
+const isErrorUnrecoverable = e => UNRECOVERABLE_ERRORS.includes(e.name)
+const isErrorRetriable = error =>
+  (error.retriable || error.retriable !== false) && !isErrorUnrecoverable(error)
 
 const createRetriable = (configs, resolve, reject, fn) => {
   let aborted = false

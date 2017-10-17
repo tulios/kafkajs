@@ -89,7 +89,7 @@ module.exports = class Connection {
         if (this.authHandlers) {
           this.authHandlers.onError()
         } else if (wasConnected) {
-          this.logError('Kafka server has closed connection')
+          this.logDebug('Kafka server has closed connection')
         }
       }
 
@@ -191,8 +191,12 @@ module.exports = class Connection {
 
       const requestPayload = createRequest({ request, correlationId, clientId })
       const { apiKey, apiName, apiVersion } = request
-
-      this.logDebug(`Request ${requestInfo(request)}`, { correlationId, retryCount, retryTime })
+      this.logDebug(`Request ${requestInfo(request)}`, {
+        correlationId,
+        retryCount,
+        retryTime,
+        size: Buffer.byteLength(requestPayload.buffer),
+      })
 
       return new Promise((resolve, reject) => {
         this.pendingQueue[correlationId] = { apiKey, apiName, apiVersion, resolve }
@@ -242,15 +246,22 @@ module.exports = class Connection {
     }
 
     this.buffer = Buffer.concat([this.buffer, rawData])
+    // Not enough bytes to read the payload size, keep buffering
     if (Buffer.byteLength(this.buffer) <= Decoder.int32Size()) {
       return
     }
 
     const data = Buffer.from(this.buffer)
-    this.buffer = Buffer.alloc(0)
-
     const decoder = new Decoder(data)
     const size = decoder.readInt32()
+
+    // The full payload is not yet loaded, keep buffering
+    if (Buffer.byteLength(this.buffer) <= size) {
+      return
+    }
+
+    // The full payload is loaded, erase the buffer
+    this.buffer = Buffer.alloc(0)
     const correlationId = decoder.readInt32()
     const payload = decoder.readAll()
 
