@@ -1,0 +1,7 @@
+{
+  "printWidth": 100,
+  "parser": "babylon",
+  "semi": false,
+  "singleQuote": true,
+  "trailingComma": "es5"
+}

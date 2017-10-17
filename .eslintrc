@@ -1,0 +1,20 @@
+{
+  "extends": [
+    "standard",
+    "prettier"
+  ],
+  "plugins": [
+    "prettier",
+    "standard"
+  ],
+  "rules": {
+    "prettier/prettier": "error",
+    "standard/no-callback-literal": "off",
+    "no-unexpected-multiline": "off",
+    "no-return-await": "off",
+    "node/no-deprecated-api": "off"
+  },
+  "env":{
+    "jest": true,
+  }
+}

@@ -3,3 +3,4 @@ node_modules
 test-report.xml
 junit.xml
 coverage/
+yarn-error.log

@@ -18,12 +18,22 @@
   "scripts": {
     "test:local:watch": "yarn test:local --watch",
     "test:local": "./node_modules/.bin/jest",
-    "test": "JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh './node_modules/.bin/jest --coverage'"
+    "test": "yarn lint && JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh './node_modules/.bin/jest --coverage'",
+    "lint": "./node_modules/.bin/eslint example.js \"{src,testHelpers}/**/*.js\""
   },
   "devDependencies": {
     "ip": "^1.1.5",
     "jest": "^20.0.4",
-    "jest-junit": "^1.5.1"
+    "jest-junit": "^1.5.1",
+    "eslint": "^4.7.0",
+    "eslint-config-prettier": "^2.5.0",
+    "eslint-config-standard": "^10.2.1",
+    "eslint-plugin-import": "^2.7.0",
+    "eslint-plugin-node": "^5.1.1",
+    "eslint-plugin-prettier": "^2.3.0",
+    "eslint-plugin-promise": "^3.5.0",
+    "eslint-plugin-standard": "^3.0.1",
+    "prettier": "^1.7.0"
   },
   "dependencies": {
     "long": "^3.2.0"
