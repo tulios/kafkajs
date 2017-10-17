@@ -1,5 +1,5 @@
-const Encoder = require('./encoder')
-const MessageProtocol = require('./message')
+const Encoder = require('../encoder')
+const MessageProtocol = require('../message')
 
 /**
  * MessageSet => [Offset MessageSize Message]
