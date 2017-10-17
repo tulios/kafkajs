@@ -21,7 +21,7 @@ create_topic() {
 find_container_id() {
   echo $(docker ps \
     --filter "status=running" \
-    --filter "label=com.docker.compose.project=kafkaprotocol" \
+    --filter "label=com.docker.compose.project=kafkajs" \
     --filter "label=com.docker.compose.service=kafka1" \
     --no-trunc \
     -q)
