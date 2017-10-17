@@ -1,6 +1,5 @@
 const Encoder = require('../../../encoder')
-const apiKeys = require('../../apiKeys')
-const { SUCCESS_CODE, KafkaProtocolError } = require('../../../error')
+const { KafkaProtocolError } = require('../../../error')
 const response = require('./response')
 
 describe('Protocol > Requests > Produce > v2', () => {
@@ -30,17 +29,25 @@ describe('Protocol > Requests > Produce > v2', () => {
     test('decode', () => {
       const encoded = new Encoder()
         .writeArray([
-          new Encoder()
-            .writeString('test-topic-1')
-            .writeArray([
-              new Encoder().writeInt32(0).writeInt16(0).writeInt64(16).writeInt64(1498071786640),
-              new Encoder().writeInt32(1).writeInt16(0).writeInt64(2).writeInt64(1498071786641),
-            ]),
-          new Encoder()
-            .writeString('test-topic-2')
-            .writeArray([
-              new Encoder().writeInt32(4).writeInt16(0).writeInt64(11).writeInt64(1498071786642),
-            ]),
+          new Encoder().writeString('test-topic-1').writeArray([
+            new Encoder()
+              .writeInt32(0)
+              .writeInt16(0)
+              .writeInt64(16)
+              .writeInt64(1498071786640),
+            new Encoder()
+              .writeInt32(1)
+              .writeInt16(0)
+              .writeInt64(2)
+              .writeInt64(1498071786641),
+          ]),
+          new Encoder().writeString('test-topic-2').writeArray([
+            new Encoder()
+              .writeInt32(4)
+              .writeInt16(0)
+              .writeInt64(11)
+              .writeInt64(1498071786642),
+          ]),
         ])
         .writeInt32(1000)
 

@@ -1,6 +1,5 @@
 const Broker = require('./index')
 const { secureRandom, createConnection } = require('testHelpers')
-const Connection = require('../network/connection')
 
 describe('Broker > Metadata', () => {
   let topicName, broker
@@ -42,7 +41,7 @@ describe('Broker > Metadata', () => {
           rack: null,
         },
       ],
-      clusterId: expect.stringMatching(/[a-zA-Z0-9\-]/),
+      clusterId: expect.stringMatching(/[a-zA-Z0-9-]/),
       controllerId: expect.any(Number),
       topicMetadata: [
         {

@@ -1,6 +1,5 @@
 const Encoder = require('../../../encoder')
-const apiKeys = require('../../apiKeys')
-const { SUCCESS_CODE, KafkaProtocolError } = require('../../../error')
+const { KafkaProtocolError } = require('../../../error')
 const response = require('./response')
 
 describe('Protocol > Requests > Metadata > v2', () => {

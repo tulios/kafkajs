@@ -18,12 +18,16 @@ describe('Protocol > Requests > ApiVersions > v0', () => {
 
   describe('response', () => {
     test('decode', () => {
-      const encoded = new Encoder()
-        .writeInt16(SUCCESS_CODE)
-        .writeArray([
-          new Encoder().writeInt16(apiKeys.Produce).writeInt16(0).writeInt16(1),
-          new Encoder().writeInt16(apiKeys.Fetch).writeInt16(0).writeInt16(2),
-        ])
+      const encoded = new Encoder().writeInt16(SUCCESS_CODE).writeArray([
+        new Encoder()
+          .writeInt16(apiKeys.Produce)
+          .writeInt16(0)
+          .writeInt16(1),
+        new Encoder()
+          .writeInt16(apiKeys.Fetch)
+          .writeInt16(0)
+          .writeInt16(2),
+      ])
 
       expect(response.decode(encoded.buffer)).toEqual(decoded)
     })

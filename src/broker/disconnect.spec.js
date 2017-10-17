@@ -1,5 +1,4 @@
 const { createConnection, connectionOpts, saslConnectionOpts } = require('../../testHelpers')
-const { requests, lookup } = require('../protocol/requests')
 const Broker = require('./index')
 
 describe('Broker > disconnect', () => {

@@ -1,5 +1,4 @@
 const Decoder = require('../../../decoder')
-const { failure, KafkaProtocolError } = require('../../../error')
 const { parse: parseV0 } = require('../v0/response')
 
 /**

@@ -1,4 +1,3 @@
-const { failure, KafkaProtocolError } = require('../protocol/error')
 const { Types: Compression } = require('../protocol/message/compression')
 const { requests, lookup } = require('../protocol/requests')
 const apiKeys = require('../protocol/requests/apiKeys')

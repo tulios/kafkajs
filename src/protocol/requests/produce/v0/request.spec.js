@@ -41,12 +41,16 @@ describe('Protocol > Requests > Produce > v0', () => {
         .writeInt16(-1)
         .writeInt32(1000)
         .writeArray([
-          new Encoder()
-            .writeString('test-topic-1')
-            .writeArray([
-              new Encoder().writeInt32(0).writeInt32(ms1.size()).writeEncoder(ms1),
-              new Encoder().writeInt32(1).writeInt32(ms2.size()).writeEncoder(ms2),
-            ]),
+          new Encoder().writeString('test-topic-1').writeArray([
+            new Encoder()
+              .writeInt32(0)
+              .writeInt32(ms1.size())
+              .writeEncoder(ms1),
+            new Encoder()
+              .writeInt32(1)
+              .writeInt32(ms2.size())
+              .writeEncoder(ms2),
+          ]),
         ])
 
       expect(request.encode().toJSON()).toEqual(encoder.toJSON())

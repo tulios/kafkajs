@@ -1,9 +1,9 @@
 const { secureRandom, connectionOpts, sslConnectionOpts } = require('../../testHelpers')
-const { requests, lookup } = require('../protocol/requests')
+const { requests } = require('../protocol/requests')
 const Connection = require('./connection')
 
 describe('Network > Connection', () => {
-  let connection, topicName
+  let connection
 
   afterEach(async () => {
     connection && (await connection.disconnect())

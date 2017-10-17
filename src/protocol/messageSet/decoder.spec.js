@@ -1,6 +1,5 @@
 const Encoder = require('../encoder')
 const Decoder = require('../decoder')
-const MessageProtocol = require('../message')
 const MessageSet = require('./index')
 const MessageSetDecoder = require('./decoder')
 

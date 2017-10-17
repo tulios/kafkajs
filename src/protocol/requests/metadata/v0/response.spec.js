@@ -1,6 +1,5 @@
 const Encoder = require('../../../encoder')
-const apiKeys = require('../../apiKeys')
-const { SUCCESS_CODE, KafkaProtocolError } = require('../../../error')
+const { KafkaProtocolError } = require('../../../error')
 const response = require('./response')
 
 describe('Protocol > Requests > Metadata > v0', () => {
@@ -24,7 +23,12 @@ describe('Protocol > Requests > Metadata > v0', () => {
   describe('response', () => {
     test('decode', () => {
       const encoded = new Encoder()
-        .writeArray([new Encoder().writeInt32(0).writeString('localhost').writeInt32(9092)])
+        .writeArray([
+          new Encoder()
+            .writeInt32(0)
+            .writeString('localhost')
+            .writeInt32(9092),
+        ])
         .writeArray([
           new Encoder()
             .writeInt16(0)

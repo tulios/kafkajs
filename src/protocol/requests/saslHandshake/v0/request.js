@@ -1,6 +1,5 @@
 const Encoder = require('../../../encoder')
 const { SaslHandshake: apiKey } = require('../../apiKeys')
-const MessageSet = require('../../../messageSet')
 
 /**
  * SaslHandshake Request (Version: 0) => mechanism
