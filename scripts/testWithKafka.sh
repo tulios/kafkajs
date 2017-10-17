@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 testCommand="$1"
 extraArgs="$2"
