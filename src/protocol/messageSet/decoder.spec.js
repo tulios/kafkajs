@@ -3,49 +3,77 @@ const Decoder = require('../decoder')
 const MessageSet = require('./index')
 const MessageSetDecoder = require('./decoder')
 
+const messages = [
+  {
+    offset: '0',
+    size: 31,
+    crc: 120234579,
+    magicByte: 0,
+    attributes: 0,
+    key: Buffer.from('key-0'),
+    value: Buffer.from('some-value-0'),
+  },
+  {
+    offset: '1',
+    size: 31,
+    crc: -141862522,
+    magicByte: 0,
+    attributes: 0,
+    key: Buffer.from('key-1'),
+    value: Buffer.from('some-value-1'),
+  },
+  {
+    offset: '2',
+    size: 31,
+    crc: 1025004472,
+    magicByte: 0,
+    attributes: 0,
+    key: Buffer.from('key-2'),
+    value: Buffer.from('some-value-2'),
+  },
+]
+
+const Fixtures = {
+  v0: {
+    uncompressed: {
+      data: require('./fixtures/messages_v0_uncompressed.json'),
+      output: messages,
+    },
+    gzip: {
+      data: require('./fixtures/messages_v0_GZIP.json'),
+      output: messages,
+    },
+  },
+}
+
 describe('Protocol > MessageSet > decoder', () => {
-  describe('v0', () => {
-    test('decode', () => {
-      const messageSet = MessageSet({
-        messageVersion: 0,
-        entries: [{ key: 'v0-key', value: 'v0-value', offset: 10 }],
+  Object.keys(Fixtures).forEach(version => {
+    describe(`message ${version}`, () => {
+      Object.keys(Fixtures[version]).forEach(option => {
+        test(`decode ${option} messages`, () => {
+          const { data, output } = Fixtures[version][option]
+          const decoder = new Decoder(Buffer.from(data))
+          expect(MessageSetDecoder(decoder)).toEqual(output)
+        })
       })
+    })
+  })
 
-      const { buffer } = new Encoder().writeInt32(messageSet.size()).writeEncoder(messageSet)
-      const decoder = new Decoder(buffer)
-
-      expect(MessageSetDecoder(decoder)).toEqual([
-        {
-          offset: '10',
-          size: 28,
-          crc: 1857563124,
-          magicByte: 0,
-          attributes: 0,
-          key: Buffer.from('v0-key'),
-          value: Buffer.from('v0-value'),
-        },
-      ])
+  test('skip partial messages', () => {
+    const messageSet = MessageSet({
+      messageVersion: 0,
+      entries: [{ key: 'v0-key', value: 'v0-value', offset: 10 }],
     })
 
-    test('skip partial messages', () => {
-      const messageSet = MessageSet({
-        messageVersion: 0,
-        entries: [{ key: 'v0-key', value: 'v0-value', offset: 10 }],
-      })
+    // read some bytes to simulate a partial message
+    const messageSetBuffer = messageSet.buffer.slice(Decoder.int32Size(), messageSet.buffer.length)
 
-      // read some bytes to simulate a partial message
-      const messageSetBuffer = messageSet.buffer.slice(
-        Decoder.int32Size(),
-        messageSet.buffer.length
-      )
+    const temp = new Encoder()
+    temp.buffer = messageSetBuffer
 
-      const temp = new Encoder()
-      temp.buffer = messageSetBuffer
+    const { buffer } = new Encoder().writeInt32(messageSet.size()).writeEncoder(temp)
+    const decoder = new Decoder(buffer)
 
-      const { buffer } = new Encoder().writeInt32(messageSet.size()).writeEncoder(temp)
-      const decoder = new Decoder(buffer)
-
-      expect(MessageSetDecoder(decoder)).toEqual([])
-    })
+    expect(MessageSetDecoder(decoder)).toEqual([])
   })
 })
