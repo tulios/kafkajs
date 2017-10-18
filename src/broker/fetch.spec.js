@@ -1,5 +1,6 @@
 const Broker = require('./index')
 const { secureRandom, createConnection } = require('testHelpers')
+const { Types: Compression } = require('../protocol/message/compression')
 
 const minBytes = 1
 const maxBytes = 1048576 // 1MB
@@ -119,6 +120,77 @@ describe('Broker > Fetch', () => {
     createMessages()
     topicData = createTopicData(targetPartition, createMessages(1))
     await broker.produce({ topicData })
+    fetchResponse = await broker.fetch({ maxWaitTime, minBytes, topics })
+    expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
+  })
+
+  test('request with GZIP', async () => {
+    const targetPartition = 0
+    const messages = createMessages()
+    let topicData = createTopicData(targetPartition, messages)
+    await broker.produce({ topicData, compression: Compression.GZIP })
+
+    const topics = [
+      {
+        topic: topicName,
+        partitions: [
+          {
+            partition: targetPartition,
+            fetchOffset: 0,
+            maxBytes,
+          },
+        ],
+      },
+    ]
+
+    let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, topics })
+    expect(fetchResponse).toEqual({
+      responses: [
+        {
+          topicName,
+          partitions: [
+            {
+              errorCode: 0,
+              partition: 0,
+              highWatermark: '3',
+              messages: [
+                {
+                  offset: '0',
+                  size: 31,
+                  crc: 120234579,
+                  magicByte: 0,
+                  attributes: 0,
+                  key: Buffer.from(messages[0].key),
+                  value: Buffer.from(messages[0].value),
+                },
+                {
+                  offset: '1',
+                  size: 31,
+                  crc: -141862522,
+                  magicByte: 0,
+                  attributes: 0,
+                  key: Buffer.from(messages[1].key),
+                  value: Buffer.from(messages[1].value),
+                },
+                {
+                  offset: '2',
+                  size: 31,
+                  crc: 1025004472,
+                  magicByte: 0,
+                  attributes: 0,
+                  key: Buffer.from(messages[2].key),
+                  value: Buffer.from(messages[2].value),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+
+    createMessages()
+    topicData = createTopicData(targetPartition, createMessages(1))
+    await broker.produce({ topicData, compression: Compression.GZIP })
     fetchResponse = await broker.fetch({ maxWaitTime, minBytes, topics })
     expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
   })

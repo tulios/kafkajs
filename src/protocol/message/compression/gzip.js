@@ -5,7 +5,7 @@ module.exports = {
     return zlib.gzipSync(encoder.buffer)
   },
 
-  decompress() {
-    return zlib.gunzipSync
+  decompress(buffer) {
+    return zlib.unzipSync(buffer)
   },
 }
