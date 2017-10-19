@@ -1,9 +1,6 @@
 const Encoder = require('../../../encoder')
 const { Fetch: apiKey } = require('../../apiKeys')
 
-// For normal consumers, use -1
-const REPLICA_ID = -1
-
 /**
 * Fetch Request (Version: 0) => replica_id max_wait_time min_bytes [topics]
 *   replica_id => INT32
@@ -35,7 +32,7 @@ const REPLICA_ID = -1
  *                          }
  *                        ]
  */
-module.exports = ({ replicaId = REPLICA_ID, maxWaitTime, minBytes, topics }) => ({
+module.exports = ({ replicaId, maxWaitTime, minBytes, topics }) => ({
   apiKey,
   apiVersion: 0,
   apiName: 'Fetch',

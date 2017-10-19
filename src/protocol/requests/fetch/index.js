@@ -1,7 +1,15 @@
+// For normal consumers, use -1
+const REPLICA_ID = -1
+
 const versions = {
-  0: ({ replicaId, maxWaitTime, minBytes, topics }) => {
+  0: ({ replicaId = REPLICA_ID, maxWaitTime, minBytes, topics }) => {
     const request = require('./v0/request')
     const response = require('./v0/response')
+    return { request: request({ replicaId, maxWaitTime, minBytes, topics }), response }
+  },
+  1: ({ replicaId = REPLICA_ID, maxWaitTime, minBytes, topics }) => {
+    const request = require('./v1/request')
+    const response = require('./v1/response')
     return { request: request({ replicaId, maxWaitTime, minBytes, topics }), response }
   },
 }

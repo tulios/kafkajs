@@ -74,6 +74,7 @@ describe('Broker > Fetch', () => {
 
     let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, topics })
     expect(fetchResponse).toEqual({
+      throttleTime: 0,
       responses: [
         {
           topicName,
@@ -145,6 +146,7 @@ describe('Broker > Fetch', () => {
 
     let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, topics })
     expect(fetchResponse).toEqual({
+      throttleTime: 0,
       responses: [
         {
           topicName,
