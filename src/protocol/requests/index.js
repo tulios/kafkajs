@@ -9,7 +9,7 @@ const requests = {
   ControlledShutdown: {},
   OffsetCommit: {},
   OffsetFetch: {},
-  GroupCoordinator: {},
+  GroupCoordinator: require('./findCoordinator'),
   JoinGroup: {},
   Heartbeat: {},
   LeaveGroup: {},
