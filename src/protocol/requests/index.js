@@ -10,7 +10,7 @@ const requests = {
   OffsetCommit: {},
   OffsetFetch: {},
   GroupCoordinator: require('./findCoordinator'),
-  JoinGroup: {},
+  JoinGroup: require('./joinGroup'),
   Heartbeat: {},
   LeaveGroup: {},
   SyncGroup: {},
