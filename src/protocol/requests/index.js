@@ -13,7 +13,7 @@ const requests = {
   JoinGroup: require('./joinGroup'),
   Heartbeat: {},
   LeaveGroup: {},
-  SyncGroup: {},
+  SyncGroup: require('./syncGroup'),
   DescribeGroups: {},
   ListGroups: {},
   SaslHandshake: require('./saslHandshake'),
