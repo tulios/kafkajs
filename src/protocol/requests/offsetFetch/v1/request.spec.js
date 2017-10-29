@@ -1,4 +1,4 @@
-const RequestV0Protocol = require('./request')
+const RequestV1Protocol = require('./request')
 
 describe('Protocol > Requests > OffsetFetch > v1', () => {
   test('request', () => {
@@ -10,7 +10,7 @@ describe('Protocol > Requests > OffsetFetch > v1', () => {
       },
     ]
 
-    const { buffer } = RequestV0Protocol({ groupId, topics }).encode()
+    const { buffer } = RequestV1Protocol({ groupId, topics }).encode()
     expect(buffer).toEqual(Buffer.from(require('../fixtures/v1_request.json')))
   })
 })
