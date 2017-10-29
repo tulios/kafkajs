@@ -1,3 +1,6 @@
+// This value signals to the broker that its default configuration should be used.
+const RETENTION_TIME = -1
+
 const versions = {
   0: ({ groupId, topics }) => {
     const request = require('./v0/request')
@@ -8,6 +11,20 @@ const versions = {
     const request = require('./v1/request')
     const response = require('./v1/response')
     return { request: request({ groupId, groupGenerationId, memberId, topics }), response }
+  },
+  2: ({ groupId, groupGenerationId, memberId, retentionTime = RETENTION_TIME, topics }) => {
+    const request = require('./v2/request')
+    const response = require('./v2/response')
+    return {
+      request: request({
+        groupId,
+        groupGenerationId,
+        memberId,
+        retentionTime,
+        topics,
+      }),
+      response,
+    }
   },
 }
 
