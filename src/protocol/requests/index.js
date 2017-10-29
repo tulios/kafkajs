@@ -7,7 +7,7 @@ const requests = {
   StopReplica: {},
   UpdateMetadata: {},
   ControlledShutdown: {},
-  OffsetCommit: {},
+  OffsetCommit: require('./offsetCommit'),
   OffsetFetch: {},
   GroupCoordinator: require('./findCoordinator'),
   JoinGroup: require('./joinGroup'),
