@@ -8,7 +8,7 @@ const requests = {
   UpdateMetadata: {},
   ControlledShutdown: {},
   OffsetCommit: require('./offsetCommit'),
-  OffsetFetch: {},
+  OffsetFetch: require('./offsetFetch'),
   GroupCoordinator: require('./findCoordinator'),
   JoinGroup: require('./joinGroup'),
   Heartbeat: {},
