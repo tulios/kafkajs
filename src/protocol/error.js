@@ -288,6 +288,7 @@ class KafkaProtocolError extends Error {
     this.type = error.type
     this.code = error.code
     this.retriable = error.retriable
+    this.name = this.constructor.name
   }
 }
 
