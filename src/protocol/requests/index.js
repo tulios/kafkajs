@@ -11,7 +11,7 @@ const requests = {
   OffsetFetch: require('./offsetFetch'),
   GroupCoordinator: require('./findCoordinator'),
   JoinGroup: require('./joinGroup'),
-  Heartbeat: {},
+  Heartbeat: require('./heartbeat'),
   LeaveGroup: {},
   SyncGroup: require('./syncGroup'),
   DescribeGroups: {},
