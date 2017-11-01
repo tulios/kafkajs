@@ -141,7 +141,7 @@ module.exports = class Broker {
   /**
    * @public
    * @param {number} replicaId=-1 Broker id of the follower. For normal consumers, use -1
-   * @param {number} maxWaitTime=5 Maximum time in ms to wait for the response
+   * @param {number} maxWaitTime=5000 Maximum time in ms to wait for the response
    * @param {number} minBytes=1 Minimum bytes to accumulate in the response
    * @param {Array} topics Topics to fetch
    *                        [
@@ -158,7 +158,7 @@ module.exports = class Broker {
    *                        ]
    * @returns {Promise}
    */
-  async fetch({ replicaId, maxWaitTime, minBytes, topics }) {
+  async fetch({ replicaId, maxWaitTime = 5000, minBytes = 1, topics }) {
     // TODO: validate topics not null/empty
     const fetch = this.lookupRequest(apiKeys.Fetch, requests.Fetch)
     return await this.connection.send(fetch({ replicaId, maxWaitTime, minBytes, topics }))
