@@ -162,4 +162,26 @@ module.exports = class Cluster {
       return Object.assign(result, { [leader]: [...current, partitionId] })
     }, {})
   }
+
+  /**
+   * @public
+   * @param {string} groupId
+   * @returns {Promise<Broker>}
+   */
+  async findGroupCoordinator({ groupId }) {
+    const { coordinator } = await this.seedBroker.findGroupCoordinator({ groupId })
+    const findCoordinatorBroker = async () => this.findBroker({ nodeId: coordinator.nodeId })
+
+    try {
+      return await findCoordinatorBroker()
+    } catch (e) {
+      // A new broker can join the cluster before we have the chance
+      // to refresh metadata
+      if (e.name === 'KafkaJSBrokerNotFound') {
+        this.logger.debug(`${e.message}, refreshing metadata and trying again...`)
+        await this.refreshMetadata()
+        return await findCoordinatorBroker()
+      }
+    }
+  }
 }
