@@ -175,4 +175,15 @@ module.exports = class Broker {
     const heartbeat = this.lookupRequest(apiKeys.Heartbeat, requests.Heartbeat)
     return await this.connection.send(heartbeat({ groupId, groupGenerationId, memberId }))
   }
+
+  /**
+   * @public
+   * @param {string} groupId The unique group id
+   * @returns {Promise}
+   */
+  async findGroupCoordinator({ groupId }) {
+    // TODO: validate groupId, mandatory
+    const findCoordinator = this.lookupRequest(apiKeys.GroupCoordinator, requests.GroupCoordinator)
+    return await this.connection.send(findCoordinator({ groupId }))
+  }
 }
