@@ -186,4 +186,35 @@ module.exports = class Broker {
     const findCoordinator = this.lookupRequest(apiKeys.GroupCoordinator, requests.GroupCoordinator)
     return await this.connection.send(findCoordinator({ groupId }))
   }
+
+  /**
+   * @public
+   * @param {string} groupId The unique group id
+   * @param {number} sessionTimeout The coordinator considers the consumer dead if it receives
+   *                                no heartbeat after this timeout in ms
+   * @param {string} [memberId=""] The assigned consumer id or an empty string for a new consumer
+   * @param {string} [protocolType="consumer"] Unique name for class of protocols implemented by group
+   * @param {Array} [groupProtocols=[{ name: 'default' }]] List of protocols that the member supports
+   *                                [{ name: 'default', metadata: null }]
+   * @returns {Promise}
+   */
+  async joinGroup({
+    groupId,
+    sessionTimeout,
+    memberId = '',
+    protocolType = 'consumer',
+    groupProtocols = [{ name: 'default' }],
+  }) {
+    // TODO: validate groupId and sessionTimeout (maybe default for sessionTimeout)
+    const joinGroup = this.lookupRequest(apiKeys.JoinGroup, requests.JoinGroup)
+    return await this.connection.send(
+      joinGroup({
+        groupId,
+        sessionTimeout,
+        memberId,
+        protocolType,
+        groupProtocols,
+      })
+    )
+  }
 }
