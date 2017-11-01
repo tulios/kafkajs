@@ -237,4 +237,23 @@ module.exports = class Broker {
       })
     )
   }
+
+  /**
+   * @public
+   * @param {number} replicaId=-1 Broker id of the follower. For normal consumers, use -1
+   * @param {object} topics e.g:
+   *                  [
+   *                    {
+   *                      topic: 'topic-name',
+   *                      partitions: [
+   *                        { partition: 0 }
+   *                      ]
+   *                    }
+   *                  ]
+   * @returns {Promise}
+   */
+  async offsets({ replicaId, topics }) {
+    const offsets = this.lookupRequest(apiKeys.Offsets, requests.Offsets)
+    return await this.connection.send(offsets({ replicaId, topics }))
+  }
 }
