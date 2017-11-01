@@ -1,5 +1,5 @@
 const Decoder = require('../../../decoder')
-const { failure, KafkaProtocolError } = require('../../../error')
+const { failure, createErrorFromCode } = require('../../../error')
 const flatten = require('../../../../utils/flatten')
 
 /**
@@ -36,7 +36,7 @@ const decodePartitions = decoder => ({
 
 const parse = data => {
   if (failure(data.errorCode)) {
-    throw new KafkaProtocolError(data.errorCode)
+    throw createErrorFromCode(data.errorCode)
   }
 
   const partitionsWithError = data.responses.map(response =>
@@ -44,7 +44,7 @@ const parse = data => {
   )
   const partitionWithError = flatten(partitionsWithError)[0]
   if (partitionWithError) {
-    throw new KafkaProtocolError(partitionWithError.errorCode)
+    throw createErrorFromCode(partitionWithError.errorCode)
   }
 
   return data

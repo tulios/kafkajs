@@ -1,5 +1,5 @@
 const Encoder = require('../../../encoder')
-const { KafkaProtocolError } = require('../../../error')
+const { createErrorFromCode } = require('../../../error')
 const response = require('./response')
 
 describe('Protocol > Requests > Produce > v2', () => {
@@ -60,7 +60,7 @@ describe('Protocol > Requests > Produce > v2', () => {
 
     test('when errorCode is different than SUCCESS_CODE', () => {
       decoded.topics[0].partitions[0].errorCode = 5
-      expect(() => response.parse(decoded)).toThrowError(new KafkaProtocolError(5))
+      expect(() => response.parse(decoded)).toThrowError(createErrorFromCode(5))
     })
   })
 })

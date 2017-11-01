@@ -1,5 +1,5 @@
 const Decoder = require('../../../decoder')
-const { failure, KafkaProtocolError } = require('../../../error')
+const { failure, createErrorFromCode } = require('../../../error')
 
 /**
  * FindCoordinator Response (Version: 0) => error_code coordinator
@@ -27,7 +27,7 @@ const decode = rawData => {
 
 const parse = data => {
   if (failure(data.errorCode)) {
-    throw new KafkaProtocolError(data.errorCode)
+    throw createErrorFromCode(data.errorCode)
   }
 
   return data

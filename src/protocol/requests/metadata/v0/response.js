@@ -1,5 +1,5 @@
 const Decoder = require('../../../decoder')
-const { failure, KafkaProtocolError } = require('../../../error')
+const { failure, createErrorFromCode } = require('../../../error')
 
 /**
  * Metadata Response (Version: 0) => [brokers] [topic_metadata]
@@ -54,7 +54,7 @@ const parse = data => {
   const topicsWithErrors = data.topicMetadata.filter(topic => failure(topic.topicErrorCode))
   if (topicsWithErrors.length > 0) {
     const { topicErrorCode } = topicsWithErrors[0]
-    throw new KafkaProtocolError(topicErrorCode)
+    throw createErrorFromCode(topicErrorCode)
   }
 
   const partitionsWithErrors = data.topicMetadata.map(topic => {
@@ -64,7 +64,7 @@ const parse = data => {
   const errors = flatten(partitionsWithErrors)
   if (errors.length > 0) {
     const { partitionErrorCode } = errors[0]
-    throw new KafkaProtocolError(partitionErrorCode)
+    throw createErrorFromCode(partitionErrorCode)
   }
 
   return data

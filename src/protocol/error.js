@@ -1,3 +1,5 @@
+const { KafkaJSProtocolError } = require('../errors')
+
 const errorCodes = [
   {
     type: 'UNKNOWN',
@@ -280,20 +282,12 @@ const errorCodes = [
 
 const SUCCESS_CODE = 0
 const failure = code => code !== SUCCESS_CODE
-
-class KafkaProtocolError extends Error {
-  constructor(code) {
-    const error = errorCodes.find(e => e.code === code)
-    super(error.message)
-    this.type = error.type
-    this.code = error.code
-    this.retriable = error.retriable
-    this.name = this.constructor.name
-  }
+const createErrorFromCode = code => {
+  return new KafkaJSProtocolError(errorCodes.find(e => e.code === code))
 }
 
 module.exports = {
   failure,
   errorCodes,
-  KafkaProtocolError,
+  createErrorFromCode,
 }

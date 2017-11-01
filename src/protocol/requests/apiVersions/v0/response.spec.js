@@ -1,6 +1,6 @@
 const Encoder = require('../../../encoder')
 const apiKeys = require('../../apiKeys')
-const { SUCCESS_CODE, KafkaProtocolError } = require('../../../error')
+const { SUCCESS_CODE, createErrorFromCode } = require('../../../error')
 const response = require('./response')
 
 describe('Protocol > Requests > ApiVersions > v0', () => {
@@ -38,7 +38,7 @@ describe('Protocol > Requests > ApiVersions > v0', () => {
 
     test('when errorCode is different than SUCCESS_CODE', () => {
       decoded.errorCode = 5
-      expect(() => response.parse(decoded)).toThrowError(new KafkaProtocolError(5))
+      expect(() => response.parse(decoded)).toThrowError(createErrorFromCode(5))
     })
   })
 })

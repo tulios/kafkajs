@@ -1,5 +1,5 @@
 const Decoder = require('../../../decoder')
-const { failure, KafkaProtocolError } = require('../../../error')
+const { failure, createErrorFromCode } = require('../../../error')
 
 /**
  * Heartbeat Response (Version: 0) => error_code
@@ -15,7 +15,7 @@ const decode = rawData => {
 
 const parse = data => {
   if (failure(data.errorCode)) {
-    throw new KafkaProtocolError(data.errorCode)
+    throw createErrorFromCode(data.errorCode)
   }
 
   return data

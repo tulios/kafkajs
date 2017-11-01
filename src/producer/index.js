@@ -1,4 +1,4 @@
-const { KafkaProtocolError } = require('../protocol/error')
+const { KafkaJSProtocolError } = require('../errors')
 const createRetry = require('../retry')
 const createDefaultPartitioner = require('./partitioners/default')
 const createSendMessages = require('./sendMessages')
@@ -58,7 +58,7 @@ module.exports = ({
 
           // This is necessary in case the metadata is stale and the number of partitions
           // for this topic has increased in the meantime
-          if (error instanceof KafkaProtocolError && error.retriable) {
+          if (error instanceof KafkaJSProtocolError && error.retriable) {
             logger.error(`Failed to send messages: ${error.message}`, { retryCount, retryTime })
             await cluster.refreshMetadata()
             throw error

@@ -1,5 +1,5 @@
 const Decoder = require('../../../decoder')
-const { failure, KafkaProtocolError } = require('../../../error')
+const { failure, createErrorFromCode } = require('../../../error')
 
 /**
  * SyncGroup Response (Version: 0) => error_code member_assignment
@@ -17,7 +17,7 @@ const decode = rawData => {
 
 const parse = data => {
   if (failure(data.errorCode)) {
-    throw new KafkaProtocolError(data.errorCode)
+    throw createErrorFromCode(data.errorCode)
   }
 
   return {

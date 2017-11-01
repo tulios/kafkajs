@@ -1,5 +1,5 @@
 const Encoder = require('../../../encoder')
-const { KafkaProtocolError } = require('../../../error')
+const { createErrorFromCode } = require('../../../error')
 const response = require('./response')
 
 describe('Protocol > Requests > Metadata > v0', () => {
@@ -52,12 +52,12 @@ describe('Protocol > Requests > Metadata > v0', () => {
 
     test('when topicErrorCode is different than SUCCESS_CODE', () => {
       decoded.topicMetadata[0].topicErrorCode = 5
-      expect(() => response.parse(decoded)).toThrowError(new KafkaProtocolError(5))
+      expect(() => response.parse(decoded)).toThrowError(createErrorFromCode(5))
     })
 
     test('when partitionErrorCode is different than SUCCESS_CODE', () => {
       decoded.topicMetadata[0].partitionMetadata[0].partitionErrorCode = 5
-      expect(() => response.parse(decoded)).toThrowError(new KafkaProtocolError(5))
+      expect(() => response.parse(decoded)).toThrowError(createErrorFromCode(5))
     })
   })
 })
