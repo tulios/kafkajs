@@ -159,7 +159,20 @@ module.exports = class Broker {
    * @returns {Promise}
    */
   async fetch({ replicaId, maxWaitTime, minBytes, topics }) {
+    // TODO: validate topics not null/empty
     const fetch = this.lookupRequest(apiKeys.Fetch, requests.Fetch)
     return await this.connection.send(fetch({ replicaId, maxWaitTime, minBytes, topics }))
+  }
+
+  /**
+   * @public
+   * @param {string} groupId The group id
+   * @param {number} groupGenerationId The generation of the group
+   * @param {string} memberId The member id assigned by the group coordinator
+   * @returns {Promise}
+   */
+  async heartbeat({ groupId, groupGenerationId, memberId }) {
+    const heartbeat = this.lookupRequest(apiKeys.Heartbeat, requests.Heartbeat)
+    return await this.connection.send(heartbeat({ groupId, groupGenerationId, memberId }))
   }
 }
