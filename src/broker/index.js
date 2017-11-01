@@ -217,4 +217,24 @@ module.exports = class Broker {
       })
     )
   }
+
+  /**
+   * @public
+   * @param {string} groupId
+   * @param {number} generationId
+   * @param {string} memberId
+   * @param {object} groupAssignment
+   * @returns {Promise}
+   */
+  async syncGroup({ groupId, generationId, memberId, groupAssignment }) {
+    const syncGroup = this.lookupRequest(apiKeys.SyncGroup, requests.SyncGroup)
+    return await this.connection.send(
+      syncGroup({
+        groupId,
+        generationId,
+        memberId,
+        groupAssignment,
+      })
+    )
+  }
 }
