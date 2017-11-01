@@ -287,4 +287,23 @@ module.exports = class Broker {
       })
     )
   }
+
+  /**
+   * @public
+   * @param {string} groupId
+   * @param {object} topics e.g:
+   *                  [
+   *                    {
+   *                      topic: 'topic-name',
+   *                      partitions: [
+   *                        { partition: 0 }
+   *                      ]
+   *                    }
+   *                  ]
+   * @returns {Promise}
+   */
+  async offsetFetch({ groupId, topics }) {
+    const offsetFetch = this.lookupRequest(apiKeys.OffsetFetch, requests.OffsetFetch)
+    return await this.connection.send(offsetFetch({ groupId, topics }))
+  }
 }
