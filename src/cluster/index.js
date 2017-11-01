@@ -150,6 +150,8 @@ module.exports = class Cluster {
    * @returns {Object} Object with leader and partitions. For partitions 0 and 5
    *                   the result could be:
    *                     { '0': [0], '2': [5] }
+   *
+   *                   where the key is the nodeId.
    */
   findLeaderForPartitions(topic, partitions) {
     const partitionMetadata = this.findTopicPartitionMetadata(topic)
