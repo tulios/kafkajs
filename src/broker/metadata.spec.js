@@ -20,27 +20,16 @@ describe('Broker > Metadata', () => {
   test('request', async () => {
     await broker.connect()
     const response = await broker.metadata([topicName])
-    expect(response).toEqual({
-      brokers: [
+
+    expect(response).toMatchObject({
+      brokers: expect.arrayContaining([
         {
           host: expect.stringMatching(/\d+\.\d+\.\d+\.\d+/),
           nodeId: expect.any(Number),
           port: expect.any(Number),
           rack: null,
         },
-        {
-          host: expect.stringMatching(/\d+\.\d+\.\d+\.\d+/),
-          nodeId: expect.any(Number),
-          port: expect.any(Number),
-          rack: null,
-        },
-        {
-          host: expect.stringMatching(/\d+\.\d+\.\d+\.\d+/),
-          nodeId: expect.any(Number),
-          port: expect.any(Number),
-          rack: null,
-        },
-      ],
+      ]),
       clusterId: expect.stringMatching(/[a-zA-Z0-9-]/),
       controllerId: expect.any(Number),
       topicMetadata: [
