@@ -49,7 +49,16 @@ describe('Broker > Offsets', () => {
     const response = await broker.offsets({ topics })
     expect(response).toEqual({
       responses: [
-        { partitions: [{ errorCode: 0, offsets: ['1'], partition: 0 }], topic: topicName },
+        {
+          topic: topicName,
+          partitions: expect.arrayContaining([
+            {
+              errorCode: 0,
+              offsets: expect.arrayContaining([expect.stringMatching(/\d+/)]),
+              partition: 0,
+            },
+          ]),
+        },
       ],
     })
   })
