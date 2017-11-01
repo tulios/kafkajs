@@ -127,13 +127,13 @@ module.exports = class Cluster {
    * @public
    * @param {string} topic
    * @returns {Object} Example:
-   *                   {
+   *                   [{
    *                     isr: [2],
    *                     leader: 2,
    *                     partitionErrorCode: 0,
    *                     partitionId: 0,
    *                     replicas: [2],
-   *                   }
+   *                   }]
    */
   findTopicPartitionMetadata(topic) {
     if (!this.metadata || !this.metadata.topicMetadata) {
