@@ -1,6 +1,6 @@
 const Broker = require('../broker')
 const connectionBuilder = require('./connectionBuilder')
-const { KafkaJSError } = require('../errors')
+const { KafkaJSError, KafkaJSBrokerNotFound } = require('../errors')
 
 /**
  * @param {string} host
@@ -111,6 +111,10 @@ module.exports = class Cluster {
    */
   async findBroker({ nodeId }) {
     const broker = this.brokerPool[nodeId]
+
+    if (!broker) {
+      throw new KafkaJSBrokerNotFound(`Broker ${nodeId} not found in the cached metadata`)
+    }
 
     if (!broker.isConnected()) {
       await broker.connect()

@@ -12,7 +12,10 @@ class KafkaJSPartialMessageError extends KafkaJSError {
   }
 }
 
+class KafkaJSBrokerNotFound extends KafkaJSError {}
+
 module.exports = {
   KafkaJSError,
   KafkaJSPartialMessageError,
+  KafkaJSBrokerNotFound,
 }

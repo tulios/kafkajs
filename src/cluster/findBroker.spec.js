@@ -28,4 +28,11 @@ describe('Cluster > findBroker', () => {
     const broker = await cluster.findBroker({ nodeId })
     expect(broker.isConnected()).toEqual(true)
   })
+
+  test('throws an error when the broker is not found', async () => {
+    await expect(cluster.findBroker({ nodeId: 627 })).rejects.toHaveProperty(
+      'message',
+      'Broker 627 not found in the cached metadata'
+    )
+  })
 })
