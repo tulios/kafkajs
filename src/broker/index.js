@@ -256,4 +256,35 @@ module.exports = class Broker {
     const offsets = this.lookupRequest(apiKeys.Offsets, requests.Offsets)
     return await this.connection.send(offsets({ replicaId, topics }))
   }
+
+  /**
+   * @public
+   * @param {string} groupId
+   * @param {number} groupGenerationId
+   * @param {string} memberId
+   * @param {number} [retentionTime=-1] -1 signals to the broker that its default configuration
+   *                                    should be used.
+   * @param {object} topics Topics to commit offsets, e.g:
+   *                  [
+   *                    {
+   *                      topic: 'topic-name',
+   *                      partitions: [
+   *                        { partition: 0, offset: '11' }
+   *                      ]
+   *                    }
+   *                  ]
+   * @returns {Promise}
+   */
+  async offsetCommit({ groupId, groupGenerationId, memberId, retentionTime, topics }) {
+    const offsetCommit = this.lookupRequest(apiKeys.OffsetCommit, requests.OffsetCommit)
+    return await this.connection.send(
+      offsetCommit({
+        groupId,
+        groupGenerationId,
+        memberId,
+        retentionTime,
+        topics,
+      })
+    )
+  }
 }
