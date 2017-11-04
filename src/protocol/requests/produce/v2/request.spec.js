@@ -1,5 +1,8 @@
+const os = require('os')
 const RequestV2Protocol = require('./request')
 const { Types } = require('../../../message/compression')
+
+const osType = os.type().toLowerCase()
 
 describe('Protocol > Requests > Produce > v2', () => {
   test('request', async () => {
@@ -71,6 +74,6 @@ describe('Protocol > Requests > Produce > v2', () => {
         },
       ],
     }).encode()
-    expect(buffer).toEqual(Buffer.from(require('../fixtures/v2_request_gzip.json')))
+    expect(buffer).toEqual(Buffer.from(require(`../fixtures/v2_request_gzip_${osType}.json`)))
   })
 })
