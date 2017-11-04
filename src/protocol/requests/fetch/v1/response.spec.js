@@ -1,8 +1,8 @@
 const { decode, parse } = require('../v1/response')
 
 describe('Protocol > Requests > Fetch > v1', () => {
-  test('response', () => {
-    const data = decode(Buffer.from(require('../fixtures/v1_response.json')))
+  test('response', async () => {
+    const data = await decode(Buffer.from(require('../fixtures/v1_response.json')))
     expect(data).toEqual({
       throttleTime: 0,
       responses: [
@@ -30,6 +30,6 @@ describe('Protocol > Requests > Fetch > v1', () => {
       ],
     })
 
-    expect(() => parse(data)).not.toThrowError()
+    await expect(parse(data)).resolves.toBeTruthy()
   })
 })

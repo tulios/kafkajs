@@ -22,7 +22,7 @@ const partition = decoder => ({
   messages: MessageSetDecoder(decoder),
 })
 
-const decode = rawData => {
+const decode = async rawData => {
   const decoder = new Decoder(rawData)
   const throttleTime = decoder.readInt32()
   const responses = decoder.readArray(decoder => ({

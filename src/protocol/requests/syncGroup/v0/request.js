@@ -15,7 +15,7 @@ module.exports = ({ groupId, generationId, memberId, groupAssignment }) => ({
   apiKey,
   apiVersion: 0,
   apiName: 'SyncGroup',
-  encode: () => {
+  encode: async () => {
     return new Encoder()
       .writeString(groupId)
       .writeInt32(generationId)

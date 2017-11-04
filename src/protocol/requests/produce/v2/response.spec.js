@@ -26,7 +26,7 @@ describe('Protocol > Requests > Produce > v2', () => {
   })
 
   describe('response', () => {
-    test('decode', () => {
+    test('decode', async () => {
       const encoded = new Encoder()
         .writeArray([
           new Encoder().writeString('test-topic-1').writeArray([
@@ -51,16 +51,21 @@ describe('Protocol > Requests > Produce > v2', () => {
         ])
         .writeInt32(1000)
 
-      expect(response.decode(encoded.buffer)).toEqual(decoded)
+      const decodedPayload = await response.decode(encoded.buffer)
+      expect(decodedPayload).toEqual(decoded)
     })
 
-    test('parse', () => {
-      expect(response.parse(decoded)).toEqual(decoded)
+    test('parse', async () => {
+      const parsedPayload = await response.parse(decoded)
+      expect(parsedPayload).toEqual(decoded)
     })
 
-    test('when errorCode is different than SUCCESS_CODE', () => {
+    test('when errorCode is different than SUCCESS_CODE', async () => {
       decoded.topics[0].partitions[0].errorCode = 5
-      expect(() => response.parse(decoded)).toThrowError(createErrorFromCode(5))
+      await expect(response.parse(decoded)).rejects.toHaveProperty(
+        'message',
+        createErrorFromCode(5).message
+      )
     })
   })
 })

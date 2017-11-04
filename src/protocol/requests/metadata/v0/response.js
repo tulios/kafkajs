@@ -1,5 +1,6 @@
 const Decoder = require('../../../decoder')
 const { failure, createErrorFromCode } = require('../../../error')
+const flatten = require('../../../../utils/flatten')
 
 /**
  * Metadata Response (Version: 0) => [brokers] [topic_metadata]
@@ -40,7 +41,7 @@ const partitionMetadata = decoder => ({
   isr: decoder.readArray(d => d.readInt32()),
 })
 
-const decode = rawData => {
+const decode = async rawData => {
   const decoder = new Decoder(rawData)
   return {
     brokers: decoder.readArray(broker),
@@ -48,9 +49,7 @@ const decode = rawData => {
   }
 }
 
-const flatten = arrays => [].concat.apply([], arrays)
-
-const parse = data => {
+const parse = async data => {
   const topicsWithErrors = data.topicMetadata.filter(topic => failure(topic.topicErrorCode))
   if (topicsWithErrors.length > 0) {
     const { topicErrorCode } = topicsWithErrors[0]

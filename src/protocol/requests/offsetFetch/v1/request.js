@@ -14,7 +14,7 @@ module.exports = ({ groupId, topics }) => ({
   apiKey,
   apiVersion: 1,
   apiName: 'OffsetFetch',
-  encode: () => {
+  encode: async () => {
     return new Encoder().writeString(groupId).writeArray(topics.map(encodeTopic))
   },
 })

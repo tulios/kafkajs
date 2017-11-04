@@ -1,5 +1,6 @@
 const Decoder = require('../../../decoder')
 const { failure, createErrorFromCode } = require('../../../error')
+const flatten = require('../../../../utils/flatten')
 
 /**
  * v0
@@ -16,7 +17,7 @@ const partition = decoder => ({
   offset: decoder.readInt64().toString(),
 })
 
-const decode = rawData => {
+const decode = async rawData => {
   const decoder = new Decoder(rawData)
   const topics = decoder.readArray(decoder => ({
     topicName: decoder.readString(),
@@ -28,9 +29,7 @@ const decode = rawData => {
   }
 }
 
-const flatten = arrays => [].concat.apply([], arrays)
-
-const parse = data => {
+const parse = async data => {
   const partitionsWithError = data.topics.map(topic => {
     return topic.partitions.filter(partition => failure(partition.errorCode))
   })

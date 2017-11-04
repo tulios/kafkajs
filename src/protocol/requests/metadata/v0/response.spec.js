@@ -21,7 +21,7 @@ describe('Protocol > Requests > Metadata > v0', () => {
   })
 
   describe('response', () => {
-    test('decode', () => {
+    test('decode', async () => {
       const encoded = new Encoder()
         .writeArray([
           new Encoder()
@@ -43,21 +43,29 @@ describe('Protocol > Requests > Metadata > v0', () => {
             ]),
         ])
 
-      expect(response.decode(encoded.buffer)).toEqual(decoded)
+      const decodedPayload = await response.decode(encoded.buffer)
+      expect(decodedPayload).toEqual(decoded)
     })
 
-    test('parse', () => {
-      expect(response.parse(decoded)).toEqual(decoded)
+    test('parse', async () => {
+      const parsedPayload = await response.parse(decoded)
+      expect(parsedPayload).toEqual(decoded)
     })
 
-    test('when topicErrorCode is different than SUCCESS_CODE', () => {
+    test('when topicErrorCode is different than SUCCESS_CODE', async () => {
       decoded.topicMetadata[0].topicErrorCode = 5
-      expect(() => response.parse(decoded)).toThrowError(createErrorFromCode(5))
+      await expect(response.parse(decoded)).rejects.toHaveProperty(
+        'message',
+        createErrorFromCode(5).message
+      )
     })
 
-    test('when partitionErrorCode is different than SUCCESS_CODE', () => {
+    test('when partitionErrorCode is different than SUCCESS_CODE', async () => {
       decoded.topicMetadata[0].partitionMetadata[0].partitionErrorCode = 5
-      expect(() => response.parse(decoded)).toThrowError(createErrorFromCode(5))
+      await expect(response.parse(decoded)).rejects.toHaveProperty(
+        'message',
+        createErrorFromCode(5).message
+      )
     })
   })
 })

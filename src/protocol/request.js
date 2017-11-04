@@ -1,12 +1,13 @@
 const Encoder = require('./encoder')
 
-module.exports = ({ correlationId, clientId, request: { apiKey, apiVersion, encode } }) => {
-  const payload = new Encoder()
+module.exports = async ({ correlationId, clientId, request: { apiKey, apiVersion, encode } }) => {
+  const payload = await encode()
+  const requestPayload = new Encoder()
     .writeInt16(apiKey)
     .writeInt16(apiVersion)
     .writeInt32(correlationId)
     .writeString(clientId)
-    .writeEncoder(encode())
+    .writeEncoder(payload)
 
-  return new Encoder().writeInt32(payload.size()).writeEncoder(payload)
+  return new Encoder().writeInt32(requestPayload.size()).writeEncoder(requestPayload)
 }

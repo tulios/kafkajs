@@ -13,5 +13,5 @@ module.exports = ({ mechanism }) => ({
   apiKey,
   apiVersion: 0,
   apiName: 'SaslHandshake',
-  encode: () => new Encoder().writeString(mechanism),
+  encode: async () => new Encoder().writeString(mechanism),
 })

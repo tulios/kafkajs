@@ -1,4 +1,4 @@
 module.exports = {
-  decode: () => true,
-  parse: () => true,
+  decode: async () => true,
+  parse: async () => true,
 }

@@ -12,7 +12,7 @@ const flatten = require('../../../../utils/flatten')
  *       offsets => INT64
  */
 
-const decode = rawData => {
+const decode = async rawData => {
   const decoder = new Decoder(rawData)
   return {
     responses: decoder.readArray(decodeResponses),
@@ -32,7 +32,7 @@ const decodePartitions = decoder => ({
 
 const decodeOffsets = decoder => decoder.readInt64().toString()
 
-const parse = data => {
+const parse = async data => {
   const partitionsWithError = data.responses.map(response =>
     response.partitions.filter(partition => failure(partition.errorCode))
   )

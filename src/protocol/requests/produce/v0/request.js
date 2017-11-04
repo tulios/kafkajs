@@ -64,7 +64,7 @@ module.exports = ({ acks, timeout, topicData }) => ({
   apiKey,
   apiVersion: 0,
   apiName: 'Produce',
-  encode: () => {
+  encode: async () => {
     return new Encoder()
       .writeInt16(acks)
       .writeInt32(timeout)

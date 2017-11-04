@@ -16,7 +16,7 @@ module.exports = ({ replicaId, topics }) => ({
   apiKey,
   apiVersion: 0,
   apiName: 'Offsets',
-  encode: () => {
+  encode: async () => {
     return new Encoder().writeInt32(replicaId).writeArray(topics.map(encodeTopic))
   },
 })

@@ -1,8 +1,8 @@
 const { decode, parse } = require('./response')
 
 describe('Protocol > Requests > SyncGroup > v0', () => {
-  test('response', () => {
-    const data = decode(Buffer.from(require('../fixtures/v0_response.json')))
+  test('response', async () => {
+    const data = await decode(Buffer.from(require('../fixtures/v0_response.json')))
     expect(data).toEqual({
       errorCode: 0,
       memberAssignment: Buffer.from(
@@ -12,6 +12,6 @@ describe('Protocol > Requests > SyncGroup > v0', () => {
       ),
     })
 
-    expect(() => parse(data)).not.toThrowError()
+    await expect(parse(data)).resolves.toBeTruthy()
   })
 })

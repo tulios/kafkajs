@@ -17,10 +17,11 @@ describe('Protocol > Requests > Metadata > v1', () => {
       expect(request.apiName).toEqual('Metadata')
     })
 
-    test('encode', () => {
+    test('encode', async () => {
       const request = RequestProtocol(topics)
       const encoder = new Encoder().writeArray(topics)
-      expect(request.encode().toJSON()).toEqual(encoder.toJSON())
+      const data = await request.encode()
+      expect(data.toJSON()).toEqual(encoder.toJSON())
     })
   })
 })

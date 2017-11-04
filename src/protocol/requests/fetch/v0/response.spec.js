@@ -1,8 +1,8 @@
 const { decode, parse } = require('../v0/response')
 
 describe('Protocol > Requests > Fetch > v0', () => {
-  test('response', () => {
-    const data = decode(Buffer.from(require('../fixtures/v0_response.json')))
+  test('response', async () => {
+    const data = await decode(Buffer.from(require('../fixtures/v0_response.json')))
     expect(data).toEqual({
       responses: [
         {
@@ -29,6 +29,6 @@ describe('Protocol > Requests > Fetch > v0', () => {
       ],
     })
 
-    expect(() => parse(data)).not.toThrowError()
+    await expect(parse(data)).resolves.toBeTruthy()
   })
 })

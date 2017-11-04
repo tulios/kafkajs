@@ -32,7 +32,7 @@ describe('Protocol > Requests > Produce > v0', () => {
       expect(request.apiName).toEqual('Produce')
     })
 
-    test('encode', () => {
+    test('encode', async () => {
       const request = RequestProtocol(args)
       const ms1 = MessageSet({ entries: args.topicData[0].partitions[0].messages })
       const ms2 = MessageSet({ entries: args.topicData[0].partitions[1].messages })
@@ -53,7 +53,8 @@ describe('Protocol > Requests > Produce > v0', () => {
           ]),
         ])
 
-      expect(request.encode().toJSON()).toEqual(encoder.toJSON())
+      const data = await request.encode()
+      expect(data.toJSON()).toEqual(encoder.toJSON())
     })
   })
 })

@@ -151,11 +151,14 @@ module.exports = class Connection {
    * @returns {Promise}
    */
   authenticate({ request, response }) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       this.authHandlers = {
         onSuccess: rawData => {
           this.authHandlers = null
-          resolve(response.parse(response.decode(rawData)))
+          response
+            .decode(rawData)
+            .then(data => response.parse(data))
+            .then(resolve)
         },
         onError: () => {
           this.authHandlers = null
@@ -163,7 +166,7 @@ module.exports = class Connection {
         },
       }
 
-      const requestPayload = request.encode()
+      const requestPayload = await request.encode()
       this.socket.write(requestPayload.buffer, 'binary')
     })
   }
@@ -185,11 +188,11 @@ module.exports = class Connection {
     const requestInfo = ({ apiName, apiKey, apiVersion }) =>
       `${apiName}(key: ${apiKey}, version: ${apiVersion})`
 
-    const sendRequest = (retryCount, retryTime) => {
+    const sendRequest = async (retryCount, retryTime) => {
       const { clientId } = this
       const correlationId = this.nextCorrelationId()
 
-      const requestPayload = createRequest({ request, correlationId, clientId })
+      const requestPayload = await createRequest({ request, correlationId, clientId })
       const { apiKey, apiName, apiVersion } = request
       this.logDebug(`Request ${requestInfo(request)}`, {
         correlationId,
@@ -207,8 +210,14 @@ module.exports = class Connection {
     return this.retrier(async (bail, retryCount, retryTime) => {
       const { correlationId, size, entry, payload } = await sendRequest(retryCount, retryTime)
       try {
-        const data = response.parse(response.decode(payload))
-        this.logDebug(`Response ${requestInfo(entry)}`, { correlationId, size, data })
+        const payloadDecoded = await response.decode(payload)
+        const data = await response.parse(payloadDecoded)
+        const isFetchApi = entry.apiName === 'Fetch'
+        this.logDebug(`Response ${requestInfo(entry)}`, {
+          correlationId,
+          size,
+          data: isFetchApi ? '[filtered]' : data,
+        })
 
         return data
       } catch (e) {

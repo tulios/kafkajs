@@ -2,7 +2,7 @@ const Encoder = require('../../../encoder')
 const apiKeys = require('../../apiKeys')
 const RequestProtocol = require('./request')
 
-describe('Protocol > Requests > Metadata > v0', () => {
+describe('Protocol > Requests > Metadata > v0', async () => {
   let topics
 
   beforeEach(() => {
@@ -17,10 +17,11 @@ describe('Protocol > Requests > Metadata > v0', () => {
       expect(request.apiName).toEqual('Metadata')
     })
 
-    test('encode', () => {
+    test('encode', async () => {
       const request = RequestProtocol(topics)
       const encoder = new Encoder().writeArray(topics)
-      expect(request.encode().toJSON()).toEqual(encoder.toJSON())
+      const data = await request.encode()
+      expect(data.toJSON()).toEqual(encoder.toJSON())
     })
   })
 })

@@ -10,7 +10,7 @@ module.exports = topics => ({
   apiKey,
   apiVersion: 0,
   apiName: 'Metadata',
-  encode: () => {
+  encode: async () => {
     return new Encoder().writeArray(topics)
   },
 })

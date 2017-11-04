@@ -1,10 +1,10 @@
 const RequestV0Protocol = require('./request')
 
 describe('Protocol > Requests > JoinGroup > v0', () => {
-  test('request', () => {
+  test('request', async () => {
     const groupId = 'test-group'
 
-    const { buffer } = RequestV0Protocol({
+    const { buffer } = await RequestV0Protocol({
       groupId,
       sessionTimeout: 30000,
       memberId: '',

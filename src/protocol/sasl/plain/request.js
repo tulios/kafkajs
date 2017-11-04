@@ -20,7 +20,7 @@ const Encoder = require('../../encoder')
 const US_ASCII_NULL_CHAR = '\u0000'
 
 module.exports = ({ authorizationIdentity = null, username, password }) => ({
-  encode: () => {
+  encode: async () => {
     return new Encoder().writeBytes(
       [authorizationIdentity, username, password].join(US_ASCII_NULL_CHAR)
     )

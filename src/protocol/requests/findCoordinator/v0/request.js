@@ -10,7 +10,7 @@ module.exports = ({ groupId }) => ({
   apiKey,
   apiVersion: 0,
   apiName: 'GroupCoordinator',
-  encode: () => {
+  encode: async () => {
     return new Encoder().writeString(groupId)
   },
 })

@@ -1,44 +1,35 @@
-const Encoder = require('../../../encoder')
-const apiKeys = require('../../apiKeys')
-const { SUCCESS_CODE, createErrorFromCode } = require('../../../error')
-const response = require('./response')
+const { decode, parse } = require('./response')
 
 describe('Protocol > Requests > ApiVersions > v0', () => {
-  let decoded
-
-  beforeEach(() => {
-    decoded = {
+  test('response', async () => {
+    const data = await decode(Buffer.from(require('../fixtures/v0_response.json')))
+    expect(data).toEqual({
       errorCode: 0,
       apiVersions: [
-        { apiKey: apiKeys.Produce, minVersion: 0, maxVersion: 1 },
-        { apiKey: apiKeys.Fetch, minVersion: 0, maxVersion: 2 },
+        { apiKey: 0, minVersion: 0, maxVersion: 2 },
+        { apiKey: 1, minVersion: 0, maxVersion: 3 },
+        { apiKey: 2, minVersion: 0, maxVersion: 1 },
+        { apiKey: 3, minVersion: 0, maxVersion: 2 },
+        { apiKey: 4, minVersion: 0, maxVersion: 0 },
+        { apiKey: 5, minVersion: 0, maxVersion: 0 },
+        { apiKey: 6, minVersion: 0, maxVersion: 3 },
+        { apiKey: 7, minVersion: 1, maxVersion: 1 },
+        { apiKey: 8, minVersion: 0, maxVersion: 2 },
+        { apiKey: 9, minVersion: 0, maxVersion: 2 },
+        { apiKey: 10, minVersion: 0, maxVersion: 0 },
+        { apiKey: 11, minVersion: 0, maxVersion: 1 },
+        { apiKey: 12, minVersion: 0, maxVersion: 0 },
+        { apiKey: 13, minVersion: 0, maxVersion: 0 },
+        { apiKey: 14, minVersion: 0, maxVersion: 0 },
+        { apiKey: 15, minVersion: 0, maxVersion: 0 },
+        { apiKey: 16, minVersion: 0, maxVersion: 0 },
+        { apiKey: 17, minVersion: 0, maxVersion: 0 },
+        { apiKey: 18, minVersion: 0, maxVersion: 0 },
+        { apiKey: 19, minVersion: 0, maxVersion: 1 },
+        { apiKey: 20, minVersion: 0, maxVersion: 0 },
       ],
-    }
-  })
-
-  describe('response', () => {
-    test('decode', () => {
-      const encoded = new Encoder().writeInt16(SUCCESS_CODE).writeArray([
-        new Encoder()
-          .writeInt16(apiKeys.Produce)
-          .writeInt16(0)
-          .writeInt16(1),
-        new Encoder()
-          .writeInt16(apiKeys.Fetch)
-          .writeInt16(0)
-          .writeInt16(2),
-      ])
-
-      expect(response.decode(encoded.buffer)).toEqual(decoded)
     })
 
-    test('parse', () => {
-      expect(response.parse(decoded)).toEqual(decoded)
-    })
-
-    test('when errorCode is different than SUCCESS_CODE', () => {
-      decoded.errorCode = 5
-      expect(() => response.parse(decoded)).toThrowError(createErrorFromCode(5))
-    })
+    await expect(parse(data)).resolves.toBeTruthy()
   })
 })

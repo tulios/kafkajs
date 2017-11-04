@@ -9,5 +9,5 @@ module.exports = () => ({
   apiKey,
   apiVersion: 0,
   apiName: 'ApiVersions',
-  encode: () => new Encoder(),
+  encode: async () => new Encoder(),
 })

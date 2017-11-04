@@ -16,7 +16,7 @@ module.exports = ({ groupId, topics }) => ({
   apiKey,
   apiVersion: 0,
   apiName: 'OffsetCommit',
-  encode: () => {
+  encode: async () => {
     return new Encoder().writeString(groupId).writeArray(topics.map(encodeTopic))
   },
 })

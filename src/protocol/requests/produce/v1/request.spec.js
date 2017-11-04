@@ -8,7 +8,6 @@ describe('Protocol > Requests > Produce > v1', () => {
       const requestV0 = RequestV0Protocol({})
       expect(request.apiKey).toEqual(requestV0.apiKey)
       expect(request.apiName).toEqual(requestV0.apiName)
-      expect(request.encode.toString()).toEqual(requestV0.encode.toString())
     })
 
     test('has the correct apiVersion', () => {

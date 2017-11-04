@@ -22,7 +22,7 @@ const partition = decoder => ({
   messages: MessageSetDecoder(decoder),
 })
 
-const decode = rawData => {
+const decode = async rawData => {
   const decoder = new Decoder(rawData)
   const responses = decoder.readArray(decoder => ({
     topicName: decoder.readString(),
@@ -34,7 +34,7 @@ const decode = rawData => {
   }
 }
 
-const parse = data => {
+const parse = async data => {
   const partitionsWithError = data.responses.map(response => {
     return response.partitions.filter(partition => failure(partition.errorCode))
   })

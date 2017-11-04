@@ -17,7 +17,7 @@ const apiVersion = decoder => ({
   maxVersion: decoder.readInt16(),
 })
 
-const decode = rawData => {
+const decode = async rawData => {
   const decoder = new Decoder(rawData)
   return {
     errorCode: decoder.readInt16(),
@@ -25,7 +25,7 @@ const decode = rawData => {
   }
 }
 
-const parse = data => {
+const parse = async data => {
   if (failure(data.errorCode)) {
     throw createErrorFromCode(data.errorCode)
   }

@@ -17,7 +17,7 @@ const partition = decoder => ({
   offset: decoder.readInt64().toString(),
 })
 
-const decode = rawData => {
+const decode = async rawData => {
   const decoder = new Decoder(rawData)
   const topics = decoder.readArray(decoder => ({
     topicName: decoder.readString(),

@@ -1,19 +1,18 @@
-const Encoder = require('../../../encoder')
 const apiKeys = require('../../apiKeys')
-const RequestProtocol = require('./request')
+const RequestV0Protocol = require('./request')
 
 describe('Protocol > Requests > ApiVersions > v0', () => {
   describe('request', () => {
     test('metadata about the API', () => {
-      const request = RequestProtocol()
+      const request = RequestV0Protocol()
       expect(request.apiKey).toEqual(apiKeys.ApiVersions)
       expect(request.apiVersion).toEqual(0)
       expect(request.apiName).toEqual('ApiVersions')
     })
 
-    test('encode', () => {
-      const request = RequestProtocol()
-      expect(request.encode().toJSON()).toEqual(new Encoder().toJSON())
+    test('encode', async () => {
+      const { buffer } = await RequestV0Protocol().encode()
+      expect(buffer).toEqual(Buffer.from(require('../fixtures/v0_request.json')))
     })
   })
 })

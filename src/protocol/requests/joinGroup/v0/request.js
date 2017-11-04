@@ -16,7 +16,7 @@ module.exports = ({ groupId, sessionTimeout, memberId, protocolType, groupProtoc
   apiKey,
   apiVersion: 0,
   apiName: 'JoinGroup',
-  encode: () => {
+  encode: async () => {
     return new Encoder()
       .writeString(groupId)
       .writeInt32(sessionTimeout)

@@ -13,7 +13,7 @@ const flatten = require('../../../../utils/flatten')
  *       error_code => INT16
  */
 
-const decode = rawData => {
+const decode = async rawData => {
   const decoder = new Decoder(rawData)
   return {
     responses: decoder.readArray(decodeResponses),
@@ -32,7 +32,7 @@ const decodePartitions = decoder => ({
   errorCode: decoder.readInt16(),
 })
 
-const parse = data => {
+const parse = async data => {
   const partitionsWithError = data.responses.map(response =>
     response.partitions.filter(partition => failure(partition.errorCode))
   )

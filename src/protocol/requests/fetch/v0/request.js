@@ -36,7 +36,7 @@ module.exports = ({ replicaId, maxWaitTime, minBytes, topics }) => ({
   apiKey,
   apiVersion: 0,
   apiName: 'Fetch',
-  encode: () => {
+  encode: async () => {
     return new Encoder()
       .writeInt32(replicaId)
       .writeInt32(maxWaitTime)
