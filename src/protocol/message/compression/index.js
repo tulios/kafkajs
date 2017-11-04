@@ -8,7 +8,10 @@ const Codecs = {
   [Types.GZIP]: () => require('./gzip'),
 }
 
+const lookupCodec = type => (Codecs[type] ? Codecs[type]() : null)
+
 module.exports = {
   Types,
   Codecs,
+  lookupCodec,
 }

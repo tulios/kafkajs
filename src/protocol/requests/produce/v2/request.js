@@ -1,7 +1,7 @@
 const Encoder = require('../../../encoder')
 const { Produce: apiKey } = require('../../apiKeys')
 const MessageSet = require('../../../messageSet')
-const { Types, Codecs } = require('../../../message/compression')
+const { Types, lookupCodec } = require('../../../message/compression')
 
 // Produce Request on or after v2 indicates the client can parse the timestamp field
 // in the produce Response.
@@ -11,18 +11,35 @@ module.exports = ({ acks, timeout, compression = Types.None, topicData }) => ({
   apiVersion: 2,
   apiName: 'Produce',
   encode: async () => {
+    const encodeTopic = topicEncoder(compression)
+    const encodedTopicData = []
+
+    for (let data of topicData) {
+      encodedTopicData.push(await encodeTopic(data))
+    }
+
     return new Encoder()
       .writeInt16(acks)
       .writeInt32(timeout)
-      .writeArray(topicData.map(encodeTopic(compression)))
+      .writeArray(encodedTopicData)
   },
 })
 
-const encodeTopic = compression => ({ topic, partitions }) => {
-  return new Encoder().writeString(topic).writeArray(partitions.map(encodePartitions(compression)))
+const topicEncoder = compression => {
+  const encodePartitions = partitionsEncoder(compression)
+
+  return async ({ topic, partitions }) => {
+    const encodedPartitions = []
+
+    for (let data of partitions) {
+      encodedPartitions.push(await encodePartitions(data))
+    }
+
+    return new Encoder().writeString(topic).writeArray(encodedPartitions)
+  }
 }
 
-const encodePartitions = compression => ({ partition, messages }) => {
+const partitionsEncoder = compression => async ({ partition, messages }) => {
   const messageSet = MessageSet({ messageVersion: 1, entries: messages })
 
   if (compression === Types.None) {
@@ -32,8 +49,8 @@ const encodePartitions = compression => ({ partition, messages }) => {
       .writeEncoder(messageSet)
   }
 
-  const codec = lookupCompressionCodec(compression)
-  const compressedValue = codec.compress(messageSet)
+  const codec = lookupCodec(compression)
+  const compressedValue = await codec.compress(messageSet)
   const compressedMessageSet = MessageSet({
     messageVersion: 1,
     compression,
@@ -45,5 +62,3 @@ const encodePartitions = compression => ({ partition, messages }) => {
     .writeInt32(compressedMessageSet.size())
     .writeEncoder(compressedMessageSet)
 }
-
-const lookupCompressionCodec = type => (Codecs[type] ? Codecs[type]() : null)

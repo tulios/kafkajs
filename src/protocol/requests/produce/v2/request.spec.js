@@ -1,69 +1,79 @@
-const Encoder = require('../../../encoder')
-const apiKeys = require('../../apiKeys')
-const RequestProtocol = require('./request')
-const MessageSet = require('../../../messageSet')
+const RequestV2Protocol = require('./request')
+const { Types } = require('../../../message/compression')
 
 describe('Protocol > Requests > Produce > v2', () => {
-  let args, messageSet1, messageSet2
-
-  beforeEach(() => {
-    messageSet1 = [
-      { key: '1', value: 'value-1', timestamp: 1498074767737 },
-      { key: '2', value: 'value-2', timestamp: 1498074767738 },
-    ]
-    messageSet2 = [{ key: '3', value: 'value-3', timestamp: 1498074767739 }]
-    args = {
+  test('request', async () => {
+    const { buffer } = await RequestV2Protocol({
       acks: -1,
-      timeout: 1000,
+      timeout: 30000,
+      compression: 0,
       topicData: [
         {
-          topic: 'test-topic-1',
+          topic: 'test-topic-9f825c3f60bb0b4db583',
           partitions: [
-            { partition: 0, messages: messageSet1 },
-            { partition: 1, messages: messageSet2 },
+            {
+              partition: 0,
+              messages: [
+                {
+                  key: 'key-bb252ae5801883c12bbd',
+                  value: 'some-value-10340c6329f8bbf5b4a2',
+                  timestamp: 1509819296569,
+                },
+                {
+                  key: 'key-8a14e73a88e93f7c3a39',
+                  value: 'some-value-4fa91513bffbcc0e34b3',
+                  timestamp: 1509819296569,
+                },
+                {
+                  key: 'key-183a2d8eb3683f080b82',
+                  value: 'some-value-938afcf1f2ef0439c752',
+                  timestamp: 1509819296569,
+                },
+              ],
+            },
           ],
         },
       ],
-    }
+    }).encode()
+    expect(buffer).toEqual(Buffer.from(require('../fixtures/v2_request.json')))
   })
 
-  describe('request', () => {
-    test('metadata about the API', () => {
-      const request = RequestProtocol(args)
-      expect(request.apiKey).toEqual(apiKeys.Produce)
-      expect(request.apiVersion).toEqual(2)
-      expect(request.apiName).toEqual('Produce')
-    })
-
-    test('encode', async () => {
-      const request = RequestProtocol(args)
-      const ms1 = MessageSet({
-        messageVersion: 1,
-        entries: args.topicData[0].partitions[0].messages,
-      })
-      const ms2 = MessageSet({
-        messageVersion: 1,
-        entries: args.topicData[0].partitions[1].messages,
-      })
-
-      const encoder = new Encoder()
-        .writeInt16(-1)
-        .writeInt32(1000)
-        .writeArray([
-          new Encoder().writeString('test-topic-1').writeArray([
-            new Encoder()
-              .writeInt32(0)
-              .writeInt32(ms1.size())
-              .writeEncoder(ms1),
-            new Encoder()
-              .writeInt32(1)
-              .writeInt32(ms2.size())
-              .writeEncoder(ms2),
-          ]),
-        ])
-
-      const data = await request.encode()
-      expect(data.toJSON()).toEqual(encoder.toJSON())
-    })
+  test('request with gzip', async () => {
+    const originalDateNow = Date.now
+    Date.now = jest.fn(() => 1509819296569)
+    const { buffer } = await RequestV2Protocol({
+      acks: -1,
+      timeout: 30000,
+      compression: Types.GZIP,
+      topicData: [
+        {
+          topic: 'test-topic-bc674c30572e8ded886a',
+          partitions: [
+            {
+              partition: 0,
+              messages: [
+                {
+                  key: 'key-95600f2c2703a2327b82',
+                  value: 'some-value-2220ab161ff7a1d95e81',
+                  timestamp: 1509819296569,
+                },
+                {
+                  key: 'key-69bc917adcaa022c7b18',
+                  value: 'some-value-ee5a8e3f596a2e579c82',
+                  timestamp: 1509819296569,
+                },
+                {
+                  key: 'key-d5e5057dac669e65bc64',
+                  value: 'some-value-02e4e3875d5dcd86a3f3',
+                  timestamp: 1509819296569,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }).encode()
+    Date.now = originalDateNow
+    expect(buffer).toEqual(Buffer.from(require('../fixtures/v2_request_gzip.json')))
   })
 })
