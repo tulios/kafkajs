@@ -12,7 +12,7 @@ const requests = {
   GroupCoordinator: require('./findCoordinator'),
   JoinGroup: require('./joinGroup'),
   Heartbeat: require('./heartbeat'),
-  LeaveGroup: {},
+  LeaveGroup: require('./leaveGroup'),
   SyncGroup: require('./syncGroup'),
   DescribeGroups: {},
   ListGroups: {},

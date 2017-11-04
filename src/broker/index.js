@@ -225,6 +225,17 @@ module.exports = class Broker {
   /**
    * @public
    * @param {string} groupId
+   * @param {string} memberId
+   * @returns {Promise}
+   */
+  async leaveGroup({ groupId, memberId }) {
+    const leaveGroup = this.lookupRequest(apiKeys.LeaveGroup, requests.LeaveGroup)
+    return await this.connection.send(leaveGroup({ groupId, memberId }))
+  }
+
+  /**
+   * @public
+   * @param {string} groupId
    * @param {number} generationId
    * @param {string} memberId
    * @param {object} groupAssignment
