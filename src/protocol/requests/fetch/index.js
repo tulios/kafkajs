@@ -17,6 +17,11 @@ const versions = {
     const response = require('./v2/response')
     return { request: request({ replicaId, maxWaitTime, minBytes, topics }), response }
   },
+  3: ({ replicaId = REPLICA_ID, maxWaitTime, minBytes, maxBytes, topics }) => {
+    const request = require('./v2/request')
+    const response = require('./v2/response')
+    return { request: request({ replicaId, maxWaitTime, minBytes, maxBytes, topics }), response }
+  },
 }
 
 module.exports = {

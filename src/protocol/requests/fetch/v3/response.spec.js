@@ -1,8 +1,8 @@
 const { decode, parse } = require('../v1/response')
 
-describe('Protocol > Requests > Fetch > v2', () => {
+describe('Protocol > Requests > Fetch > v3', () => {
   test('response', async () => {
-    const data = await decode(Buffer.from(require('../fixtures/v2_response.json')))
+    const data = await decode(Buffer.from(require('../fixtures/v3_response.json')))
     expect(data).toEqual({
       throttleTime: 0,
       responses: [
@@ -55,7 +55,7 @@ describe('Protocol > Requests > Fetch > v2', () => {
   })
 
   test('response with GZIP', async () => {
-    const data = await decode(Buffer.from(require('../fixtures/v2_response_gzip.json')))
+    const data = await decode(Buffer.from(require('../fixtures/v3_response_gzip.json')))
     expect(data).toEqual({
       throttleTime: 0,
       responses: [

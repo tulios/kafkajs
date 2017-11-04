@@ -143,6 +143,10 @@ module.exports = class Broker {
    * @param {number} replicaId=-1 Broker id of the follower. For normal consumers, use -1
    * @param {number} maxWaitTime=5000 Maximum time in ms to wait for the response
    * @param {number} minBytes=1 Minimum bytes to accumulate in the response
+   * @param {number} maxBytes=10485760 Maximum bytes to accumulate in the response. Note that this is
+   *                                   not an absolute maximum, if the first message in the first non-empty
+   *                                   partition of the fetch is larger than this value, the message will still
+   *                                   be returned to ensure that progress can be made. Default 10MB.
    * @param {Array} topics Topics to fetch
    *                        [
    *                          {
@@ -158,10 +162,10 @@ module.exports = class Broker {
    *                        ]
    * @returns {Promise}
    */
-  async fetch({ replicaId, maxWaitTime = 5000, minBytes = 1, topics }) {
+  async fetch({ replicaId, maxWaitTime = 5000, minBytes = 1, maxBytes = 10485760, topics }) {
     // TODO: validate topics not null/empty
     const fetch = this.lookupRequest(apiKeys.Fetch, requests.Fetch)
-    return await this.connection.send(fetch({ replicaId, maxWaitTime, minBytes, topics }))
+    return await this.connection.send(fetch({ replicaId, maxWaitTime, minBytes, maxBytes, topics }))
   }
 
   /**

@@ -3,7 +3,8 @@ const { secureRandom, createConnection } = require('testHelpers')
 const { Types: Compression } = require('../protocol/message/compression')
 
 const minBytes = 1
-const maxBytes = 1048576 // 1MB
+const maxBytes = 10485760 // 10MB
+const maxBytesPerPartition = 1048576 // 1MB
 const maxWaitTime = 5
 const timestamp = 1509827900073
 
@@ -67,13 +68,13 @@ describe('Broker > Fetch', () => {
           {
             partition: targetPartition,
             fetchOffset: 0,
-            maxBytes,
+            maxBytes: maxBytesPerPartition,
           },
         ],
       },
     ]
 
-    let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, topics })
+    let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
     expect(fetchResponse).toEqual({
       throttleTime: 0,
       responses: [
@@ -125,7 +126,7 @@ describe('Broker > Fetch', () => {
     createMessages()
     topicData = createTopicData(targetPartition, createMessages(1))
     await broker.produce({ topicData })
-    fetchResponse = await broker.fetch({ maxWaitTime, minBytes, topics })
+    fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
     expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
   })
 
@@ -142,13 +143,13 @@ describe('Broker > Fetch', () => {
           {
             partition: targetPartition,
             fetchOffset: 0,
-            maxBytes,
+            maxBytes: maxBytesPerPartition,
           },
         ],
       },
     ]
 
-    let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, topics })
+    let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
     expect(fetchResponse).toEqual({
       throttleTime: 0,
       responses: [
@@ -200,7 +201,7 @@ describe('Broker > Fetch', () => {
     createMessages()
     topicData = createTopicData(targetPartition, createMessages(1))
     await broker.produce({ topicData, compression: Compression.GZIP })
-    fetchResponse = await broker.fetch({ maxWaitTime, minBytes, topics })
+    fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
     expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
   })
 })
