@@ -92,4 +92,19 @@ module.exports = class Decoder {
 
     return array
   }
+
+  async readArrayAsync(reader) {
+    const length = this.readInt32()
+
+    if (length === -1) {
+      return []
+    }
+
+    const array = []
+    for (let i = 0; i < length; i++) {
+      array.push(await reader(this))
+    }
+
+    return array
+  }
 }

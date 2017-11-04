@@ -1,26 +1,23 @@
+const { promisify } = require('util')
 const zlib = require('zlib')
+
+const gzip = promisify(zlib.gzip)
+const unzip = promisify(zlib.unzip)
 
 module.exports = {
   /**
    * @param {Encoder} encoder
    * @returns {Promise}
    */
-  compress(encoder) {
-    return new Promise((resolve, reject) => {
-      zlib.gzip(encoder.buffer, (error, result) => {
-        if (error) {
-          reject(error)
-        }
-
-        resolve(result)
-      })
-    })
+  async compress(encoder) {
+    return await gzip(encoder.buffer)
   },
 
   /**
    * @param {Buffer} buffer
+   * @returns {Promise}
    */
-  decompress(buffer) {
-    return zlib.unzipSync(buffer)
+  async decompress(buffer) {
+    return await unzip(buffer)
   },
 }

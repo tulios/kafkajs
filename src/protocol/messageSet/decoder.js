@@ -1,6 +1,6 @@
 const Decoder = require('../decoder')
 const MessageDecoder = require('../message/decoder')
-const { Codecs } = require('../message/compression')
+const { lookupCodecByAttributes } = require('../message/compression')
 
 /**
  * MessageSet => [Offset MessageSize Message]
@@ -9,7 +9,7 @@ const { Codecs } = require('../message/compression')
  *  Message => Bytes
  */
 
-module.exports = decoder => {
+module.exports = async decoder => {
   const messages = []
   const messageSetSize = decoder.readInt32()
   const bytesToRead = decoder.offset + messageSetSize
@@ -17,10 +17,10 @@ module.exports = decoder => {
   while (decoder.offset < bytesToRead) {
     try {
       const message = EntryDecoder(decoder)
-      const codec = getCompressionCodec(message)
+      const codec = lookupCodecByAttributes(message.attributes)
 
       if (codec) {
-        const buffer = codec.decompress(message.value)
+        const buffer = await codec.decompress(message.value)
         messages.push(...EntriesDecoder(new Decoder(buffer)))
       } else {
         messages.push(message)
@@ -51,9 +51,4 @@ const EntryDecoder = decoder => {
   const offset = decoder.readInt64().toString()
   const size = decoder.readInt32()
   return MessageDecoder(offset, size, decoder)
-}
-
-const getCompressionCodec = message => {
-  const codec = Codecs[message.attributes & 0x3]
-  return codec ? codec() : null
 }

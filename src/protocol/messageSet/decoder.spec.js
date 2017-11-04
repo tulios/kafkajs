@@ -50,16 +50,16 @@ describe('Protocol > MessageSet > decoder', () => {
   Object.keys(Fixtures).forEach(version => {
     describe(`message ${version}`, () => {
       Object.keys(Fixtures[version]).forEach(option => {
-        test(`decode ${option} messages`, () => {
+        test(`decode ${option} messages`, async () => {
           const { data, output } = Fixtures[version][option]
           const decoder = new Decoder(Buffer.from(data))
-          expect(MessageSetDecoder(decoder)).toEqual(output)
+          await expect(MessageSetDecoder(decoder)).resolves.toEqual(output)
         })
       })
     })
   })
 
-  test('skip partial messages', () => {
+  test('skip partial messages', async () => {
     const messageSet = MessageSet({
       messageVersion: 0,
       entries: [{ key: 'v0-key', value: 'v0-value', offset: 10 }],
@@ -74,6 +74,6 @@ describe('Protocol > MessageSet > decoder', () => {
     const { buffer } = new Encoder().writeInt32(messageSet.size()).writeEncoder(temp)
     const decoder = new Decoder(buffer)
 
-    expect(MessageSetDecoder(decoder)).toEqual([])
+    await expect(MessageSetDecoder(decoder)).resolves.toEqual([])
   })
 })
