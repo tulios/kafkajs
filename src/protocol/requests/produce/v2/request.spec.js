@@ -39,8 +39,6 @@ describe('Protocol > Requests > Produce > v2', () => {
   })
 
   test('request with gzip', async () => {
-    const originalDateNow = Date.now
-    Date.now = jest.fn(() => 1509819296569)
     const { buffer } = await RequestV2Protocol({
       acks: -1,
       timeout: 30000,
@@ -73,7 +71,6 @@ describe('Protocol > Requests > Produce > v2', () => {
         },
       ],
     }).encode()
-    Date.now = originalDateNow
     expect(buffer).toEqual(Buffer.from(require('../fixtures/v2_request_gzip.json')))
   })
 })

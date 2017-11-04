@@ -49,12 +49,14 @@ const partitionsEncoder = compression => async ({ partition, messages }) => {
       .writeEncoder(messageSet)
   }
 
+  const { timestamp } = messages[0] || { timestamp: Date.now() }
+
   const codec = lookupCodec(compression)
   const compressedValue = await codec.compress(messageSet)
   const compressedMessageSet = MessageSet({
     messageVersion: 1,
     compression,
-    entries: [{ offset: 0, compression, value: compressedValue }],
+    entries: [{ offset: 0, compression, timestamp, value: compressedValue }],
   })
 
   return new Encoder()
