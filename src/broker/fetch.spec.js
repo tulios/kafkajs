@@ -5,14 +5,15 @@ const { Types: Compression } = require('../protocol/message/compression')
 const minBytes = 1
 const maxBytes = 1048576 // 1MB
 const maxWaitTime = 5
+const timestamp = 1509827900073
 
 describe('Broker > Fetch', () => {
   let topicName, seedBroker, broker
 
   const createMessages = (n = 0) => [
-    { key: `key-${n}`, value: `some-value-${n}` },
-    { key: `key-${n + 1}`, value: `some-value-${n + 1}` },
-    { key: `key-${n + 2}`, value: `some-value-${n + 2}` },
+    { key: `key-${n}`, value: `some-value-${n}`, timestamp },
+    { key: `key-${n + 1}`, value: `some-value-${n + 1}`, timestamp },
+    { key: `key-${n + 2}`, value: `some-value-${n + 2}`, timestamp },
   ]
 
   const createTopicData = (partition, messages) => [
@@ -86,28 +87,31 @@ describe('Broker > Fetch', () => {
               messages: [
                 {
                   offset: '0',
-                  size: 31,
-                  crc: 120234579,
-                  magicByte: 0,
+                  size: 39,
+                  crc: 924859032,
+                  magicByte: 1,
                   attributes: 0,
+                  timestamp: '1509827900073',
                   key: Buffer.from(messages[0].key),
                   value: Buffer.from(messages[0].value),
                 },
                 {
                   offset: '1',
-                  size: 31,
-                  crc: -141862522,
-                  magicByte: 0,
+                  size: 39,
+                  crc: -947797683,
+                  magicByte: 1,
                   attributes: 0,
+                  timestamp: '1509827900073',
                   key: Buffer.from(messages[1].key),
                   value: Buffer.from(messages[1].value),
                 },
                 {
                   offset: '2',
-                  size: 31,
-                  crc: 1025004472,
-                  magicByte: 0,
+                  size: 39,
+                  crc: 219335539,
+                  magicByte: 1,
                   attributes: 0,
+                  timestamp: '1509827900073',
                   key: Buffer.from(messages[2].key),
                   value: Buffer.from(messages[2].value),
                 },
@@ -158,28 +162,31 @@ describe('Broker > Fetch', () => {
               messages: [
                 {
                   offset: '0',
-                  size: 31,
-                  crc: 120234579,
-                  magicByte: 0,
+                  size: 39,
+                  crc: 924859032,
+                  magicByte: 1,
                   attributes: 0,
+                  timestamp: '1509827900073',
                   key: Buffer.from(messages[0].key),
                   value: Buffer.from(messages[0].value),
                 },
                 {
                   offset: '1',
-                  size: 31,
-                  crc: -141862522,
-                  magicByte: 0,
+                  size: 39,
+                  crc: -947797683,
+                  magicByte: 1,
                   attributes: 0,
+                  timestamp: '1509827900073',
                   key: Buffer.from(messages[1].key),
                   value: Buffer.from(messages[1].value),
                 },
                 {
                   offset: '2',
-                  size: 31,
-                  crc: 1025004472,
-                  magicByte: 0,
+                  size: 39,
+                  crc: 219335539,
+                  magicByte: 1,
                   attributes: 0,
+                  timestamp: '1509827900073',
                   key: Buffer.from(messages[2].key),
                   value: Buffer.from(messages[2].value),
                 },

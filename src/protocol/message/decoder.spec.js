@@ -3,6 +3,7 @@ const Decoder = require('../decoder')
 const MessageDecoder = require('./decoder')
 
 const MessageV0 = require('./v0')
+const MessageV1 = require('./v1')
 
 describe('Protocol > Message > decoder', () => {
   describe('v0', () => {
@@ -41,6 +42,29 @@ describe('Protocol > Message > decoder', () => {
       expect(() => MessageDecoder(offset, size, decoder)).toThrowError(
         /Tried to decode a partial message/
       )
+    })
+  })
+
+  describe('v1', () => {
+    test('decode', () => {
+      const message = MessageV1({ key: 'v0-key', value: 'v0-value', timestamp: 1509827481681 })
+      const offset = '0'
+      const size = message.size()
+      const { buffer } = new Encoder().writeInt32(size).writeEncoder(message)
+
+      const decoder = new Decoder(buffer)
+      decoder.readInt32() // read the size to be more realistic
+
+      expect(MessageDecoder(offset, size, decoder)).toEqual({
+        offset,
+        size,
+        crc: 1931824201,
+        magicByte: 1,
+        attributes: 0,
+        timestamp: '1509827481681',
+        key: Buffer.from('v0-key'),
+        value: Buffer.from('v0-value'),
+      })
     })
   })
 })

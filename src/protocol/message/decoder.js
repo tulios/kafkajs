@@ -1,10 +1,13 @@
 const { KafkaJSPartialMessageError, KafkaJSError } = require('../../errors')
 const V0Decoder = require('./v0/decoder')
+const V1Decoder = require('./v1/decoder')
 
 const decodeMessage = (decoder, magicByte) => {
   switch (magicByte) {
     case 0:
       return V0Decoder(decoder)
+    case 1:
+      return V1Decoder(decoder)
     default:
       throw new KafkaJSError(`Unsupported message version, magic byte: ${magicByte}`)
   }
