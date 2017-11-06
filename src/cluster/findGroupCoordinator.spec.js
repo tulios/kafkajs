@@ -34,4 +34,22 @@ describe('Cluster > findGroupCoordinator', () => {
     await expect(cluster.findGroupCoordinator({ groupId })).resolves.toEqual(firstNode)
     expect(cluster.findBroker).toHaveBeenCalledTimes(2)
   })
+
+  test('refresh the metadata and try again until broker is found', async () => {
+    const firstNodeId = Object.keys(cluster.brokerPool)[0]
+    const firstNode = cluster.brokerPool[firstNodeId]
+
+    cluster.findBroker = jest
+      .fn()
+      .mockImplementationOnce(() => {
+        throw new KafkaJSBrokerNotFound('Not found')
+      })
+      .mockImplementationOnce(() => {
+        throw new KafkaJSBrokerNotFound('Not found')
+      })
+      .mockImplementationOnce(() => firstNode)
+
+    await expect(cluster.findGroupCoordinator({ groupId })).resolves.toEqual(firstNode)
+    expect(cluster.findBroker).toHaveBeenCalledTimes(2)
+  })
 })
