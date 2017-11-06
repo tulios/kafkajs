@@ -1,4 +1,5 @@
 const Broker = require('../broker')
+const createRetry = require('../retry')
 const connectionBuilder = require('./connectionBuilder')
 const { KafkaJSError, KafkaJSBrokerNotFound } = require('../errors')
 
@@ -168,20 +169,30 @@ module.exports = class Cluster {
    * @param {string} groupId
    * @returns {Promise<Broker>}
    */
-  async findGroupCoordinator({ groupId }) {
-    const { coordinator } = await this.seedBroker.findGroupCoordinator({ groupId })
-    const findCoordinatorBroker = async () => this.findBroker({ nodeId: coordinator.nodeId })
+  async findGroupCoordinator({ groupId, retry = { retries: 2 } }) {
+    const retrier = createRetry(Object.assign({}, this.retry, retry))
 
-    try {
-      return await findCoordinatorBroker()
-    } catch (e) {
-      // A new broker can join the cluster before we have the chance
-      // to refresh metadata
-      if (e.name === 'KafkaJSBrokerNotFound') {
-        this.logger.debug(`${e.message}, refreshing metadata and trying again...`)
-        await this.refreshMetadata()
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        const { coordinator } = await this.seedBroker.findGroupCoordinator({ groupId })
+        const findCoordinatorBroker = async () => this.findBroker({ nodeId: coordinator.nodeId })
+
         return await findCoordinatorBroker()
+      } catch (error) {
+        // A new broker can join the cluster before we have the chance
+        // to refresh metadata
+        if (error.name === 'KafkaJSBrokerNotFound') {
+          this.logger.debug(`${error.message}, refreshing metadata and trying again...`, {
+            retryCount,
+            retryTime,
+          })
+          await this.refreshMetadata()
+          throw error
+        }
+
+        // Skip retries for other error types
+        bail(error)
       }
-    }
+    })
   }
 }
