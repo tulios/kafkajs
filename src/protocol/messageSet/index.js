@@ -1,5 +1,6 @@
 const Encoder = require('../encoder')
 const MessageProtocol = require('../message')
+const { Types } = require('../message/compression')
 
 /**
  * MessageSet => [Offset MessageSize Message]
@@ -14,7 +15,8 @@ const MessageProtocol = require('../message')
  *   { key: "<value>", value: "<value>" },
  * ]
  */
-module.exports = ({ messageVersion = 0, entries }) => {
+module.exports = ({ messageVersion = 0, compression, entries }) => {
+  const isCompressed = compression !== Types.None
   const Message = MessageProtocol({ version: messageVersion })
   const encoder = new Encoder()
 
@@ -22,12 +24,15 @@ module.exports = ({ messageVersion = 0, entries }) => {
   // They are written in sequence.
   // https://cwiki.apache.org/confluence/display/KAFKA/A+Guide+To+The+Kafka+Protocol#AGuideToTheKafkaProtocol-Messagesets
 
-  entries.forEach(entry => {
+  entries.forEach((entry, i) => {
     const message = Message(entry)
 
     // This is the offset used in kafka as the log sequence number.
     // When the producer is sending non compressed messages, it can set the offsets to anything
-    encoder.writeInt64(entry.offset || -1)
+    // When the producer is sending compressed messages, to avoid server side recompression, each compressed message
+    // should have offset starting from 0 and increasing by one for each inner message in the compressed message
+    // encoder.writeInt64(isCompressed ? i : -1)
+    encoder.writeInt64(isCompressed ? i : -1)
     encoder.writeInt32(message.size())
 
     encoder.writeEncoder(message)

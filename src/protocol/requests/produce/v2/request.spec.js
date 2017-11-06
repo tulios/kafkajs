@@ -48,25 +48,25 @@ describe('Protocol > Requests > Produce > v2', () => {
       compression: Types.GZIP,
       topicData: [
         {
-          topic: 'test-topic-bc674c30572e8ded886a',
+          topic: 'test-topic-43395f618a885920238c',
           partitions: [
             {
               partition: 0,
               messages: [
                 {
-                  key: 'key-95600f2c2703a2327b82',
-                  value: 'some-value-2220ab161ff7a1d95e81',
-                  timestamp: 1509819296569,
+                  key: 'key-d27f2271f5447fe62503',
+                  value: 'some-value-e64a333e986853959623',
+                  timestamp: 1509928155660,
                 },
                 {
-                  key: 'key-69bc917adcaa022c7b18',
-                  value: 'some-value-ee5a8e3f596a2e579c82',
-                  timestamp: 1509819296569,
+                  key: 'key-3be6f0b8e6c987d0aedc',
+                  value: 'some-value-7259046cfda805b0172e',
+                  timestamp: 1509928155660,
                 },
                 {
-                  key: 'key-d5e5057dac669e65bc64',
-                  value: 'some-value-02e4e3875d5dcd86a3f3',
-                  timestamp: 1509819296569,
+                  key: 'key-af98821b43a80d6aa4e8',
+                  value: 'some-value-94b9e769ec3e401bfd57',
+                  timestamp: 1509928155660,
                 },
               ],
             },

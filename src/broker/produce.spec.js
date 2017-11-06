@@ -4,6 +4,7 @@ const { secureRandom, createConnection } = require('testHelpers')
 
 describe('Broker > Produce', () => {
   let topicName, broker, broker2
+  const timestamp = 1509928155660
 
   const createTopicData = () => [
     {
@@ -12,9 +13,9 @@ describe('Broker > Produce', () => {
         {
           partition: 0,
           messages: [
-            { key: `key-${secureRandom()}`, value: `some-value-${secureRandom()}` },
-            { key: `key-${secureRandom()}`, value: `some-value-${secureRandom()}` },
-            { key: `key-${secureRandom()}`, value: `some-value-${secureRandom()}` },
+            { key: `key-${secureRandom()}`, value: `some-value-${secureRandom()}`, timestamp },
+            { key: `key-${secureRandom()}`, value: `some-value-${secureRandom()}`, timestamp },
+            { key: `key-${secureRandom()}`, value: `some-value-${secureRandom()}`, timestamp },
           ],
         },
       ],

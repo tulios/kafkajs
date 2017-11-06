@@ -1,3 +1,4 @@
+const Long = require('long')
 const Decoder = require('../decoder')
 const MessageDecoder = require('../message/decoder')
 const { lookupCodecByAttributes } = require('../message/compression')
@@ -21,7 +22,7 @@ module.exports = async decoder => {
 
       if (codec) {
         const buffer = await codec.decompress(message.value)
-        messages.push(...EntriesDecoder(new Decoder(buffer)))
+        messages.push(...EntriesDecoder(new Decoder(buffer), message))
       } else {
         messages.push(message)
       }
@@ -39,11 +40,25 @@ module.exports = async decoder => {
   return messages
 }
 
-const EntriesDecoder = decoder => {
+const EntriesDecoder = (decoder, compressedMessage) => {
   const messages = []
+
   while (decoder.offset < decoder.buffer.length) {
     messages.push(EntryDecoder(decoder))
   }
+
+  if (compressedMessage.magicByte > 0 && compressedMessage.offset >= 0) {
+    const compressedOffset = Long.fromValue(compressedMessage.offset)
+    const lastMessageOffset = Long.fromValue(messages[messages.length - 1].offset)
+    const baseOffset = compressedOffset - lastMessageOffset
+
+    for (let message of messages) {
+      message.offset = Long.fromValue(message.offset)
+        .add(baseOffset)
+        .toString()
+    }
+  }
+
   return messages
 }
 
