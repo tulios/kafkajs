@@ -31,7 +31,6 @@ module.exports = ({ messageVersion = 0, compression, entries }) => {
     // When the producer is sending non compressed messages, it can set the offsets to anything
     // When the producer is sending compressed messages, to avoid server side recompression, each compressed message
     // should have offset starting from 0 and increasing by one for each inner message in the compressed message
-    // encoder.writeInt64(isCompressed ? i : -1)
     encoder.writeInt64(isCompressed ? i : -1)
     encoder.writeInt32(message.size())
 
