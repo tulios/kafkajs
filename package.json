@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/tulios/kafkajs",
   "scripts": {
-    "test:local:watch": "yarn test:local --watch",
+    "test:local:watch": "yarn test:local -- --watch",
     "test:local": "./node_modules/.bin/jest",
     "test": "yarn lint && JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh './node_modules/.bin/jest --coverage'",
     "lint": "./node_modules/.bin/eslint example.js \"{src,testHelpers}/**/*.js\""
