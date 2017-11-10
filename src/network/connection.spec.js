@@ -1,8 +1,12 @@
-const { secureRandom, connectionOpts, sslConnectionOpts } = require('../../testHelpers')
+const { connectionOpts, sslConnectionOpts } = require('../../testHelpers')
 const { requests } = require('../protocol/requests')
 const Connection = require('./connection')
 
 describe('Network > Connection', () => {
+  // According to RFC 5737:
+  // The blocks 192.0.2.0/24 (TEST-NET-1), 198.51.100.0/24 (TEST-NET-2),
+  // and 203.0.113.0/24 (TEST-NET-3) are provided for use in documentation.
+  const invalidIP = '203.0.113.1'
   let connection
 
   afterEach(async () => {
@@ -21,7 +25,7 @@ describe('Network > Connection', () => {
       })
 
       test('rejects the Promise in case of errors', async () => {
-        connection.host = '99.99.99.99'
+        connection.host = invalidIP
         await expect(connection.connect()).rejects.toHaveProperty('message', 'Connection timeout')
         expect(connection.connected).toEqual(false)
       })
@@ -38,7 +42,7 @@ describe('Network > Connection', () => {
       })
 
       test('rejects the Promise in case of timeouts', async () => {
-        connection.host = '99.99.99.99'
+        connection.host = invalidIP
         await expect(connection.connect()).rejects.toHaveProperty('message', 'Connection timeout')
         expect(connection.connected).toEqual(false)
       })
@@ -66,28 +70,25 @@ describe('Network > Connection', () => {
   })
 
   describe('#send', () => {
-    let topicName, metadataProtocol
+    let apiVersions
 
     beforeEach(() => {
       connection = new Connection(connectionOpts())
-      topicName = `test-topic-${secureRandom()}`
-      metadataProtocol = requests.Metadata.protocol({ version: 2 })
+      apiVersions = requests.ApiVersions.protocol({ version: 0 })
     })
 
     test('resolves the Promise with the response', async () => {
       await connection.connect()
-      await expect(connection.send(metadataProtocol([topicName]))).resolves.toBeTruthy()
+      await expect(connection.send(apiVersions())).resolves.toBeTruthy()
     })
 
     test('rejects the Promise if it is not connected', async () => {
       expect(connection.connected).toEqual(false)
-      await expect(connection.send(metadataProtocol([topicName]))).rejects.toEqual(
-        new Error('Not connected')
-      )
+      await expect(connection.send(apiVersions())).rejects.toEqual(new Error('Not connected'))
     })
 
     test('rejects the Promise in case of a non-retriable error', async () => {
-      const protocol = metadataProtocol([topicName])
+      const protocol = apiVersions()
       protocol.response.parse = () => {
         throw new Error('non-retriable')
       }

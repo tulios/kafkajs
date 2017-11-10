@@ -1,13 +1,14 @@
 const Broker = require('./index')
-const { secureRandom, createConnection } = require('testHelpers')
+const { secureRandom, createConnection, newLogger, createTopic } = require('testHelpers')
 
 describe('Broker > Offsets', () => {
   let topicName, seedBroker, broker
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
-    seedBroker = new Broker(createConnection())
+    seedBroker = new Broker(createConnection(), newLogger())
     await seedBroker.connect()
+    await createTopic(seedBroker, topicName)
 
     const metadata = await seedBroker.metadata([topicName])
     // Find leader of partition
@@ -15,7 +16,7 @@ describe('Broker > Offsets', () => {
     const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
 
     // Connect to the correct broker to produce message
-    broker = new Broker(createConnection(newBrokerData))
+    broker = new Broker(createConnection(newBrokerData), newLogger())
     await broker.connect()
   })
 

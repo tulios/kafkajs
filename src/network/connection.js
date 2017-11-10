@@ -36,7 +36,7 @@ module.exports = class Connection {
     this.port = port
     this.rack = rack
     this.clientId = clientId
-    this.logger = logger
+    this.logger = logger.namespace('Connection')
 
     this.ssl = ssl
     this.sasl = sasl
@@ -183,15 +183,15 @@ module.exports = class Connection {
    *                          "decode" and "parse"
    * @returns {Promise<data>} where data is the return of "response#parse"
    */
-  send({ request, response }) {
+  async send({ request, response }) {
     if (!this.connected) {
-      return Promise.reject(new KafkaJSConnectionError('Not connected'))
+      throw new KafkaJSConnectionError('Not connected')
     }
 
     const requestInfo = ({ apiName, apiKey, apiVersion }) =>
       `${apiName}(key: ${apiKey}, version: ${apiVersion})`
 
-    const sendRequest = async (retryCount, retryTime) => {
+    const sendRequest = async () => {
       const { clientId } = this
       const correlationId = this.nextCorrelationId()
 
@@ -199,8 +199,6 @@ module.exports = class Connection {
       const { apiKey, apiName, apiVersion } = request
       this.logDebug(`Request ${requestInfo(request)}`, {
         correlationId,
-        retryCount,
-        retryTime,
         size: Buffer.byteLength(requestPayload.buffer),
       })
 
@@ -214,32 +212,28 @@ module.exports = class Connection {
       })
     }
 
-    return this.retrier(async (bail, retryCount, retryTime) => {
-      const { correlationId, size, entry, payload } = await sendRequest(retryCount, retryTime)
-      try {
-        const payloadDecoded = await response.decode(payload)
-        const data = await response.parse(payloadDecoded)
-        const isFetchApi = entry.apiName === 'Fetch'
-        this.logDebug(`Response ${requestInfo(entry)}`, {
-          correlationId,
-          size,
-          data: isFetchApi ? '[filtered]' : data,
-        })
+    const { correlationId, size, entry, payload } = await sendRequest()
 
-        return data
-      } catch (e) {
-        this.logError(`Response ${requestInfo(entry)}`, {
-          error: e.message,
-          correlationId,
-          retryCount,
-          retryTime,
-          size,
-        })
+    try {
+      const payloadDecoded = await response.decode(payload)
+      const data = await response.parse(payloadDecoded)
+      const isFetchApi = entry.apiName === 'Fetch'
+      this.logDebug(`Response ${requestInfo(entry)}`, {
+        correlationId,
+        size,
+        data: isFetchApi ? '[filtered]' : data,
+      })
 
-        if (this.connected && e.retriable) throw e
-        bail(e)
-      }
-    })
+      return data
+    } catch (e) {
+      this.logError(`Response ${requestInfo(entry)}`, {
+        error: e.message,
+        correlationId,
+        size,
+      })
+
+      throw e
+    }
   }
 
   /**

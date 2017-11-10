@@ -1,6 +1,6 @@
 const Broker = require('./index')
 const { Types: Compression } = require('../protocol/message/compression')
-const { secureRandom, createConnection } = require('testHelpers')
+const { secureRandom, createConnection, newLogger, createTopic } = require('testHelpers')
 
 describe('Broker > Produce', () => {
   let topicName, broker, broker2
@@ -24,8 +24,9 @@ describe('Broker > Produce', () => {
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
-    broker = new Broker(createConnection())
+    broker = new Broker(createConnection(), newLogger())
     await broker.connect()
+    await createTopic(broker, topicName)
   })
 
   afterEach(async () => {
@@ -35,7 +36,7 @@ describe('Broker > Produce', () => {
 
   test('rejects the Promise if lookupRequest is not defined', async () => {
     await broker.disconnect()
-    broker = new Broker(createConnection())
+    broker = new Broker(createConnection(), newLogger())
     await expect(broker.produce({ topicData: [] })).rejects.toEqual(
       new Error('Broker not connected')
     )
@@ -48,7 +49,7 @@ describe('Broker > Produce', () => {
     const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
 
     // Connect to the correct broker to produce message
-    broker2 = new Broker(createConnection(newBrokerData))
+    broker2 = new Broker(createConnection(newBrokerData), newLogger())
     await broker2.connect()
 
     const response1 = await broker2.produce({ topicData: createTopicData() })
@@ -75,7 +76,7 @@ describe('Broker > Produce', () => {
     const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
 
     // Connect to the correct broker to produce message
-    broker2 = new Broker(createConnection(newBrokerData))
+    broker2 = new Broker(createConnection(newBrokerData), newLogger())
     await broker2.connect()
 
     const response1 = await broker2.produce({

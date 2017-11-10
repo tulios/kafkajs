@@ -1,12 +1,12 @@
 const Broker = require('./index')
-const { secureRandom, createConnection } = require('testHelpers')
+const { secureRandom, createConnection, newLogger, createTopic } = require('testHelpers')
 
 describe('Broker > Metadata', () => {
   let topicName, broker
 
   beforeEach(() => {
     topicName = `test-topic-${secureRandom()}`
-    broker = new Broker(createConnection())
+    broker = new Broker(createConnection(), newLogger())
   })
 
   afterEach(async () => {
@@ -19,6 +19,8 @@ describe('Broker > Metadata', () => {
 
   test('request', async () => {
     await broker.connect()
+    await createTopic(broker, topicName)
+
     const response = await broker.metadata([topicName])
 
     expect(response).toMatchObject({

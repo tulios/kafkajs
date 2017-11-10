@@ -3,8 +3,10 @@ const ip = require('ip')
 const crypto = require('crypto')
 const Cluster = require('../src/cluster')
 const Connection = require('../src/network/connection')
-const { createLogger, LEVELS: { NOTHING } } = require('../src/loggers/console')
+const { createLogger, LEVELS: { NOTHING } } = require('../src/loggers')
+const logFunctionConsole = require('../src/loggers/console')
 
+const newLogger = () => createLogger({ level: NOTHING, logFunction: logFunctionConsole })
 const getHost = () => process.env.HOST_IP || ip.address()
 const secureRandom = (length = 10) => crypto.randomBytes(length).toString('hex')
 const plainTextBrokers = (host = getHost()) => [`${host}:9092`, `${host}:9095`, `${host}:9098`]
@@ -13,7 +15,7 @@ const saslBrokers = (host = getHost()) => [`${host}:9094`, `${host}:9097`, `${ho
 
 const connectionOpts = () => ({
   clientId: `test-${secureRandom()}`,
-  logger: createLogger({ level: NOTHING }),
+  logger: newLogger(),
   host: getHost(),
   port: 9092,
 })
@@ -49,6 +51,27 @@ const createModPartitioner = () => ({ partitionMetadata, message }) => {
   return ((key || 0) % 3) % numPartitions
 }
 
+const retryProtocol = (errorType, fn) =>
+  new Promise((resolve, reject) => {
+    const schedule = () =>
+      setTimeout(async () => {
+        try {
+          const result = await fn()
+          resolve(result)
+        } catch (e) {
+          if (e.type !== errorType) {
+            return reject(e)
+          }
+          schedule()
+        }
+      }, 100)
+
+    schedule()
+  })
+
+const createTopic = (broker, topicName) =>
+  retryProtocol('LEADER_NOT_AVAILABLE', async () => await broker.metadata([topicName]))
+
 module.exports = {
   secureRandom,
   connectionOpts,
@@ -60,4 +83,7 @@ module.exports = {
   plainTextBrokers,
   sslBrokers,
   saslBrokers,
+  newLogger,
+  retryProtocol,
+  createTopic,
 }

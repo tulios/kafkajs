@@ -1,4 +1,4 @@
-const { createCluster, secureRandom } = require('../../testHelpers')
+const { createCluster, secureRandom, createTopic } = require('../../testHelpers')
 
 describe('Cluster > addTargetTopic', () => {
   let cluster
@@ -16,6 +16,8 @@ describe('Cluster > addTargetTopic', () => {
   test('add the new topic to the target list', async () => {
     const topic1 = `topic-${secureRandom()}`
     const topic2 = `topic-${secureRandom()}`
+    await createTopic(cluster.seedBroker, topic1)
+    await createTopic(cluster.seedBroker, topic2)
     expect(Array.from(cluster.targetTopics)).toEqual([])
 
     await cluster.addTargetTopic(topic1)

@@ -7,6 +7,7 @@ const {
   createModPartitioner,
   sslBrokers,
   saslBrokers,
+  newLogger,
 } = require('testHelpers')
 
 const { KafkaJSSASLAuthenticationError } = require('../errors')
@@ -24,7 +25,7 @@ describe('Producer', () => {
 
   test('support SSL connections', async () => {
     const cluster = createCluster(sslConnectionOpts(), sslBrokers())
-    producer = createProducer({ cluster })
+    producer = createProducer({ cluster, logger: newLogger() })
     await producer.connect()
   })
 
@@ -39,7 +40,7 @@ describe('Producer', () => {
       }),
       saslBrokers()
     )
-    producer = createProducer({ cluster })
+    producer = createProducer({ cluster, logger: newLogger() })
     await producer.connect()
   })
 
@@ -55,7 +56,7 @@ describe('Producer', () => {
       saslBrokers()
     )
 
-    producer = createProducer({ cluster })
+    producer = createProducer({ cluster, logger: newLogger() })
     await expect(producer.connect()).rejects.toEqual(
       new KafkaJSSASLAuthenticationError(
         'SASL PLAIN authentication failed: Connection closed by the server'
@@ -70,7 +71,7 @@ describe('Producer', () => {
       })
     )
 
-    producer = createProducer({ cluster })
+    producer = createProducer({ cluster, logger: newLogger() })
     await producer.connect()
     await producer.send({
       topic: topicName,
@@ -96,7 +97,7 @@ describe('Producer', () => {
       })
     )
 
-    producer = createProducer({ cluster })
+    producer = createProducer({ cluster, logger: newLogger() })
     await producer.connect()
 
     const sendMessages = async () =>

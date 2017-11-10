@@ -1,11 +1,11 @@
-const { createConnection, connectionOpts, saslConnectionOpts } = require('../../testHelpers')
+const { createConnection, connectionOpts, saslConnectionOpts, newLogger } = require('testHelpers')
 const Broker = require('./index')
 
 describe('Broker > connect', () => {
   let broker
 
   beforeEach(() => {
-    broker = new Broker(createConnection(connectionOpts()))
+    broker = new Broker(createConnection(connectionOpts()), newLogger())
   })
 
   afterEach(async () => {
@@ -24,7 +24,7 @@ describe('Broker > connect', () => {
   })
 
   test('authenticate with SASL if configured', async () => {
-    broker = new Broker(createConnection(saslConnectionOpts()))
+    broker = new Broker(createConnection(saslConnectionOpts()), newLogger())
     expect(broker.authenticated).toEqual(false)
     await broker.connect()
     expect(broker.authenticated).toEqual(true)
@@ -48,7 +48,7 @@ describe('Broker > connect', () => {
     })
 
     test('returns false when connected but not authenticated on connections with SASL', async () => {
-      broker = new Broker(createConnection(saslConnectionOpts()))
+      broker = new Broker(createConnection(saslConnectionOpts()), newLogger())
       expect(broker.isConnected()).toEqual(false)
       await broker.connection.connect()
       expect(broker.isConnected()).toEqual(false)
@@ -60,7 +60,7 @@ describe('Broker > connect', () => {
     })
 
     test('returns true when connected and authenticated on connections with SASL', async () => {
-      broker = new Broker(createConnection(saslConnectionOpts()))
+      broker = new Broker(createConnection(saslConnectionOpts()), newLogger())
       await broker.connect()
       expect(broker.isConnected()).toEqual(true)
     })

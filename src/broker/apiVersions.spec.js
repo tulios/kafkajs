@@ -1,11 +1,11 @@
-const { createConnection, connectionOpts } = require('../../testHelpers')
+const { createConnection, connectionOpts, newLogger } = require('testHelpers')
 const Broker = require('./index')
 
 describe('Broker > ApiVersions', () => {
   let broker
 
   beforeEach(async () => {
-    broker = new Broker(createConnection(connectionOpts()))
+    broker = new Broker(createConnection(connectionOpts()), newLogger())
     await broker.connect()
   })
 

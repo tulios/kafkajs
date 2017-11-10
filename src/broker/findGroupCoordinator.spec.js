@@ -1,12 +1,12 @@
 const Broker = require('./index')
-const { secureRandom, createConnection } = require('testHelpers')
+const { secureRandom, createConnection, newLogger, retryProtocol } = require('testHelpers')
 
 describe('Broker > FindGroupCoordinator', () => {
   let groupId, seedBroker
 
   beforeEach(async () => {
     groupId = `consumer-group-id-${secureRandom()}`
-    seedBroker = new Broker(createConnection())
+    seedBroker = new Broker(createConnection(), newLogger())
     await seedBroker.connect()
   })
 
@@ -15,7 +15,11 @@ describe('Broker > FindGroupCoordinator', () => {
   })
 
   test('request', async () => {
-    const response = await seedBroker.findGroupCoordinator({ groupId })
+    const response = await retryProtocol(
+      'GROUP_COORDINATOR_NOT_AVAILABLE',
+      async () => await seedBroker.findGroupCoordinator({ groupId })
+    )
+
     expect(response).toEqual({
       errorCode: 0,
       coordinator: {

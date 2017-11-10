@@ -1,17 +1,17 @@
-const { KafkaJSProtocolError } = require('../errors')
 const createRetry = require('../retry')
 const createDefaultPartitioner = require('./partitioners/default')
 const createSendMessages = require('./sendMessages')
 
 module.exports = ({
   cluster,
+  logger: rootLogger,
   createPartitioner = createDefaultPartitioner,
-  retry = { retries: 2 },
+  retry = { retries: 5 },
 }) => {
   const partitioner = createPartitioner()
   const retrier = createRetry(Object.assign({}, cluster.retry, retry))
   const sendMessages = createSendMessages({ cluster, partitioner })
-  const { logger } = cluster
+  const logger = rootLogger.namespace('Producer')
 
   return {
     /**
@@ -53,18 +53,23 @@ module.exports = ({
               retryTime,
             })
             await cluster.connect()
+            await cluster.refreshMetadata()
             throw error
           }
 
           // This is necessary in case the metadata is stale and the number of partitions
           // for this topic has increased in the meantime
-          if (error instanceof KafkaJSProtocolError && error.retriable) {
+          if (
+            error.name === 'KafkaJSConnectionError' ||
+            (error.name === 'KafkaJSProtocolError' && error.retriable)
+          ) {
             logger.error(`Failed to send messages: ${error.message}`, { retryCount, retryTime })
             await cluster.refreshMetadata()
             throw error
           }
 
           // Skip retries for errors not related to the Kafka protocol
+          logger.error(`${error.message}`, { retryCount, retryTime })
           bail(error)
         }
       })

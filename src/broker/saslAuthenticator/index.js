@@ -7,8 +7,9 @@ const AUTHENTICATORS = { PLAIN: PlainAuthenticator }
 const SUPPORTED_MECHANISMS = Object.keys(AUTHENTICATORS)
 
 module.exports = class SASLAuthenticator {
-  constructor(connection, versions) {
+  constructor(connection, logger, versions) {
     this.connection = connection
+    this.logger = logger
     this.saslHandshake = lookup(versions)(apiKeys.SaslHandshake, requests.SaslHandshake)
   }
 
@@ -28,6 +29,6 @@ module.exports = class SASLAuthenticator {
     }
 
     const Authenticator = AUTHENTICATORS[mechanism]
-    await new Authenticator(this.connection).authenticate()
+    await new Authenticator(this.connection, this.logger).authenticate()
   }
 }

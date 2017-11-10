@@ -36,7 +36,7 @@ describe('Cluster > connect', () => {
       throw illegalStateError
     })
 
-    await expect(cluster.connect()).rejects.toEqual(illegalStateError)
+    await cluster.connect()
     expect(cluster.seedBroker.connection.port).not.toEqual(originalSeedPort)
   })
 

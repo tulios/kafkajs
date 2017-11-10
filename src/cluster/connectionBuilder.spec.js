@@ -1,3 +1,4 @@
+const { newLogger } = require('testHelpers')
 const connectionBuilder = require('./connectionBuilder')
 const Connection = require('../network/connection')
 
@@ -10,7 +11,7 @@ describe('Cluster > ConnectionBuilder', () => {
   const clientId = 'test-client-id'
   const connectionTimeout = 30000
   const retry = { retry: true }
-  const logger = jest.fn()
+  const logger = newLogger()
 
   beforeEach(() => {
     builder = connectionBuilder({
@@ -34,7 +35,7 @@ describe('Cluster > ConnectionBuilder', () => {
     expect(connection.clientId).toEqual(clientId)
     expect(connection.connectionTimeout).toEqual(connectionTimeout)
     expect(connection.retry).toEqual(retry)
-    expect(connection.logger).toEqual(logger)
+    expect(connection.logger).not.toBeFalsy()
   })
 
   test('when called without host and port iterates throught the seed brokers', () => {
