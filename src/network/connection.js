@@ -2,7 +2,7 @@ const createRetry = require('../retry')
 const createSocket = require('./socket')
 const createRequest = require('../protocol/request')
 const Decoder = require('../protocol/decoder')
-const { KafkaJSError } = require('../errors')
+const { KafkaJSConnectionError } = require('../errors')
 
 /**
  * @param {string} host
@@ -90,19 +90,22 @@ module.exports = class Connection {
           this.authHandlers.onError()
         } else if (wasConnected) {
           this.logDebug('Kafka server has closed connection')
+          this.rejectRequests(new KafkaJSConnectionError('Closed connection'))
         }
       }
 
       const onError = async e => {
-        const error = new Error(`Connection error: ${e.message}`)
+        const error = new KafkaJSConnectionError(`Connection error: ${e.message}`)
         this.logError(error.message)
         await this.disconnect()
+        this.rejectRequests(error)
+
         reject(error)
       }
 
       const onTimeout = async () => {
         await this.disconnect()
-        const error = new Error('Connection timeout')
+        const error = new KafkaJSConnectionError('Connection timeout')
         this.logError(error.message)
         reject(error)
       }
@@ -124,7 +127,7 @@ module.exports = class Connection {
           onError,
         })
       } catch (e) {
-        reject(new Error(`Failed to connect: ${e.message}`))
+        reject(new KafkaJSConnectionError(`Failed to connect: ${e.message}`))
       }
     })
   }
@@ -162,7 +165,7 @@ module.exports = class Connection {
         },
         onError: () => {
           this.authHandlers = null
-          reject(new Error('Connection closed by the server'))
+          reject(new KafkaJSConnectionError('Connection closed by the server'))
         },
       }
 
@@ -182,7 +185,7 @@ module.exports = class Connection {
    */
   send({ request, response }) {
     if (!this.connected) {
-      return Promise.reject(new KafkaJSError('Not connected'))
+      return Promise.reject(new KafkaJSConnectionError('Not connected'))
     }
 
     const requestInfo = ({ apiName, apiKey, apiVersion }) =>
@@ -202,8 +205,12 @@ module.exports = class Connection {
       })
 
       return new Promise((resolve, reject) => {
-        this.pendingQueue[correlationId] = { apiKey, apiName, apiVersion, resolve }
-        this.socket.write(requestPayload.buffer, 'binary')
+        try {
+          this.pendingQueue[correlationId] = { apiKey, apiName, apiVersion, resolve, reject }
+          this.socket.write(requestPayload.buffer, 'binary')
+        } catch (e) {
+          reject(e)
+        }
       })
     }
 
@@ -229,7 +236,7 @@ module.exports = class Connection {
           size,
         })
 
-        if (e.retriable) throw e
+        if (this.connected && e.retriable) throw e
         bail(e)
       }
     })
@@ -287,6 +294,15 @@ module.exports = class Connection {
       size,
       entry,
       payload,
+    })
+  }
+
+  /**
+   * @private
+   */
+  rejectRequests(error) {
+    Object.keys(this.pendingQueue).forEach(request => {
+      this.pendingQueue[request].reject(error)
     })
   }
 }
