@@ -19,8 +19,7 @@ const Kafka = require('kafkajs')
 // seed broker
 const kafka = new Kafka({
   clientId: 'my-app',
-  host: 'kafka1',
-  port: 9092
+  brokers: ['kafka1:9092', 'kafka2:9092']
 })
 ```
 

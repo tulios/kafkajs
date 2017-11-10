@@ -3,8 +3,7 @@ const connectionBuilder = require('./connectionBuilder')
 const { KafkaJSError, KafkaJSBrokerNotFound } = require('../errors')
 
 /**
- * @param {string} host
- * @param {number} port
+ * @param {Array<string>} brokers example: ['127.0.0.1:9092', '127.0.0.1:9094']
  * @param {Object} ssl
  * @param {Object} sasl
  * @param {string} clientId
@@ -13,12 +12,11 @@ const { KafkaJSError, KafkaJSBrokerNotFound } = require('../errors')
  * @param {Object} logger
  */
 module.exports = class Cluster {
-  constructor({ host, port, ssl, sasl, clientId, connectionTimeout, retry, logger }) {
+  constructor({ brokers, ssl, sasl, clientId, connectionTimeout, retry, logger }) {
     this.retry = retry
     this.logger = logger
     this.connectionBuilder = connectionBuilder({
-      host,
-      port,
+      brokers,
       ssl,
       sasl,
       clientId,
@@ -48,8 +46,15 @@ module.exports = class Cluster {
    * @returns {Promise}
    */
   async connect() {
-    await this.seedBroker.connect()
-    this.versions = this.seedBroker.versions
+    try {
+      await this.seedBroker.connect()
+      this.versions = this.seedBroker.versions
+    } catch (e) {
+      if (e.type === 'ILLEGAL_SASL_STATE') {
+        this.seedBroker = new Broker(this.connectionBuilder.build())
+      }
+      throw e
+    }
   }
 
   /**

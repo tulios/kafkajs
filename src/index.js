@@ -4,11 +4,10 @@ const createProducer = require('./producer')
 const createConsumer = require('./consumer')
 
 module.exports = class Client {
-  constructor({ host, port, ssl, sasl, clientId, connectionTimeout, retry, logLevel = INFO }) {
+  constructor({ brokers, ssl, sasl, clientId, connectionTimeout, retry, logLevel = INFO }) {
     this.logger = createLogger({ level: logLevel })
     this.cluster = new Cluster({
-      host,
-      port,
+      brokers,
       ssl,
       sasl,
       clientId,

@@ -1,25 +1,28 @@
 const Connection = require('../network/connection')
 
-module.exports = ({
-  host: seedHost,
-  port: seedPort,
-  ssl,
-  sasl,
-  clientId,
-  connectionTimeout,
-  retry,
-  logger,
-}) => ({
-  build: ({ host, port, rack } = {}) =>
-    new Connection({
-      host: host || seedHost,
-      port: port || seedPort,
-      rack,
-      ssl,
-      sasl,
-      clientId,
-      connectionTimeout,
-      retry,
-      logger,
-    }),
-})
+module.exports = ({ brokers, ssl, sasl, clientId, connectionTimeout, retry, logger }) => {
+  const size = brokers.length
+  let index = 0
+
+  return {
+    build: ({ host, port, rack } = {}) => {
+      if (!host) {
+        const [seedHost, seedPort] = brokers[index++ % size].split(':')
+        host = seedHost
+        port = Number(seedPort)
+      }
+
+      return new Connection({
+        host,
+        port,
+        rack,
+        ssl,
+        sasl,
+        clientId,
+        connectionTimeout,
+        retry,
+        logger,
+      })
+    },
+  }
+}

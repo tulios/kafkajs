@@ -5,12 +5,16 @@ const Cluster = require('../src/cluster')
 const Connection = require('../src/network/connection')
 const { createLogger, LEVELS: { NOTHING } } = require('../src/loggers/console')
 
+const getHost = () => process.env.HOST_IP || ip.address()
 const secureRandom = (length = 10) => crypto.randomBytes(length).toString('hex')
+const plainTextBrokers = (host = getHost()) => [`${host}:9092`, `${host}:9095`, `${host}:9098`]
+const sslBrokers = (host = getHost()) => [`${host}:9093`, `${host}:9096`, `${host}:9099`]
+const saslBrokers = (host = getHost()) => [`${host}:9094`, `${host}:9097`, `${host}:9100`]
 
 const connectionOpts = () => ({
   clientId: `test-${secureRandom()}`,
   logger: createLogger({ level: NOTHING }),
-  host: process.env.HOST_IP || ip.address(),
+  host: getHost(),
   port: 9092,
 })
 
@@ -36,7 +40,9 @@ const saslConnectionOpts = () =>
   })
 
 const createConnection = (opts = {}) => new Connection(Object.assign(connectionOpts(), opts))
-const createCluster = (opts = {}) => new Cluster(Object.assign(connectionOpts(), opts))
+const createCluster = (opts = {}, brokers = plainTextBrokers()) =>
+  new Cluster(Object.assign(connectionOpts(), opts, { brokers }))
+
 const createModPartitioner = () => ({ partitionMetadata, message }) => {
   const numPartitions = partitionMetadata.length
   const key = parseInt(message.key.replace(/[^\d]/g, ''), 10)
@@ -51,4 +57,7 @@ module.exports = {
   createConnection,
   createCluster,
   createModPartitioner,
+  plainTextBrokers,
+  sslBrokers,
+  saslBrokers,
 }

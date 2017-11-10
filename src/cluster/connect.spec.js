@@ -1,4 +1,5 @@
 const { createCluster } = require('../../testHelpers')
+const { KafkaJSProtocolError } = require('../errors')
 
 describe('Cluster > connect', () => {
   let cluster
@@ -21,6 +22,22 @@ describe('Cluster > connect', () => {
     expect(cluster.versions).toEqual(null)
     await cluster.connect()
     expect(cluster.versions).toEqual(cluster.seedBroker.versions)
+  })
+
+  test.only('select a different seed broker on ILLEGAL_SASL_STATE error', async () => {
+    const originalSeedPort = cluster.seedBroker.connection.port
+    const illegalStateError = new KafkaJSProtocolError({
+      message: 'ILLEGAL_SASL_STATE',
+      type: 'ILLEGAL_SASL_STATE',
+      code: 34,
+    })
+
+    cluster.seedBroker.connect = jest.fn(() => {
+      throw illegalStateError
+    })
+
+    await expect(cluster.connect()).rejects.toEqual(illegalStateError)
+    expect(cluster.seedBroker.connection.port).not.toEqual(originalSeedPort)
   })
 
   describe('#isConnected', () => {

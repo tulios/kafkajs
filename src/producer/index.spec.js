@@ -5,6 +5,8 @@ const {
   sslConnectionOpts,
   createCluster,
   createModPartitioner,
+  sslBrokers,
+  saslBrokers,
 } = require('testHelpers')
 
 const { KafkaJSSASLAuthenticationError } = require('../errors')
@@ -21,7 +23,7 @@ describe('Producer', () => {
   })
 
   test('support SSL connections', async () => {
-    const cluster = createCluster(sslConnectionOpts())
+    const cluster = createCluster(sslConnectionOpts(), sslBrokers())
     producer = createProducer({ cluster })
     await producer.connect()
   })
@@ -29,13 +31,13 @@ describe('Producer', () => {
   test('support SASL PLAIN connections', async () => {
     const cluster = createCluster(
       Object.assign(sslConnectionOpts(), {
-        port: 9094,
         sasl: {
           mechanism: 'plain',
           username: 'test',
           password: 'testtest',
         },
-      })
+      }),
+      saslBrokers()
     )
     producer = createProducer({ cluster })
     await producer.connect()
@@ -44,13 +46,13 @@ describe('Producer', () => {
   test('throws an error if SASL PLAIN fails to authenticate', async () => {
     const cluster = createCluster(
       Object.assign(sslConnectionOpts(), {
-        port: 9094,
         sasl: {
           mechanism: 'plain',
           username: 'wrong',
           password: 'wrong',
         },
-      })
+      }),
+      saslBrokers()
     )
 
     producer = createProducer({ cluster })
