@@ -7,6 +7,8 @@ const {
   createModPartitioner,
 } = require('testHelpers')
 
+const { KafkaJSSASLAuthenticationError } = require('../errors')
+
 describe('Producer', () => {
   let topicName, producer
 
@@ -53,7 +55,9 @@ describe('Producer', () => {
 
     producer = createProducer({ cluster })
     await expect(producer.connect()).rejects.toEqual(
-      new Error('SASL PLAIN authentication failed: Connection closed by the server')
+      new KafkaJSSASLAuthenticationError(
+        'SASL PLAIN authentication failed: Connection closed by the server'
+      )
     )
   })
 

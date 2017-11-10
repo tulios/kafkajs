@@ -6,7 +6,7 @@ class KafkaJSError extends Error {
   }
 }
 
-class KafkaJSPartialMessageError extends KafkaJSError {
+class KafkaJSNonRetriableError extends KafkaJSError {
   constructor(e) {
     super(e.message || e, { retriable: false })
   }
@@ -20,6 +20,8 @@ class KafkaJSProtocolError extends KafkaJSError {
   }
 }
 
+class KafkaJSPartialMessageError extends KafkaJSNonRetriableError {}
+class KafkaJSSASLAuthenticationError extends KafkaJSNonRetriableError {}
 class KafkaJSConnectionError extends KafkaJSError {}
 class KafkaJSBrokerNotFound extends KafkaJSError {}
 
@@ -29,4 +31,5 @@ module.exports = {
   KafkaJSBrokerNotFound,
   KafkaJSProtocolError,
   KafkaJSConnectionError,
+  KafkaJSSASLAuthenticationError,
 }

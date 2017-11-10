@@ -1,4 +1,5 @@
 const plain = require('../../protocol/sasl/plain')
+const { KafkaJSSASLAuthenticationError } = require('../../errors')
 
 module.exports = class PlainAuthenticator {
   constructor(connection) {
@@ -16,7 +17,9 @@ module.exports = class PlainAuthenticator {
       await this.connection.authenticate({ request, response })
       logger.debug('SASL PLAIN authentication successful', { broker })
     } catch (e) {
-      const error = new Error(`SASL PLAIN authentication failed: ${e.message}`)
+      const error = new KafkaJSSASLAuthenticationError(
+        `SASL PLAIN authentication failed: ${e.message}`
+      )
       logger.error(error.message, { broker })
       throw error
     }
