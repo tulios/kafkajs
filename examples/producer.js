@@ -1,13 +1,15 @@
 const fs = require('fs')
 const ip = require('ip')
-const Kafka = require('./src/index')
-const { Types } = require('./src/compression')
-const { LEVELS } = require('./src/loggers/console')
+const Kafka = require('../src/index')
+const { Types } = require('../src/compression')
+const { LEVELS } = require('../src/loggers')
+
+const host = process.env.HOST_IP || ip.address()
 
 const kafka = new Kafka({
   logLevel: LEVELS.DEBUG,
-  host: process.env.HOST_IP || ip.address(),
-  port: 9094,
+  brokers: [`${host}:9094`, `${host}:9097`, `${host}:9100`],
+  clientId: 'example-producer',
   ssl: {
     servername: 'localhost',
     cert: fs.readFileSync('./testHelpers/certs/client_cert.pem', 'utf-8'),
@@ -31,19 +33,21 @@ const createMessage = num => ({
 })
 
 const sendMessage = () => {
-  producer
+  return producer
     .send({
       topic,
       compression: Types.GZIP,
-      messages: [createMessage(getRandomNumber())],
+      messages: Array(getRandomNumber())
+        .fill()
+        .map(_ => createMessage(getRandomNumber())),
     })
     .then(console.log)
-    .catch(console.error)
+    .catch(e => console.error(`[example/producer] ${e.message}`, e))
 }
 
 const run = async () => {
   await producer.connect()
-  setInterval(sendMessage, 1000)
+  setInterval(sendMessage, 3000)
 }
 
 run().catch(console.error)
