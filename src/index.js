@@ -17,13 +17,13 @@ module.exports = class Client {
   }) {
     this.logger = createLogger({ level: logLevel, logFunction })
     this.cluster = new Cluster({
+      logger: this.logger,
       brokers,
       ssl,
       sasl,
       clientId,
       connectionTimeout,
       retry,
-      logger: this.logger,
     })
   }
 

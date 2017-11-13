@@ -51,26 +51,38 @@ const createModPartitioner = () => ({ partitionMetadata, message }) => {
   return ((key || 0) % 3) % numPartitions
 }
 
-const retryProtocol = (errorType, fn) =>
-  new Promise((resolve, reject) => {
-    const schedule = () =>
+const waitFor = (fn, { delay = 50 } = {}) => {
+  return new Promise((resolve, reject) => {
+    const check = () =>
       setTimeout(async () => {
         try {
           const result = await fn()
-          resolve(result)
+          result ? resolve(result) : check()
         } catch (e) {
-          if (e.type !== errorType) {
-            return reject(e)
-          }
-          schedule()
+          reject(e)
         }
-      }, 100)
+      })
+    check()
+  })
+}
 
-    schedule()
+const retryProtocol = (errorType, fn) =>
+  waitFor(async () => {
+    try {
+      return await fn()
+    } catch (e) {
+      if (e.type !== errorType) {
+        throw e
+      }
+      return false
+    }
   })
 
 const createTopic = (broker, topicName) =>
   retryProtocol('LEADER_NOT_AVAILABLE', async () => await broker.metadata([topicName]))
+
+const waitForMessages = (buffer, { number = 1, delay = 50 } = {}) =>
+  waitFor(() => (buffer.length >= number ? buffer.splice(0) : false), { delay })
 
 module.exports = {
   secureRandom,
@@ -86,4 +98,6 @@ module.exports = {
   newLogger,
   retryProtocol,
   createTopic,
+  waitFor,
+  waitForMessages,
 }
