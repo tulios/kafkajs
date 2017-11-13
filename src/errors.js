@@ -1,6 +1,8 @@
 class KafkaJSError extends Error {
   constructor(e, { retriable = true } = {}) {
-    super(e.message || e)
+    super(e)
+    Error.captureStackTrace(this, this.constructor)
+    this.message = e.message || e
     this.name = this.constructor.name
     this.retriable = retriable
   }
@@ -8,15 +10,23 @@ class KafkaJSError extends Error {
 
 class KafkaJSNonRetriableError extends KafkaJSError {
   constructor(e) {
-    super(e.message || e, { retriable: false })
+    super(e, { retriable: false })
   }
 }
 
 class KafkaJSProtocolError extends KafkaJSError {
   constructor(e) {
-    super(e.message, { retriable: e.retriable })
+    super(e, { retriable: e.retriable })
     this.type = e.type
     this.code = e.code
+  }
+}
+
+class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
+  constructor(e, { retryCount, retryTime }) {
+    super(e)
+    this.retryCount = retryCount
+    this.retryTime = retryTime
   }
 }
 
@@ -32,4 +42,5 @@ module.exports = {
   KafkaJSProtocolError,
   KafkaJSConnectionError,
   KafkaJSSASLAuthenticationError,
+  KafkaJSNumberOfRetriesExceeded,
 }
