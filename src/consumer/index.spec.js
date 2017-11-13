@@ -167,4 +167,40 @@ describe('Consumer', () => {
       },
     ])
   })
+
+  it('consume batches', async () => {
+    await consumer.connect()
+    await producer.connect()
+    await consumer.subscribe(topicName)
+
+    const batchesConsumed = []
+    consumer.run({ eachBatch: async ({ batch }) => batchesConsumed.push(batch) })
+
+    const key1 = secureRandom()
+    const message1 = { key: `key-${key1}`, value: `value-${key1}` }
+    const key2 = secureRandom()
+    const message2 = { key: `key-${key2}`, value: `value-${key2}` }
+
+    await producer.send({ topic: topicName, messages: [message1, message2] })
+
+    await expect(waitForMessages(batchesConsumed)).resolves.toEqual([
+      {
+        topic: topicName,
+        partition: 0,
+        highWatermark: '2',
+        messages: [
+          expect.objectContaining({
+            key: Buffer.from(message1.key),
+            value: Buffer.from(message1.value),
+            offset: '0',
+          }),
+          expect.objectContaining({
+            key: Buffer.from(message2.key),
+            value: Buffer.from(message2.value),
+            offset: '1',
+          }),
+        ],
+      },
+    ])
+  })
 })
