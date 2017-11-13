@@ -83,6 +83,8 @@ module.exports = class Connection {
       }
 
       const onEnd = async () => {
+        clearTimeout(timeoutId)
+
         const wasConnected = this.connected
         await this.disconnect()
 
@@ -95,6 +97,8 @@ module.exports = class Connection {
       }
 
       const onError = async e => {
+        clearTimeout(timeoutId)
+
         const error = new KafkaJSConnectionError(`Connection error: ${e.message}`)
         this.logError(error.message)
         await this.disconnect()
