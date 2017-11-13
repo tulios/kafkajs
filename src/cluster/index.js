@@ -56,6 +56,7 @@ module.exports = class Cluster {
         this.logger.error(e, { retryCount, retryTime })
 
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
+          // Connection builder will always rotate the seed broker
           this.seedBroker = new Broker(this.connectionBuilder.build(), this.rootLogger)
           this.logger.error(
             `Failed to connect to seed broker, trying another broker from the list: ${e.message}`,
@@ -85,25 +86,35 @@ module.exports = class Cluster {
    * @returns {Promise}
    */
   async refreshMetadata() {
-    this.metadata = await this.seedBroker.metadata(Array.from(this.targetTopics))
-    this.brokerPool = this.metadata.brokers.reduce((result, { nodeId, host, port, rack }) => {
-      if (result[nodeId]) {
-        return result
+    return this.retrier(async (bail, retryCount, retryTime) => {
+      try {
+        this.metadata = await this.seedBroker.metadata(Array.from(this.targetTopics))
+        this.brokerPool = this.metadata.brokers.reduce((result, { nodeId, host, port, rack }) => {
+          if (result[nodeId]) {
+            return result
+          }
+
+          const { host: seedHost, port: seedPort } = this.seedBroker.connection
+
+          if (host === seedHost && port === seedPort) {
+            return Object.assign(result, {
+              [nodeId]: this.seedBroker,
+            })
+          }
+
+          const connection = this.connectionBuilder.build({ host, port, rack })
+          return Object.assign(result, {
+            [nodeId]: new Broker(connection, this.rootLogger, this.versions),
+          })
+        }, this.brokerPool)
+      } catch (e) {
+        if (e.type === 'LEADER_NOT_AVAILABLE') {
+          throw e
+        }
+
+        bail(e)
       }
-
-      const { host: seedHost, port: seedPort } = this.seedBroker.connection
-
-      if (host === seedHost && port === seedPort) {
-        return Object.assign(result, {
-          [nodeId]: this.seedBroker,
-        })
-      }
-
-      const connection = this.connectionBuilder.build({ host, port, rack })
-      return Object.assign(result, {
-        [nodeId]: new Broker(connection, this.rootLogger, this.versions),
-      })
-    }, this.brokerPool)
+    })
   }
 
   /**
@@ -174,7 +185,12 @@ module.exports = class Cluster {
     const partitionMetadata = this.findTopicPartitionMetadata(topic)
     return partitions.reduce((result, id) => {
       const partitionId = parseInt(id, 10)
-      const { leader } = partitionMetadata.find(p => p.partitionId === partitionId)
+      const metadata = partitionMetadata.find(p => p.partitionId === partitionId)
+      if (metadata.leader === null || metadata.leader === undefined) {
+        throw new KafkaJSError('Invalid partition metadata', { topic, partitionId, metadata })
+      }
+
+      const { leader } = metadata
       const current = result[leader] || []
       return Object.assign(result, { [leader]: [...current, partitionId] })
     }, {})

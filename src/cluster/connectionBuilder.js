@@ -7,6 +7,7 @@ module.exports = ({ brokers, ssl, sasl, clientId, connectionTimeout, retry, logg
   return {
     build: ({ host, port, rack } = {}) => {
       if (!host) {
+        // Always rotate the seed broker
         const [seedHost, seedPort] = brokers[index++ % size].split(':')
         host = seedHost
         port = Number(seedPort)
