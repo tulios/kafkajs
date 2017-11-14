@@ -1,7 +1,7 @@
 const Broker = require('./index')
 const { secureRandom, createConnection, newLogger, createTopic } = require('testHelpers')
 
-describe('Broker > Offsets', () => {
+describe('Broker > ListOffsets', () => {
   let topicName, seedBroker, broker
 
   beforeEach(async () => {
@@ -47,7 +47,7 @@ describe('Broker > Offsets', () => {
       },
     ]
 
-    const response = await broker.offsets({ topics })
+    const response = await broker.listOffsets({ topics })
     expect(response).toEqual({
       responses: [
         {

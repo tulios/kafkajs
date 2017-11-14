@@ -269,9 +269,9 @@ module.exports = class Broker {
    *                  ]
    * @returns {Promise}
    */
-  async offsets({ replicaId, topics }) {
-    const offsets = this.lookupRequest(apiKeys.Offsets, requests.Offsets)
-    return await this.connection.send(offsets({ replicaId, topics }))
+  async listOffsets({ replicaId, topics }) {
+    const listOffsets = this.lookupRequest(apiKeys.ListOffsets, requests.ListOffsets)
+    return await this.connection.send(listOffsets({ replicaId, topics }))
   }
 
   /**

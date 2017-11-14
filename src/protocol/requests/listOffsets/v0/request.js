@@ -1,8 +1,8 @@
 const Encoder = require('../../../encoder')
-const { Offsets: apiKey } = require('../../apiKeys')
+const { ListOffsets: apiKey } = require('../../apiKeys')
 
 /**
- * Offsets Request (Version: 0) => replica_id [topics]
+ * ListOffsets Request (Version: 0) => replica_id [topics]
  *   replica_id => INT32
  *   topics => topic [partitions]
  *     topic => STRING
@@ -15,7 +15,7 @@ const { Offsets: apiKey } = require('../../apiKeys')
 module.exports = ({ replicaId, topics }) => ({
   apiKey,
   apiVersion: 0,
-  apiName: 'Offsets',
+  apiName: 'ListOffsets',
   encode: async () => {
     return new Encoder().writeInt32(replicaId).writeArray(topics.map(encodeTopic))
   },

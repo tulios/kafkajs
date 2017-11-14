@@ -1,7 +1,7 @@
 const requests = {
   Produce: require('./produce'),
   Fetch: require('./fetch'),
-  Offsets: require('./offsets'),
+  ListOffsets: require('./listOffsets'),
   Metadata: require('./metadata'),
   LeaderAndIsr: {},
   StopReplica: {},
