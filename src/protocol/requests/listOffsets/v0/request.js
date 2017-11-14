@@ -12,6 +12,17 @@ const { ListOffsets: apiKey } = require('../../apiKeys')
  *       max_num_offsets => INT32
  */
 
+/**
+ * @param {number} replicaId
+ * @param {object} topics use timestamp=-1 for latest offsets and timestamp=-2 for earliest.
+ *                        Default timestamp=-1. Example:
+ *                          {
+ *                            topics: {
+ *                              topic: 'topic-name',
+ *                              partitions: [{ partition: 0, timestamp: -1 }],
+ *                            },
+ *                          }
+ */
 module.exports = ({ replicaId, topics }) => ({
   apiKey,
   apiVersion: 0,
@@ -25,7 +36,7 @@ const encodeTopic = ({ topic, partitions }) => {
   return new Encoder().writeString(topic).writeArray(partitions.map(encodePartition))
 }
 
-const encodePartition = ({ partition, timestamp = Date.now(), maxNumOffsets = 1 }) => {
+const encodePartition = ({ partition, timestamp = -1, maxNumOffsets = 1 }) => {
   return new Encoder()
     .writeInt32(partition)
     .writeInt64(timestamp)

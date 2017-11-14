@@ -1,6 +1,9 @@
 const Broker = require('./index')
 const { secureRandom, createConnection, newLogger, createTopic } = require('testHelpers')
 
+const EARLIEST = -2
+const LATEST = -1
+
 describe('Broker > ListOffsets', () => {
   let topicName, seedBroker, broker
 
@@ -56,6 +59,72 @@ describe('Broker > ListOffsets', () => {
             {
               errorCode: 0,
               offsets: expect.arrayContaining([expect.stringMatching(/\d+/)]),
+              partition: 0,
+            },
+          ]),
+        },
+      ],
+    })
+  })
+
+  test('request different points of interest', async () => {
+    const produceData = () => [
+      {
+        topic: topicName,
+        partitions: [
+          {
+            partition: 0,
+            messages: [
+              { key: `key-${secureRandom()}`, value: `some-value-${secureRandom()}` },
+              { key: `key-${secureRandom()}`, value: `some-value-${secureRandom()}` },
+            ],
+          },
+        ],
+      },
+    ]
+
+    await broker.produce({ topicData: produceData() })
+    await broker.produce({ topicData: produceData() })
+
+    let topics = [
+      {
+        topic: topicName,
+        partitions: [{ partition: 0, timestamp: LATEST }],
+      },
+    ]
+
+    let response = await broker.listOffsets({ topics })
+    expect(response).toEqual({
+      responses: [
+        {
+          topic: topicName,
+          partitions: expect.arrayContaining([
+            {
+              errorCode: 0,
+              offsets: expect.arrayContaining(['4']),
+              partition: 0,
+            },
+          ]),
+        },
+      ],
+    })
+
+    topics = [
+      {
+        topic: topicName,
+        partitions: [{ partition: 0, timestamp: EARLIEST }],
+      },
+    ]
+
+    response = await broker.listOffsets({ topics })
+    expect(response).toEqual({
+      responses: [
+        {
+          topic: topicName,
+          partitions: expect.arrayContaining([
+            {
+              errorCode: 0,
+              offsets: expect.arrayContaining(['0']),
               partition: 0,
             },
           ]),
