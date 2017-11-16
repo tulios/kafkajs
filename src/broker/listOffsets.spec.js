@@ -11,7 +11,7 @@ describe('Broker > ListOffsets', () => {
     topicName = `test-topic-${secureRandom()}`
     seedBroker = new Broker(createConnection(), newLogger())
     await seedBroker.connect()
-    await createTopic(seedBroker, topicName)
+    createTopic({ topic: topicName })
 
     const metadata = await seedBroker.metadata([topicName])
     // Find leader of partition

@@ -19,7 +19,7 @@ describe('Broker > Metadata', () => {
 
   test('request', async () => {
     await broker.connect()
-    await createTopic(broker, topicName)
+    createTopic({ topic: topicName })
 
     const response = await broker.metadata([topicName])
 

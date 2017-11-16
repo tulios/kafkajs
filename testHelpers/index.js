@@ -1,5 +1,7 @@
 const fs = require('fs')
 const ip = require('ip')
+const path = require('path')
+const execa = require('execa')
 const crypto = require('crypto')
 const Cluster = require('../src/cluster')
 const Connection = require('../src/network/connection')
@@ -81,11 +83,13 @@ const retryProtocol = (errorType, fn) =>
     }
   })
 
-const createTopic = (broker, topicName) =>
-  retryProtocol('LEADER_NOT_AVAILABLE', async () => await broker.metadata([topicName]))
-
 const waitForMessages = (buffer, { number = 1, delay = 50 } = {}) =>
   waitFor(() => (buffer.length >= number ? buffer.splice(0) : false), { delay })
+
+const createTopic = ({ topic, partitions = 1 }) => {
+  const cmd = path.join(__dirname, '../scripts/createTopic.sh')
+  execa.shellSync(`TOPIC=${topic} PARTITIONS=${partitions} ${cmd}`)
+}
 
 module.exports = {
   secureRandom,

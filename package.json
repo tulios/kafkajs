@@ -26,9 +26,6 @@
     "lint": "./node_modules/.bin/eslint example.js \"{src,testHelpers}/**/*.js\""
   },
   "devDependencies": {
-    "ip": "^1.1.5",
-    "jest": "^20.0.4",
-    "jest-junit": "^1.5.1",
     "eslint": "^4.7.0",
     "eslint-config-prettier": "^2.5.0",
     "eslint-config-standard": "^10.2.1",
@@ -37,6 +34,10 @@
     "eslint-plugin-prettier": "^2.3.0",
     "eslint-plugin-promise": "^3.5.0",
     "eslint-plugin-standard": "^3.0.1",
+    "execa": "^0.8.0",
+    "ip": "^1.1.5",
+    "jest": "^20.0.4",
+    "jest-junit": "^1.5.1",
     "prettier": "^1.7.0"
   },
   "dependencies": {

@@ -26,7 +26,7 @@ describe('Broker > Produce', () => {
     topicName = `test-topic-${secureRandom()}`
     broker = new Broker(createConnection(), newLogger())
     await broker.connect()
-    await createTopic(broker, topicName)
+    createTopic({ topic: topicName })
   })
 
   afterEach(async () => {
