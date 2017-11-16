@@ -52,17 +52,20 @@ const createModPartitioner = () => ({ partitionMetadata, message }) => {
 }
 
 const waitFor = (fn, { delay = 50 } = {}) => {
+  let totalWait = 0
   return new Promise((resolve, reject) => {
-    const check = () =>
+    const check = () => {
+      totalWait += delay
       setTimeout(async () => {
         try {
-          const result = await fn()
+          const result = await fn(totalWait)
           result ? resolve(result) : check()
         } catch (e) {
           reject(e)
         }
-      })
-    check()
+      }, delay)
+    }
+    check(totalWait)
   })
 }
 
