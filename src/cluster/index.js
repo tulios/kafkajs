@@ -2,6 +2,16 @@ const Broker = require('../broker')
 const createRetry = require('../retry')
 const connectionBuilder = require('./connectionBuilder')
 const { KafkaJSError, KafkaJSBrokerNotFound } = require('../errors')
+const flatten = require('../utils/flatten')
+const { keys } = Object
+
+const EARLIEST_OFFSET = -2
+const LATEST_OFFSET = -1
+
+const mergeTopics = (obj, { topic, partitions }) =>
+  Object.assign(obj, {
+    [topic]: [...(obj[topic] || []), ...partitions],
+  })
 
 /**
  * @param {Array<string>} brokers example: ['127.0.0.1:9092', '127.0.0.1:9094']
@@ -174,7 +184,7 @@ module.exports = class Cluster {
   /**
    * @public
    * @param {string} topic
-   * @param {Array} partitions
+   * @param {Array<number>} partitions
    * @returns {Object} Object with leader and partitions. For partitions 0 and 5
    *                   the result could be:
    *                     { '0': [0], '2': [5] }
@@ -225,5 +235,79 @@ module.exports = class Cluster {
         bail(e)
       }
     })
+  }
+
+  /**
+   * @public
+   * @param {Array<Object>} topics
+   *                          [
+   *                            {
+   *                              topic: 'my-topic-name',
+   *                              partitions: [
+   *                                { partition: 0 }
+   *                              ]
+   *                            }
+   *                          ]
+   * @param {boolean} [fromBeginning=false] First offset available or latest
+   * @returns {Promise<Array>} example:
+   *                             [
+   *                               {
+   *                                 topic: 'my-topic-name',
+   *                                 partitions: [
+   *                                   { partition: 0, offset: '1' },
+   *                                   { partition: 1, offset: '2' },
+   *                                   { partition: 2, offset: '1' },
+   *                                 ],
+   *                               },
+   *                             ]
+   */
+  async fetchTopicsOffset({ topics, fromBeginning = false }) {
+    const defaultOffset = fromBeginning ? EARLIEST_OFFSET : LATEST_OFFSET
+    const addDefaultOffset = partition => Object.assign({}, partition, { timestamp: defaultOffset })
+
+    const partitionsPerBroker = {}
+
+    // Index all topics and partitions per leader (nodeId)
+    for (let topicData of topics) {
+      const { topic, partitions } = topicData
+      const partitionsPerLeader = this.findLeaderForPartitions(
+        topic,
+        partitions.map(p => p.partition)
+      )
+
+      keys(partitionsPerLeader).map(nodeId => {
+        partitionsPerBroker[nodeId] = partitionsPerBroker[nodeId] || {}
+        partitionsPerBroker[nodeId][topic] = partitions.filter(p =>
+          partitionsPerLeader[nodeId].includes(p.partition)
+        )
+      })
+    }
+
+    // Create a list of requests to fetch the offset of all partitions
+    const requests = keys(partitionsPerBroker).map(async nodeId => {
+      const broker = await this.findBroker({ nodeId })
+      const partitions = partitionsPerBroker[nodeId]
+
+      const { responses: topicOffsets } = await broker.listOffsets({
+        topics: keys(partitions).map(topic => ({
+          topic,
+          partitions: partitions[topic].map(addDefaultOffset),
+        })),
+      })
+
+      return topicOffsets
+    })
+
+    // Execute all requests, merge and normalize the responses
+    const responses = await Promise.all(requests)
+    const partitionsPerTopic = flatten(responses).reduce(mergeTopics, {})
+
+    return keys(partitionsPerTopic).map(topic => ({
+      topic,
+      partitions: partitionsPerTopic[topic].map(({ partition, offsets }) => ({
+        partition,
+        offset: offsets.pop(),
+      })),
+    }))
   }
 }

@@ -17,10 +17,12 @@ const { ListOffsets: apiKey } = require('../../apiKeys')
  * @param {object} topics use timestamp=-1 for latest offsets and timestamp=-2 for earliest.
  *                        Default timestamp=-1. Example:
  *                          {
- *                            topics: {
- *                              topic: 'topic-name',
- *                              partitions: [{ partition: 0, timestamp: -1 }],
- *                            },
+ *                            topics: [
+ *                              {
+ *                                topic: 'topic-name',
+ *                                partitions: [{ partition: 0, timestamp: -1 }]
+ *                              }
+ *                            ]
  *                          }
  */
 module.exports = ({ replicaId, topics }) => ({
