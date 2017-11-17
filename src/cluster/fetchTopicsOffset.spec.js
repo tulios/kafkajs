@@ -41,14 +41,12 @@ describe('Cluster > fetchTopicsOffset', () => {
   })
 
   test('returns latest offsets by default', async () => {
-    const result = await cluster.fetchTopicsOffset({
-      topics: [
-        {
-          topic,
-          partitions: [{ partition: 0 }, { partition: 1 }, { partition: 2 }],
-        },
-      ],
-    })
+    const result = await cluster.fetchTopicsOffset([
+      {
+        topic,
+        partitions: [{ partition: 0 }, { partition: 1 }, { partition: 2 }],
+      },
+    ])
 
     expect(result).toEqual([
       {
@@ -63,10 +61,9 @@ describe('Cluster > fetchTopicsOffset', () => {
   })
 
   test('returns erliest if fromBeginning=true', async () => {
-    const result = await cluster.fetchTopicsOffset({
-      fromBeginning: true,
-      topics: [{ topic, partitions: [{ partition: 0 }] }],
-    })
+    const result = await cluster.fetchTopicsOffset([
+      { topic, partitions: [{ partition: 0 }], fromBeginning: true },
+    ])
 
     expect(result).toEqual([{ topic, partitions: [{ partition: 0, offset: '0' }] }])
   })

@@ -13,6 +13,10 @@ const mergeTopics = (obj, { topic, partitions }) =>
     [topic]: [...(obj[topic] || []), ...partitions],
   })
 
+const defaultOffset = fromBeginning => {
+  return fromBeginning ? EARLIEST_OFFSET : LATEST_OFFSET
+}
+
 /**
  * @param {Array<string>} brokers example: ['127.0.0.1:9092', '127.0.0.1:9094']
  * @param {Object} ssl
@@ -243,37 +247,40 @@ module.exports = class Cluster {
    *                          [
    *                            {
    *                              topic: 'my-topic-name',
-   *                              partitions: [
-   *                                { partition: 0 }
-   *                              ]
+   *                              partitions: [{ partition: 0 }],
+   *                              fromBeginning: false
    *                            }
    *                          ]
-   * @param {boolean} [fromBeginning=false] First offset available or latest
    * @returns {Promise<Array>} example:
-   *                             [
-   *                               {
-   *                                 topic: 'my-topic-name',
-   *                                 partitions: [
-   *                                   { partition: 0, offset: '1' },
-   *                                   { partition: 1, offset: '2' },
-   *                                   { partition: 2, offset: '1' },
-   *                                 ],
-   *                               },
-   *                             ]
+   *                          [
+   *                            {
+   *                              topic: 'my-topic-name',
+   *                              partitions: [
+   *                                { partition: 0, offset: '1' },
+   *                                { partition: 1, offset: '2' },
+   *                                { partition: 2, offset: '1' },
+   *                              ],
+   *                            },
+   *                          ]
    */
-  async fetchTopicsOffset({ topics, fromBeginning = false }) {
-    const defaultOffset = fromBeginning ? EARLIEST_OFFSET : LATEST_OFFSET
-    const addDefaultOffset = partition => Object.assign({}, partition, { timestamp: defaultOffset })
-
+  async fetchTopicsOffset(topics) {
     const partitionsPerBroker = {}
+    const topicConfigurations = {}
+
+    const addDefaultOffset = topic => partition => {
+      const { fromBeginning } = topicConfigurations[topic]
+      return Object.assign({}, partition, { timestamp: defaultOffset(fromBeginning) })
+    }
 
     // Index all topics and partitions per leader (nodeId)
     for (let topicData of topics) {
-      const { topic, partitions } = topicData
+      const { topic, partitions, fromBeginning } = topicData
       const partitionsPerLeader = this.findLeaderForPartitions(
         topic,
         partitions.map(p => p.partition)
       )
+
+      topicConfigurations[topic] = { fromBeginning }
 
       keys(partitionsPerLeader).map(nodeId => {
         partitionsPerBroker[nodeId] = partitionsPerBroker[nodeId] || {}
@@ -291,7 +298,7 @@ module.exports = class Cluster {
       const { responses: topicOffsets } = await broker.listOffsets({
         topics: keys(partitions).map(topic => ({
           topic,
-          partitions: partitions[topic].map(addDefaultOffset),
+          partitions: partitions[topic].map(addDefaultOffset(topic)),
         })),
       })
 
