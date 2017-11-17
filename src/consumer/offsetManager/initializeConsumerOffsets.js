@@ -3,11 +3,10 @@ const { keys, assign } = Object
 
 const indexPartitions = (obj, { partition, offset }) => assign(obj, { [partition]: offset })
 const shouldInitializeOffset = offset => Long.fromValue(offset).equals(-1)
+const indexTopics = (obj, { topic, partitions }) =>
+  assign(obj, { [topic]: partitions.reduce(indexPartitions, {}) })
 
 module.exports = (consumerOffsets, topicOffsets) => {
-  const indexTopics = (obj, { topic, partitions }) =>
-    assign(obj, { [topic]: partitions.reduce(indexPartitions, {}) })
-
   const indexedConsumerOffsets = consumerOffsets.reduce(indexTopics, {})
   const indexedTopicOffsets = topicOffsets.reduce(indexTopics, {})
 
