@@ -1,16 +1,28 @@
 const Long = require('long')
+const initializeConsumerOffsets = require('./initializeConsumerOffsets')
 
-const indexTopics = topics => topics.reduce((obj, topic) => Object.assign(obj, { [topic]: {} }), {})
+const indexTopics = topics => topics.reduce((obj, topic) => assign(obj, { [topic]: {} }), {})
+const { keys, assign } = Object
 
 module.exports = class OffsetManager {
-  constructor({ coordinator, memberAssignment, groupId, generationId, memberId }) {
+  constructor({
+    cluster,
+    coordinator,
+    memberAssignment,
+    topicConfigurations,
+    groupId,
+    generationId,
+    memberId,
+  }) {
+    this.cluster = cluster
     this.coordinator = coordinator
     this.memberAssignment = memberAssignment
+    this.topicConfigurations = topicConfigurations
     this.groupId = groupId
     this.generationId = generationId
     this.memberId = memberId
 
-    this.topics = Object.keys(memberAssignment)
+    this.topics = keys(memberAssignment)
     this.clearOffsets()
   }
 
@@ -65,9 +77,9 @@ module.exports = class OffsetManager {
 
   async commitOffsets() {
     const { groupId, generationId, memberId } = this
-    const offsets = topic => {
-      return Object.keys(this.resolvedOffsets[topic])
-    }
+
+    const offsets = topic => keys(this.resolvedOffsets[topic])
+    const emptyPartitions = ({ partitions }) => partitions.length > 0
     const toPartitions = topic => partition => ({
       partition,
       offset: this.resolvedOffsets[topic][partition],
@@ -77,9 +89,6 @@ module.exports = class OffsetManager {
         offset !== this.committedOffsets[topic][partition] &&
         Long.fromValue(offset).greaterThanOrEqual(0)
       )
-    }
-    const emptyPartitions = ({ partitions }) => {
-      return partitions.length > 0
     }
 
     // Select and format updated partitions
@@ -106,10 +115,10 @@ module.exports = class OffsetManager {
     // Update local reference of committed offsets
     topicsWithPartitionsToCommit.forEach(({ topic, partitions }) => {
       const updatedOffsets = partitions.reduce(
-        (obj, { partition, offset }) => Object.assign(obj, { [partition]: offset }),
+        (obj, { partition, offset }) => assign(obj, { [partition]: offset }),
         {}
       )
-      Object.assign(this.committedOffsets[topic], updatedOffsets)
+      assign(this.committedOffsets[topic], updatedOffsets)
     })
   }
 
@@ -129,16 +138,34 @@ module.exports = class OffsetManager {
       return
     }
 
-    const { responses } = await this.coordinator.offsetFetch({
+    const { responses: consumerOffsets } = await this.coordinator.offsetFetch({
       groupId,
       topics: pendingPartitions,
     })
 
+    const unresolvedPartitions = consumerOffsets.map(({ topic, partitions }) =>
+      assign(
+        {
+          topic,
+          partitions: partitions
+            .filter(({ offset }) => Long.fromValue(offset).equals(-1))
+            .map(({ partition }) => assign({ partition })),
+        },
+        this.topicConfigurations[topic]
+      )
+    )
+
     const indexPartitions = (obj, { partition, offset }) => {
-      return Object.assign(obj, { [partition]: offset })
+      return assign(obj, { [partition]: offset })
     }
 
-    responses.forEach(({ topic, partitions }) => {
+    let offsets = consumerOffsets
+    if (unresolvedPartitions.length > 0) {
+      const topicOffsets = await this.cluster.fetchTopicsOffset(unresolvedPartitions)
+      offsets = initializeConsumerOffsets(consumerOffsets, topicOffsets)
+    }
+
+    offsets.forEach(({ topic, partitions }) => {
       this.committedOffsets[topic] = partitions.reduce(indexPartitions, {})
     })
   }

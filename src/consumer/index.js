@@ -18,17 +18,17 @@ module.exports = ({
   },
 }) => {
   const assigner = createPartitionAssigner({ cluster })
-  const groupTopics = new Set()
   const logger = rootLogger.namespace('Consumer')
+  const topics = {}
   let runner = null
 
   const createRunner = ({ eachBatch, eachMessage, onCrash }) => {
-    const topics = Array.from(groupTopics)
     const consumerGroup = new ConsumerGroup({
       logger: rootLogger,
+      topics: Object.keys(topics),
+      topicConfigurations: topics,
       cluster,
       groupId,
-      topics,
       assigner,
       sessionTimeout,
       maxBytesPerPartition,
@@ -68,10 +68,11 @@ module.exports = ({
 
   /**
    * @param {string} topic
+   * @param {string} [fromBeginning=false]
    * @return {Promise}
    */
-  const subscribe = async topic => {
-    groupTopics.add(topic)
+  const subscribe = async ({ topic, fromBeginning = false }) => {
+    topics[topic] = { fromBeginning }
     await cluster.addTargetTopic(topic)
   }
 

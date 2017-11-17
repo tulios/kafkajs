@@ -54,7 +54,10 @@ async () => {
   await consumer.connect()
 
   // Subscribe can be called several times
-  await consumer.subscribe('topic-name')
+  await consumer.subscribe({ topic: 'topic-name' })
+
+  // It's possible to start from the beginning:
+  // await consumer.subscribe({ topic: 'topic-name', fromBeginning: true })
 
   await consumer.run({
     eachMessage: async ({ topic, partition, message }) => {

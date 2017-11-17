@@ -3,6 +3,8 @@ const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const { KafkaJSError } = require('../errors')
 
+const { keys } = Object
+
 const STALE_METADATA_ERRORS = [
   'LEADER_NOT_AVAILABLE',
   'NOT_LEADER_FOR_PARTITION',
@@ -14,6 +16,7 @@ module.exports = class ConsumerGroup {
     cluster,
     groupId,
     topics,
+    topicConfigurations,
     logger,
     assigner,
     sessionTimeout,
@@ -25,6 +28,7 @@ module.exports = class ConsumerGroup {
     this.cluster = cluster
     this.groupId = groupId
     this.topics = topics
+    this.topicConfigurations = topicConfigurations
     this.logger = logger.namespace('ConsumerGroup')
     this.assigner = assigner
     this.sessionTimeout = sessionTimeout
@@ -93,8 +97,10 @@ module.exports = class ConsumerGroup {
     })
 
     this.memberAssignment = memberAssignment
-    this.topics = Object.keys(this.memberAssignment)
+    this.topics = keys(this.memberAssignment)
     this.offsetManager = new OffsetManager({
+      cluster: this.cluster,
+      topicConfigurations: this.topicConfigurations,
       coordinator,
       memberAssignment,
       groupId,
@@ -141,7 +147,7 @@ module.exports = class ConsumerGroup {
           this.memberAssignment[topic]
         )
 
-        const leaders = Object.keys(partitionsPerLeader)
+        const leaders = keys(partitionsPerLeader)
 
         for (let leader of leaders) {
           const partitions = partitionsPerLeader[leader].map(partition => ({
@@ -150,15 +156,12 @@ module.exports = class ConsumerGroup {
             maxBytes: maxBytesPerPartition,
           }))
 
-          if (!requestsPerLeader[leader]) {
-            requestsPerLeader[leader] = []
-          }
-
+          requestsPerLeader[leader] = requestsPerLeader[leader] || []
           requestsPerLeader[leader].push({ topic, partitions })
         }
       }
 
-      const requests = Object.keys(requestsPerLeader).map(async nodeId => {
+      const requests = keys(requestsPerLeader).map(async nodeId => {
         const broker = await this.cluster.findBroker({ nodeId })
         const { responses } = await broker.fetch({
           maxWaitTime,

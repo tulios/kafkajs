@@ -5,6 +5,7 @@ const { Types } = require('../compression')
 const {
   secureRandom,
   createCluster,
+  createTopic,
   createModPartitioner,
   newLogger,
   sslConnectionOpts,
@@ -20,6 +21,8 @@ describe('Consumer', () => {
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
     groupId = `consumer-group-id-${secureRandom()}`
+
+    createTopic({ topic: topicName })
 
     cluster = createCluster()
     producer = createProducer({
@@ -78,7 +81,7 @@ describe('Consumer', () => {
   test('reconnects the cluster if disconnected', async () => {
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe(topicName)
+    await consumer.subscribe({ topic: topicName })
     await consumer.run({ eachMessage: async () => {} })
 
     expect(cluster.isConnected()).toEqual(true)
@@ -91,7 +94,7 @@ describe('Consumer', () => {
   it('consume messages', async () => {
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe(topicName)
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
     const messagesConsumed = []
     consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
@@ -130,7 +133,7 @@ describe('Consumer', () => {
   it('consume GZIP messages', async () => {
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe(topicName)
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
     const messagesConsumed = []
     consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
@@ -171,7 +174,7 @@ describe('Consumer', () => {
   it('consume batches', async () => {
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe(topicName)
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
     const batchesConsumed = []
     consumer.run({ eachBatch: async ({ batch }) => batchesConsumed.push(batch) })
