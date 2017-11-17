@@ -24,7 +24,7 @@ describe('Cluster > connect', () => {
     expect(cluster.versions).toEqual(cluster.seedBroker.versions)
   })
 
-  test.only('select a different seed broker on ILLEGAL_SASL_STATE error', async () => {
+  test('select a different seed broker on ILLEGAL_SASL_STATE error', async () => {
     const originalSeedPort = cluster.seedBroker.connection.port
     const illegalStateError = new KafkaJSProtocolError({
       message: 'ILLEGAL_SASL_STATE',
