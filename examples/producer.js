@@ -1,13 +1,12 @@
 const fs = require('fs')
 const ip = require('ip')
-const Kafka = require('../src/index')
-const { Types } = require('../src/compression')
-const { LEVELS } = require('../src/loggers')
+
+const { Kafka, CompressionTypes, logLevel } = require('../index')
 
 const host = process.env.HOST_IP || ip.address()
 
 const kafka = new Kafka({
-  logLevel: LEVELS.DEBUG,
+  logLevel: logLevel.DEBUG,
   brokers: [`${host}:9094`, `${host}:9097`, `${host}:9100`],
   clientId: 'example-producer',
   ssl: {
@@ -36,7 +35,7 @@ const sendMessage = () => {
   return producer
     .send({
       topic,
-      compression: Types.GZIP,
+      compression: CompressionTypes.GZIP,
       messages: Array(getRandomNumber())
         .fill()
         .map(_ => createMessage(getRandomNumber())),

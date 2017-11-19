@@ -1,6 +1,6 @@
 const createProducer = require('../producer')
 const createConsumer = require('./index')
-const { Types } = require('../compression')
+const { Types } = require('../protocol/message/compression')
 
 const {
   secureRandom,

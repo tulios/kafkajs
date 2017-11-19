@@ -1,12 +1,12 @@
 const fs = require('fs')
 const ip = require('ip')
-const Kafka = require('../src/index')
-const { LEVELS } = require('../src/loggers')
+
+const { Kafka, logLevel } = require('../index')
 
 const host = process.env.HOST_IP || ip.address()
 
 const kafka = new Kafka({
-  logLevel: LEVELS.INFO,
+  logLevel: logLevel.INFO,
   brokers: [`${host}:9094`, `${host}:9097`, `${host}:9100`],
   clientId: 'example-consumer',
   ssl: {

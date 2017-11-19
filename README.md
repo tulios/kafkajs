@@ -16,7 +16,7 @@ __In active development - early alpha__
 ### Setting up the Client
 
 ```javascript
-const Kafka = require('kafkajs')
+const { Kafka } = require('kafkajs')
 
 // Create the client with broker list
 const kafka = new Kafka({
