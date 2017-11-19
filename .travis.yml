@@ -2,7 +2,7 @@ language: node_js
 dist: trusty
 sudo: required
 node_js:
-  - "8"
+  - '8'
 env:
   - DOCKER_COMPOSE_VERSION=1.16.1
 before_install:
@@ -17,3 +17,11 @@ install:
 script:
   - env
   - yarn test
+deploy:
+  provider: npm
+  email: ornelas.tulio@gmail.com
+  api_key:
+    secure: GwkiWKv1HkOvhN8miHchxVqM1P2/Gyd25JR9UO8e7kpZarf41nCrVuHRksDdLAHp2nnptxmkHH3AbUs31+x8QMKx044/1uwtdkH96pz/KGg6krXmzqCvr+jzKyrEeR8Dcc1dmBZrBtM9hV+dbN7kzLlhxBTtwCbnjyktepds2fZPjKSpIboAbyWcNQ1xhBfoiZ5W/ryQojwZnMkY0RmMg3bRX16yaXjofZk90spSeHVLnKdtRGpx4H++sS44ejYd49HVNwc/xUCGhdQ3y4m0sRoCfHaZjGXxb+zCP9QYddv/ZAXv3UNSsDEWQU7qBzSTwbQLsu55HN10X68OFxKq7lBrAg2wtGne2GDTpQyuHGC93s0WD3yk+QsDVR1PT6JEz1ewiCwYrDdNaAPW7hCfskjKwrQVoIkQQv84FMtbcLXMVN4NRBEQdVtY5fvW7t35uGhfMRYGgJUQ0Kd/mMoFf3EFO4phNXLTOixm27S2pXIFwNnXdbMgHRdm45RJB/yKRZkwItI3R1GphtC802K2XWR6KH9QwzxSEv8B3A8msEwpwqI1COQF2Y14F9C2wbeR56EBBybUFfDEVcllRnIr0TSZ8XzcYM3CqpUTcckjA0rXQug0pi8DO7+XX6t57xfpsK1XB5y7ynvTURWH4GtUBzLm0g5kKJYhVKCwhdHWRyQ=
+  on:
+    tags: true
+    repo: tulios/kafkajs
