@@ -16,29 +16,36 @@ module.exports = class Client {
     logFunction = logFunctionConsole,
   }) {
     this.logger = createLogger({ level: logLevel, logFunction })
-    this.cluster = new Cluster({
-      logger: this.logger,
-      brokers,
-      ssl,
-      sasl,
-      clientId,
-      connectionTimeout,
-      retry,
-    })
+    this.createCluster = () =>
+      new Cluster({
+        logger: this.logger,
+        brokers,
+        ssl,
+        sasl,
+        clientId,
+        connectionTimeout,
+        retry,
+      })
   }
 
+  /**
+   * @public
+   */
   producer({ createPartitioner, retry } = {}) {
     return createProducer({
-      cluster: this.cluster,
+      cluster: this.createCluster(),
       logger: this.logger,
       createPartitioner,
       retry,
     })
   }
 
+  /**
+   * @public
+   */
   consumer({ groupId, createPartitionAssigner, sessionTimeout, retry } = {}) {
     return createConsumer({
-      cluster: this.cluster,
+      cluster: this.createCluster(),
       logger: this.logger,
       groupId,
       createPartitionAssigner,
