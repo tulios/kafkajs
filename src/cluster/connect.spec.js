@@ -18,6 +18,22 @@ describe('Cluster > connect', () => {
     expect(cluster.seedBroker.isConnected()).toEqual(true)
   })
 
+  test('does not connect again if still connected', async () => {
+    cluster.seedBroker.connect = jest.fn(() => {
+      cluster.seedBroker.isConnected = jest.fn(() => true)
+    })
+
+    expect(cluster.seedBroker.connect).not.toHaveBeenCalled()
+
+    await cluster.connect()
+    expect(cluster.seedBroker.connect).toHaveBeenCalledTimes(1)
+
+    await cluster.connect()
+    await cluster.connect()
+
+    expect(cluster.seedBroker.connect).toHaveBeenCalledTimes(1)
+  })
+
   test('load the versions from the seed broker', async () => {
     expect(cluster.versions).toEqual(null)
     await cluster.connect()

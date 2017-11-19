@@ -62,6 +62,10 @@ module.exports = class Cluster {
    * @returns {Promise}
    */
   async connect() {
+    if (this.isConnected()) {
+      return
+    }
+
     return this.retrier(async (bail, retryCount, retryTime) => {
       try {
         await this.seedBroker.connect()
