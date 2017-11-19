@@ -1,0 +1,14 @@
+.DS_Store
+test-report.xml
+junit.xml
+coverage/
+yarn-error.log
+**/*.spec.js
+testHelpers/
+scripts/
+examples/
+docker-compose.yml
+jest.config.js
+.prettierrc
+.eslintrc
+.eslintignore
