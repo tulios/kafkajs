@@ -12,3 +12,4 @@ jest.config.js
 .prettierrc
 .eslintrc
 .eslintignore
+.travis.yml
