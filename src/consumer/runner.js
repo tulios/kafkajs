@@ -77,6 +77,10 @@ module.exports = class Runner {
   async fetch() {
     const batches = await this.consumerGroup.fetch()
     for (let batch of batches) {
+      if (!this.running) {
+        break
+      }
+
       if (batch.isEmpty()) {
         this.consumerGroup.resetOffset(batch)
         continue
@@ -84,6 +88,10 @@ module.exports = class Runner {
 
       if (this.eachMessage) {
         for (let message of batch.messages) {
+          if (!this.running) {
+            break
+          }
+
           await this.eachMessage({
             topic: batch.topic,
             partition: batch.partition,

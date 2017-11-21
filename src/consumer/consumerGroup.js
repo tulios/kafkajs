@@ -76,7 +76,9 @@ module.exports = class ConsumerGroup {
 
   async leave() {
     const { groupId, memberId } = this
-    await this.coordinator.leaveGroup({ groupId, memberId })
+    if (memberId) {
+      await this.coordinator.leaveGroup({ groupId, memberId })
+    }
   }
 
   async sync() {

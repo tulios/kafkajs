@@ -206,4 +206,31 @@ describe('Consumer', () => {
       },
     ])
   })
+
+  it('stops consuming messages when running = false', async () => {
+    await consumer.connect()
+    await producer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    const sleep = value => waitFor(delay => delay >= value)
+    let calls = 0
+
+    await consumer.run({
+      eachMessage: async event => {
+        calls++
+        await sleep(100)
+      },
+    })
+
+    const key1 = secureRandom()
+    const message1 = { key: `key-${key1}`, value: `value-${key1}` }
+    const key2 = secureRandom()
+    const message2 = { key: `key-${key2}`, value: `value-${key2}` }
+
+    await producer.send({ topic: topicName, messages: [message1, message2] })
+    await sleep(80) // wait for 1 message
+    await consumer.disconnect() // don't give the consumer the chance to consume the 2nd message
+
+    expect(calls).toEqual(1)
+  })
 })
