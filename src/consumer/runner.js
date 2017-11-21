@@ -86,30 +86,20 @@ module.exports = class Runner {
         continue
       }
 
+      const { topic, partition } = batch
+
       if (this.eachMessage) {
         for (let message of batch.messages) {
           if (!this.running) {
             break
           }
 
-          await this.eachMessage({
-            topic: batch.topic,
-            partition: batch.partition,
-            message,
-          })
-          this.consumerGroup.resolveOffset({
-            topic: batch.topic,
-            partition: batch.partition,
-            offset: message.offset,
-          })
+          await this.eachMessage({ topic, partition, message })
+          this.consumerGroup.resolveOffset({ topic, partition, offset: message.offset })
         }
       } else if (this.eachBatch) {
         await this.eachBatch({ batch })
-        this.consumerGroup.resolveOffset({
-          topic: batch.topic,
-          partition: batch.partition,
-          offset: batch.lastOffset(),
-        })
+        this.consumerGroup.resolveOffset({ topic, partition, offset: batch.lastOffset() })
       }
     }
 

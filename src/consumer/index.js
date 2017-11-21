@@ -64,6 +64,7 @@ module.exports = ({
       }
       await cluster.disconnect()
     } catch (e) {}
+    logger.info('Stopped', { groupId })
   }
 
   /**
