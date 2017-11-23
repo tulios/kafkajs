@@ -177,7 +177,13 @@ describe('Consumer', () => {
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
     const batchesConsumed = []
-    consumer.run({ eachBatch: async ({ batch }) => batchesConsumed.push(batch) })
+    const functionsExposed = []
+    consumer.run({
+      eachBatch: async ({ batch, resolveOffset, heartbeat }) => {
+        batchesConsumed.push(batch)
+        functionsExposed.push(resolveOffset, heartbeat)
+      },
+    })
 
     const key1 = secureRandom()
     const message1 = { key: `key-${key1}`, value: `value-${key1}` }
@@ -205,6 +211,8 @@ describe('Consumer', () => {
         ],
       },
     ])
+
+    expect(functionsExposed).toEqual([expect.any(Function), expect.any(Function)])
   })
 
   it('stops consuming messages when running = false', async () => {
@@ -318,6 +326,59 @@ describe('Consumer', () => {
           if (event.message.key.toString() === `key-${key3}`) {
             raisedError = true
             throw new Error('some error')
+          }
+        },
+      })
+
+      await expect(waitFor(() => raisedError)).resolves.toBeTruthy()
+      const coordinator = await cluster.findGroupCoordinator({ groupId })
+      const offsets = await coordinator.offsetFetch({
+        groupId,
+        topics: [
+          {
+            topic: topicName,
+            partitions: [{ partition: 0 }],
+          },
+        ],
+      })
+
+      expect(offsets).toEqual({
+        errorCode: 0,
+        responses: [
+          {
+            partitions: [{ errorCode: 0, metadata: '', offset: '2', partition: 0 }],
+            topic: topicName,
+          },
+        ],
+      })
+    })
+  })
+
+  describe('when eachBatch throws an error', () => {
+    it('commits the previous offsets', async () => {
+      await consumer.connect()
+      await producer.connect()
+
+      const key1 = secureRandom()
+      const message1 = { key: `key-${key1}`, value: `value-${key1}` }
+      const key2 = secureRandom()
+      const message2 = { key: `key-${key2}`, value: `value-${key2}` }
+      const key3 = secureRandom()
+      const message3 = { key: `key-${key3}`, value: `value-${key3}` }
+
+      await producer.send({ topic: topicName, messages: [message1, message2, message3] })
+
+      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+      let raisedError = false
+      await consumer.run({
+        eachBatch: async ({ batch, resolveOffset }) => {
+          for (let message of batch.messages) {
+            if (message.key.toString() === `key-${key3}`) {
+              raisedError = true
+              throw new Error('some error')
+            }
+            resolveOffset(message.offset)
           }
         },
       })

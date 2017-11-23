@@ -80,13 +80,21 @@ it's also possible to consume the batch instead of each message, example:
 // create consumer, connect and subscribe ...
 
 await consumer.run({
-  eachBatch: async ({ batch }) => {
-    console.log({
-      topic: batch.topic
-      partition: batch.partition
-      highWatermark: batch.highWatermark
-      messages: batch.messages
-    })
+  eachBatch: async ({ batch, resolveOffset, heartbeat }) => {
+    for (let message of batch.messages) {
+      console.log({
+        topic: batch.topic,
+        partition: batch.partition,
+        highWatermark: batch.highWatermark,
+        message: {
+          offset: message.offset,
+          key: message.key.toString(),
+          value: message.value.toString()
+        }
+      })
+
+      resolveOffset(message.offset)
+    }
   },
 })
 

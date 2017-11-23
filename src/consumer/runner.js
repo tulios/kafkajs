@@ -74,6 +74,49 @@ module.exports = class Runner {
     })
   }
 
+  async processEachMessage(batch) {
+    const { topic, partition } = batch
+
+    for (let message of batch.messages) {
+      if (!this.running) {
+        break
+      }
+
+      try {
+        await this.eachMessage({ topic, partition, message })
+      } catch (e) {
+        // In case of errors, commit the previously consumed offsets
+        await this.consumerGroup.commitOffsets()
+        throw e
+      }
+
+      this.consumerGroup.resolveOffset({ topic, partition, offset: message.offset })
+    }
+  }
+
+  async processEachBatch(batch) {
+    const { topic, partition } = batch
+
+    try {
+      await this.eachBatch({
+        batch,
+        resolveOffset: offset => {
+          this.consumerGroup.resolveOffset({ topic, partition, offset })
+        },
+        heartbeat: async () => {
+          await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+        },
+      })
+    } catch (e) {
+      // eachBatch has a special resolveOffset which can be used
+      // to keep track of the messages
+      await this.consumerGroup.commitOffsets()
+      throw e
+    }
+
+    this.consumerGroup.resolveOffset({ topic, partition, offset: batch.lastOffset() })
+  }
+
   async fetch() {
     const batches = await this.consumerGroup.fetch()
     for (let batch of batches) {
@@ -86,27 +129,10 @@ module.exports = class Runner {
         continue
       }
 
-      const { topic, partition } = batch
-
       if (this.eachMessage) {
-        for (let message of batch.messages) {
-          if (!this.running) {
-            break
-          }
-
-          try {
-            await this.eachMessage({ topic, partition, message })
-          } catch (e) {
-            // In case of errors, commit the previously consumed offsets
-            await this.consumerGroup.commitOffsets()
-            throw e
-          }
-
-          this.consumerGroup.resolveOffset({ topic, partition, offset: message.offset })
-        }
+        await this.processEachMessage(batch)
       } else if (this.eachBatch) {
-        await this.eachBatch({ batch })
-        this.consumerGroup.resolveOffset({ topic, partition, offset: batch.lastOffset() })
+        await this.processEachBatch(batch)
       }
     }
 
