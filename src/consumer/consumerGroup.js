@@ -192,9 +192,16 @@ module.exports = class ConsumerGroup {
         throw new KafkaJSError(e.message)
       }
 
-      if (e.type === 'OFFSET_OUT_OF_RANGE') {
-        this.offsetManager && this.offsetManager.clearOffsets()
-        throw new KafkaJSError(e.message)
+      if (e.name === 'KafkaJSOffsetOutOfRange') {
+        this.logger.error('Offset out of range, resetting to default offset', {
+          topic: e.topic,
+          partition: e.partition,
+        })
+
+        await this.offsetManager.setDefaultOffset({
+          topic: e.topic,
+          partition: e.partition,
+        })
       }
 
       throw e

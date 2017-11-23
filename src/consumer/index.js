@@ -90,7 +90,7 @@ module.exports = ({
     }
 
     const onCrash = async e => {
-      logger.error(`Crash: ${e.name}: ${e.message}`)
+      logger.error(`Crash: ${e.name}: ${e.message}`, { retryCount: e.retryCount })
       await disconnect()
 
       if (e.name === 'KafkaJSNumberOfRetriesExceeded') {

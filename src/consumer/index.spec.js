@@ -233,4 +233,66 @@ describe('Consumer', () => {
 
     expect(calls).toEqual(1)
   })
+
+  it('recovers from offset out of range', async () => {
+    await consumer.connect()
+    await producer.connect()
+
+    const coordinator = await cluster.findGroupCoordinator({ groupId })
+    const { generationId, memberId } = await coordinator.joinGroup({
+      groupId,
+      sessionTimeout: 30000,
+    })
+
+    const groupAssignment = [
+      {
+        memberId,
+        memberAssignment: { [topicName]: [0] },
+      },
+    ]
+
+    await coordinator.syncGroup({
+      groupId,
+      generationId,
+      memberId,
+      groupAssignment,
+    })
+
+    const topics = [
+      {
+        topic: topicName,
+        partitions: [{ partition: 0, offset: '11' }],
+      },
+    ]
+
+    await coordinator.offsetCommit({
+      groupId,
+      groupGenerationId: generationId,
+      memberId,
+      topics,
+    })
+
+    await coordinator.leaveGroup({ groupId, memberId })
+
+    const key1 = secureRandom()
+    const message1 = { key: `key-${key1}`, value: `value-${key1}` }
+    await producer.send({ topic: topicName, messages: [message1] })
+
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    const messagesConsumed = []
+    consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+
+    await expect(waitForMessages(messagesConsumed)).resolves.toEqual([
+      {
+        topic: topicName,
+        partition: 0,
+        message: expect.objectContaining({
+          key: Buffer.from(message1.key),
+          value: Buffer.from(message1.value),
+          offset: '0',
+        }),
+      },
+    ])
+  })
 })

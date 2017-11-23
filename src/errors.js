@@ -22,6 +22,14 @@ class KafkaJSProtocolError extends KafkaJSError {
   }
 }
 
+class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
+  constructor(e, { topic, partition }) {
+    super(e)
+    this.topic = topic
+    this.partition = partition
+  }
+}
+
 class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
   constructor(e, { retryCount, retryTime }) {
     super(e)
@@ -43,4 +51,5 @@ module.exports = {
   KafkaJSConnectionError,
   KafkaJSSASLAuthenticationError,
   KafkaJSNumberOfRetriesExceeded,
+  KafkaJSOffsetOutOfRange,
 }

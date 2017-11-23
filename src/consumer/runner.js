@@ -15,7 +15,7 @@ module.exports = class Runner {
     this.eachBatch = eachBatch
     this.eachMessage = eachMessage
     this.heartbeatInterval = heartbeatInterval
-    this.retrier = createRetry(Object.assign({}, this.retry))
+    this.retrier = createRetry(Object.assign({}, retry))
     this.onCrash = onCrash
 
     this.running = false

@@ -13,10 +13,6 @@ const mergeTopics = (obj, { topic, partitions }) =>
     [topic]: [...(obj[topic] || []), ...partitions],
   })
 
-const defaultOffset = fromBeginning => {
-  return fromBeginning ? EARLIEST_OFFSET : LATEST_OFFSET
-}
-
 /**
  * @param {Array<string>} brokers example: ['127.0.0.1:9092', '127.0.0.1:9094']
  * @param {Object} ssl
@@ -246,6 +242,14 @@ module.exports = class Cluster {
   }
 
   /**
+   * @param {object} topicConfiguration
+   * @returns {number}
+   */
+  defaultOffset({ fromBeginning }) {
+    return fromBeginning ? EARLIEST_OFFSET : LATEST_OFFSET
+  }
+
+  /**
    * @public
    * @param {Array<Object>} topics
    *                          [
@@ -273,7 +277,7 @@ module.exports = class Cluster {
 
     const addDefaultOffset = topic => partition => {
       const { fromBeginning } = topicConfigurations[topic]
-      return Object.assign({}, partition, { timestamp: defaultOffset(fromBeginning) })
+      return Object.assign({}, partition, { timestamp: this.defaultOffset({ fromBeginning }) })
     }
 
     // Index all topics and partitions per leader (nodeId)

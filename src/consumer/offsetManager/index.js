@@ -1,8 +1,9 @@
 const Long = require('long')
+const isInvalidOffset = require('./isInvalidOffset')
 const initializeConsumerOffsets = require('./initializeConsumerOffsets')
 
-const indexTopics = topics => topics.reduce((obj, topic) => assign(obj, { [topic]: {} }), {})
 const { keys, assign } = Object
+const indexTopics = topics => topics.reduce((obj, topic) => assign(obj, { [topic]: {} }), {})
 
 module.exports = class OffsetManager {
   constructor({
@@ -43,7 +44,6 @@ module.exports = class OffsetManager {
    *                    }
    */
   nextOffset(topic, partition) {
-    // TODO: Handle latest and earliest offset
     if (!this.resolvedOffsets[topic][partition]) {
       this.resolvedOffsets[topic][partition] = this.committedOffsets[topic][partition]
     }
@@ -69,10 +69,38 @@ module.exports = class OffsetManager {
     this.resolvedOffsets[topic][partition] = this.committedOffsets[topic][partition]
   }
 
+  /**
+   * @param {string} topic
+   * @param {number} partition
+   * @param {string} offset
+   */
   resolveOffset({ topic, partition, offset }) {
     this.resolvedOffsets[topic][partition] = Long.fromValue(offset)
       .add(1)
       .toString()
+  }
+
+  /**
+   * @param {string} topic
+   * @param {number} partition
+   */
+  async setDefaultOffset({ topic, partition }) {
+    const { groupId, generationId, memberId } = this
+    const defaultOffset = this.cluster.defaultOffset(this.topicConfigurations[topic])
+
+    await this.coordinator.offsetCommit({
+      groupId,
+      memberId,
+      groupGenerationId: generationId,
+      topics: [
+        {
+          topic,
+          partitions: [{ partition, offset: defaultOffset }],
+        },
+      ],
+    })
+
+    this.clearOffsets()
   }
 
   async commitOffsets() {
@@ -124,7 +152,10 @@ module.exports = class OffsetManager {
 
   async resolveOffsets() {
     const { groupId } = this
-    const invalidOffset = topic => partition => !/\d+/.test(this.committedOffsets[topic][partition])
+    const invalidOffset = topic => partition => {
+      return isInvalidOffset(this.committedOffsets[topic][partition])
+    }
+
     const pendingPartitions = this.topics
       .map(topic => ({
         topic,
@@ -148,7 +179,7 @@ module.exports = class OffsetManager {
         {
           topic,
           partitions: partitions
-            .filter(({ offset }) => Long.fromValue(offset).equals(-1))
+            .filter(({ offset }) => isInvalidOffset(offset))
             .map(({ partition }) => assign({ partition })),
         },
         this.topicConfigurations[topic]
@@ -159,8 +190,11 @@ module.exports = class OffsetManager {
       return assign(obj, { [partition]: offset })
     }
 
+    const hasUnresolvedPartitions = () =>
+      unresolvedPartitions.filter(t => t.partitions.length > 0).length > 0
+
     let offsets = consumerOffsets
-    if (unresolvedPartitions.length > 0) {
+    if (hasUnresolvedPartitions()) {
       const topicOffsets = await this.cluster.fetchTopicsOffset(unresolvedPartitions)
       offsets = initializeConsumerOffsets(consumerOffsets, topicOffsets)
     }
