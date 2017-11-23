@@ -94,7 +94,14 @@ module.exports = class Runner {
             break
           }
 
-          await this.eachMessage({ topic, partition, message })
+          try {
+            await this.eachMessage({ topic, partition, message })
+          } catch (e) {
+            // In case of errors, commit the previously consumed offsets
+            await this.consumerGroup.commitOffsets()
+            throw e
+          }
+
           this.consumerGroup.resolveOffset({ topic, partition, offset: message.offset })
         }
       } else if (this.eachBatch) {

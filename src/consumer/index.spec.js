@@ -295,4 +295,54 @@ describe('Consumer', () => {
       },
     ])
   })
+
+  describe('when eachMessage throws an error', () => {
+    it('commits the previous offsets', async () => {
+      await consumer.connect()
+      await producer.connect()
+
+      const key1 = secureRandom()
+      const message1 = { key: `key-${key1}`, value: `value-${key1}` }
+      const key2 = secureRandom()
+      const message2 = { key: `key-${key2}`, value: `value-${key2}` }
+      const key3 = secureRandom()
+      const message3 = { key: `key-${key3}`, value: `value-${key3}` }
+
+      await producer.send({ topic: topicName, messages: [message1, message2, message3] })
+
+      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+      let raisedError = false
+      await consumer.run({
+        eachMessage: async event => {
+          if (event.message.key.toString() === `key-${key3}`) {
+            raisedError = true
+            throw new Error('some error')
+          }
+        },
+      })
+
+      await expect(waitFor(() => raisedError)).resolves.toBeTruthy()
+      const coordinator = await cluster.findGroupCoordinator({ groupId })
+      const offsets = await coordinator.offsetFetch({
+        groupId,
+        topics: [
+          {
+            topic: topicName,
+            partitions: [{ partition: 0 }],
+          },
+        ],
+      })
+
+      expect(offsets).toEqual({
+        errorCode: 0,
+        responses: [
+          {
+            partitions: [{ errorCode: 0, metadata: '', offset: '2', partition: 0 }],
+            topic: topicName,
+          },
+        ],
+      })
+    })
+  })
 })
