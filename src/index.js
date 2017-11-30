@@ -43,13 +43,30 @@ module.exports = class Client {
   /**
    * @public
    */
-  consumer({ groupId, createPartitionAssigner, sessionTimeout, retry } = {}) {
+  consumer(
+    {
+      groupId,
+      createPartitionAssigner,
+      sessionTimeout,
+      heartbeatInterval,
+      maxBytesPerPartition,
+      minBytes,
+      maxBytes,
+      maxWaitTimeInMs,
+      retry,
+    } = {}
+  ) {
     return createConsumer({
       cluster: this.createCluster(),
       logger: this.logger,
       groupId,
       createPartitionAssigner,
       sessionTimeout,
+      heartbeatInterval,
+      maxBytesPerPartition,
+      minBytes,
+      maxBytes,
+      maxWaitTimeInMs,
       retry,
     })
   }
