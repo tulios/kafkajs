@@ -8,7 +8,7 @@ module.exports = ({
   logger: rootLogger,
   createPartitionAssigner = createRoundRobinAssigned,
   sessionTimeout = 30000,
-  heartbeatInterval = 10000,
+  heartbeatInterval = 3000,
   maxBytesPerPartition = 1048576, // 1MB
   minBytes = 1,
   maxBytes = 10485760, // 10MB
