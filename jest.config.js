@@ -6,4 +6,5 @@ module.exports = {
   setupTestFrameworkScriptFile: '<rootDir>/testHelpers/setup.js',
   testResultsProcessor: './node_modules/jest-junit',
   testPathIgnorePatterns: ['/node_modules/'],
+  testEnvironment: 'node',
 }

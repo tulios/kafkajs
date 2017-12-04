@@ -2,6 +2,7 @@ const flatten = require('../utils/flatten')
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const { KafkaJSError } = require('../errors')
+const { HEARTBEAT } = require('./instrumentationEvents')
 
 const { keys } = Object
 
@@ -18,6 +19,7 @@ module.exports = class ConsumerGroup {
     topics,
     topicConfigurations,
     logger,
+    instrumentationEmitter,
     assigner,
     sessionTimeout,
     maxBytesPerPartition,
@@ -30,6 +32,7 @@ module.exports = class ConsumerGroup {
     this.topics = topics
     this.topicConfigurations = topicConfigurations
     this.logger = logger.namespace('ConsumerGroup')
+    this.instrumentationEmitter = instrumentationEmitter
     this.assigner = assigner
     this.sessionTimeout = sessionTimeout
     this.maxBytesPerPartition = maxBytesPerPartition
@@ -103,6 +106,7 @@ module.exports = class ConsumerGroup {
     this.offsetManager = new OffsetManager({
       cluster: this.cluster,
       topicConfigurations: this.topicConfigurations,
+      instrumentationEmitter: this.instrumentationEmitter,
       coordinator,
       memberAssignment,
       groupId,
@@ -127,12 +131,14 @@ module.exports = class ConsumerGroup {
     const { groupId, generationId, memberId } = this
     const now = Date.now()
     if (now > this.lastRequest + interval) {
-      await this.coordinator.heartbeat({
+      const payload = {
         groupId,
         memberId,
         groupGenerationId: generationId,
-      })
+      }
+      await this.coordinator.heartbeat(payload)
 
+      this.instrumentationEmitter.emit(HEARTBEAT, payload)
       this.lastRequest = Date.now()
     }
   }

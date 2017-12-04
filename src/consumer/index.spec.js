@@ -1,6 +1,7 @@
 const createProducer = require('../producer')
 const createConsumer = require('./index')
 const { Types } = require('../protocol/message/compression')
+const { KafkaJSError } = require('../errors')
 
 const {
   secureRandom,
@@ -42,6 +43,13 @@ describe('Consumer', () => {
   afterEach(async () => {
     await consumer.disconnect()
     await producer.disconnect()
+  })
+
+  test('on throws an error when provided with an invalid event name', () => {
+    expect(() => consumer.on('NON_EXISTENT_EVENT', () => {})).toThrow(
+      KafkaJSError,
+      /Event name should be one of/
+    )
   })
 
   test('support SSL connections', async () => {
