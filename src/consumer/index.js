@@ -1,6 +1,14 @@
 const createRoundRobinAssigned = require('./assigners/roundRobinAssigner')
 const ConsumerGroup = require('./consumerGroup')
 const Runner = require('./runner')
+const events = require('./instrumentationEvents')
+const InstrumentationEventEmitter = require('../instrumentation/emitter')
+const { KafkaJSError } = require('../errors')
+
+const eventNames = Object.values(events)
+const eventKeys = Object.keys(events)
+  .map(key => `Consumer.${key}`)
+  .join(', ')
 
 module.exports = ({
   cluster,
@@ -17,6 +25,7 @@ module.exports = ({
     retries: 10,
   },
 }) => {
+  const instrumentationEmitter = new InstrumentationEventEmitter()
   const assigner = createPartitionAssigner({ cluster })
   const logger = rootLogger.namespace('Consumer')
   const topics = {}
@@ -35,6 +44,7 @@ module.exports = ({
       minBytes,
       maxBytes,
       maxWaitTimeInMs,
+      instrumentationEmitter,
     })
 
     return new Runner({
@@ -102,10 +112,27 @@ module.exports = ({
     await start(onCrash)
   }
 
+  /**
+   * @param {string} eventName 
+   * @param {Function} listener
+   * @return {Function}
+   */
+  const on = (eventName, listener) => {
+    if (!eventNames.includes(eventName)) {
+      throw new KafkaJSError(`Event name should be one of ${eventKeys}`, {
+        retriable: false,
+      })
+    }
+
+    return instrumentationEmitter.addListener(eventName, event => listener(event))
+  }
+
   return {
     connect,
     disconnect,
     subscribe,
     run,
+    on,
+    events,
   }
 }

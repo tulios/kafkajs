@@ -1,6 +1,7 @@
 const Long = require('long')
 const isInvalidOffset = require('./isInvalidOffset')
 const initializeConsumerOffsets = require('./initializeConsumerOffsets')
+const { COMMIT_OFFSETS } = require('../instrumentationEvents')
 
 const { keys, assign } = Object
 const indexTopics = topics => topics.reduce((obj, topic) => assign(obj, { [topic]: {} }), {})
@@ -11,6 +12,7 @@ module.exports = class OffsetManager {
     coordinator,
     memberAssignment,
     topicConfigurations,
+    instrumentationEmitter,
     groupId,
     generationId,
     memberId,
@@ -19,6 +21,7 @@ module.exports = class OffsetManager {
     this.coordinator = coordinator
     this.memberAssignment = memberAssignment
     this.topicConfigurations = topicConfigurations
+    this.instrumentationEmitter = instrumentationEmitter
     this.groupId = groupId
     this.generationId = generationId
     this.memberId = memberId
@@ -133,12 +136,16 @@ module.exports = class OffsetManager {
       return
     }
 
-    await this.coordinator.offsetCommit({
+    const payload = {
       groupId,
       memberId,
       groupGenerationId: generationId,
       topics: topicsWithPartitionsToCommit,
-    })
+    }
+
+    await this.coordinator.offsetCommit(payload)
+
+    this.instrumentationEmitter.emit(COMMIT_OFFSETS, payload)
 
     // Update local reference of committed offsets
     topicsWithPartitionsToCommit.forEach(({ topic, partitions }) => {
