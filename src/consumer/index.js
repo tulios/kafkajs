@@ -7,7 +7,7 @@ const { KafkaJSError } = require('../errors')
 
 const eventNames = Object.values(events)
 const eventKeys = Object.keys(events)
-  .map(key => `Consumer.${key}`)
+  .map(key => `consumer.events.${key}`)
   .join(', ')
 
 module.exports = ({
