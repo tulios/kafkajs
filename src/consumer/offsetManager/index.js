@@ -144,7 +144,6 @@ module.exports = class OffsetManager {
     }
 
     await this.coordinator.offsetCommit(payload)
-
     this.instrumentationEmitter.emit(COMMIT_OFFSETS, payload)
 
     // Update local reference of committed offsets

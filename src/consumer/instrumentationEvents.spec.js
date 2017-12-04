@@ -70,11 +70,10 @@ describe('Consumer > Instrumentation Events', () => {
     })
   })
 
-  it.only('emits commit offsets', async () => {
+  it('emits commit offsets', async () => {
     const onCommitOffsets = jest.fn()
     let commitOffsets = 0
     consumer.on(consumer.events.COMMIT_OFFSETS, async event => {
-      console.log('Committed offsets', event)
       onCommitOffsets(event)
       commitOffsets++
     })
@@ -82,10 +81,8 @@ describe('Consumer > Instrumentation Events', () => {
     await consumer.connect()
     await producer.connect()
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
-    console.log('Starting run')
     consumer.run({ eachMessage: () => true })
     await producer.send({ topic: topicName, messages: [message] })
-    console.log('Has sent')
 
     await waitFor(() => commitOffsets > 0)
     expect(onCommitOffsets).toHaveBeenCalledWith({

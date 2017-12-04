@@ -37,7 +37,6 @@ describe('Consumer', () => {
       groupId,
       maxWaitTimeInMs: 1,
       logger: newLogger(),
-      heartbeatInterval: 100,
     })
   })
 

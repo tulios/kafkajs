@@ -9,7 +9,6 @@ const nextId = () => {
 
 class InstrumentationEvent {
   /**
-   * 
    * @param {String} type 
    * @param {Object} payload 
    */

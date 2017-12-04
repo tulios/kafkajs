@@ -18,7 +18,6 @@ module.exports = class InstrumentationEventEmitter {
 
   addListener(eventName, listener) {
     this.emitter.addListener(eventName, listener)
-
     return () => this.emitter.removeListener(eventName, listener)
   }
 }
