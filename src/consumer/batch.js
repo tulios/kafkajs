@@ -23,4 +23,13 @@ module.exports = class Batch {
           .toString()
       : this.messages[this.messages.length - 1].offset
   }
+
+  offsetLag() {
+    return this.isEmpty()
+      ? '0'
+      : Long.fromValue(this.highWatermark)
+          .add(-1)
+          .add(-1 * Long.fromValue(this.lastOffset()))
+          .toString()
+  }
 }
