@@ -107,6 +107,7 @@ module.exports = class Runner {
         heartbeat: async () => {
           await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
         },
+        isRunning: () => this.running,
       })
     } catch (e) {
       // eachBatch has a special resolveOffset which can be used

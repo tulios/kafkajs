@@ -187,9 +187,9 @@ describe('Consumer', () => {
     const batchesConsumed = []
     const functionsExposed = []
     consumer.run({
-      eachBatch: async ({ batch, resolveOffset, heartbeat }) => {
+      eachBatch: async ({ batch, resolveOffset, heartbeat, isRunning }) => {
         batchesConsumed.push(batch)
-        functionsExposed.push(resolveOffset, heartbeat)
+        functionsExposed.push(resolveOffset, heartbeat, isRunning)
       },
     })
 
@@ -220,7 +220,11 @@ describe('Consumer', () => {
       },
     ])
 
-    expect(functionsExposed).toEqual([expect.any(Function), expect.any(Function)])
+    expect(functionsExposed).toEqual([
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+    ])
   })
 
   it('stops consuming messages when running = false', async () => {
