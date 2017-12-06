@@ -25,11 +25,12 @@ module.exports = class Batch {
   }
 
   offsetLag() {
-    return this.isEmpty()
-      ? '0'
-      : Long.fromValue(this.highWatermark)
-          .add(-1)
-          .add(-1 * Long.fromValue(this.lastOffset()))
-          .toString()
+    if (this.isEmpty()) {
+      return '0'
+    }
+
+    const lastOffsetOfPartition = Long.fromValue(this.highWatermark).add(-1)
+    const lastConsumedOffset = Long.fromValue(this.lastOffset())
+    return lastOffsetOfPartition.add(lastConsumedOffset.multiply(-1)).toString()
   }
 }
