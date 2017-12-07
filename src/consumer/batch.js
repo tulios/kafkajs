@@ -23,4 +23,14 @@ module.exports = class Batch {
           .toString()
       : this.messages[this.messages.length - 1].offset
   }
+
+  offsetLag() {
+    if (this.isEmpty()) {
+      return '0'
+    }
+
+    const lastOffsetOfPartition = Long.fromValue(this.highWatermark).add(-1)
+    const lastConsumedOffset = Long.fromValue(this.lastOffset())
+    return lastOffsetOfPartition.add(lastConsumedOffset.multiply(-1)).toString()
+  }
 }
