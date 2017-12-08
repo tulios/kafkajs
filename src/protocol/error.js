@@ -278,12 +278,122 @@ const errorCodes = [
     retriable: false,
     message: 'Request parameters do not satisfy the configured policy',
   },
+  {
+    type: 'OUT_OF_ORDER_SEQUENCE_NUMBER',
+    code: 45,
+    retriable: false,
+    message: 'The broker received an out of order sequence number',
+  },
+  {
+    type: 'DUPLICATE_SEQUENCE_NUMBER',
+    code: 46,
+    retriable: false,
+    message: 'The broker received a duplicate sequence number',
+  },
+  {
+    type: 'INVALID_PRODUCER_EPOCH',
+    code: 47,
+    retriable: false,
+    message:
+      "Producer attempted an operation with an old epoch. Either there is a newer producer with the same transactionalId, or the producer's transaction has been expired by the broker",
+  },
+  {
+    type: 'INVALID_TXN_STATE',
+    code: 48,
+    retriable: false,
+    message: 'The producer attempted a transactional operation in an invalid state',
+  },
+  {
+    type: 'INVALID_PRODUCER_ID_MAPPING',
+    code: 49,
+    retriable: false,
+    message:
+      'The producer attempted to use a producer id which is not currently assigned to its transactional id',
+  },
+  {
+    type: 'INVALID_TRANSACTION_TIMEOUT',
+    code: 50,
+    retriable: false,
+    message:
+      'The transaction timeout is larger than the maximum value allowed by the broker (as configured by max.transaction.timeout.ms)',
+  },
+  {
+    type: 'CONCURRENT_TRANSACTIONS',
+    code: 51,
+    retriable: false,
+    message:
+      'The producer attempted to update a transaction while another concurrent operation on the same transaction was ongoing',
+  },
+  {
+    type: 'TRANSACTION_COORDINATOR_FENCED',
+    code: 52,
+    retriable: false,
+    message:
+      'Indicates that the transaction coordinator sending a WriteTxnMarker is no longer the current coordinator for a given producer',
+  },
+  {
+    type: 'TRANSACTIONAL_ID_AUTHORIZATION_FAILED',
+    code: 53,
+    retriable: false,
+    message: 'Transactional Id authorization failed',
+  },
+  {
+    type: 'SECURITY_DISABLED',
+    code: 54,
+    retriable: false,
+    message: 'Security features are disabled',
+  },
+  {
+    type: 'OPERATION_NOT_ATTEMPTED',
+    code: 55,
+    retriable: false,
+    message:
+      'The broker did not attempt to execute this operation. This may happen for batched RPCs where some operations in the batch failed, causing the broker to respond without trying the rest',
+  },
+  {
+    type: 'KAFKA_STORAGE_ERROR',
+    code: 56,
+    retriable: true,
+    message: 'Disk error when trying to access log file on the disk',
+  },
+  {
+    type: 'LOG_DIR_NOT_FOUND',
+    code: 57,
+    retriable: false,
+    message: 'The user-specified log directory is not found in the broker config',
+  },
+  {
+    type: 'SASL_AUTHENTICATION_FAILED',
+    code: 58,
+    retriable: false,
+    message: 'False	SASL Authentication failed',
+  },
+  {
+    type: 'UNKNOWN_PRODUCER_ID',
+    code: 59,
+    retriable: false,
+    message:
+      "This exception is raised by the broker if it could not locate the producer metadata associated with the producerId in question. This could happen if, for instance, the producer's records were deleted because their retention time had elapsed. Once the last records of the producerId are removed, the producer's metadata is removed from the broker, and future appends by the producer will return this exception",
+  },
+  {
+    type: 'REASSIGNMENT_IN_PROGRESS',
+    code: 60,
+    retriable: false,
+    message: 'A partition reassignment is in progress',
+  },
 ]
+
+const unknownErrorCode = errorCode => ({
+  type: 'KAFKAJS_UNKNOWN_ERROR_CODE',
+  code: -99,
+  retriable: false,
+  message: `Unknown error code ${errorCode}`,
+})
 
 const SUCCESS_CODE = 0
 const failure = code => code !== SUCCESS_CODE
 const createErrorFromCode = code => {
-  return new KafkaJSProtocolError(errorCodes.find(e => e.code === code))
+  return new KafkaJSProtocolError(errorCodes.find(e => e.code === code) || unknownErrorCode(code))
 }
 
 module.exports = {
