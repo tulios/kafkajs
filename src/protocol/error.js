@@ -383,10 +383,17 @@ const errorCodes = [
   },
 ]
 
+const unknownErrorCode = errorCode => ({
+  type: 'KAFKAJS_UNKNOWN_ERROR_CODE',
+  code: -99,
+  retriable: false,
+  message: `Unknown error code ${errorCode}`,
+})
+
 const SUCCESS_CODE = 0
 const failure = code => code !== SUCCESS_CODE
 const createErrorFromCode = code => {
-  return new KafkaJSProtocolError(errorCodes.find(e => e.code === code))
+  return new KafkaJSProtocolError(errorCodes.find(e => e.code === code) || unknownErrorCode(code))
 }
 
 module.exports = {
