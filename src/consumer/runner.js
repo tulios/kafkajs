@@ -103,6 +103,7 @@ module.exports = class Runner {
       try {
         await this.eachMessage({ topic, partition, message })
       } catch (e) {
+        this.logger.error(`Error when calling eachMessage`, { stack: e.stack })
         // In case of errors, commit the previously consumed offsets
         await this.consumerGroup.commitOffsets()
         throw e
@@ -128,6 +129,7 @@ module.exports = class Runner {
         isRunning: () => this.running,
       })
     } catch (e) {
+      this.logger.error(`Error when calling eachBatch`, { stack: e.stack })
       // eachBatch has a special resolveOffset which can be used
       // to keep track of the messages
       await this.consumerGroup.commitOffsets()
