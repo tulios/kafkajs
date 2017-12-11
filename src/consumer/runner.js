@@ -1,4 +1,8 @@
 const createRetry = require('../retry')
+const { KafkaJSError } = require('../errors')
+
+const isRebalancing = e =>
+  e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
 
 module.exports = class Runner {
   constructor({
@@ -23,8 +27,22 @@ module.exports = class Runner {
   }
 
   async join() {
-    await this.consumerGroup.join()
-    await this.consumerGroup.sync()
+    return this.retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await this.consumerGroup.join()
+        await this.consumerGroup.sync()
+      } catch (e) {
+        if (isRebalancing(e)) {
+          // Rebalance in progress isn't a retriable error since the consumer
+          // has to go through find coordinator and join again before it can
+          // actually retry. Throwing a retriable error to allow the retrier
+          // to keep going
+          throw new KafkaJSError('The group is rebalancing')
+        }
+
+        bail(e)
+      }
+    })
   }
 
   async start() {
@@ -85,6 +103,7 @@ module.exports = class Runner {
       try {
         await this.eachMessage({ topic, partition, message })
       } catch (e) {
+        this.logger.error(`Error when calling eachMessage`, { stack: e.stack })
         // In case of errors, commit the previously consumed offsets
         await this.consumerGroup.commitOffsets()
         throw e
@@ -110,6 +129,7 @@ module.exports = class Runner {
         isRunning: () => this.running,
       })
     } catch (e) {
+      this.logger.error(`Error when calling eachBatch`, { stack: e.stack })
       // eachBatch has a special resolveOffset which can be used
       // to keep track of the messages
       await this.consumerGroup.commitOffsets()
@@ -169,7 +189,7 @@ module.exports = class Runner {
           return
         }
 
-        if (e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP') {
+        if (isRebalancing(e)) {
           this.logger.error('The group is rebalancing, re-joining', {
             groupId: this.consumerGroup.groupId,
             memberId: this.consumerGroup.memberId,
