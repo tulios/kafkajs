@@ -17,6 +17,7 @@ const createLevel = (label, level, currentLevel, namespace, loggerFunction) => (
       {
         level: label,
         timestamp: new Date().toISOString(),
+        logger: 'kafkajs',
         message,
       },
       extra
