@@ -7,4 +7,5 @@ module.exports = {
   testResultsProcessor: './node_modules/jest-junit',
   testPathIgnorePatterns: ['/node_modules/'],
   testEnvironment: 'node',
+  bail: true,
 }
