@@ -14,7 +14,9 @@ const decodeMessage = (decoder, magicByte) => {
 }
 
 module.exports = (offset, size, decoder) => {
-  const remainingBytes = decoder.buffer.length - decoder.offset
+  // Don't decrement decoder.offset because slice is already considering the current
+  // offset of the decoder
+  const remainingBytes = Buffer.byteLength(decoder.slice(size).buffer)
 
   if (remainingBytes < size) {
     throw new KafkaJSPartialMessageError(

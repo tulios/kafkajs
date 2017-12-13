@@ -107,4 +107,12 @@ module.exports = class Decoder {
 
     return array
   }
+
+  slice(size) {
+    return new Decoder(this.buffer.slice(this.offset, this.offset + size))
+  }
+
+  forward(size) {
+    this.offset += size
+  }
 }

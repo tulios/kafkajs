@@ -106,4 +106,25 @@ describe('Protocol > Requests > Fetch > v2', () => {
 
     await expect(parse(data)).resolves.toBeTruthy()
   })
+
+  test('response with partial messages and many partitions', async () => {
+    const data = await decode(
+      Buffer.from(require('../fixtures/v2_response_partial_messages_many_partitions.json'))
+    )
+
+    expect(data).toEqual({
+      throttleTime: 0,
+      responses: [
+        {
+          topicName: 'topic-partial-message',
+          partitions: [
+            { partition: 9, errorCode: 0, highWatermark: '325', messages: [] },
+            { partition: 3, errorCode: 0, highWatermark: '314', messages: [] },
+            { partition: 6, errorCode: 0, highWatermark: '292', messages: [] },
+            { partition: 0, errorCode: 0, highWatermark: '263', messages: [] },
+          ],
+        },
+      ],
+    })
+  })
 })

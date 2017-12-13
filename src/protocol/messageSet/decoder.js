@@ -10,14 +10,14 @@ const { lookupCodecByAttributes } = require('../message/compression')
  *  Message => Bytes
  */
 
-module.exports = async decoder => {
+module.exports = async primaryDecoder => {
   const messages = []
-  const messageSetSize = decoder.readInt32()
-  const bytesToRead = decoder.offset + messageSetSize
+  const messageSetSize = primaryDecoder.readInt32()
+  const messageSetDecoder = primaryDecoder.slice(messageSetSize)
 
-  while (decoder.offset < bytesToRead) {
+  while (messageSetDecoder.offset < messageSetSize) {
     try {
-      const message = EntryDecoder(decoder)
+      const message = EntryDecoder(messageSetDecoder)
       const codec = lookupCodecByAttributes(message.attributes)
 
       if (codec) {
@@ -37,6 +37,7 @@ module.exports = async decoder => {
     }
   }
 
+  primaryDecoder.forward(messageSetSize)
   return messages
 }
 
