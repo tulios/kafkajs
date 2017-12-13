@@ -100,7 +100,7 @@ module.exports = class Connection {
         clearTimeout(timeoutId)
 
         const error = new KafkaJSConnectionError(`Connection error: ${e.message}`)
-        this.logError(error.message)
+        this.logError(error.message, { stack: e.stack })
         await this.disconnect()
         this.rejectRequests(error)
 
@@ -108,9 +108,10 @@ module.exports = class Connection {
       }
 
       const onTimeout = async () => {
-        await this.disconnect()
         const error = new KafkaJSConnectionError('Connection timeout')
         this.logError(error.message)
+        await this.disconnect()
+        this.rejectRequests(error)
         reject(error)
       }
 
@@ -129,6 +130,7 @@ module.exports = class Connection {
           onData,
           onEnd,
           onError,
+          onTimeout,
         })
       } catch (e) {
         reject(new KafkaJSConnectionError(`Failed to connect: ${e.message}`))
@@ -174,6 +176,8 @@ module.exports = class Connection {
       }
 
       const requestPayload = await request.encode()
+
+      this.failIfNotConnected()
       this.socket.write(requestPayload.buffer, 'binary')
     })
   }
@@ -188,10 +192,7 @@ module.exports = class Connection {
    * @returns {Promise<data>} where data is the return of "response#parse"
    */
   async send({ request, response }) {
-    if (!this.connected) {
-      throw new KafkaJSConnectionError('Not connected')
-    }
-
+    this.failIfNotConnected()
     const requestInfo = ({ apiName, apiKey, apiVersion }) =>
       `${apiName}(key: ${apiKey}, version: ${apiVersion})`
 
@@ -208,6 +209,7 @@ module.exports = class Connection {
 
       return new Promise((resolve, reject) => {
         try {
+          this.failIfNotConnected()
           this.pendingQueue[correlationId] = { apiKey, apiName, apiVersion, resolve, reject }
           this.socket.write(requestPayload.buffer, 'binary')
         } catch (e) {
@@ -236,7 +238,22 @@ module.exports = class Connection {
         size,
       })
 
+      this.logDebug(`Response ${requestInfo(entry)}`, {
+        error: e.message,
+        correlationId,
+        payload,
+      })
+
       throw e
+    }
+  }
+
+  /**
+   * @private
+   */
+  failIfNotConnected() {
+    if (!this.connected) {
+      throw new KafkaJSConnectionError('Not connected')
     }
   }
 

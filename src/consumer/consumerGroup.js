@@ -201,6 +201,8 @@ module.exports = class ConsumerGroup {
       if (e.name === 'KafkaJSOffsetOutOfRange') {
         this.logger.error('Offset out of range, resetting to default offset', {
           topic: e.topic,
+          groupId: this.groupId,
+          memberId: this.memberId,
           partition: e.partition,
         })
 

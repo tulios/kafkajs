@@ -4,6 +4,8 @@ const { KafkaJSError } = require('../errors')
 const isRebalancing = e =>
   e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
 
+const isKafkaJSError = e => e instanceof KafkaJSError
+
 module.exports = class Runner {
   constructor({
     consumerGroup,
@@ -103,7 +105,10 @@ module.exports = class Runner {
       try {
         await this.eachMessage({ topic, partition, message })
       } catch (e) {
-        this.logger.error(`Error when calling eachMessage`, { stack: e.stack })
+        if (!isKafkaJSError(e)) {
+          this.logger.error(`Error when calling eachMessage`, { stack: e.stack })
+        }
+
         // In case of errors, commit the previously consumed offsets
         await this.consumerGroup.commitOffsets()
         throw e
@@ -129,7 +134,10 @@ module.exports = class Runner {
         isRunning: () => this.running,
       })
     } catch (e) {
-      this.logger.error(`Error when calling eachBatch`, { stack: e.stack })
+      if (!isKafkaJSError(e)) {
+        this.logger.error(`Error when calling eachBatch`, { stack: e.stack })
+      }
+
       // eachBatch has a special resolveOffset which can be used
       // to keep track of the messages
       await this.consumerGroup.commitOffsets()
@@ -180,9 +188,12 @@ module.exports = class Runner {
       } catch (e) {
         if (!this.consumerGroup.cluster.isConnected()) {
           this.logger.error(`Cluster has disconnected, reconnecting: ${e.message}`, {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
             retryCount,
             retryTime,
           })
+
           await this.consumerGroup.cluster.connect()
           await this.consumerGroup.cluster.refreshMetadata()
           this.scheduleFetch()
@@ -193,6 +204,8 @@ module.exports = class Runner {
           this.logger.error('The group is rebalancing, re-joining', {
             groupId: this.consumerGroup.groupId,
             memberId: this.consumerGroup.memberId,
+            retryCount,
+            retryTime,
           })
 
           await this.join()
@@ -201,6 +214,13 @@ module.exports = class Runner {
         }
 
         if (e.type === 'UNKNOWN_MEMBER_ID') {
+          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+            retryCount,
+            retryTime,
+          })
+
           this.consumerGroup.memberId = null
           await this.join()
           this.scheduleFetch()
