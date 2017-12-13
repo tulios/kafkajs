@@ -180,9 +180,12 @@ module.exports = class Runner {
       } catch (e) {
         if (!this.consumerGroup.cluster.isConnected()) {
           this.logger.error(`Cluster has disconnected, reconnecting: ${e.message}`, {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
             retryCount,
             retryTime,
           })
+
           await this.consumerGroup.cluster.connect()
           await this.consumerGroup.cluster.refreshMetadata()
           this.scheduleFetch()
@@ -193,6 +196,8 @@ module.exports = class Runner {
           this.logger.error('The group is rebalancing, re-joining', {
             groupId: this.consumerGroup.groupId,
             memberId: this.consumerGroup.memberId,
+            retryCount,
+            retryTime,
           })
 
           await this.join()
@@ -201,6 +206,13 @@ module.exports = class Runner {
         }
 
         if (e.type === 'UNKNOWN_MEMBER_ID') {
+          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+            retryCount,
+            retryTime,
+          })
+
           this.consumerGroup.memberId = null
           await this.join()
           this.scheduleFetch()
