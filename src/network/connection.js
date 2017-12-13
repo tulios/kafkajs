@@ -100,7 +100,7 @@ module.exports = class Connection {
         clearTimeout(timeoutId)
 
         const error = new KafkaJSConnectionError(`Connection error: ${e.message}`)
-        this.logError(error.message)
+        this.logError(error.message, { stack: e.stack })
         await this.disconnect()
         this.rejectRequests(error)
 
@@ -236,6 +236,12 @@ module.exports = class Connection {
         error: e.message,
         correlationId,
         size,
+      })
+
+      this.logDebug(`Response ${requestInfo(entry)}`, {
+        error: e.message,
+        correlationId,
+        payload,
       })
 
       throw e
