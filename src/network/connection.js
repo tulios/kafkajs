@@ -176,6 +176,8 @@ module.exports = class Connection {
       }
 
       const requestPayload = await request.encode()
+
+      this.failIfNotConnected()
       this.socket.write(requestPayload.buffer, 'binary')
     })
   }
@@ -190,10 +192,7 @@ module.exports = class Connection {
    * @returns {Promise<data>} where data is the return of "response#parse"
    */
   async send({ request, response }) {
-    if (!this.connected) {
-      throw new KafkaJSConnectionError('Not connected')
-    }
-
+    this.failIfNotConnected()
     const requestInfo = ({ apiName, apiKey, apiVersion }) =>
       `${apiName}(key: ${apiKey}, version: ${apiVersion})`
 
@@ -210,6 +209,7 @@ module.exports = class Connection {
 
       return new Promise((resolve, reject) => {
         try {
+          this.failIfNotConnected()
           this.pendingQueue[correlationId] = { apiKey, apiName, apiVersion, resolve, reject }
           this.socket.write(requestPayload.buffer, 'binary')
         } catch (e) {
@@ -239,6 +239,15 @@ module.exports = class Connection {
       })
 
       throw e
+    }
+  }
+
+  /**
+   * @private
+   */
+  failIfNotConnected() {
+    if (!this.connected) {
+      throw new KafkaJSConnectionError('Not connected')
     }
   }
 
