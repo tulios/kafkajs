@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.6.4] - 2017-12-13
+### Added
+  - Add stack trace to connection error logs
+
+### Changed
+  - Skip consumer callback error logs for kafkajs errors
+
+### Fixed
+  - Use the connection timeout callback for socket timeout
+  - Check if still connected before writing to the socket
+
 ## [0.6.3] - 2017-12-11
 ### Added
   - Add error logs for user errors in `eachMessage` and `eachBatch`
