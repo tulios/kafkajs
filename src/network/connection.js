@@ -108,9 +108,10 @@ module.exports = class Connection {
       }
 
       const onTimeout = async () => {
-        await this.disconnect()
         const error = new KafkaJSConnectionError('Connection timeout')
         this.logError(error.message)
+        await this.disconnect()
+        this.rejectRequests(error)
         reject(error)
       }
 
@@ -129,6 +130,7 @@ module.exports = class Connection {
           onData,
           onEnd,
           onError,
+          onTimeout,
         })
       } catch (e) {
         reject(new KafkaJSConnectionError(`Failed to connect: ${e.message}`))
