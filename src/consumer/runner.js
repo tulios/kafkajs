@@ -227,7 +227,7 @@ module.exports = class Runner {
           return
         }
 
-        if (e.type === 'KafkaJSOffsetOutOfRange') {
+        if (e.name === 'KafkaJSOffsetOutOfRange') {
           this.scheduleFetch()
           return
         }
