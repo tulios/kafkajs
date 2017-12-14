@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.6.5] - 2017-12-14
+### Fixed
+  - Fix partial message decode #10
+  - Throw not implemented error for Snappy and LZ4 compression #10
+  - Don't crash when setting offsets to default #10
+
 ## [0.6.4] - 2017-12-13
 ### Added
   - Add stack trace to connection error logs
