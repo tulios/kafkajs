@@ -127,4 +127,55 @@ describe('Protocol > Requests > Fetch > v2', () => {
       ],
     })
   })
+
+  test('response with not enough bytes to read the message size or offset (index out of range)', async () => {
+    const data = await decode(
+      Buffer.from(require('../fixtures/v2_response_index_out_of_range.json'))
+    )
+
+    expect(data).toEqual({
+      throttleTime: 0,
+      responses: [
+        {
+          topicName: 'test-topic-index-out-of-range',
+          partitions: [
+            {
+              partition: 1,
+              errorCode: 0,
+              highWatermark: '15734209',
+              messages: [
+                {
+                  offset: '15733908',
+                  size: 31,
+                  crc: 120234579,
+                  magicByte: 0,
+                  attributes: 0,
+                  key: Buffer.from('key-0'),
+                  value: Buffer.from('some-value-0'),
+                },
+                {
+                  offset: '15733909',
+                  size: 31,
+                  crc: -141862522,
+                  magicByte: 0,
+                  attributes: 0,
+                  key: Buffer.from('key-1'),
+                  value: Buffer.from('some-value-1'),
+                },
+                {
+                  offset: '15733910',
+                  size: 31,
+                  crc: 1025004472,
+                  magicByte: 0,
+                  attributes: 0,
+                  key: Buffer.from('key-2'),
+                  value: Buffer.from('some-value-2'),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+  })
 })
