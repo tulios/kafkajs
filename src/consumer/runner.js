@@ -227,6 +227,11 @@ module.exports = class Runner {
           return
         }
 
+        if (e.name === 'KafkaJSOffsetOutOfRange') {
+          this.scheduleFetch()
+          return
+        }
+
         this.logger.debug('Error while fetching data, trying again...', {
           error: e.message,
           groupId: this.consumerGroup.groupId,
