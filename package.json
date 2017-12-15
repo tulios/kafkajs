@@ -22,6 +22,7 @@
   "scripts": {
     "test:local:watch": "yarn test:local --watch",
     "test:local": "./node_modules/.bin/jest",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand --watch",
     "test": "yarn lint && JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh './node_modules/.bin/jest --coverage --forceExit'",
     "lint": "./node_modules/.bin/eslint example.js \"{src,testHelpers}/**/*.js\""
   },
