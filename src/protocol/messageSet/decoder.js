@@ -2,6 +2,7 @@ const Long = require('long')
 const Decoder = require('../decoder')
 const MessageDecoder = require('../message/decoder')
 const { lookupCodecByAttributes } = require('../message/compression')
+const { KafkaJSPartialMessageError } = require('../../errors')
 
 /**
  * MessageSet => [Offset MessageSize Message]
@@ -64,7 +65,20 @@ const EntriesDecoder = (decoder, compressedMessage) => {
 }
 
 const EntryDecoder = decoder => {
+  if (!decoder.canReadInt64()) {
+    throw new KafkaJSPartialMessageError(
+      `Tried to decode a partial message: There isn't enough bytes to read the offset`
+    )
+  }
+
   const offset = decoder.readInt64().toString()
+
+  if (!decoder.canReadInt32()) {
+    throw new KafkaJSPartialMessageError(
+      `Tried to decode a partial message: There isn't enough bytes to read the message size`
+    )
+  }
+
   const size = decoder.readInt32()
   return MessageDecoder(offset, size, decoder)
 }
