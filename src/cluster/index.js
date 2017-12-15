@@ -8,7 +8,7 @@ const {
 } = require('../errors')
 const flatten = require('../utils/flatten')
 const shuffle = require('../utils/shuffle')
-const { keys, values } = Object
+const { keys } = Object
 
 const EARLIEST_OFFSET = -2
 const LATEST_OFFSET = -1
