@@ -159,10 +159,36 @@ module.exports = class Cluster {
     }
 
     if (!broker.isConnected()) {
-      await broker.connect()
+      await this.connectBroker(broker)
     }
 
     return broker
+  }
+
+  /**
+   * @private
+   */
+  async connectBroker(broker) {
+    return this.retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await broker.connect()
+      } catch (e) {
+        if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
+          // Rebuild the connection since it can't recover from illegal SASL state
+          broker.connection = this.connectionBuilder.build({
+            host: broker.connection.host,
+            port: broker.connection.port,
+            rack: broker.connection.rack,
+          })
+
+          this.logger.error(`Failed to connect to broker, reconnecting`, { retryCount, retryTime })
+        }
+
+        if (e.retriable) throw e
+        this.logger.error(e, { retryCount, retryTime, stack: e.stack })
+        bail(e)
+      }
+    })
   }
 
   /**
