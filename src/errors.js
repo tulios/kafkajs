@@ -42,6 +42,7 @@ class KafkaJSPartialMessageError extends KafkaJSNonRetriableError {}
 class KafkaJSSASLAuthenticationError extends KafkaJSNonRetriableError {}
 class KafkaJSConnectionError extends KafkaJSError {}
 class KafkaJSBrokerNotFound extends KafkaJSError {}
+class KafkaJSGroupCoordinatorNotFound extends KafkaJSNonRetriableError {}
 class KafkaJSNotImplemented extends KafkaJSNonRetriableError {}
 
 module.exports = {
@@ -53,5 +54,6 @@ module.exports = {
   KafkaJSSASLAuthenticationError,
   KafkaJSNumberOfRetriesExceeded,
   KafkaJSOffsetOutOfRange,
+  KafkaJSGroupCoordinatorNotFound,
   KafkaJSNotImplemented,
 }

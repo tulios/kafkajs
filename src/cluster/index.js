@@ -1,9 +1,14 @@
 const Broker = require('../broker')
 const createRetry = require('../retry')
 const connectionBuilder = require('./connectionBuilder')
-const { KafkaJSError, KafkaJSBrokerNotFound } = require('../errors')
+const {
+  KafkaJSError,
+  KafkaJSBrokerNotFound,
+  KafkaJSGroupCoordinatorNotFound,
+} = require('../errors')
 const flatten = require('../utils/flatten')
-const { keys } = Object
+const shuffle = require('../utils/shuffle')
+const { keys, values } = Object
 
 const EARLIEST_OFFSET = -2
 const LATEST_OFFSET = -1
@@ -166,32 +171,6 @@ module.exports = class Cluster {
   }
 
   /**
-   * @private
-   */
-  async connectBroker(broker) {
-    return this.retrier(async (bail, retryCount, retryTime) => {
-      try {
-        await broker.connect()
-      } catch (e) {
-        if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
-          // Rebuild the connection since it can't recover from illegal SASL state
-          broker.connection = this.connectionBuilder.build({
-            host: broker.connection.host,
-            port: broker.connection.port,
-            rack: broker.connection.rack,
-          })
-
-          this.logger.error(`Failed to connect to broker, reconnecting`, { retryCount, retryTime })
-        }
-
-        if (e.retriable) throw e
-        this.logger.error(e, { retryCount, retryTime, stack: e.stack })
-        bail(e)
-      }
-    })
-  }
-
-  /**
    * @public
    * @param {string} topic
    * @returns {Object} Example:
@@ -244,10 +223,8 @@ module.exports = class Cluster {
   async findGroupCoordinator({ groupId }) {
     return this.retrier(async (bail, retryCount, retryTime) => {
       try {
-        const { coordinator } = await this.seedBroker.findGroupCoordinator({ groupId })
-        const findCoordinatorBroker = async () => this.findBroker({ nodeId: coordinator.nodeId })
-
-        return await findCoordinatorBroker()
+        const { coordinator } = await this.findGroupCoordinatorMetadata({ groupId })
+        return await this.findBroker({ nodeId: coordinator.nodeId })
       } catch (e) {
         // A new broker can join the cluster before we have the chance
         // to refresh metadata
@@ -265,6 +242,42 @@ module.exports = class Cluster {
         bail(e)
       }
     })
+  }
+
+  /**
+   * @public
+   * @param {string} groupId
+   * @returns {Promise<Object>}
+   */
+  async findGroupCoordinatorMetadata({ groupId }) {
+    const brokers = shuffle(keys(this.brokerPool))
+
+    if (brokers.length === 0) {
+      throw new KafkaJSBrokerNotFound('No brokers in the broker pool')
+    }
+
+    for (let nodeId of brokers) {
+      try {
+        const broker = await this.findBroker({ nodeId })
+        const brokerMetadata = await broker.findGroupCoordinator({ groupId })
+        this.logger.debug('Found group coordinator', {
+          broker: brokerMetadata.host,
+          nodeId: brokerMetadata.coordinator.nodeId,
+        })
+        return brokerMetadata
+      } catch (e) {
+        if (e.name !== 'KafkaJSConnectionError') {
+          throw e
+        }
+
+        this.logger.debug(`Tried to find group coordinator`, {
+          nodeId,
+          error: e,
+        })
+      }
+    }
+
+    throw new KafkaJSGroupCoordinatorNotFound('Failed to find group coordinator')
   }
 
   /**
@@ -350,5 +363,31 @@ module.exports = class Cluster {
         offset: offsets.pop(),
       })),
     }))
+  }
+
+  /**
+   * @private
+   */
+  async connectBroker(broker) {
+    return this.retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await broker.connect()
+      } catch (e) {
+        if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
+          // Rebuild the connection since it can't recover from illegal SASL state
+          broker.connection = this.connectionBuilder.build({
+            host: broker.connection.host,
+            port: broker.connection.port,
+            rack: broker.connection.rack,
+          })
+
+          this.logger.error(`Failed to connect to broker, reconnecting`, { retryCount, retryTime })
+        }
+
+        if (e.retriable) throw e
+        this.logger.error(e, { retryCount, retryTime, stack: e.stack })
+        bail(e)
+      }
+    })
   }
 }
