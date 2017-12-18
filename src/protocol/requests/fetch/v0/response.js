@@ -1,6 +1,6 @@
 const Decoder = require('../../../decoder')
 const { KafkaJSOffsetOutOfRange } = require('../../../../errors')
-const { failure, createErrorFromCode } = require('../../../error')
+const { failure, createErrorFromCode, errorCodes } = require('../../../error')
 const flatten = require('../../../../utils/flatten')
 const MessageSetDecoder = require('../../../messageSet/decoder')
 
@@ -37,6 +37,10 @@ const decode = async rawData => {
   }
 }
 
+const { code: OFFSET_OUT_OF_RANGE_ERROR_CODE } = errorCodes.find(
+  e => e.type === 'OFFSET_OUT_OF_RANGE'
+)
+
 const parse = async data => {
   const partitionsWithError = data.responses.map(({ topicName, partitions }) => {
     return partitions
@@ -47,7 +51,11 @@ const parse = async data => {
   const errors = flatten(partitionsWithError)
   if (errors.length > 0) {
     const { errorCode, topic, partition } = errors[0]
-    throw new KafkaJSOffsetOutOfRange(createErrorFromCode(errorCode), { topic, partition })
+    if (errorCode === OFFSET_OUT_OF_RANGE_ERROR_CODE) {
+      throw new KafkaJSOffsetOutOfRange(createErrorFromCode(errorCode), { topic, partition })
+    }
+
+    throw createErrorFromCode(errorCode)
   }
 
   return data
