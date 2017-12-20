@@ -38,9 +38,15 @@ class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
   }
 }
 
+class KafkaJSConnectionError extends KafkaJSError {
+  constructor(e, { broker } = {}) {
+    super(e)
+    this.broker = broker
+  }
+}
+
 class KafkaJSPartialMessageError extends KafkaJSNonRetriableError {}
 class KafkaJSSASLAuthenticationError extends KafkaJSNonRetriableError {}
-class KafkaJSConnectionError extends KafkaJSError {}
 class KafkaJSBrokerNotFound extends KafkaJSError {}
 class KafkaJSGroupCoordinatorNotFound extends KafkaJSNonRetriableError {}
 class KafkaJSNotImplemented extends KafkaJSNonRetriableError {}
