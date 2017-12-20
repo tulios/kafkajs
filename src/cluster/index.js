@@ -105,6 +105,7 @@ module.exports = class Cluster {
    * @returns {Promise}
    */
   async refreshMetadata() {
+    await this.connect()
     return this.retrier(async (bail, retryCount, retryTime) => {
       try {
         this.metadata = await this.seedBroker.metadata(Array.from(this.targetTopics))
