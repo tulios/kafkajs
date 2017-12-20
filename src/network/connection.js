@@ -92,14 +92,21 @@ module.exports = class Connection {
           this.authHandlers.onError()
         } else if (wasConnected) {
           this.logDebug('Kafka server has closed connection')
-          this.rejectRequests(new KafkaJSConnectionError('Closed connection'))
+          this.rejectRequests(
+            new KafkaJSConnectionError('Closed connection', {
+              broker: `${this.host}:${this.port}`,
+            })
+          )
         }
       }
 
       const onError = async e => {
         clearTimeout(timeoutId)
 
-        const error = new KafkaJSConnectionError(`Connection error: ${e.message}`)
+        const error = new KafkaJSConnectionError(`Connection error: ${e.message}`, {
+          broker: `${this.host}:${this.port}`,
+        })
+
         this.logError(error.message, { stack: e.stack })
         await this.disconnect()
         this.rejectRequests(error)
@@ -108,7 +115,10 @@ module.exports = class Connection {
       }
 
       const onTimeout = async () => {
-        const error = new KafkaJSConnectionError('Connection timeout')
+        const error = new KafkaJSConnectionError('Connection timeout', {
+          broker: `${this.host}:${this.port}`,
+        })
+
         this.logError(error.message)
         await this.disconnect()
         this.rejectRequests(error)
@@ -133,7 +143,11 @@ module.exports = class Connection {
           onTimeout,
         })
       } catch (e) {
-        reject(new KafkaJSConnectionError(`Failed to connect: ${e.message}`))
+        reject(
+          new KafkaJSConnectionError(`Failed to connect: ${e.message}`, {
+            broker: `${this.host}:${this.port}`,
+          })
+        )
       }
     })
   }
@@ -171,7 +185,11 @@ module.exports = class Connection {
         },
         onError: () => {
           this.authHandlers = null
-          reject(new KafkaJSConnectionError('Connection closed by the server'))
+          reject(
+            new KafkaJSConnectionError('Connection closed by the server', {
+              broker: `${this.host}:${this.port}`,
+            })
+          )
         },
       }
 
@@ -253,7 +271,9 @@ module.exports = class Connection {
    */
   failIfNotConnected() {
     if (!this.connected) {
-      throw new KafkaJSConnectionError('Not connected')
+      throw new KafkaJSConnectionError('Not connected', {
+        broker: `${this.host}:${this.port}`,
+      })
     }
   }
 
