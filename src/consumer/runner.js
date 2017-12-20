@@ -33,6 +33,11 @@ module.exports = class Runner {
       try {
         await this.consumerGroup.join()
         await this.consumerGroup.sync()
+        this.logger.info('Consumer has joined the group', {
+          groupId: this.consumerGroup.groupId,
+          memberId: this.consumerGroup.memberId,
+          leaderId: this.consumerGroup.leaderId,
+        })
       } catch (e) {
         if (isRebalancing(e)) {
           // Rebalance in progress isn't a retriable error since the consumer
@@ -190,6 +195,7 @@ module.exports = class Runner {
           this.logger.error('The group is rebalancing, re-joining', {
             groupId: this.consumerGroup.groupId,
             memberId: this.consumerGroup.memberId,
+            error: e.message,
             retryCount,
             retryTime,
           })
@@ -203,6 +209,7 @@ module.exports = class Runner {
           this.logger.error('The coordinator is not aware of this member, re-joining the group', {
             groupId: this.consumerGroup.groupId,
             memberId: this.consumerGroup.memberId,
+            error: e.message,
             retryCount,
             retryTime,
           })
@@ -219,9 +226,9 @@ module.exports = class Runner {
         }
 
         this.logger.debug('Error while fetching data, trying again...', {
-          error: e.message,
           groupId: this.consumerGroup.groupId,
           memberId: this.consumerGroup.memberId,
+          error: e.message,
           retryCount,
           retryTime,
         })
