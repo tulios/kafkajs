@@ -59,10 +59,6 @@ module.exports = class ConsumerGroup {
   async join() {
     const { groupId, sessionTimeout } = this
 
-    if (!this.cluster.isConnected()) {
-      await this.cluster.connect()
-    }
-
     this.coordinator = await this.cluster.findGroupCoordinator({ groupId })
 
     const groupData = await this.coordinator.joinGroup({
