@@ -1,20 +1,21 @@
-const Broker = require('../broker')
+const BrokerPool = require('./brokerPool')
 const createRetry = require('../retry')
 const connectionBuilder = require('./connectionBuilder')
+const flatten = require('../utils/flatten')
+const shuffle = require('../utils/shuffle')
 const {
   KafkaJSError,
   KafkaJSBrokerNotFound,
   KafkaJSGroupCoordinatorNotFound,
 } = require('../errors')
-const flatten = require('../utils/flatten')
-const shuffle = require('../utils/shuffle')
-const { keys } = Object
+
+const { keys, assign } = Object
 
 const EARLIEST_OFFSET = -2
 const LATEST_OFFSET = -1
 
 const mergeTopics = (obj, { topic, partitions }) =>
-  Object.assign(obj, {
+  assign(obj, {
     [topic]: [...(obj[topic] || []), ...partitions],
   })
 
@@ -31,7 +32,7 @@ module.exports = class Cluster {
   constructor({ brokers, ssl, sasl, clientId, connectionTimeout, retry, logger: rootLogger }) {
     this.rootLogger = rootLogger
     this.logger = rootLogger.namespace('Cluster')
-    this.retrier = createRetry(Object.assign({}, retry))
+    this.retrier = createRetry(assign({}, retry))
     this.connectionBuilder = connectionBuilder({
       logger: rootLogger,
       brokers,
@@ -42,99 +43,40 @@ module.exports = class Cluster {
       retry,
     })
 
-    this.seedBroker = new Broker(this.connectionBuilder.build(), this.rootLogger)
     this.targetTopics = new Set()
-    this.brokerPool = {}
-
-    this.metadata = null
-    this.versions = null
+    this.brokerPool = new BrokerPool({
+      connectionBuilder: this.connectionBuilder,
+      logger: this.rootLogger,
+      retry,
+    })
   }
 
-  /**
-   * @public
-   * @returns {boolean}
-   */
   isConnected() {
-    return this.seedBroker.isConnected()
+    return this.brokerPool.hasConnectedBrokers()
   }
 
   /**
    * @public
-   * @returns {Promise}
+   * @returns {Promise<null>}
    */
   async connect() {
-    if (this.isConnected()) {
-      return
-    }
-
-    return this.retrier(async (bail, retryCount, retryTime) => {
-      try {
-        await this.seedBroker.connect()
-        this.versions = this.seedBroker.versions
-      } catch (e) {
-        this.logger.error(e, { retryCount, retryTime })
-
-        if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
-          // Connection builder will always rotate the seed broker
-          this.seedBroker = new Broker(this.connectionBuilder.build(), this.rootLogger)
-          this.logger.error(
-            `Failed to connect to seed broker, trying another broker from the list: ${e.message}`,
-            { retryCount, retryTime }
-          )
-        }
-
-        if (e.retriable) throw e
-        bail(e)
-      }
-    })
+    await this.brokerPool.connect()
   }
 
   /**
    * @public
-   * @returns {Promise}
+   * @returns {Promise<null>}
    */
   async disconnect() {
-    await this.seedBroker.disconnect()
-    await Promise.all(Object.values(this.brokerPool).map(broker => broker.disconnect()))
-    this.brokerPool = {}
-    this.metadata = null
+    await this.brokerPool.disconnect()
   }
 
   /**
    * @public
-   * @returns {Promise}
+   * @returns {Promise<null>}
    */
   async refreshMetadata() {
-    await this.connect()
-    return this.retrier(async (bail, retryCount, retryTime) => {
-      try {
-        this.metadata = await this.seedBroker.metadata(Array.from(this.targetTopics))
-        this.brokerPool = this.metadata.brokers.reduce((result, { nodeId, host, port, rack }) => {
-          if (result[nodeId]) {
-            return result
-          }
-
-          const { host: seedHost, port: seedPort } = this.seedBroker.connection
-
-          if (host === seedHost && port === seedPort) {
-            return Object.assign(result, {
-              [nodeId]: this.seedBroker,
-            })
-          }
-
-          const connection = this.connectionBuilder.build({ host, port, rack })
-          return Object.assign(result, {
-            [nodeId]: new Broker(connection, this.rootLogger, this.versions),
-          })
-        }, this.brokerPool)
-      } catch (e) {
-        if (e.type === 'LEADER_NOT_AVAILABLE') {
-          throw e
-        }
-
-        bail(e)
-      }
-    })
+    await this.brokerPool.refreshMetadata(Array.from(this.targetTopics))
   }
 
   /**
@@ -158,17 +100,7 @@ module.exports = class Cluster {
    * @returns {Promise<Broker>}
    */
   async findBroker({ nodeId }) {
-    const broker = this.brokerPool[nodeId]
-
-    if (!broker) {
-      throw new KafkaJSBrokerNotFound(`Broker ${nodeId} not found in the cached metadata`)
-    }
-
-    if (!broker.isConnected()) {
-      await this.connectBroker(broker)
-    }
-
-    return broker
+    return await this.brokerPool.findBroker({ nodeId })
   }
 
   /**
@@ -184,11 +116,12 @@ module.exports = class Cluster {
    *                   }]
    */
   findTopicPartitionMetadata(topic) {
-    if (!this.metadata || !this.metadata.topicMetadata) {
+    const { metadata } = this.brokerPool
+    if (!metadata || !metadata.topicMetadata) {
       throw new KafkaJSError('Topic metadata not loaded')
     }
 
-    return this.metadata.topicMetadata.find(t => t.topic === topic).partitionMetadata
+    return metadata.topicMetadata.find(t => t.topic === topic).partitionMetadata
   }
 
   /**
@@ -212,7 +145,7 @@ module.exports = class Cluster {
 
       const { leader } = metadata
       const current = result[leader] || []
-      return Object.assign(result, { [leader]: [...current, partitionId] })
+      return assign(result, { [leader]: [...current, partitionId] })
     }, {})
   }
 
@@ -251,15 +184,8 @@ module.exports = class Cluster {
    * @returns {Promise<Object>}
    */
   async findGroupCoordinatorMetadata({ groupId }) {
-    const brokers = shuffle(keys(this.brokerPool))
-
-    if (brokers.length === 0) {
-      throw new KafkaJSBrokerNotFound('No brokers in the broker pool')
-    }
-
-    for (let nodeId of brokers) {
+    const brokerMetadata = await this.brokerPool.withBroker(async ({ nodeId, broker }) => {
       try {
-        const broker = await this.findBroker({ nodeId })
         const brokerMetadata = await broker.findGroupCoordinator({ groupId })
         this.logger.debug('Found group coordinator', {
           broker: brokerMetadata.host,
@@ -267,15 +193,17 @@ module.exports = class Cluster {
         })
         return brokerMetadata
       } catch (e) {
-        if (e.name !== 'KafkaJSConnectionError') {
-          throw e
-        }
-
         this.logger.debug(`Tried to find group coordinator`, {
           nodeId,
           error: e,
         })
+
+        throw e
       }
+    })
+
+    if (brokerMetadata) {
+      return brokerMetadata
     }
 
     throw new KafkaJSGroupCoordinatorNotFound('Failed to find group coordinator')
@@ -364,31 +292,5 @@ module.exports = class Cluster {
         offset: offsets.pop(),
       })),
     }))
-  }
-
-  /**
-   * @private
-   */
-  async connectBroker(broker) {
-    return this.retrier(async (bail, retryCount, retryTime) => {
-      try {
-        await broker.connect()
-      } catch (e) {
-        if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
-          // Rebuild the connection since it can't recover from illegal SASL state
-          broker.connection = this.connectionBuilder.build({
-            host: broker.connection.host,
-            port: broker.connection.port,
-            rack: broker.connection.rack,
-          })
-
-          this.logger.error(`Failed to connect to broker, reconnecting`, { retryCount, retryTime })
-        }
-
-        if (e.retriable) throw e
-        this.logger.error(e, { retryCount, retryTime, stack: e.stack })
-        bail(e)
-      }
-    })
   }
 }
