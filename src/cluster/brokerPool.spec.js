@@ -130,6 +130,35 @@ describe('Cluster > BrokerPool', () => {
     })
   })
 
+  describe('#hasConnectedBrokers', () => {
+    it('returns true if the seed broker is connected', async () => {
+      expect(brokerPool.hasConnectedBrokers()).toEqual(false)
+      await brokerPool.connect()
+      expect(brokerPool.hasConnectedBrokers()).toEqual(true)
+    })
+
+    it('returns true if any of the brokers are connected', async () => {
+      expect(brokerPool.hasConnectedBrokers()).toEqual(false)
+      await brokerPool.connect()
+      await brokerPool.refreshMetadata([topicName])
+
+      const broker = Object.values(brokerPool.brokers).find(broker => !broker.isConnected())
+      expect(broker).not.toEqual(brokerPool.seedBroker)
+
+      await broker.connect()
+      await brokerPool.seedBroker.disconnect()
+
+      expect(brokerPool.hasConnectedBrokers()).toEqual(true)
+    })
+
+    it('returns false when nothing is connected', async () => {
+      expect(brokerPool.hasConnectedBrokers()).toEqual(false)
+      await brokerPool.connect()
+      await brokerPool.disconnect()
+      expect(brokerPool.hasConnectedBrokers()).toEqual(false)
+    })
+  })
+
   describe('#refreshMetadata', () => {
     beforeEach(async () => {
       await brokerPool.connect()

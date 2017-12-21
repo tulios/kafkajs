@@ -27,7 +27,8 @@ module.exports = class BrokerPool {
    * @returns {Boolean}
    */
   hasConnectedBrokers() {
-    return !!values(this.brokers).find(broker => broker.isConnected())
+    const brokers = values(this.brokers)
+    return !!brokers.find(broker => broker.isConnected()) || this.seedBroker.isConnected()
   }
 
   /**
@@ -35,7 +36,7 @@ module.exports = class BrokerPool {
    * @returns {Promise<null>}
    */
   async connect() {
-    if (this.hasConnectedBrokers() || this.seedBroker.isConnected()) {
+    if (this.hasConnectedBrokers()) {
       return
     }
 
