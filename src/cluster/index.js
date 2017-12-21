@@ -2,12 +2,7 @@ const BrokerPool = require('./brokerPool')
 const createRetry = require('../retry')
 const connectionBuilder = require('./connectionBuilder')
 const flatten = require('../utils/flatten')
-const shuffle = require('../utils/shuffle')
-const {
-  KafkaJSError,
-  KafkaJSBrokerNotFound,
-  KafkaJSGroupCoordinatorNotFound,
-} = require('../errors')
+const { KafkaJSError, KafkaJSGroupCoordinatorNotFound } = require('../errors')
 
 const { keys, assign } = Object
 
