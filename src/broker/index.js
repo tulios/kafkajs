@@ -13,8 +13,9 @@ const SASLAuthenticator = require('./saslAuthenticator')
  *                                 supported by this cluster. The output of broker#apiVersions
  */
 module.exports = class Broker {
-  constructor(connection, logger, versions = null) {
+  constructor(connection, nodeId, logger, versions = null) {
     this.connection = connection
+    this.nodeId = nodeId
     this.rootLogger = logger
     this.versions = versions
     this.authenticated = false

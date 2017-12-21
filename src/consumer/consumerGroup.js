@@ -191,6 +191,8 @@ module.exports = class ConsumerGroup {
         })
 
         await this.cluster.refreshMetadata()
+        await this.join()
+        await this.sync()
         throw new KafkaJSError(e.message)
       }
 

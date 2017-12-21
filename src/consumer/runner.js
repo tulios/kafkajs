@@ -229,6 +229,7 @@ module.exports = class Runner {
           groupId: this.consumerGroup.groupId,
           memberId: this.consumerGroup.memberId,
           error: e.message,
+          stack: e.stack,
           retryCount,
           retryTime,
         })

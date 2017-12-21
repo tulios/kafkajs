@@ -92,6 +92,7 @@ module.exports = class BrokerPool {
           }
 
           if (host === seedHost && port === seedPort) {
+            this.seedBroker.nodeId = nodeId
             return assign(result, {
               [nodeId]: this.seedBroker,
             })
@@ -99,7 +100,7 @@ module.exports = class BrokerPool {
 
           const connection = this.connectionBuilder.build({ host, port, rack })
           return assign(result, {
-            [nodeId]: new Broker(connection, this.rootLogger, this.versions),
+            [nodeId]: new Broker(connection, nodeId, this.rootLogger, this.versions),
           })
         }, this.brokers)
       } catch (e) {

@@ -86,7 +86,7 @@ describe('Consumer', () => {
     await consumer.connect()
   })
 
-  test('reconnects the cluster if disconnected', async () => {
+  test.only('reconnects the cluster if disconnected', async () => {
     await consumer.connect()
     await producer.connect()
     await consumer.subscribe({ topic: topicName })
