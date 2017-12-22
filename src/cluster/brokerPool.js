@@ -13,11 +13,12 @@ module.exports = class BrokerPool {
    */
   constructor({ connectionBuilder, logger, retry }) {
     this.connectionBuilder = connectionBuilder
+    this.rootLogger = logger
     this.logger = logger.namespace('BrokerPool')
     this.retrier = createRetry(assign({}, retry))
     this.seedBroker = new Broker({
       connection: this.connectionBuilder.build(),
-      logger: logger,
+      logger: this.rootLogger,
     })
 
     this.brokers = {}
