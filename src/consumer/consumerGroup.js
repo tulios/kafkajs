@@ -210,6 +210,10 @@ module.exports = class ConsumerGroup {
         })
       }
 
+      if (e.name === 'KafkaJSBrokerNotFound') {
+        await this.cluster.refreshMetadata()
+      }
+
       throw e
     }
   }
