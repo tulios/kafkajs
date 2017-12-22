@@ -4,6 +4,7 @@ const path = require('path')
 const execa = require('execa')
 const crypto = require('crypto')
 const Cluster = require('../src/cluster')
+const connectionBuilder = require('../src/cluster/connectionBuilder')
 const Connection = require('../src/network/connection')
 const { createLogger, LEVELS: { NOTHING } } = require('../src/loggers')
 const logFunctionConsole = require('../src/loggers/console')
@@ -44,6 +45,20 @@ const saslConnectionOpts = () =>
   })
 
 const createConnection = (opts = {}) => new Connection(Object.assign(connectionOpts(), opts))
+
+const createConnectionBuilder = (opts = {}, brokers = plainTextBrokers()) => {
+  const { ssl, sasl, clientId } = Object.assign(connectionOpts(), opts)
+  return connectionBuilder({
+    logger: newLogger(),
+    brokers,
+    ssl,
+    sasl,
+    clientId,
+    connectionTimeout: 1000,
+    retry: null,
+  })
+}
+
 const createCluster = (opts = {}, brokers = plainTextBrokers()) =>
   new Cluster(Object.assign(connectionOpts(), opts, { brokers }))
 
@@ -97,6 +112,7 @@ module.exports = {
   sslConnectionOpts,
   saslConnectionOpts,
   createConnection,
+  createConnectionBuilder,
   createCluster,
   createModPartitioner,
   plainTextBrokers,

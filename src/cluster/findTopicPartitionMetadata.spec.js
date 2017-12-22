@@ -16,17 +16,17 @@ describe('Cluster > findTopicPartitionMetadata', () => {
       partitionId: 0,
       replicas: [2],
     }
-    cluster.metadata = { topicMetadata: [{ topic, partitionMetadata }] }
+    cluster.brokerPool.metadata = { topicMetadata: [{ topic, partitionMetadata }] }
     expect(cluster.findTopicPartitionMetadata(topic)).toEqual(partitionMetadata)
   })
 
   test('throws and error if the topicMetadata is not loaded', () => {
-    cluster.metadata = null
+    cluster.brokerPool.metadata = null
     expect(() => cluster.findTopicPartitionMetadata(topic)).toThrowError(
       /Topic metadata not loaded/
     )
 
-    cluster.metadata = {}
+    cluster.brokerPool.metadata = {}
     expect(() => cluster.findTopicPartitionMetadata(topic)).toThrowError(
       /Topic metadata not loaded/
     )

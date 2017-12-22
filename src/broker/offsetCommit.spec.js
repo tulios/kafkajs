@@ -14,7 +14,10 @@ describe('Broker > OffsetCommit', () => {
     topicName = `test-topic-${secureRandom()}`
     groupId = `consumer-group-id-${secureRandom()}`
 
-    seedBroker = new Broker(createConnection(), newLogger())
+    seedBroker = new Broker({
+      connection: createConnection(),
+      logger: newLogger(),
+    })
     await seedBroker.connect()
 
     createTopic({ topic: topicName })
@@ -25,7 +28,10 @@ describe('Broker > OffsetCommit', () => {
     const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
 
     // Connect to the correct broker to produce message
-    broker = new Broker(createConnection(newBrokerData), newLogger())
+    broker = new Broker({
+      connection: createConnection(newBrokerData),
+      logger: newLogger(),
+    })
     await broker.connect()
 
     const { coordinator: { host, port } } = await retryProtocol(
@@ -33,7 +39,10 @@ describe('Broker > OffsetCommit', () => {
       async () => await seedBroker.findGroupCoordinator({ groupId })
     )
 
-    groupCoordinator = new Broker(createConnection({ host, port }), newLogger())
+    groupCoordinator = new Broker({
+      connection: createConnection({ host, port }),
+      logger: newLogger(),
+    })
     await groupCoordinator.connect()
   })
 

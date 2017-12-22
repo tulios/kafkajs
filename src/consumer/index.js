@@ -70,7 +70,7 @@ module.exports = ({
     try {
       if (runner) {
         await runner.stop()
-        logger.debug('consumer has stopped, disconnecting')
+        logger.debug('consumer has stopped, disconnecting', { groupId })
       }
       await cluster.disconnect()
     } catch (e) {}
@@ -100,11 +100,14 @@ module.exports = ({
     }
 
     const onCrash = async e => {
-      logger.error(`Crash: ${e.name}: ${e.message}`, { retryCount: e.retryCount })
+      logger.error(`Crash: ${e.name}: ${e.message}`, { retryCount: e.retryCount, groupId })
       await disconnect()
 
       if (e.name === 'KafkaJSNumberOfRetriesExceeded') {
-        logger.error(`Restarting the consumer in ${e.retryTime}ms`)
+        logger.error(`Restarting the consumer in ${e.retryTime}ms`, {
+          retryCount: e.retryCount,
+          groupId,
+        })
         setTimeout(() => start(onCrash), e.retryTime)
       }
     }
@@ -113,7 +116,7 @@ module.exports = ({
   }
 
   /**
-   * @param {string} eventName 
+   * @param {string} eventName
    * @param {Function} listener
    * @return {Function}
    */

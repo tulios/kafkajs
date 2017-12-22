@@ -9,7 +9,7 @@ describe('Cluster > findLeaderForPartitions', () => {
   })
 
   test('returns the partition metadata of a topic', async () => {
-    cluster.metadata = {
+    cluster.brokerPool.metadata = {
       topicMetadata: [
         {
           topic,

@@ -59,10 +59,6 @@ module.exports = class ConsumerGroup {
   async join() {
     const { groupId, sessionTimeout } = this
 
-    if (!this.cluster.isConnected()) {
-      await this.cluster.connect()
-    }
-
     this.coordinator = await this.cluster.findGroupCoordinator({ groupId })
 
     const groupData = await this.coordinator.joinGroup({
@@ -195,6 +191,8 @@ module.exports = class ConsumerGroup {
         })
 
         await this.cluster.refreshMetadata()
+        await this.join()
+        await this.sync()
         throw new KafkaJSError(e.message)
       }
 
@@ -210,6 +208,10 @@ module.exports = class ConsumerGroup {
           topic: e.topic,
           partition: e.partition,
         })
+      }
+
+      if (e.name === 'KafkaJSBrokerNotFound') {
+        await this.cluster.refreshMetadata()
       }
 
       throw e

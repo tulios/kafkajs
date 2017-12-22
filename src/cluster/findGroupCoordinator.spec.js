@@ -24,32 +24,34 @@ describe('Cluster > findGroupCoordinator', () => {
   })
 
   test('refresh the metadata and try again in case of broker not found', async () => {
-    const firstNodeId = Object.keys(cluster.brokerPool)[0]
-    const firstNode = cluster.brokerPool[firstNodeId]
+    const firstNodeId = Object.keys(cluster.brokerPool.brokers)[0]
+    const firstNode = cluster.brokerPool.brokers[firstNodeId]
 
-    cluster.findBroker = jest
+    cluster.brokerPool.findBroker = jest
       .fn()
       .mockImplementationOnce(() => {
         throw new KafkaJSBrokerNotFound('Not found')
       })
-      .mockImplementationOnce(() => firstNode)
-      .mockImplementationOnce(() => firstNode)
+      .mockImplementation(() => firstNode)
 
-    await expect(cluster.findGroupCoordinator({ groupId })).resolves.toEqual(firstNode)
-    expect(cluster.findBroker).toHaveBeenCalledTimes(3)
+    const coordinator = await cluster.findGroupCoordinator({ groupId })
+    expect(coordinator).toEqual(firstNode)
+    expect(cluster.brokerPool.findBroker).toHaveBeenCalledTimes(4)
   })
 
   test('attempt to find coordinator across all brokers until one is found', async () => {
-    jest.spyOn(cluster.brokerPool[0], 'findGroupCoordinator').mockImplementation(() => {
+    jest.spyOn(cluster.brokerPool.brokers[0], 'findGroupCoordinator').mockImplementation(() => {
       throw new KafkaJSConnectionError('Something went wrong')
     })
-    jest.spyOn(cluster.brokerPool[1], 'findGroupCoordinator').mockImplementation(() => {
+    jest.spyOn(cluster.brokerPool.brokers[1], 'findGroupCoordinator').mockImplementation(() => {
       throw new KafkaJSConnectionError('Something went wrong')
     })
     jest
-      .spyOn(cluster.brokerPool[2], 'findGroupCoordinator')
+      .spyOn(cluster.brokerPool.brokers[2], 'findGroupCoordinator')
       .mockImplementation(() => ({ coordinator: { nodeId: 2 } }))
 
-    await expect(cluster.findGroupCoordinator({ groupId })).resolves.toEqual(cluster.brokerPool[2])
+    await expect(cluster.findGroupCoordinator({ groupId })).resolves.toEqual(
+      cluster.brokerPool.brokers[2]
+    )
   })
 })

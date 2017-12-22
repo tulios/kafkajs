@@ -6,7 +6,10 @@ describe('Broker > FindGroupCoordinator', () => {
 
   beforeEach(async () => {
     groupId = `consumer-group-id-${secureRandom()}`
-    seedBroker = new Broker(createConnection(), newLogger())
+    seedBroker = new Broker({
+      connection: createConnection(),
+      logger: newLogger(),
+    })
     await seedBroker.connect()
   })
 

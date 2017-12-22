@@ -64,6 +64,14 @@ module.exports = class OffsetManager {
     return offset
   }
 
+  async getCoordinator() {
+    if (!this.coordinator.isConnected()) {
+      this.coordinator = await this.cluster.findBroker(this.coordinator)
+    }
+
+    return this.coordinator
+  }
+
   /**
    * @param {string} topic
    * @param {number} partition
@@ -90,8 +98,9 @@ module.exports = class OffsetManager {
   async setDefaultOffset({ topic, partition }) {
     const { groupId, generationId, memberId } = this
     const defaultOffset = this.cluster.defaultOffset(this.topicConfigurations[topic])
+    const coordinator = await this.getCoordinator()
 
-    await this.coordinator.offsetCommit({
+    await coordinator.offsetCommit({
       groupId,
       memberId,
       groupGenerationId: generationId,
@@ -143,7 +152,8 @@ module.exports = class OffsetManager {
       topics: topicsWithPartitionsToCommit,
     }
 
-    await this.coordinator.offsetCommit(payload)
+    const coordinator = await this.getCoordinator()
+    await coordinator.offsetCommit(payload)
     this.instrumentationEmitter.emit(COMMIT_OFFSETS, payload)
 
     // Update local reference of committed offsets
@@ -175,7 +185,8 @@ module.exports = class OffsetManager {
       return
     }
 
-    const { responses: consumerOffsets } = await this.coordinator.offsetFetch({
+    const coordinator = await this.getCoordinator()
+    const { responses: consumerOffsets } = await coordinator.offsetFetch({
       groupId,
       topics: pendingPartitions,
     })

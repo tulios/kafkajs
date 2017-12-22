@@ -31,7 +31,10 @@ describe('Broker > Fetch', () => {
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
-    seedBroker = new Broker(createConnection(), newLogger())
+    seedBroker = new Broker({
+      connection: createConnection(),
+      logger: newLogger(),
+    })
     await seedBroker.connect()
     createTopic({ topic: topicName })
 
@@ -41,7 +44,10 @@ describe('Broker > Fetch', () => {
     const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
 
     // Connect to the correct broker to produce message
-    broker = new Broker(createConnection(newBrokerData), newLogger())
+    broker = new Broker({
+      connection: createConnection(newBrokerData),
+      logger: newLogger(),
+    })
     await broker.connect()
   })
 
@@ -52,7 +58,7 @@ describe('Broker > Fetch', () => {
 
   test('rejects the Promise if lookupRequest is not defined', async () => {
     await broker.disconnect()
-    broker = new Broker(createConnection())
+    broker = new Broker({ connection: createConnection(), logger: newLogger() })
     await expect(broker.fetch({ topics: [] })).rejects.toEqual(new Error('Broker not connected'))
   })
 

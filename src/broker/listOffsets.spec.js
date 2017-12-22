@@ -9,7 +9,10 @@ describe('Broker > ListOffsets', () => {
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
-    seedBroker = new Broker(createConnection(), newLogger())
+    seedBroker = new Broker({
+      connection: createConnection(),
+      logger: newLogger(),
+    })
     await seedBroker.connect()
     createTopic({ topic: topicName })
 
@@ -19,7 +22,10 @@ describe('Broker > ListOffsets', () => {
     const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
 
     // Connect to the correct broker to produce message
-    broker = new Broker(createConnection(newBrokerData), newLogger())
+    broker = new Broker({
+      connection: createConnection(newBrokerData),
+      logger: newLogger(),
+    })
     await broker.connect()
   })
 
