@@ -6,7 +6,10 @@ describe('Broker > Metadata', () => {
 
   beforeEach(() => {
     topicName = `test-topic-${secureRandom()}`
-    broker = new Broker(createConnection(), newLogger())
+    broker = new Broker({
+      connection: createConnection(),
+      logger: newLogger(),
+    })
   })
 
   afterEach(async () => {

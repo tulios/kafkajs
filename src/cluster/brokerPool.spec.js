@@ -231,7 +231,10 @@ describe('Cluster > BrokerPool', () => {
 
     it('recreates the connection on connection errors', async () => {
       const nodeId = 'fakebroker'
-      const mockBroker = new Broker(createConnection(), newLogger())
+      const mockBroker = new Broker({
+        connection: createConnection(),
+        logger: newLogger(),
+      })
       jest.spyOn(mockBroker, 'connect').mockImplementationOnce(() => {
         throw new KafkaJSConnectionError('Connection lost')
       })

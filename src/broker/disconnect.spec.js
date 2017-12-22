@@ -5,7 +5,10 @@ describe('Broker > disconnect', () => {
   let broker
 
   beforeEach(() => {
-    broker = new Broker(createConnection(connectionOpts()), newLogger())
+    broker = new Broker({
+      connection: createConnection(connectionOpts()),
+      logger: newLogger(),
+    })
   })
 
   afterEach(async () => {
@@ -20,7 +23,10 @@ describe('Broker > disconnect', () => {
   })
 
   test('when authenticated with SASL set authenticated to false', async () => {
-    broker = new Broker(createConnection(saslConnectionOpts()), newLogger())
+    broker = new Broker({
+      connection: createConnection(saslConnectionOpts()),
+      logger: newLogger(),
+    })
     await broker.connect()
     expect(broker.authenticated).toEqual(true)
     await broker.disconnect()

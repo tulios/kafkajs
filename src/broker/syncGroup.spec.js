@@ -8,7 +8,10 @@ describe('Broker > SyncGroup', () => {
     topicName = `test-topic-${secureRandom()}`
     groupId = `consumer-group-id-${secureRandom()}`
 
-    seedBroker = new Broker(createConnection(), newLogger())
+    seedBroker = new Broker({
+      connection: createConnection(),
+      logger: newLogger(),
+    })
     await seedBroker.connect()
 
     const { coordinator: { host, port } } = await retryProtocol(
@@ -16,7 +19,10 @@ describe('Broker > SyncGroup', () => {
       async () => await seedBroker.findGroupCoordinator({ groupId })
     )
 
-    groupCoordinator = new Broker(createConnection({ host, port }), newLogger())
+    groupCoordinator = new Broker({
+      connection: createConnection({ host, port }),
+      logger: newLogger(),
+    })
     await groupCoordinator.connect()
   })
 

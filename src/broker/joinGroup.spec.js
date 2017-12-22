@@ -6,7 +6,10 @@ describe('Broker > JoinGroup', () => {
 
   beforeEach(async () => {
     groupId = `consumer-group-id-${secureRandom()}`
-    seedBroker = new Broker(createConnection(), newLogger())
+    seedBroker = new Broker({
+      connection: createConnection(),
+      logger: newLogger(),
+    })
     await seedBroker.connect()
 
     const { coordinator: { host, port } } = await retryProtocol(
@@ -14,7 +17,10 @@ describe('Broker > JoinGroup', () => {
       async () => await seedBroker.findGroupCoordinator({ groupId })
     )
 
-    broker = new Broker(createConnection({ host, port }), newLogger())
+    broker = new Broker({
+      connection: createConnection({ host, port }),
+      logger: newLogger(),
+    })
     await broker.connect()
   })
 

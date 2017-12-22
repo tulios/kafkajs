@@ -5,7 +5,10 @@ describe('Broker > ApiVersions', () => {
   let broker
 
   beforeEach(async () => {
-    broker = new Broker(createConnection(connectionOpts()), newLogger())
+    broker = new Broker({
+      connection: createConnection(connectionOpts()),
+      logger: newLogger(),
+    })
     await broker.connect()
   })
 
