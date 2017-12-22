@@ -180,21 +180,33 @@ module.exports = class Cluster {
    */
   async findGroupCoordinatorMetadata({ groupId }) {
     const brokerMetadata = await this.brokerPool.withBroker(async ({ nodeId, broker }) => {
-      try {
-        const brokerMetadata = await broker.findGroupCoordinator({ groupId })
-        this.logger.debug('Found group coordinator', {
-          broker: brokerMetadata.host,
-          nodeId: brokerMetadata.coordinator.nodeId,
-        })
-        return brokerMetadata
-      } catch (e) {
-        this.logger.debug(`Tried to find group coordinator`, {
-          nodeId,
-          error: e,
-        })
+      return await this.retrier(async (bail, retryCount, retryTime) => {
+        try {
+          const brokerMetadata = await broker.findGroupCoordinator({ groupId })
+          this.logger.debug('Found group coordinator', {
+            broker: brokerMetadata.host,
+            nodeId: brokerMetadata.coordinator.nodeId,
+          })
+          return brokerMetadata
+        } catch (e) {
+          this.logger.debug('Tried to find group coordinator', {
+            nodeId,
+            error: e,
+          })
 
-        throw e
-      }
+          if (e.type === 'GROUP_COORDINATOR_NOT_AVAILABLE') {
+            this.logger.debug('Group coordinator not available, retrying...', {
+              nodeId,
+              retryCount,
+              retryTime,
+            })
+
+            throw e
+          }
+
+          bail(e)
+        }
+      })
     })
 
     if (brokerMetadata) {
