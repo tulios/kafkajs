@@ -1,6 +1,7 @@
 const { connectionOpts, sslConnectionOpts } = require('../../testHelpers')
 const { requests } = require('../protocol/requests')
 const Connection = require('./connection')
+const Decoder = require('../protocol/decoder')
 
 describe('Network > Connection', () => {
   // According to RFC 5737:
@@ -121,6 +122,59 @@ describe('Network > Connection', () => {
       const id1 = connection.nextCorrelationId()
       expect(id1).toEqual(0)
       expect(connection.correlationId).toEqual(1)
+    })
+  })
+
+  describe('#processData', () => {
+    beforeEach(() => {
+      connection = new Connection(connectionOpts())
+    })
+
+    test('buffer data while it is not complete', () => {
+      const correlationId = 1
+      const resolve = jest.fn()
+      const entry = { resolve }
+      connection.pendingQueue[correlationId] = entry
+
+      const payload = Buffer.from('ab')
+      const size = Buffer.byteLength(payload) + Decoder.int32Size()
+      // expected response size
+      const sizePart1 = Buffer.from([0, 0])
+      const sizePart2 = Buffer.from([0, 6])
+
+      const correlationIdPart1 = Buffer.from([0, 0])
+      const correlationIdPart2 = Buffer.from([0])
+      const correlationIdPart3 = Buffer.from([1])
+
+      // write half of the expected size and expect to keep buffering
+      expect(connection.processData(sizePart1)).toBeUndefined()
+      expect(resolve).not.toHaveBeenCalled()
+
+      // Write the rest of the size, but without any response
+      expect(connection.processData(sizePart2)).toBeUndefined()
+      expect(resolve).not.toHaveBeenCalled()
+
+      // Response consists of correlation id + payload
+      // Writing 1/3 of the correlation id
+      expect(connection.processData(correlationIdPart1)).toBeUndefined()
+      expect(resolve).not.toHaveBeenCalled()
+
+      // At this point, we will write N bytes, where N == size,
+      // but we should keep buffering because the size field should
+      // not be considered as part of the response payload
+      expect(connection.processData(correlationIdPart2)).toBeUndefined()
+      expect(resolve).not.toHaveBeenCalled()
+
+      // write full payload size
+      const buffer = Buffer.concat([correlationIdPart3, payload])
+      connection.processData(buffer)
+
+      expect(resolve).toHaveBeenCalledWith({
+        correlationId,
+        size,
+        entry,
+        payload,
+      })
     })
   })
 })

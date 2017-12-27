@@ -297,21 +297,22 @@ module.exports = class Connection {
     }
 
     this.buffer = Buffer.concat([this.buffer, rawData])
-    // Not enough bytes to read the payload size, keep buffering
+
+    // Not enough bytes to read the expected response size, keep buffering
     if (Buffer.byteLength(this.buffer) <= Decoder.int32Size()) {
       return
     }
 
     const data = Buffer.from(this.buffer)
     const decoder = new Decoder(data)
-    const size = decoder.readInt32()
+    const expectedResponseSize = decoder.readInt32()
+    const receivedResponseSize = Buffer.byteLength(this.buffer) - Decoder.int32Size()
 
-    // The full payload is not yet loaded, keep buffering
-    if (Buffer.byteLength(this.buffer) <= size) {
+    if (receivedResponseSize < expectedResponseSize) {
       return
     }
 
-    // The full payload is loaded, erase the buffer
+    // The full payload is loaded, erase the temporary buffer
     this.buffer = Buffer.alloc(0)
     const correlationId = decoder.readInt32()
     const payload = decoder.readAll()
@@ -325,8 +326,8 @@ module.exports = class Connection {
     }
 
     entry.resolve({
+      size: expectedResponseSize,
       correlationId,
-      size,
       entry,
       payload,
     })
