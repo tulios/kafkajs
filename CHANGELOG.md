@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.6.8] - 2017-12-27
+### Fixed
+  - Only use seed brokers to bootstrap consumers (introduced a broker pool abstraction) #19
+  - Don't include the size of the size field when determining if the buffer has enough bytes to read the full response #20
+
 ## [0.6.7] - 2017-12-18
 ### Fixed
   - Don't throw KafkaJSOffsetOutOfRange on every protocol error
