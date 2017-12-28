@@ -6,10 +6,13 @@ const crypto = require('crypto')
 const Cluster = require('../src/cluster')
 const connectionBuilder = require('../src/cluster/connectionBuilder')
 const Connection = require('../src/network/connection')
-const { createLogger, LEVELS: { NOTHING } } = require('../src/loggers')
+const { createLogger, LEVELS } = require('../src/loggers')
 const logFunctionConsole = require('../src/loggers/console')
 
-const newLogger = () => createLogger({ level: NOTHING, logFunction: logFunctionConsole })
+const envLogLevel = (process.env.LOG_LEVEL || '').toUpperCase()
+const logLevel = LEVELS[envLogLevel] || LEVELS.NOTHING
+
+const newLogger = () => createLogger({ level: logLevel, logFunction: logFunctionConsole })
 const getHost = () => process.env.HOST_IP || ip.address()
 const secureRandom = (length = 10) => crypto.randomBytes(length).toString('hex')
 const plainTextBrokers = (host = getHost()) => [`${host}:9092`, `${host}:9095`, `${host}:9098`]
