@@ -306,9 +306,8 @@ module.exports = class Connection {
     const data = Buffer.from(this.buffer)
     const decoder = new Decoder(data)
     const expectedResponseSize = decoder.readInt32()
-    const receivedResponseSize = Buffer.byteLength(this.buffer) - Decoder.int32Size()
 
-    if (receivedResponseSize < expectedResponseSize) {
+    if (!decoder.canReadBytes(expectedResponseSize)) {
       return
     }
 

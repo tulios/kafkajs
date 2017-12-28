@@ -62,6 +62,10 @@ module.exports = class Decoder {
     return value
   }
 
+  canReadBytes(length) {
+    return Buffer.byteLength(this.buffer) - this.offset >= length
+  }
+
   readBytes() {
     const byteLength = this.readInt32()
 
