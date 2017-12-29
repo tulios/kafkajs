@@ -1,4 +1,4 @@
-module.exports = (namespace, log) => {
+module.exports = level => (namespace, log) => {
   const label = namespace ? `[${namespace}] ` : ''
   const message = JSON.stringify(Object.assign(log, { message: `${label}${log.message}` }))
 

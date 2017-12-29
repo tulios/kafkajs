@@ -1,3 +1,5 @@
+const { keys } = Object
+
 const LEVELS = {
   NOTHING: 0,
   ERROR: 1,
@@ -25,8 +27,12 @@ const createLevel = (label, level, currentLevel, namespace, loggerFunction) => (
   )
 }
 
-const createLogger = ({ level = LEVELS.INFO, logFunction = null } = {}) => {
-  const logLevel = parseInt(process.env.LOG_LEVEL, 10) || level
+const createLogger = ({ level = LEVELS.INFO, logCreator = null } = {}) => {
+  const envLogLevel = (process.env.KAFKAJS_LOG_LEVEL || '').toUpperCase()
+  const logLevel = LEVELS[envLogLevel] || level
+  const logLevelLabel = keys(LEVELS).find(k => LEVELS[k] === logLevel)
+  const logFunction = logCreator(logLevelLabel)
+
   const createLogFunctions = namespace => ({
     info: createLevel('INFO', LEVELS.INFO, logLevel, namespace, logFunction),
     error: createLevel('ERROR', LEVELS.ERROR, logLevel, namespace, logFunction),
