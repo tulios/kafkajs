@@ -1,6 +1,7 @@
 const flatten = require('../utils/flatten')
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
+const SeekOffsets = require('./seekOffsets')
 const { KafkaJSError } = require('../errors')
 const { HEARTBEAT } = require('./instrumentationEvents')
 
@@ -40,7 +41,7 @@ module.exports = class ConsumerGroup {
     this.maxBytes = maxBytes
     this.maxWaitTime = maxWaitTimeInMs
 
-    this.seekOffset = []
+    this.seekOffset = new SeekOffsets()
     this.coordinator = null
     this.generationId = null
     this.leaderId = null
@@ -130,9 +131,7 @@ module.exports = class ConsumerGroup {
    * @param {string} offset
    */
   seek({ topic, partition, offset }) {
-    const sameTopicPartition = entry => entry.topic === topic && entry.partition === partition
-    this.seekOffset = this.seekOffset.filter(entry => !sameTopicPartition(entry))
-    this.seekOffset.push({ topic, partition, offset })
+    this.seekOffset.set(topic, partition, offset)
   }
 
   async commitOffsets() {
@@ -160,7 +159,7 @@ module.exports = class ConsumerGroup {
       const { topics, maxBytesPerPartition, maxWaitTime, minBytes, maxBytes } = this
       const requestsPerLeader = {}
 
-      while (this.seekOffset.length > 0) {
+      while (this.seekOffset.size > 0) {
         const seekEntry = this.seekOffset.pop()
         this.logger.debug('Seek offset', {
           groupId: this.groupId,
