@@ -1,6 +1,7 @@
 const flatten = require('../utils/flatten')
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
+const SeekOffsets = require('./seekOffsets')
 const { KafkaJSError } = require('../errors')
 const { HEARTBEAT } = require('./instrumentationEvents')
 
@@ -40,6 +41,7 @@ module.exports = class ConsumerGroup {
     this.maxBytes = maxBytes
     this.maxWaitTime = maxWaitTimeInMs
 
+    this.seekOffset = new SeekOffsets()
     this.coordinator = null
     this.generationId = null
     this.leaderId = null
@@ -119,6 +121,19 @@ module.exports = class ConsumerGroup {
     this.offsetManager.resolveOffset({ topic, partition, offset })
   }
 
+  /**
+   * Update the consumer offset for the given topic/partition. This will be used
+   * on the next fetch. If this API is invoked for the same topic/partition more
+   * than once, the latest offset will be used on the next fetch.
+   *
+   * @param {string} topic
+   * @param {number} partition
+   * @param {string} offset
+   */
+  seek({ topic, partition, offset }) {
+    this.seekOffset.set(topic, partition, offset)
+  }
+
   async commitOffsets() {
     await this.offsetManager.commitOffsets()
   }
@@ -143,6 +158,17 @@ module.exports = class ConsumerGroup {
     try {
       const { topics, maxBytesPerPartition, maxWaitTime, minBytes, maxBytes } = this
       const requestsPerLeader = {}
+
+      while (this.seekOffset.size > 0) {
+        const seekEntry = this.seekOffset.pop()
+        this.logger.debug('Seek offset', {
+          groupId: this.groupId,
+          memberId: this.memberId,
+          seek: seekEntry,
+        })
+        await this.offsetManager.seek(seekEntry)
+      }
+
       await this.offsetManager.resolveOffsets()
 
       for (let topic of topics) {
@@ -197,17 +223,7 @@ module.exports = class ConsumerGroup {
       }
 
       if (e.name === 'KafkaJSOffsetOutOfRange') {
-        this.logger.error('Offset out of range, resetting to default offset', {
-          topic: e.topic,
-          groupId: this.groupId,
-          memberId: this.memberId,
-          partition: e.partition,
-        })
-
-        await this.offsetManager.setDefaultOffset({
-          topic: e.topic,
-          partition: e.partition,
-        })
+        await this.recoverFromOffsetOutOfRange(e)
       }
 
       if (e.name === 'KafkaJSBrokerNotFound') {
@@ -216,5 +232,19 @@ module.exports = class ConsumerGroup {
 
       throw e
     }
+  }
+
+  async recoverFromOffsetOutOfRange(e) {
+    this.logger.error('Offset out of range, resetting to default offset', {
+      topic: e.topic,
+      partition: e.partition,
+      groupId: this.groupId,
+      memberId: this.memberId,
+    })
+
+    await this.offsetManager.setDefaultOffset({
+      topic: e.topic,
+      partition: e.partition,
+    })
   }
 }

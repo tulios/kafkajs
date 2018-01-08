@@ -428,6 +428,9 @@ or
 # This will run a kafka cluster configured with your current IP
 ./scripts/dockerComposeUp.sh
 yarn test:local
+
+# To run with logs
+# KAFKAJS_LOG_LEVEL=debug yarn test:local
 ```
 
 Password for test keystore and certificates: `testtest`  

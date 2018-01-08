@@ -53,6 +53,7 @@ class KafkaJSNotImplemented extends KafkaJSNonRetriableError {}
 
 module.exports = {
   KafkaJSError,
+  KafkaJSNonRetriableError,
   KafkaJSPartialMessageError,
   KafkaJSBrokerNotFound,
   KafkaJSProtocolError,
