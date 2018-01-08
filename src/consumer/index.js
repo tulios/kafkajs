@@ -1,12 +1,15 @@
+const Long = require('long')
 const createRoundRobinAssigned = require('./assigners/roundRobinAssigner')
 const ConsumerGroup = require('./consumerGroup')
 const Runner = require('./runner')
 const events = require('./instrumentationEvents')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
-const { KafkaJSError } = require('../errors')
+const { KafkaJSNonRetriableError } = require('../errors')
 
-const eventNames = Object.values(events)
-const eventKeys = Object.keys(events)
+const { keys, values } = Object
+
+const eventNames = values(events)
+const eventKeys = keys(events)
   .map(key => `consumer.events.${key}`)
   .join(', ')
 
@@ -28,13 +31,15 @@ module.exports = ({
   const instrumentationEmitter = new InstrumentationEventEmitter()
   const assigner = createPartitionAssigner({ cluster })
   const logger = rootLogger.namespace('Consumer')
+
   const topics = {}
   let runner = null
+  let consumerGroup = null
 
-  const createRunner = ({ eachBatch, eachMessage, onCrash }) => {
-    const consumerGroup = new ConsumerGroup({
+  const createConsumerGroup = () => {
+    return new ConsumerGroup({
       logger: rootLogger,
-      topics: Object.keys(topics),
+      topics: keys(topics),
       topicConfigurations: topics,
       cluster,
       groupId,
@@ -46,7 +51,9 @@ module.exports = ({
       maxWaitTimeInMs,
       instrumentationEmitter,
     })
+  }
 
+  const createRunner = ({ eachBatch, eachMessage, onCrash }) => {
     return new Runner({
       logger: rootLogger,
       consumerGroup,
@@ -93,10 +100,17 @@ module.exports = ({
    * @return {Promise}
    */
   const run = async ({ eachBatch = null, eachMessage = null } = {}) => {
+    consumerGroup = createConsumerGroup()
+
     const start = async onCrash => {
       logger.info('Starting', { groupId })
       runner = createRunner({ eachBatch, eachMessage, onCrash })
       await runner.start()
+    }
+
+    const restart = onCrash => {
+      consumerGroup = createConsumerGroup()
+      start(onCrash)
     }
 
     const onCrash = async e => {
@@ -108,7 +122,7 @@ module.exports = ({
           retryCount: e.retryCount,
           groupId,
         })
-        setTimeout(() => start(onCrash), e.retryTime)
+        setTimeout(() => restart(onCrash), e.retryTime)
       }
     }
 
@@ -122,12 +136,40 @@ module.exports = ({
    */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {
-      throw new KafkaJSError(`Event name should be one of ${eventKeys}`, {
-        retriable: false,
-      })
+      throw new KafkaJSNonRetriableError(`Event name should be one of ${eventKeys}`)
     }
 
     return instrumentationEmitter.addListener(eventName, event => listener(event))
+  }
+
+  /**
+   * @param {string} topic
+   * @param {number} partition
+   * @param {string} offset
+   */
+  const seek = ({ topic, partition, offset }) => {
+    if (!topic) {
+      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    }
+    if (isNaN(partition)) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid partition, expected a number received ${partition}`
+      )
+    }
+    try {
+      if (Long.fromValue(offset).lessThan(0)) {
+        throw new KafkaJSNonRetriableError('Offset must not be a negative number')
+      }
+    } catch (_) {
+      throw new KafkaJSNonRetriableError(`Invalid offset, expected a long received ${offset}`)
+    }
+    if (!consumerGroup) {
+      throw new KafkaJSNonRetriableError(
+        'Consumer group was not initialized, consumer#run must be called first'
+      )
+    }
+
+    consumerGroup.seek({ topic, partition, offset })
   }
 
   return {
@@ -135,6 +177,7 @@ module.exports = ({
     disconnect,
     subscribe,
     run,
+    seek,
     on,
     events,
   }
