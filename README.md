@@ -28,6 +28,8 @@ __In active development - alpha__
     - [Custom partitioner](#producing-messages-custom-partitioner)
     - [Retry](#producing-messages-retry)
   - [Consuming messages from Kafka](consuming-messages)
+    - [eachMessage](consuming-messages-each-message)
+    - [eachBatch](consuming-messages-each-batch)
     - [Options](consuming-messages-options)
     - [Custom assigner](#consuming-messages-custom-assigner)
   - [Instrumentation](#instrumentation)
@@ -58,7 +60,7 @@ const kafka = new Kafka({
 
 #### <a name="setup-client-ssl"></a> SSL
 
-The `ssl` option can be used to configure the TLS sockets. The options are passed directly to `tls.connect` and used to create the TLS Secure Context, all options are accepted.
+The `ssl` option can be used to configure the TLS sockets. The options are passed directly to [`tls.connect`](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback) and used to create the TLS Secure Context, all options are accepted.
 
 ```javascript
 const fs = require('fs')
@@ -109,7 +111,9 @@ new Kafka({
 
 #### <a name="setup-client-default-retry"></a> Default Retry
 
-The `retry` option can be used to set the default configuration. The retry mechanism uses a randomization function that grows exponentially.
+The `retry` option can be used to set the default configuration. The retry mechanism uses a randomization function that grows exponentially. The configuration will be used to retry connections and API calls to Kafka (when using producers or consumers).
+
+If the max number of retries is exceeded the retrier will throw `KafkaJSNumberOfRetriesExceeded` and interrupt. Producers will bubble up the error to the user code; Consumers will wait the retry time attached to the exception (it will be based on the number of attempts) and perform a full restart.
 
 Available options:
 
@@ -160,7 +164,7 @@ A log creator is a function which receives a log level and returns a log functio
 
 `namespace` identifies the component which is performing the log, for example, connection or consumer.
 
-`log` is an object with the following keys: `level`, `timestamp`, 'logger', and `message`
+`log` is an object with the following keys: `level`, `timestamp`, `logger`, and `message`
 
 ```javascript
 {
@@ -185,17 +189,17 @@ const MyLogCreator = logLevel => (namespace, log) => {
 Example using [winston](https://github.com/winstonjs/winston):
 
 ```javascript
-const winstom = require('winston')
-const toWinstomLogLevel = level => switch(level) {
+const winston = require('winston')
+const toWinstonLogLevel = level => switch(level) {
   case 'NOTHING':
     return 'error'
   default:
     return level.toLowerCase()
 }
 
-const WinstomLogCreator = logLevel => {
+const WinstonLogCreator = logLevel => {
   const logger = winston.createLogger({
-    level: toWinstomLogLevel(logLevel),
+    level: toWinstonLogLevel(logLevel),
     transports: [
       new winston.transports.Console(),
       new winston.transports.File({ filename: 'myapp.log' })
@@ -204,7 +208,7 @@ const WinstomLogCreator = logLevel => {
 
   return (namespace, { level, message, ...extra }) => {
     logger.log({
-      level: toWinstomLogLevel(level),
+      level: toWinstonLogLevel(level),
       message,
       extra
     })
@@ -219,7 +223,7 @@ const kafka = new Kafka({
   clientId: 'my-app',
   brokers: ['kafka1:9092', 'kafka2:9092'],
   logLevel: logLevel.ERROR,
-  logCreator: WinstomLogCreator
+  logCreator: WinstonLogCreator
 })
 ```
 
@@ -249,6 +253,19 @@ async () => {
 }
 ```
 
+Example with a defined partition:
+
+```javascript
+// ...require and connect...
+await producer.send({
+  topic: 'topic-name',
+  messages: [
+    { key: 'key1', value: 'hello world', partition: 0 },
+    { key: 'key2', value: 'hey hey!', partition: 1 }
+  ],
+})
+```
+
 #### <a name="producing-messages-custom-partitioner"></a> Custom partitioner
 
 It's possible to assign a custom partitioner to the consumer. A partitioner is a function which returns another function responsible for the partition selection, something like this:
@@ -266,6 +283,10 @@ const MyPartitioner = () => {
 
 `partitionMetadata` is an array of partitions with the following structure:
 
+`{ partitionId: <NodeId>, leader: <NodeId> }`
+
+Example:
+
 ```javascript
 [
   { partitionId: 1, leader: 1 },
@@ -282,19 +303,41 @@ kafka.producer({ createPartitioner: MyPartitioner })
 
 #### <a name="producing-messages-retry"></a> Retry
 
-The option `retry` can be used to customize the configurations for the producer.
+The option `retry` can be used to customize the configuration for the producer.
 
 Take a look at [Retry](#setup-client-default-retry) for more information.
 
 ### <a name="consuming-messages"></a> Consuming messages from Kafka
 
-KafkaJS only supports consumer groups.
-
 Consumer groups allow a group of machines or processes to coordinate access to a list of topics, distributing the load among the consumers. When a consumer fails the load is automatically distributed to other members of the group. Consumer groups must have unique group ids.
+
+Creating the consumer:
 
 ```javascript
 const consumer = kafka.consumer({ groupId: 'my-group' })
+```
 
+Subscribing to some topics:
+
+```javascript
+async () => {
+  await consumer.connect()
+
+  // Subscribe can be called several times
+  await consumer.subscribe({ topic: 'topic-name' })
+
+  // It's possible to start from the beginning:
+  // await consumer.subscribe({ topic: 'topic-name', fromBeginning: true })
+}
+```
+
+KafkaJS offers you two ways to process your data: `eachMessage` and `eachBatch`
+
+#### <a name="consuming-messages-each-message"></a> eachMessage
+
+This handler provides a convenient API, feeding your function one message at a time. The handler will automatically commit your offsets and heartbeat at the configured interval. If you are just looking to get started with Kafka consumers this should be your first solution.
+
+```javascript
 async () => {
   await consumer.connect()
 
@@ -318,7 +361,9 @@ async () => {
 }
 ```
 
-it's also possible to consume the batch instead of each message, example:
+#### <a name="consuming-messages-each-batch"></a> eachBatch
+
+Some use cases can be optimized by dealing with batches rather than single messages. This handler will feed your function batches and some utility functions to give your code more flexibility. Be aware that using `eachBatch` is considered a more advanced use case since you will have to understand how session timeouts and heartbeats are connected. All resolved offsets will be automatically committed after the function is executed.
 
 ```javascript
 // create consumer, connect and subscribe ...
@@ -347,6 +392,8 @@ await consumer.run({
 await consumer.disconnect()
 ```
 
+* `highWatermark` is the last committed offset within the topic partition. It can be useful for calculating lag.
+
 #### <a name="consuming-messages-options"></a> Options
 
 - __createPartitionAssigner__ - default: `round robin`
@@ -354,7 +401,7 @@ await consumer.disconnect()
 - __heartbeatInterval__ - The expected time in milliseconds between heartbeats to the consumer coordinator. Heartbeats are used to ensure that the consumer's session stays active. The value must be set lower than session timeout. default: `3000`
 - __maxBytesPerPartition__ - The maximum amount of data per-partition the server will return. This size must be at least as large as the maximum message size the server allows or else it is possible for the producer to send messages larger than the consumer can fetch. If that happens, the consumer can get stuck trying to fetch a large message on a certain partition. default: `1048576` (1MB)
 - __minBytes__ - Minimum amount of data the server should return for a fetch request, otherwise wait up to `maxWaitTimeInMs` for more data to accumulate. default: `1`
-- __maxBytes__ - default: `10485760` (10MB)
+- __maxBytes__ - Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0`. default: `10485760` (10MB)
 - __maxWaitTimeInMs__ - The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes`. default: `5000`,
 - __retry__ - default: `{ retries: 10 }`
 
