@@ -1,15 +1,21 @@
-module.exports = (namespace, log) => {
-  const label = namespace ? `[${namespace}] ` : ''
-  const message = JSON.stringify(Object.assign(log, { message: `${label}${log.message}` }))
+const { LEVELS: logLevel } = require('./index')
 
-  switch (log.level) {
-    case 'INFO':
+module.exports = () => ({ namespace, level, label, log }) => {
+  const prefix = namespace ? `[${namespace}] ` : ''
+  const message = JSON.stringify(
+    Object.assign({ level: label }, log, {
+      message: `${prefix}${log.message}`,
+    })
+  )
+
+  switch (level) {
+    case logLevel.INFO:
       return console.info(message)
-    case 'ERROR':
+    case logLevel.ERROR:
       return console.error(message)
-    case 'WARN':
+    case logLevel.WARN:
       return console.warn(message)
-    case 'DEBUG':
+    case logLevel.DEBUG:
       return console.log(message)
   }
 }

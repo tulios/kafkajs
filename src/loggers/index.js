@@ -1,3 +1,5 @@
+const { assign } = Object
+
 const LEVELS = {
   NOTHING: 0,
   ERROR: 1,
@@ -6,27 +8,31 @@ const LEVELS = {
   DEBUG: 5,
 }
 
-const createLevel = (label, level, currentLevel, namespace, loggerFunction) => (
+const createLevel = (label, level, currentLevel, namespace, logFunction) => (
   message,
   extra = {}
 ) => {
   if (level > currentLevel) return
-  loggerFunction(
+  logFunction({
     namespace,
-    Object.assign(
+    level,
+    label,
+    log: assign(
       {
-        level: label,
         timestamp: new Date().toISOString(),
         logger: 'kafkajs',
         message,
       },
       extra
-    )
-  )
+    ),
+  })
 }
 
-const createLogger = ({ level = LEVELS.INFO, logFunction = null } = {}) => {
-  const logLevel = parseInt(process.env.LOG_LEVEL, 10) || level
+const createLogger = ({ level = LEVELS.INFO, logCreator = null } = {}) => {
+  const envLogLevel = (process.env.KAFKAJS_LOG_LEVEL || '').toUpperCase()
+  const logLevel = LEVELS[envLogLevel] || level
+  const logFunction = logCreator(logLevel)
+
   const createLogFunctions = namespace => ({
     info: createLevel('INFO', LEVELS.INFO, logLevel, namespace, logFunction),
     error: createLevel('ERROR', LEVELS.ERROR, logLevel, namespace, logFunction),
@@ -34,7 +40,7 @@ const createLogger = ({ level = LEVELS.INFO, logFunction = null } = {}) => {
     debug: createLevel('DEBUG', LEVELS.DEBUG, logLevel, namespace, logFunction),
   })
 
-  return Object.assign(createLogFunctions(), {
+  return assign(createLogFunctions(), {
     namespace: namespace => createLogFunctions(namespace),
   })
 }
