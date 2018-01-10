@@ -160,15 +160,20 @@ KAFKAJS_LOG_LEVEL=info node code.js
 
 __How to create a log creator?___
 
-A log creator is a function which receives a log level and returns a log function. The log function receives two arguments: namespace and log.
+A log creator is a function which receives a log level and returns a log function. The log function receives: namespace, level, label, and log.
 
 `namespace` identifies the component which is performing the log, for example, connection or consumer.
 
-`log` is an object with the following keys: `level`, `timestamp`, `logger`, and `message`
+`level` is the log level of the log entry.
+
+`label` is a text representation of the log level, example: 'INFO'.
+
+`log` is an object with the following keys: `timestamp`, `logger`, `message`, and the extra keys given by the user. (`logger.info('test', { extra_data: true })`)
 
 ```javascript
 {
-  level: 'INFO', // NOTHING, ERROR, WARN, INFO, or DEBUG
+  level: 4,
+  label: 'INFO', // NOTHING, ERROR, WARN, INFO, or DEBUG
   timestamp: '2017-12-29T13:39:54.575Z',
   logger: 'kafkajs',
   message: 'Started',
@@ -179,22 +184,28 @@ A log creator is a function which receives a log level and returns a log functio
 The general structure looks like this:
 
 ```javascript
-const MyLogCreator = logLevel => (namespace, log) => {
+const MyLogCreator = logLevel => ({ namespace, level, label, log }) => {
   // Example:
-  // const { level, timestamp, logger, message, ...others } = log
-  // console.log(`${level} [${namespace}] ${message} ${JSON.stringify(others)}`)
+  // const { timestamp, logger, message, ...others } = log
+  // console.log(`${label} [${namespace}] ${message} ${JSON.stringify(others)}`)
 }
 ```
 
 Example using [winston](https://github.com/winstonjs/winston):
 
 ```javascript
+const { logLevel } = require('kafkajs')
 const winston = require('winston')
 const toWinstonLogLevel = level => switch(level) {
-  case 'NOTHING':
+  case logLevel.ERROR:
+  case logLevel.NOTHING:
     return 'error'
-  default:
-    return level.toLowerCase()
+  case logLevel.WARN:
+    return 'warn'
+  case logLevel.INFO:
+    return 'info'
+  case logLevel.DEBUG:
+    return 'debug'
 }
 
 const WinstonLogCreator = logLevel => {
@@ -206,11 +217,11 @@ const WinstonLogCreator = logLevel => {
     ]
   })
 
-  return (namespace, { level, message, ...extra }) => {
+  return ({ namespace, level, { message, ...extra } }) => {
     logger.log({
       level: toWinstonLogLevel(level),
       message,
-      extra
+      extra,
     })
   }
 }
