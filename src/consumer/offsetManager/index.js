@@ -19,7 +19,14 @@ module.exports = class OffsetManager {
   }) {
     this.cluster = cluster
     this.coordinator = coordinator
+
+    // memberAssignment format:
+    // {
+    //   'topic1': [0, 1, 2, 3],
+    //   'topic2': [0, 1, 2, 3, 4, 5],
+    // }
     this.memberAssignment = memberAssignment
+
     this.topicConfigurations = topicConfigurations
     this.instrumentationEmitter = instrumentationEmitter
     this.groupId = groupId
@@ -27,24 +34,13 @@ module.exports = class OffsetManager {
     this.memberId = memberId
 
     this.topics = keys(memberAssignment)
-    this.clearOffsets()
-  }
-
-  clearOffsets() {
-    this.committedOffsets = indexTopics(this.topics)
-    this.resolvedOffsets = indexTopics(this.topics)
+    this.clearAllOffsets()
   }
 
   /**
    * @param {string} topic
    * @param {number} partition
-   * @returns {object} offsets by topic and partition
-   *                    {
-   *                      'topic-name': {
-   *                        0: '-1',
-   *                        1: '10'
-   *                      }
-   *                    }
+   * @returns {string}
    */
   nextOffset(topic, partition) {
     if (!this.resolvedOffsets[topic][partition]) {
@@ -64,6 +60,9 @@ module.exports = class OffsetManager {
     return offset
   }
 
+  /**
+   * @returns {Broker}
+   */
   async getCoordinator() {
     if (!this.coordinator.isConnected()) {
       this.coordinator = await this.cluster.findBroker(this.coordinator)
@@ -112,7 +111,38 @@ module.exports = class OffsetManager {
       ],
     })
 
-    this.clearOffsets()
+    this.clearOffsets({ topic, partition })
+  }
+
+  /**
+   * Commit the given offset to the topic/partition. If the consumer isn't assigned to the given
+   * topic/partition this method will be a NO-OP.
+   *
+   * @param {string} topic
+   * @param {number} partition
+   * @param {string} offset
+   */
+  async seek({ topic, partition, offset }) {
+    if (!this.memberAssignment[topic] || !this.memberAssignment[topic].includes(partition)) {
+      return
+    }
+
+    const { groupId, generationId, memberId } = this
+    const coordinator = await this.getCoordinator()
+
+    await coordinator.offsetCommit({
+      groupId,
+      memberId,
+      groupGenerationId: generationId,
+      topics: [
+        {
+          topic,
+          partitions: [{ partition, offset }],
+        },
+      ],
+    })
+
+    this.clearOffsets({ topic, partition })
   }
 
   async commitOffsets() {
@@ -219,5 +249,23 @@ module.exports = class OffsetManager {
     offsets.forEach(({ topic, partitions }) => {
       this.committedOffsets[topic] = partitions.reduce(indexPartitions, {})
     })
+  }
+
+  /**
+   * @private
+   * @param {string} topic
+   * @param {number} partition
+   */
+  clearOffsets({ topic, partition }) {
+    delete this.committedOffsets[topic][partition]
+    delete this.resolvedOffsets[topic][partition]
+  }
+
+  /**
+   * @private
+   */
+  clearAllOffsets() {
+    this.committedOffsets = indexTopics(this.topics)
+    this.resolvedOffsets = indexTopics(this.topics)
   }
 }

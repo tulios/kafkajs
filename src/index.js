@@ -1,8 +1,10 @@
 const { createLogger, LEVELS: { INFO } } = require('./loggers')
-const logFunctionConsole = require('./loggers/console')
+const LoggerConsole = require('./loggers/console')
 const Cluster = require('./cluster')
 const createProducer = require('./producer')
 const createConsumer = require('./consumer')
+
+const { assign } = Object
 
 module.exports = class Client {
   constructor({
@@ -13,9 +15,9 @@ module.exports = class Client {
     connectionTimeout,
     retry,
     logLevel = INFO,
-    logFunction = logFunctionConsole,
+    logCreator = LoggerConsole,
   }) {
-    this.logger = createLogger({ level: logLevel, logFunction })
+    this.logger = createLogger({ level: logLevel, logCreator })
     this.createCluster = () =>
       new Cluster({
         logger: this.logger,
@@ -32,11 +34,12 @@ module.exports = class Client {
    * @public
    */
   producer({ createPartitioner, retry } = {}) {
+    const cluster = this.createCluster()
     return createProducer({
-      cluster: this.createCluster(),
+      retry: assign({}, cluster.retry, retry),
       logger: this.logger,
+      cluster,
       createPartitioner,
-      retry,
     })
   }
 
@@ -56,9 +59,11 @@ module.exports = class Client {
       retry,
     } = {}
   ) {
+    const cluster = this.createCluster()
     return createConsumer({
-      cluster: this.createCluster(),
+      retry: assign({}, cluster.retry, retry),
       logger: this.logger,
+      cluster,
       groupId,
       createPartitionAssigner,
       sessionTimeout,
@@ -67,7 +72,6 @@ module.exports = class Client {
       minBytes,
       maxBytes,
       maxWaitTimeInMs,
-      retry,
     })
   }
 }
