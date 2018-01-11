@@ -1,5 +1,5 @@
 const Long = require('long')
-const createRoundRobinAssigned = require('./assigners/roundRobinAssigner')
+const createLagBasedAssigner = require('./assigners/lagBasedAssigner')
 const ConsumerGroup = require('./consumerGroup')
 const Runner = require('./runner')
 const events = require('./instrumentationEvents')
