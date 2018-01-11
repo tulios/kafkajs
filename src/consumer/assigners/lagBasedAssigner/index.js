@@ -60,12 +60,7 @@ module.exports = ({ cluster, groupId, logger }) => {
     }))
 
     const latestOffsets = await cluster.fetchTopicsOffset(topicsWithPartitions)
-    const coordinator = await cluster.findGroupCoordinator({ groupId })
-    const { responses: consumerOffsets } = await coordinator.offsetFetch({
-      groupId,
-      topics: topicsWithPartitions,
-    })
-
+    const consumerOffsets = await cluster.fetchGroupOffset({ groupId, topicsWithPartitions })
     const offsetLagByPartition = mergePartitionOffsets(consumerOffsets, latestOffsets)
 
     return offsetLagByPartition

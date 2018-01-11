@@ -20,9 +20,10 @@ describe('Consumer > assigners > LagBasedAssigner', async () => {
               offset: `${parseInt(partition) * 2}`,
             })),
         })),
-      findGroupCoordinator: async () => ({
-        offsetFetch: async ({ topics }) => ({
-          responses: topics.filter(({ topic }) => metadata[topic]).map(({ topic, partitions }) => ({
+      fetchGroupOffset: async ({ groupId, topicsWithPartitions }) =>
+        topicsWithPartitions
+          .filter(({ topic }) => metadata[topic])
+          .map(({ topic, partitions }) => ({
             topic,
             partitions: partitions
               .filter(({ partition }) =>
@@ -33,8 +34,6 @@ describe('Consumer > assigners > LagBasedAssigner', async () => {
                 offset: `${parseInt(partition)}`,
               })),
           })),
-        }),
-      }),
     }
     assignPartitions = createLagBasedAssigner({
       cluster,
