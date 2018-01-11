@@ -27,7 +27,7 @@ module.exports = ({ cluster }) => {
    *                     }
    *                   ]
    */
-  return ({ members, topics }) => {
+  return async ({ members, topics }) => {
     const membersCount = members.length
     const sortedMembers = members.map(({ memberId }) => memberId).sort()
     const assignment = {}

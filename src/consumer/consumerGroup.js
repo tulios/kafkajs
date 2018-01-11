@@ -86,7 +86,7 @@ module.exports = class ConsumerGroup {
 
     if (this.isLeader()) {
       this.logger.debug('Chosen as group leader', { groupId, generationId, memberId, topics })
-      assignment = this.assigner({ members, topics })
+      assignment = await this.assigner({ members, topics })
       this.logger.debug('Group assignment', { groupId, generationId, topics, assignment })
     }
 
