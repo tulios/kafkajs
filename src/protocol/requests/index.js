@@ -14,7 +14,7 @@ const requests = {
   Heartbeat: require('./heartbeat'),
   LeaveGroup: require('./leaveGroup'),
   SyncGroup: require('./syncGroup'),
-  DescribeGroups: {},
+  DescribeGroups: require('./describeGroups'),
   ListGroups: {},
   SaslHandshake: require('./saslHandshake'),
   ApiVersions: require('./apiVersions'),
