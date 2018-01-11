@@ -1,3 +1,4 @@
+const Long = require('long')
 const { assign, values, keys } = Object
 
 const head = (arr = []) => arr[0]
@@ -7,43 +8,44 @@ const initializeAssignments = members =>
 
 const byOffsetLagDescending = ({ offsetLag: a }, { offsetLag: b }) => b - a
 
+const offsetsForTopic = (offsets, targetTopic) =>
+  offsets.find(({ topic }) => topic === targetTopic).partitions
+
+const offsetForPartition = (offsets, targetPartition) =>
+  offsets.find(({ partition }) => partition === targetPartition).offset
+
 const mergePartitionOffsets = (consumerOffsets, latestOffsets) => {
   return consumerOffsets.map(({ topic, partitions: consumerOffsetForPartititions }) => {
-    const { partitions: latestOffsetsByPartition } = latestOffsets.find(
-      ({ topic: latestOffsetsTopic }) => topic === latestOffsetsTopic
-    )
+    const latestOffsetsByPartition = offsetsForTopic(latestOffsets, topic)
 
     return {
       topic,
-      partitions: consumerOffsetForPartititions.map(
-        ({ partition: consumerOffsetPartition, offset: startingOffset }) => ({
-          partition: consumerOffsetPartition,
-          offsetLag:
-            parseInt(
-              latestOffsetsByPartition.find(
-                ({ partition: latestOffsetForPartition }) =>
-                  latestOffsetForPartition === consumerOffsetPartition
-              ).offset
-            ) - parseInt(startingOffset),
-        })
-      ),
+      partitions: consumerOffsetForPartititions.map(({ partition, offset }) => {
+        const latestPartitionOffset = offsetForPartition(latestOffsetsByPartition, partition)
+        const offsetLag = Long.fromValue(latestPartitionOffset).subtract(Long.fromValue(offset))
+
+        return {
+          partition,
+          offsetLag,
+        }
+      }),
     }
   })
 }
 
 /**
  * LagBasedAssigner
- * 
+ *
  * Assigns partitions to members based on offset lag - attempting to spread
  * it as evenly as possible.
- * 
+ *
  * The difference in number of assigned partitions between the most assigned
  * member and the least assigned member should never be greater than 1.
- * 
+ *
  * If the two members with the fewest number of partitions assigned have the same
  * number of assigned partitions, the one where the sum of the offset lag of the
  * assigned partitions is the lowest should be assigned the unassigned partition.
- * 
+ *
  * @param {Cluster} cluster
  * @param {string} groupId
  * @returns {function}
