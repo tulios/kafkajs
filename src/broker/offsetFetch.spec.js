@@ -68,6 +68,7 @@ describe('Broker > OffsetFetch', () => {
     const { generationId, memberId } = await groupCoordinator.joinGroup({
       groupId,
       sessionTimeout: 30000,
+      groupProtocols: [{ name: 'AssignerName', metadata: '{"version": 1}' }],
     })
 
     const groupAssignment = [
