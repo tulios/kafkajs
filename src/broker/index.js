@@ -201,8 +201,8 @@ module.exports = class Broker {
    *                                no heartbeat after this timeout in ms
    * @param {string} [memberId=""] The assigned consumer id or an empty string for a new consumer
    * @param {string} [protocolType="consumer"] Unique name for class of protocols implemented by group
-   * @param {Array} [groupProtocols=[{ name: 'default' }]] List of protocols that the member supports
-   *                                [{ name: 'default', metadata: null }]
+   * @param {Array} groupProtocols List of protocols that the member supports (assignment strategy)
+   *                                [{ name: 'AssignerName', metadata: '{"version": 1, "topics": []}' }]
    * @returns {Promise}
    */
   async joinGroup({
@@ -210,7 +210,7 @@ module.exports = class Broker {
     sessionTimeout,
     memberId = '',
     protocolType = 'consumer',
-    groupProtocols = [{ name: 'default' }],
+    groupProtocols,
   }) {
     // TODO: validate groupId and sessionTimeout (maybe default for sessionTimeout)
     const joinGroup = this.lookupRequest(apiKeys.JoinGroup, requests.JoinGroup)
@@ -323,5 +323,15 @@ module.exports = class Broker {
   async offsetFetch({ groupId, topics }) {
     const offsetFetch = this.lookupRequest(apiKeys.OffsetFetch, requests.OffsetFetch)
     return await this.connection.send(offsetFetch({ groupId, topics }))
+  }
+
+  /**
+   * @public
+   * @param {Array} groupIds
+   * @returns {Promise}
+   */
+  async describeGroups({ groupIds }) {
+    const describeGroups = this.lookupRequest(apiKeys.DescribeGroups, requests.DescribeGroups)
+    return await this.connection.send(describeGroups({ groupIds }))
   }
 }

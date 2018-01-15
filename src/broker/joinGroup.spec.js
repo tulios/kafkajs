@@ -33,12 +33,13 @@ describe('Broker > JoinGroup', () => {
     const response = await broker.joinGroup({
       groupId,
       sessionTimeout: 30000,
+      groupProtocols: [{ name: 'AssignerName', metadata: '{"version": 1}' }],
     })
 
     expect(response).toEqual({
       errorCode: 0,
       generationId: expect.any(Number),
-      groupProtocol: 'default',
+      groupProtocol: 'AssignerName',
       leaderId: expect.any(String),
       memberId: expect.any(String),
       members: expect.arrayContaining([

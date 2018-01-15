@@ -3,7 +3,10 @@
  * @param {Cluster} cluster
  * @returns {function}
  */
-module.exports = ({ cluster }) => {
+module.exports = ({ cluster }) => ({
+  name: 'RoundRobinAssigner',
+  version: 1,
+
   /**
    * This process can result in imbalanced assignments
    * @param {array} members array of members, e.g:
@@ -27,7 +30,7 @@ module.exports = ({ cluster }) => {
    *                     }
    *                   ]
    */
-  return ({ members, topics }) => {
+  assign({ members, topics }) {
     const membersCount = members.length
     const sortedMembers = members.map(({ memberId }) => memberId).sort()
     const assignment = {}
@@ -52,5 +55,12 @@ module.exports = ({ cluster }) => {
       memberId,
       memberAssignment: assignment[memberId],
     }))
-  }
-}
+  },
+
+  protocol({ topics }) {
+    return {
+      name: this.name,
+      metadata: JSON.stringify({ version: this.version, topics }),
+    }
+  },
+})
