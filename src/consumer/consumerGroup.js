@@ -67,6 +67,7 @@ module.exports = class ConsumerGroup {
       groupId,
       sessionTimeout,
       memberId: this.memberId || '',
+      groupProtocols: [this.assigner.protocol({ topics: this.topics })],
     })
 
     this.generationId = groupData.generationId
@@ -88,7 +89,7 @@ module.exports = class ConsumerGroup {
 
     if (this.isLeader()) {
       this.logger.debug('Chosen as group leader', { groupId, generationId, memberId, topics })
-      assignment = await this.assigner({ members, topics })
+      assignment = await this.assigner.assign({ members, topics })
       this.logger.debug('Group assignment', { groupId, generationId, topics, assignment })
     }
 
