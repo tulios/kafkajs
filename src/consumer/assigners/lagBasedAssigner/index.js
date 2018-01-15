@@ -33,6 +33,21 @@ const mergePartitionOffsets = (consumerOffsets, latestOffsets) => {
   })
 }
 
+const calculateOffsetLag = async (cluster, groupId, topics) => {
+  const topicsWithPartitions = topics.map(topic => ({
+    topic,
+    partitions: cluster
+      .findTopicPartitionMetadata(topic)
+      .map(({ partitionId: partition }) => ({ partition })),
+  }))
+
+  const latestOffsets = await cluster.fetchTopicsOffset(topicsWithPartitions)
+  const consumerOffsets = await cluster.fetchGroupOffset({ groupId, topicsWithPartitions })
+  const offsetLagByPartition = mergePartitionOffsets(consumerOffsets, latestOffsets)
+
+  return offsetLagByPartition
+}
+
 /**
  * LagBasedAssigner
  *
@@ -50,22 +65,9 @@ const mergePartitionOffsets = (consumerOffsets, latestOffsets) => {
  * @param {string} groupId
  * @returns {function}
  */
-module.exports = ({ cluster, groupId, logger }) => {
-  const calculateOffsetLag = async topics => {
-    const topicsWithPartitions = topics.map(topic => ({
-      topic,
-      partitions: cluster
-        .findTopicPartitionMetadata(topic)
-        .map(({ partitionId: partition }) => ({ partition })),
-    }))
-
-    const latestOffsets = await cluster.fetchTopicsOffset(topicsWithPartitions)
-    const consumerOffsets = await cluster.fetchGroupOffset({ groupId, topicsWithPartitions })
-    const offsetLagByPartition = mergePartitionOffsets(consumerOffsets, latestOffsets)
-
-    return offsetLagByPartition
-  }
-
+module.exports = ({ cluster, groupId, logger }) => ({
+  name: 'LagBasedAssigner',
+  version: 1,
   /**
    * @param {array} members array of members, e.g:
                                 [{ memberId: 'test-5f93f5a3' }]
@@ -88,7 +90,7 @@ module.exports = ({ cluster, groupId, logger }) => {
    *                     }
    *                   ]
    */
-  return async ({ members, topics }) => {
+  async assign({ members, topics }) {
     const sortedMembers = members.map(({ memberId }) => memberId).sort()
     const assignments = initializeAssignments(sortedMembers)
 
@@ -113,7 +115,7 @@ module.exports = ({ cluster, groupId, logger }) => {
       return head(members.sort(byNumberOfAssignedPartitions))
     }
 
-    const topicPartitionOffsetLag = await calculateOffsetLag(topics)
+    const topicPartitionOffsetLag = await calculateOffsetLag(cluster, groupId, topics)
 
     topics.forEach(topic => {
       const partitions = topicPartitionOffsetLag
@@ -129,5 +131,12 @@ module.exports = ({ cluster, groupId, logger }) => {
       memberId,
       memberAssignment: assignments[memberId],
     }))
-  }
-}
+  },
+
+  protocol({ topics }) {
+    return {
+      name: this.name,
+      metadata: JSON.stringify({ version: this.version, topics }),
+    }
+  },
+})
