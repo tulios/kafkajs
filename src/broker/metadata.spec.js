@@ -1,5 +1,11 @@
 const Broker = require('./index')
-const { secureRandom, createConnection, newLogger, createTopic } = require('testHelpers')
+const {
+  secureRandom,
+  createConnection,
+  newLogger,
+  createTopic,
+  retryProtocol,
+} = require('testHelpers')
 
 describe('Broker > Metadata', () => {
   let topicName, broker
@@ -24,7 +30,10 @@ describe('Broker > Metadata', () => {
     await broker.connect()
     createTopic({ topic: topicName })
 
-    const response = await broker.metadata([topicName])
+    const response = await retryProtocol(
+      'LEADER_NOT_AVAILABLE',
+      async () => await broker.metadata([topicName])
+    )
 
     expect(response).toMatchObject({
       brokers: expect.arrayContaining([
