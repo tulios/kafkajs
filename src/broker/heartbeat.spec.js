@@ -21,7 +21,11 @@ describe('Broker > Heartbeat', () => {
     await seedBroker.connect()
     createTopic({ topic: topicName })
 
-    const metadata = await seedBroker.metadata([topicName])
+    const metadata = await retryProtocol(
+      'LEADER_NOT_AVAILABLE',
+      async () => await seedBroker.metadata([topicName])
+    )
+
     // Find leader of partition
     const partitionBroker = metadata.topicMetadata[0].partitionMetadata[0].leader
     const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
