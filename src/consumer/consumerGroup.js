@@ -67,7 +67,14 @@ module.exports = class ConsumerGroup {
       groupId,
       sessionTimeout,
       memberId: this.memberId || '',
-      groupProtocols: [this.assigner.protocol({ topics: this.topics })],
+
+      // Keep the default procotol in the list to enable consumers running an old
+      // version of Kafkajs to smoothly transition to the new protocol. The changes
+      // in the protocol format and name happened on PR #27
+      groupProtocols: [
+        this.assigner.protocol({ topics: this.topics }),
+        { name: 'default', metadata: Buffer.from([0, 0]) },
+      ],
     })
 
     this.generationId = groupData.generationId
