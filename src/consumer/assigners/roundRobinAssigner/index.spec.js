@@ -11,7 +11,7 @@ describe('Consumer > assigners > RoundRobinAssigner', () => {
   })
 
   describe('#assign', () => {
-    test('assign all partitions evenly', () => {
+    test('assign all partitions evenly', async () => {
       metadata['topic-A'] = Array(14)
         .fill()
         .map((_, i) => ({ partitionId: i }))
@@ -27,7 +27,7 @@ describe('Consumer > assigners > RoundRobinAssigner', () => {
         { memberId: 'member-2' },
       ]
 
-      expect(assigner.assign({ members, topics })).toEqual([
+      await expect(assigner.assign({ members, topics })).resolves.toEqual([
         {
           memberId: 'member-1',
           memberAssignment: {

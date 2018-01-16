@@ -1,5 +1,5 @@
 const Long = require('long')
-const createRoundRobinAssigned = require('./assigners/roundRobinAssigner')
+const createLagBasedAssigner = require('./assigners/lagBasedAssigner')
 const ConsumerGroup = require('./consumerGroup')
 const Runner = require('./runner')
 const events = require('./instrumentationEvents')
@@ -17,7 +17,7 @@ module.exports = ({
   cluster,
   groupId,
   logger: rootLogger,
-  createPartitionAssigner = createRoundRobinAssigned,
+  createPartitionAssigner = createLagBasedAssigner,
   sessionTimeout = 30000,
   heartbeatInterval = 3000,
   maxBytesPerPartition = 1048576, // 1MB
@@ -28,11 +28,15 @@ module.exports = ({
     retries: 10,
   },
 }) => {
-  const instrumentationEmitter = new InstrumentationEventEmitter()
-  const assigner = createPartitionAssigner({ cluster })
-  const logger = rootLogger.namespace('Consumer')
-
   const topics = {}
+  const instrumentationEmitter = new InstrumentationEventEmitter()
+  const logger = rootLogger.namespace('Consumer')
+  const assigner = createPartitionAssigner({
+    cluster,
+    groupId,
+    logger,
+  })
+
   let runner = null
   let consumerGroup = null
 

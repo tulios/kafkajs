@@ -217,6 +217,34 @@ module.exports = class Cluster {
   }
 
   /**
+   * @param {string} groupId
+   * @param {Array} topicsWithPartitions
+   * @returns {Array} example:
+   *                    [
+   *                      {
+   *                        topic: 'my-topic',
+   *                        partitions: [
+   *                          { offset: '-1', partition: 0 },
+   *                          { offset: '-1', partition: 1 },
+   *                          { offset: '-1', partition: 2 },
+   *                        ],
+   *                      },
+   *                    ]
+   */
+  async fetchGroupOffset({ groupId, topicsWithPartitions }) {
+    const coordinator = await this.findGroupCoordinator({ groupId })
+
+    return this.retrier(async () => {
+      const { responses: offsets } = await coordinator.offsetFetch({
+        groupId,
+        topics: topicsWithPartitions,
+      })
+
+      return offsets
+    })
+  }
+
+  /**
    * @param {object} topicConfiguration
    * @returns {number}
    */
