@@ -414,7 +414,7 @@ describe('Consumer', () => {
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
     })
 
-    it.only('retries the same batch', async () => {
+    it('retries the same batch', async () => {
       let succeeded = false
       const batches = []
       const eachBatch = jest
