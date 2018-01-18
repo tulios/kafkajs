@@ -36,6 +36,7 @@ describe('Consumer', () => {
       cluster,
       groupId,
       maxWaitTimeInMs: 1,
+      maxBytesPerPartition: 180,
       logger: newLogger(),
     })
   })
@@ -107,35 +108,38 @@ describe('Consumer', () => {
     const messagesConsumed = []
     consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
 
-    const key1 = secureRandom()
-    const message1 = { key: `key-${key1}`, value: `value-${key1}` }
-    const key2 = secureRandom()
-    const message2 = { key: `key-${key2}`, value: `value-${key2}` }
+    const messages = Array(100)
+      .fill()
+      .map(() => {
+        const value = secureRandom()
+        return { key: `key-${value}`, value: `value-${value}` }
+      })
 
-    // Make two separate calls
-    await producer.send({ topic: topicName, messages: [message1] })
-    await producer.send({ topic: topicName, messages: [message2] })
+    await producer.send({ topic: topicName, messages })
+    await waitForMessages(messagesConsumed, { number: messages.length })
 
-    await expect(waitForMessages(messagesConsumed, { number: 2 })).resolves.toEqual([
-      {
-        topic: topicName,
-        partition: 0,
-        message: expect.objectContaining({
-          key: Buffer.from(message1.key),
-          value: Buffer.from(message1.value),
-          offset: '0',
-        }),
-      },
-      {
-        topic: topicName,
-        partition: 0,
-        message: expect.objectContaining({
-          key: Buffer.from(message2.key),
-          value: Buffer.from(message2.value),
-          offset: '1',
-        }),
-      },
-    ])
+    expect(messagesConsumed[0]).toEqual({
+      topic: topicName,
+      partition: 0,
+      message: expect.objectContaining({
+        key: Buffer.from(messages[0].key),
+        value: Buffer.from(messages[0].value),
+        offset: '0',
+      }),
+    })
+
+    expect(messagesConsumed[messagesConsumed.length - 1]).toEqual({
+      topic: topicName,
+      partition: 0,
+      message: expect.objectContaining({
+        key: Buffer.from(messages[messages.length - 1].key),
+        value: Buffer.from(messages[messages.length - 1].value),
+        offset: '99',
+      }),
+    })
+
+    // check if all offsets are present
+    expect(messagesConsumed.map(m => m.message.offset)).toEqual(messages.map((_, i) => `${i}`))
   })
 
   it('consume GZIP messages', async () => {
@@ -318,21 +322,46 @@ describe('Consumer', () => {
   })
 
   describe('when eachMessage throws an error', () => {
-    it('commits the previous offsets', async () => {
+    let key1, key3
+
+    beforeEach(async () => {
       await consumer.connect()
       await producer.connect()
 
-      const key1 = secureRandom()
+      key1 = secureRandom()
       const message1 = { key: `key-${key1}`, value: `value-${key1}` }
       const key2 = secureRandom()
       const message2 = { key: `key-${key2}`, value: `value-${key2}` }
-      const key3 = secureRandom()
+      key3 = secureRandom()
       const message3 = { key: `key-${key3}`, value: `value-${key3}` }
 
       await producer.send({ topic: topicName, messages: [message1, message2, message3] })
-
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    })
 
+    it('retries the same message', async () => {
+      let succeeded = false
+      const messages = []
+      const eachMessage = jest
+        .fn()
+        .mockImplementationOnce(({ message }) => {
+          messages.push(message)
+          throw new Error('Fail once')
+        })
+        .mockImplementationOnce(({ message }) => {
+          messages.push(message)
+          succeeded = true
+        })
+
+      await consumer.run({ eachMessage })
+      await expect(waitFor(() => succeeded)).resolves.toBeTruthy()
+
+      // retry the same message
+      expect(messages.map(m => m.offset)).toEqual(['0', '0'])
+      expect(messages.map(m => m.key.toString())).toEqual([`key-${key1}`, `key-${key1}`])
+    })
+
+    it('commits the previous offsets', async () => {
       let raisedError = false
       await consumer.run({
         eachMessage: async event => {
@@ -368,21 +397,47 @@ describe('Consumer', () => {
   })
 
   describe('when eachBatch throws an error', () => {
-    it('commits the previous offsets', async () => {
+    let key1, key2, key3
+
+    beforeEach(async () => {
       await consumer.connect()
       await producer.connect()
 
-      const key1 = secureRandom()
+      key1 = secureRandom()
       const message1 = { key: `key-${key1}`, value: `value-${key1}` }
-      const key2 = secureRandom()
+      key2 = secureRandom()
       const message2 = { key: `key-${key2}`, value: `value-${key2}` }
-      const key3 = secureRandom()
+      key3 = secureRandom()
       const message3 = { key: `key-${key3}`, value: `value-${key3}` }
 
       await producer.send({ topic: topicName, messages: [message1, message2, message3] })
-
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    })
 
+    it.only('retries the same batch', async () => {
+      let succeeded = false
+      const batches = []
+      const eachBatch = jest
+        .fn()
+        .mockImplementationOnce(({ batch }) => {
+          batches.push(batch)
+          throw new Error('Fail once')
+        })
+        .mockImplementationOnce(({ batch }) => {
+          batches.push(batch)
+          succeeded = true
+        })
+
+      await consumer.run({ eachBatch })
+      await expect(waitFor(() => succeeded)).resolves.toBeTruthy()
+
+      // retry the same batch
+      expect(batches.map(b => b.lastOffset())).toEqual(['1', '1'])
+      const batchMessages = batches.map(b => b.messages.map(m => m.key.toString()).join('-'))
+      expect(batchMessages).toEqual([`key-${key1}-key-${key2}`, `key-${key1}-key-${key2}`])
+    })
+
+    it('commits the previous offsets', async () => {
       let raisedError = false
       await consumer.run({
         eachBatch: async ({ batch, resolveOffset }) => {

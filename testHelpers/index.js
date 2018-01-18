@@ -99,7 +99,7 @@ const retryProtocol = (errorType, fn) =>
   })
 
 const waitForMessages = (buffer, { number = 1, delay = 50 } = {}) =>
-  waitFor(() => (buffer.length >= number ? buffer.splice(0) : false), { delay })
+  waitFor(() => (buffer.length >= number ? buffer : false), { delay })
 
 const createTopic = ({ topic, partitions = 1 }) => {
   const cmd = path.join(__dirname, '../scripts/createTopic.sh')
