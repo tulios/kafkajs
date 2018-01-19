@@ -1,4 +1,5 @@
 const Long = require('long')
+const createRetry = require('../retry')
 const createRoundRobinAssigned = require('./assigners/roundRobinAssigner')
 const ConsumerGroup = require('./consumerGroup')
 const Runner = require('./runner')
@@ -172,12 +173,39 @@ module.exports = ({
     consumerGroup.seek({ topic, partition, offset })
   }
 
+  /**
+   * @returns Promise<GroupDescription>
+   *
+   * @typedef {Object} GroupDescription
+   * @property {string} groupId
+   * @property {Array<MemberDescription>} members
+   * @property {string} protocol
+   * @property {string} protocolType
+   * @property {string} state
+   *
+   * @typedef {Object} MemberDescription
+   * @property {string} clientHost
+   * @property {string} clientId
+   * @property {string} memberId
+   * @property {Buffer} memberAssignment
+   * @property {Buffer} memberMetadata
+   */
+  const describeGroup = async () => {
+    const coordinator = await cluster.findGroupCoordinator({ groupId })
+    const retrier = createRetry(retry)
+    return retrier(async () => {
+      const { groups } = await coordinator.describeGroups({ groupIds: [groupId] })
+      return groups.find(group => group.groupId === groupId)
+    })
+  }
+
   return {
     connect,
     disconnect,
     subscribe,
     run,
     seek,
+    describeGroup,
     on,
     events,
   }
