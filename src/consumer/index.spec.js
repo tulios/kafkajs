@@ -540,4 +540,28 @@ describe('Consumer', () => {
       ])
     })
   })
+
+  describe('describe group', () => {
+    it('returns the group description', async () => {
+      await consumer.connect()
+      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.run({ eachMessage: jest.fn() })
+      await expect(consumer.describeGroup()).resolves.toEqual({
+        errorCode: 0,
+        groupId,
+        members: [
+          {
+            clientHost: expect.any(String),
+            clientId: expect.any(String),
+            memberId: expect.any(String),
+            memberAssignment: expect.anything(),
+            memberMetadata: expect.anything(),
+          },
+        ],
+        protocol: 'RoundRobinAssigner',
+        protocolType: 'consumer',
+        state: 'Stable',
+      })
+    })
+  })
 })
