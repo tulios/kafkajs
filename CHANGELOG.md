@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2018-01-19
+### Fixed
+  - Fix retry on error for message handlers #30
+
+### Changed
+  - Use decoder offset for validating response length #21
+  - Change log creator to improve interoperability #24
+  - Add support to `KAFKAJS_LOG_LEVEL` #24
+  - Improved assigner protocol #27 #29
+
+### Added
+  - Add seek API to consumer #23
+  - Add experimental describe group to consumer #31
+
 ## [0.6.8] - 2017-12-27
 ### Fixed
   - Only use seed brokers to bootstrap consumers (introduced a broker pool abstraction) #19
