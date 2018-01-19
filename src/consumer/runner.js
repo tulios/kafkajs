@@ -111,7 +111,12 @@ module.exports = class Runner {
         await this.eachMessage({ topic, partition, message })
       } catch (e) {
         if (!isKafkaJSError(e)) {
-          this.logger.error(`Error when calling eachMessage`, { stack: e.stack })
+          this.logger.error(`Error when calling eachMessage`, {
+            topic,
+            partition,
+            offset: message.offset,
+            stack: e.stack,
+          })
         }
 
         // In case of errors, commit the previously consumed offsets
@@ -140,7 +145,12 @@ module.exports = class Runner {
       })
     } catch (e) {
       if (!isKafkaJSError(e)) {
-        this.logger.error(`Error when calling eachBatch`, { stack: e.stack })
+        this.logger.error(`Error when calling eachBatch`, {
+          topic,
+          partition,
+          offset: batch.firstOffset(),
+          stack: e.stack,
+        })
       }
 
       // eachBatch has a special resolveOffset which can be used

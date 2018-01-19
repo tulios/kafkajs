@@ -52,12 +52,7 @@ module.exports = class OffsetManager {
       offset = '0'
     }
 
-    const nextOffset = Long.fromValue(offset)
-      .add(1)
-      .toString()
-
-    this.resolvedOffsets[topic][partition] = nextOffset
-    return offset
+    return Long.fromValue(offset)
   }
 
   /**
