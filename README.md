@@ -26,11 +26,12 @@ __In active development - alpha__
     - [Logger](#setup-client-logger)
   - [Producing Messages to Kafka](#producing-messages)
     - [Custom partitioner](#producing-messages-custom-partitioner)
+    - [GZIP compression](#producing-messages-gzip-compression)
     - [Retry](#producing-messages-retry)
-  - [Consuming messages from Kafka](consuming-messages)
-    - [eachMessage](consuming-messages-each-message)
-    - [eachBatch](consuming-messages-each-batch)
-    - [Options](consuming-messages-options)
+  - [Consuming messages from Kafka](#consuming-messages)
+    - [eachMessage](#consuming-messages-each-message)
+    - [eachBatch](#consuming-messages-each-batch)
+    - [Options](#consuming-messages-options)
     - [Custom assigner](#consuming-messages-custom-assigner)
   - [Instrumentation](#instrumentation)
   - [Development](#development)
@@ -158,7 +159,7 @@ The environment variable `KAFKAJS_LOG_LEVEL` can also be used and it has precede
 KAFKAJS_LOG_LEVEL=info node code.js
 ```
 
-__How to create a log creator?___
+__How to create a log creator?__
 
 A log creator is a function which receives a log level and returns a log function. The log function receives: namespace, level, label, and log.
 
@@ -276,6 +277,10 @@ await producer.send({
   ],
 })
 ```
+
+#### <a name="producing-messages-gzip-compression"></a> GZIP compression
+
+TODO: write
 
 #### <a name="producing-messages-custom-partitioner"></a> Custom partitioner
 
