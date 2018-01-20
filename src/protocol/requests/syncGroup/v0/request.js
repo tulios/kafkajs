@@ -25,5 +25,5 @@ module.exports = ({ groupId, generationId, memberId, groupAssignment }) => ({
 })
 
 const encodeGroupAssignment = ({ memberId, memberAssignment }) => {
-  return new Encoder().writeString(memberId).writeBytes(JSON.stringify(memberAssignment))
+  return new Encoder().writeString(memberId).writeBytes(memberAssignment)
 }

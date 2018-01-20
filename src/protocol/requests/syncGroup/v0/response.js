@@ -22,7 +22,7 @@ const parse = async data => {
 
   return {
     errorCode: data.errorCode,
-    memberAssignment: JSON.parse(data.memberAssignment.toString()),
+    memberAssignment: data.memberAssignment,
   }
 }
 
