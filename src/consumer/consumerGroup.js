@@ -4,6 +4,7 @@ const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
 const { KafkaJSError } = require('../errors')
 const { HEARTBEAT } = require('./instrumentationEvents')
+const { MemberAssignment } = require('./assignerProtocol')
 
 const { keys } = Object
 
@@ -107,14 +108,22 @@ module.exports = class ConsumerGroup {
       groupAssignment: assignment,
     })
 
-    this.memberAssignment = memberAssignment
+    const { assignment: decodedAssigment } = MemberAssignment.decode(memberAssignment)
+    this.logger.debug('Received assignment', {
+      groupId,
+      generationId,
+      memberId,
+      memberAssignment: decodedAssigment,
+    })
+
+    this.memberAssignment = decodedAssigment
     this.topics = keys(this.memberAssignment)
     this.offsetManager = new OffsetManager({
       cluster: this.cluster,
       topicConfigurations: this.topicConfigurations,
       instrumentationEmitter: this.instrumentationEmitter,
+      memberAssignment: this.memberAssignment,
       coordinator,
-      memberAssignment,
       groupId,
       generationId,
       memberId,
