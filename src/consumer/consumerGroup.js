@@ -108,7 +108,16 @@ module.exports = class ConsumerGroup {
       groupAssignment: assignment,
     })
 
-    const { assignment: decodedAssigment } = MemberAssignment.decode(memberAssignment)
+    // Make the change in the member assignment protocol compatible with KafkaJS <= 0.7.0
+    // This can be removed later on
+    let decodedAssigment
+    try {
+      decodedAssigment = MemberAssignment.decode(memberAssignment).assignment
+    } catch (_) {
+      this.logger.warn('Using fallback for member assignment', { groupId, generationId, memberId })
+      decodedAssigment = JSON.parse(memberAssignment.toString('utf-8'))
+    }
+
     this.logger.debug('Received assignment', {
       groupId,
       generationId,
