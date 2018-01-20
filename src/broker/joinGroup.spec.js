@@ -1,11 +1,13 @@
 const Broker = require('./index')
+const { MemberMetadata } = require('../consumer/assignerProtocol')
 const { secureRandom, createConnection, newLogger, retryProtocol } = require('testHelpers')
 
 describe('Broker > JoinGroup', () => {
-  let groupId, seedBroker, broker
+  let groupId, topicName, seedBroker, broker
 
   beforeEach(async () => {
     groupId = `consumer-group-id-${secureRandom()}`
+    topicName = `test-topic-${secureRandom()}`
     seedBroker = new Broker({
       connection: createConnection(),
       logger: newLogger(),
@@ -33,7 +35,12 @@ describe('Broker > JoinGroup', () => {
     const response = await broker.joinGroup({
       groupId,
       sessionTimeout: 30000,
-      groupProtocols: [{ name: 'AssignerName', metadata: '{"version": 1}' }],
+      groupProtocols: [
+        {
+          name: 'AssignerName',
+          metadata: MemberMetadata.encode({ version: 1, topics: [topicName] }),
+        },
+      ],
     })
 
     expect(response).toEqual({

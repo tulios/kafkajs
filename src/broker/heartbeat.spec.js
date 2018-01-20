@@ -1,4 +1,6 @@
 const Broker = require('./index')
+const { MemberMetadata, MemberAssignment } = require('../consumer/assignerProtocol')
+
 const {
   secureRandom,
   createConnection,
@@ -59,16 +61,20 @@ describe('Broker > Heartbeat', () => {
     const { generationId, memberId } = await groupCoordinator.joinGroup({
       groupId,
       sessionTimeout: 30000,
-      groupProtocols: [{ name: 'AssignerName', metadata: '{"version": 1}' }],
+      groupProtocols: [
+        {
+          name: 'AssignerName',
+          metadata: MemberMetadata.encode({ version: 1, topics: [topicName] }),
+        },
+      ],
     })
 
-    const groupAssignment = [
-      {
-        memberId,
-        memberAssignment: { [topicName]: [0] },
-      },
-    ]
+    const memberAssignment = MemberAssignment.encode({
+      version: 1,
+      assignment: { [topicName]: [0] },
+    })
 
+    const groupAssignment = [{ memberId, memberAssignment }]
     await groupCoordinator.syncGroup({
       groupId,
       generationId,

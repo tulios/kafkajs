@@ -1,5 +1,6 @@
 const Broker = require('./index')
 const { secureRandom, createConnection, newLogger, retryProtocol } = require('testHelpers')
+const { MemberMetadata, MemberAssignment } = require('../consumer/assignerProtocol')
 
 describe('Broker > SyncGroup', () => {
   let topicName, groupId, seedBroker, groupCoordinator
@@ -35,16 +36,20 @@ describe('Broker > SyncGroup', () => {
     const { generationId, memberId } = await groupCoordinator.joinGroup({
       groupId,
       sessionTimeout: 30000,
-      groupProtocols: [{ name: 'AssignerName', metadata: '{"version": 1}' }],
+      groupProtocols: [
+        {
+          name: 'AssignerName',
+          metadata: MemberMetadata.encode({ version: 1, topics: [topicName] }),
+        },
+      ],
     })
 
-    const groupAssignment = [
-      {
-        memberId,
-        memberAssignment: { [topicName]: [0] },
-      },
-    ]
+    const memberAssignment = MemberAssignment.encode({
+      version: 1,
+      assignment: { [topicName]: [0] },
+    })
 
+    const groupAssignment = [{ memberId, memberAssignment }]
     const response = await groupCoordinator.syncGroup({
       groupId,
       generationId,
@@ -52,6 +57,6 @@ describe('Broker > SyncGroup', () => {
       groupAssignment,
     })
 
-    expect(response).toEqual({ errorCode: 0, memberAssignment: { [topicName]: [0] } })
+    expect(response).toEqual({ errorCode: 0, memberAssignment })
   })
 })
