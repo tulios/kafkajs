@@ -1,6 +1,8 @@
 const createRetry = require('../retry')
 const { KafkaJSError } = require('../errors')
 
+const isTestMode = process.env.NODE_ENV === 'test'
+
 const isRebalancing = e =>
   e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
 
@@ -75,7 +77,9 @@ module.exports = class Runner {
     this.running = false
 
     try {
-      await this.waitForConsumer()
+      if (!isTestMode) {
+        await this.waitForConsumer()
+      }
       await this.consumerGroup.leave()
     } catch (e) {}
   }
