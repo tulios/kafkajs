@@ -9,10 +9,11 @@ const {
 const createConsumer = require('../consumer')
 
 describe('Broker > DescribeGroups', () => {
-  let groupId, seedBroker, broker, cluster, consumer
+  let groupId, topicName, seedBroker, broker, cluster, consumer
 
   beforeEach(async () => {
     groupId = `consumer-group-id-${secureRandom()}`
+    topicName = `test-topic-${secureRandom()}`
     seedBroker = new Broker({
       connection: createConnection(),
       logger: newLogger(),
@@ -46,6 +47,8 @@ describe('Broker > DescribeGroups', () => {
   })
 
   test('request', async () => {
+    await consumer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
     await consumer.run({ eachMessage: jest.fn() })
     const response = await broker.describeGroups({ groupIds: [groupId] })
 
