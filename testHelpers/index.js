@@ -6,13 +6,13 @@ const crypto = require('crypto')
 const Cluster = require('../src/cluster')
 const connectionBuilder = require('../src/cluster/connectionBuilder')
 const Connection = require('../src/network/connection')
-const { createLogger, LEVELS: { NOTHING, INFO } } = require('../src/loggers')
+const { createLogger, LEVELS: { NOTHING, DEBUG } } = require('../src/loggers')
 const LoggerConsole = require('../src/loggers/console')
 
 const isTravis = process.env.TRAVIS === 'true'
 
 const newLogger = () =>
-  createLogger({ level: isTravis ? INFO : NOTHING, logCreator: LoggerConsole })
+  createLogger({ level: isTravis ? DEBUG : NOTHING, logCreator: LoggerConsole })
 
 const getHost = () => process.env.HOST_IP || ip.address()
 const secureRandom = (length = 10) => crypto.randomBytes(length).toString('hex')
