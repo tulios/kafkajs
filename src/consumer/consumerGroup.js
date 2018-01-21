@@ -236,7 +236,7 @@ module.exports = class ConsumerGroup {
       const results = await Promise.all(requests)
       return flatten(results)
     } catch (e) {
-      if (STALE_METADATA_ERRORS.includes(e.type)) {
+      if (STALE_METADATA_ERRORS.includes(e.type) || e.name === 'KafkaJSTopicMetadataNotLoaded') {
         this.logger.debug('Stale cluster metadata, refreshing...', {
           groupId: this.groupId,
           memberId: this.memberId,
