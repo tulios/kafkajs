@@ -240,6 +240,7 @@ module.exports = class ConsumerGroup {
         this.logger.debug('Stale cluster metadata, refreshing...', {
           groupId: this.groupId,
           memberId: this.memberId,
+          error: e.message,
         })
 
         await this.cluster.refreshMetadata()
@@ -253,6 +254,7 @@ module.exports = class ConsumerGroup {
       }
 
       if (e.name === 'KafkaJSBrokerNotFound') {
+        this.logger.debug(`${e.message}, refreshing metadata and retrying...`)
         await this.cluster.refreshMetadata()
       }
 

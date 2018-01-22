@@ -7,5 +7,6 @@ module.exports = {
   testResultsProcessor: './node_modules/jest-junit',
   testPathIgnorePatterns: ['/node_modules/'],
   testEnvironment: 'node',
+  testRegex: '(/__tests__/.*|(\\.|/)spec)\\.jsx?$',
   bail: true,
 }

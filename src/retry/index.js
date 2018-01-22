@@ -1,12 +1,7 @@
-const { KafkaJSNumberOfRetriesExceeded } = require('./errors')
+const { KafkaJSNumberOfRetriesExceeded } = require('../errors')
 
-const RETRY_DEFAULT = {
-  maxRetryTime: 30 * 1000,
-  initialRetryTime: 300,
-  factor: 0.2, // randomization factor
-  multiplier: 2, // exponential factor
-  retries: 5, // max retries
-}
+const isTestMode = process.env.NODE_ENV === 'test'
+const RETRY_DEFAULT = isTestMode ? require('./defaults.test') : require('./defaults')
 
 const random = (min, max) => {
   return Math.random() * (max - min) + min
