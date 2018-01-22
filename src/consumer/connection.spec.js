@@ -1,5 +1,6 @@
 const createProducer = require('../producer')
 const createConsumer = require('./index')
+const { LEVELS: { DEBUG } } = require('../loggers')
 
 const {
   secureRandom,
@@ -26,14 +27,6 @@ describe('Consumer', () => {
     producer = createProducer({
       cluster,
       createPartitioner: createModPartitioner,
-      logger: newLogger(),
-    })
-
-    consumer = createConsumer({
-      cluster,
-      groupId,
-      maxWaitTimeInMs: 1,
-      maxBytesPerPartition: 180,
       logger: newLogger(),
     })
   })
@@ -78,6 +71,14 @@ describe('Consumer', () => {
   })
 
   test('reconnects the cluster if disconnected', async () => {
+    consumer = createConsumer({
+      cluster,
+      groupId,
+      maxWaitTimeInMs: 1,
+      maxBytesPerPartition: 180,
+      logger: newLogger({ level: DEBUG }),
+    })
+
     await consumer.connect()
     await producer.connect()
     await consumer.subscribe({ topic: topicName })

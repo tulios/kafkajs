@@ -12,8 +12,10 @@ const LoggerConsole = require('../src/loggers/console')
 const isTravis = process.env.TRAVIS === 'true'
 const travisLevel = process.env.VERBOSE ? DEBUG : INFO
 
-const newLogger = () =>
-  createLogger({ level: isTravis ? travisLevel : NOTHING, logCreator: LoggerConsole })
+const newLogger = (opts = {}) =>
+  createLogger(
+    Object.assign({ level: isTravis ? travisLevel : NOTHING, logCreator: LoggerConsole }, opts)
+  )
 
 const getHost = () => process.env.HOST_IP || ip.address()
 const secureRandom = (length = 10) => crypto.randomBytes(length).toString('hex')
