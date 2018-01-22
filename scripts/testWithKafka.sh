@@ -32,7 +32,7 @@ if [ -z "$(find_container_id)" ]; then
   fi
 fi
 
-$PWD/scripts/waitForkafka.js
+$PWD/scripts/waitForKafka.js
 echo
 
 eval "${testCommand} ${extraArgs}"
