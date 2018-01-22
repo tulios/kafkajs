@@ -140,7 +140,14 @@ module.exports = ({
       throw new KafkaJSNonRetriableError(`Event name should be one of ${eventKeys}`)
     }
 
-    return instrumentationEmitter.addListener(eventName, event => listener(event))
+    return instrumentationEmitter.addListener(eventName, event => {
+      Promise.resolve(listener(event)).catch(e => {
+        logger.error(`Failed to execute listener: ${e.message}`, {
+          eventName,
+          stack: e.stack,
+        })
+      })
+    })
   }
 
   /**

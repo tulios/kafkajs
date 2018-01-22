@@ -1,3 +1,5 @@
+const { MemberMetadata, MemberAssignment } = require('../../assignerProtocol')
+
 /**
  * RoundRobinAssigner
  * @param {Cluster} cluster
@@ -53,14 +55,20 @@ module.exports = ({ cluster }) => ({
 
     return Object.keys(assignment).map(memberId => ({
       memberId,
-      memberAssignment: assignment[memberId],
+      memberAssignment: MemberAssignment.encode({
+        version: this.version,
+        assignment: assignment[memberId],
+      }),
     }))
   },
 
   protocol({ topics }) {
     return {
       name: this.name,
-      metadata: JSON.stringify({ version: this.version, topics }),
+      metadata: MemberMetadata.encode({
+        version: this.version,
+        topics,
+      }),
     }
   },
 })

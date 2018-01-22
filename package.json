@@ -20,10 +20,10 @@
   },
   "homepage": "https://github.com/tulios/kafkajs",
   "scripts": {
-    "test:local:watch": "./node_modules/.bin/jest --watch",
-    "test:local": "./node_modules/.bin/jest --forceExit",
-    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand --watch",
-    "test": "yarn lint && JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh './node_modules/.bin/jest --coverage --forceExit'",
+    "test:local:watch": "NODE_ENV=test ./node_modules/.bin/jest --watch",
+    "test:local": "NODE_ENV=test ./node_modules/.bin/jest --forceExit",
+    "test:debug": "NODE_ENV=test  node --inspect-brk node_modules/.bin/jest --runInBand --watch",
+    "test": "NODE_ENV=test yarn lint && JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh './node_modules/.bin/jest --maxWorkers=4 --no-watchman --coverage --forceExit'",
     "lint": "find . -path ./node_modules -prune -o -path ./coverage -prune -o -name '*.js' -print0 | xargs -0 ./node_modules/.bin/eslint",
     "format": "find . -path ./node_modules -prune -o -path ./coverage -prune -o -name '*.js' -print0 | xargs -0 ./node_modules/.bin/prettier --write",
     "precommit": "lint-staged"
@@ -40,7 +40,7 @@
     "execa": "^0.8.0",
     "husky": "^0.14.3",
     "ip": "^1.1.5",
-    "jest": "^20.0.4",
+    "jest": "^22.1.4",
     "jest-junit": "^1.5.1",
     "lint-staged": "^6.0.0",
     "mockdate": "^2.0.2",

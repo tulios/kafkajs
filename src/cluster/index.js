@@ -2,7 +2,11 @@ const BrokerPool = require('./brokerPool')
 const createRetry = require('../retry')
 const connectionBuilder = require('./connectionBuilder')
 const flatten = require('../utils/flatten')
-const { KafkaJSError, KafkaJSGroupCoordinatorNotFound } = require('../errors')
+const {
+  KafkaJSError,
+  KafkaJSGroupCoordinatorNotFound,
+  KafkaJSTopicMetadataNotLoaded,
+} = require('../errors')
 
 const { keys, assign } = Object
 
@@ -113,7 +117,7 @@ module.exports = class Cluster {
   findTopicPartitionMetadata(topic) {
     const { metadata } = this.brokerPool
     if (!metadata || !metadata.topicMetadata) {
-      throw new KafkaJSError('Topic metadata not loaded')
+      throw new KafkaJSTopicMetadataNotLoaded('Topic metadata not loaded', { topic })
     }
 
     return metadata.topicMetadata.find(t => t.topic === topic).partitionMetadata

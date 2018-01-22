@@ -4,6 +4,7 @@ const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
 const { KafkaJSError } = require('../errors')
 const { HEARTBEAT } = require('./instrumentationEvents')
+const { MemberAssignment } = require('./assignerProtocol')
 
 const { keys } = Object
 
@@ -107,14 +108,31 @@ module.exports = class ConsumerGroup {
       groupAssignment: assignment,
     })
 
-    this.memberAssignment = memberAssignment
+    // Make the change in the member assignment protocol compatible with KafkaJS <= 0.7.0
+    // This can be removed later on
+    let decodedAssigment
+    try {
+      decodedAssigment = MemberAssignment.decode(memberAssignment).assignment
+    } catch (_) {
+      this.logger.warn('Using fallback for member assignment', { groupId, generationId, memberId })
+      decodedAssigment = JSON.parse(memberAssignment.toString('utf-8'))
+    }
+
+    this.logger.debug('Received assignment', {
+      groupId,
+      generationId,
+      memberId,
+      memberAssignment: decodedAssigment,
+    })
+
+    this.memberAssignment = decodedAssigment
     this.topics = keys(this.memberAssignment)
     this.offsetManager = new OffsetManager({
       cluster: this.cluster,
       topicConfigurations: this.topicConfigurations,
       instrumentationEmitter: this.instrumentationEmitter,
+      memberAssignment: this.memberAssignment,
       coordinator,
-      memberAssignment,
       groupId,
       generationId,
       memberId,
@@ -218,7 +236,7 @@ module.exports = class ConsumerGroup {
       const results = await Promise.all(requests)
       return flatten(results)
     } catch (e) {
-      if (STALE_METADATA_ERRORS.includes(e.type)) {
+      if (STALE_METADATA_ERRORS.includes(e.type) || e.name === 'KafkaJSTopicMetadataNotLoaded') {
         this.logger.debug('Stale cluster metadata, refreshing...', {
           groupId: this.groupId,
           memberId: this.memberId,

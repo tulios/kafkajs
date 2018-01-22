@@ -2,6 +2,7 @@ const createProducer = require('../producer')
 const createConsumer = require('./index')
 const { Types } = require('../protocol/message/compression')
 const { KafkaJSNonRetriableError } = require('../errors')
+const { MemberMetadata, MemberAssignment } = require('../consumer/assignerProtocol')
 
 const {
   secureRandom,
@@ -106,7 +107,7 @@ describe('Consumer', () => {
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
     const messagesConsumed = []
-    consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+    await consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
 
     const messages = Array(100)
       .fill()
@@ -148,7 +149,7 @@ describe('Consumer', () => {
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
     const messagesConsumed = []
-    consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+    await consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
 
     const key1 = secureRandom()
     const message1 = { key: `key-${key1}`, value: `value-${key1}` }
@@ -190,7 +191,7 @@ describe('Consumer', () => {
 
     const batchesConsumed = []
     const functionsExposed = []
-    consumer.run({
+    await consumer.run({
       eachBatch: async ({ batch, resolveOffset, heartbeat, isRunning }) => {
         batchesConsumed.push(batch)
         functionsExposed.push(resolveOffset, heartbeat, isRunning)
@@ -266,16 +267,20 @@ describe('Consumer', () => {
     const { generationId, memberId } = await coordinator.joinGroup({
       groupId,
       sessionTimeout: 30000,
-      groupProtocols: [{ name: 'AssignerName', metadata: '{"version": 1}' }],
+      groupProtocols: [
+        {
+          name: 'AssignerName',
+          metadata: MemberMetadata.encode({ version: 1, topics: [topicName] }),
+        },
+      ],
     })
 
-    const groupAssignment = [
-      {
-        memberId,
-        memberAssignment: { [topicName]: [0] },
-      },
-    ]
+    const memberAssignment = MemberAssignment.encode({
+      version: 1,
+      assignment: { [topicName]: [0] },
+    })
 
+    const groupAssignment = [{ memberId, memberAssignment }]
     await coordinator.syncGroup({
       groupId,
       generationId,
@@ -306,7 +311,7 @@ describe('Consumer', () => {
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
     const messagesConsumed = []
-    consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+    await consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
 
     await expect(waitForMessages(messagesConsumed)).resolves.toEqual([
       {
@@ -526,6 +531,7 @@ describe('Consumer', () => {
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
       const messagesConsumed = []
+      // must be called after run because the ConsumerGroup must be initialized
       consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
       consumer.seek({ topic: topicName, partition: 0, offset: 1 })
 

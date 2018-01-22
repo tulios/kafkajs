@@ -95,6 +95,7 @@ module.exports = class Encoder {
     array.forEach(value => {
       switch (type || typeof value) {
         case 'int32':
+        case 'number':
           this.writeInt32(value)
           break
         case 'string':

@@ -26,6 +26,6 @@ module.exports = ({ groupId, sessionTimeout, memberId, protocolType, groupProtoc
   },
 })
 
-const encodeGroupProtocols = ({ name, metadata = '' }) => {
+const encodeGroupProtocols = ({ name, metadata = Buffer.alloc(0) }) => {
   return new Encoder().writeString(name).writeBytes(metadata)
 }

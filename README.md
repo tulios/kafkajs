@@ -33,6 +33,8 @@ __In active development - alpha__
     - [eachBatch](#consuming-messages-each-batch)
     - [Options](#consuming-messages-options)
     - [Custom assigner](#consuming-messages-custom-assigner)
+    - [Seek](#consuming-messages-seek)
+    - [Describe group](#consuming-messages-describe-group)
   - [Instrumentation](#instrumentation)
   - [Development](#development)
 
@@ -422,6 +424,14 @@ await consumer.disconnect()
 - __retry__ - default: `{ retries: 10 }`
 
 #### <a name="consuming-messages-custom-assigner"></a> Custom assigner
+
+TODO: write
+
+#### <a name="consuming-messages-seek"></a> Seek
+
+TODO: write
+
+#### <a name="consuming-messages-describe-group"></a> Describe group
 
 TODO: write
 
