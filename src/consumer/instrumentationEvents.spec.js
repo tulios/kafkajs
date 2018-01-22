@@ -1,5 +1,6 @@
 const createProducer = require('../producer')
 const createConsumer = require('./index')
+const { KafkaJSNonRetriableError } = require('../errors')
 
 const {
   secureRandom,
@@ -40,6 +41,13 @@ describe('Consumer > Instrumentation Events', () => {
   afterEach(async () => {
     await consumer.disconnect()
     await producer.disconnect()
+  })
+
+  test('on throws an error when provided with an invalid event name', () => {
+    expect(() => consumer.on('NON_EXISTENT_EVENT', () => {})).toThrow(
+      KafkaJSNonRetriableError,
+      /Event name should be one of/
+    )
   })
 
   it('emits heartbeat', async () => {
