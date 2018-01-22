@@ -16,6 +16,7 @@ install:
   - yarn install
 script:
   - env
+  - docker-compose pull
   - yarn test
 deploy:
   provider: npm

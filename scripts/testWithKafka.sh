@@ -25,14 +25,14 @@ fi
 
 if [ -z "$(find_container_id)" ]; then
   echo -e "Start kafka docker container"
-  NO_LOGS=1 ./scripts/dockerComposeUp.sh
+  NO_LOGS=1 $PWD/scripts/dockerComposeUp.sh
   if [ "1" = "$?" ]; then
     echo -e "Failed to start kafka image"
     exit 1
   fi
 fi
 
-./scripts/waitForkafka.js
+$PWD/scripts/waitForkafka.js
 echo
 
 eval "${testCommand} ${extraArgs}"
