@@ -20,7 +20,7 @@ describe('Broker > OffsetFetch', () => {
       logger: newLogger(),
     })
     await seedBroker.connect()
-    createTopic({ topic: topicName })
+    await createTopic({ topic: topicName })
 
     const metadata = await retryProtocol(
       'LEADER_NOT_AVAILABLE',

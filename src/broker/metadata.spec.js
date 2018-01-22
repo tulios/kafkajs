@@ -28,7 +28,7 @@ describe('Broker > Metadata', () => {
 
   test('request', async () => {
     await broker.connect()
-    createTopic({ topic: topicName })
+    await createTopic({ topic: topicName })
 
     const response = await retryProtocol(
       'LEADER_NOT_AVAILABLE',

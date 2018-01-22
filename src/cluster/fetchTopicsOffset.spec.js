@@ -15,7 +15,7 @@ describe('Cluster > fetchTopicsOffset', () => {
     topic = `test-topic-${secureRandom()}`
     cluster = createCluster()
 
-    createTopic({ topic, partitions: 3 })
+    await createTopic({ topic, partitions: 3 })
     await cluster.connect()
     await cluster.addTargetTopic(topic)
 

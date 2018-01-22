@@ -29,7 +29,7 @@ describe('Broker > Produce', () => {
       logger: newLogger(),
     })
     await broker.connect()
-    createTopic({ topic: topicName })
+    await createTopic({ topic: topicName })
   })
 
   afterEach(async () => {

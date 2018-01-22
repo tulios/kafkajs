@@ -21,7 +21,7 @@ describe('Consumer', () => {
     topicName = `test-topic-${secureRandom()}`
     groupId = `consumer-group-id-${secureRandom()}`
 
-    createTopic({ topic: topicName })
+    await createTopic({ topic: topicName })
 
     cluster = createCluster()
     producer = createProducer({

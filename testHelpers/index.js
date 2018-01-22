@@ -4,6 +4,7 @@ const path = require('path')
 const execa = require('execa')
 const crypto = require('crypto')
 const Cluster = require('../src/cluster')
+const Broker = require('../src/broker')
 const connectionBuilder = require('../src/cluster/connectionBuilder')
 const Connection = require('../src/network/connection')
 const { createLogger, LEVELS: { NOTHING, INFO, DEBUG } } = require('../src/loggers')
@@ -108,9 +109,18 @@ const retryProtocol = (errorType, fn) =>
 const waitForMessages = (buffer, { number = 1, delay = 50 } = {}) =>
   waitFor(() => (buffer.length >= number ? buffer : false), { delay })
 
-const createTopic = ({ topic, partitions = 1 }) => {
+const createTopic = async ({ topic, partitions = 1 }) => {
   const cmd = path.join(__dirname, '../scripts/createTopic.sh')
   execa.shellSync(`TOPIC=${topic} PARTITIONS=${partitions} ${cmd}`)
+
+  const broker = new Broker({
+    connection: createConnection(),
+    logger: newLogger(),
+  })
+
+  await broker.connect()
+  await retryProtocol('LEADER_NOT_AVAILABLE', async () => await broker.metadata([topic]))
+  await broker.disconnect()
 }
 
 module.exports = {
