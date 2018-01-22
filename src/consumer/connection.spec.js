@@ -24,16 +24,10 @@ describe('Consumer', () => {
     await createTopic({ topic: topicName })
 
     cluster = createCluster()
-    producer = createProducer({
-      cluster,
-      createPartitioner: createModPartitioner,
-      logger: newLogger(),
-    })
   })
 
   afterEach(async () => {
     await consumer.disconnect()
-    await producer.disconnect()
   })
 
   test('support SSL connections', async () => {
@@ -77,17 +71,40 @@ describe('Consumer', () => {
       maxWaitTimeInMs: 1,
       maxBytesPerPartition: 180,
       logger: newLogger({ level: DEBUG }),
+      retry: { retries: 3 },
+    })
+
+    producer = createProducer({
+      cluster: createCluster(),
+      createPartitioner: createModPartitioner,
+      logger: newLogger(),
     })
 
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName })
-    await consumer.run({ eachMessage: async () => {} })
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    let messages = []
+    await consumer.run({
+      eachMessage: async ({ message }) => {
+        messages.push(message)
+      },
+    })
 
     expect(cluster.isConnected()).toEqual(true)
     await cluster.disconnect()
     expect(cluster.isConnected()).toEqual(false)
 
-    await expect(waitFor(() => cluster.isConnected())).resolves.toBeTruthy()
+    try {
+      await producer.send({
+        topic: topicName,
+        messages: [{ key: `key-${secureRandom()}`, value: `value-${secureRandom()}` }],
+      })
+    } finally {
+      await producer.disconnect()
+    }
+
+    await waitFor(() => cluster.isConnected())
+    await expect(waitFor(() => messages.length > 0)).resolves.toBeTruthy()
   })
 })
