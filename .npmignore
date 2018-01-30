@@ -4,6 +4,9 @@ junit.xml
 coverage/
 yarn-error.log
 **/*.spec.js
+!src/retry/defaults.test.js
+__tests__
+fixtures
 testHelpers/
 scripts/
 examples/
