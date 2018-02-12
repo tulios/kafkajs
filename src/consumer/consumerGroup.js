@@ -2,7 +2,7 @@ const flatten = require('../utils/flatten')
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
-const { KafkaJSError } = require('../errors')
+const { KafkaJSError, KafkaJSNonRetriableError } = require('../errors')
 const { HEARTBEAT } = require('./instrumentationEvents')
 const { MemberAssignment } = require('./assignerProtocol')
 
@@ -22,7 +22,7 @@ module.exports = class ConsumerGroup {
     topicConfigurations,
     logger,
     instrumentationEmitter,
-    assigner,
+    assigners,
     sessionTimeout,
     maxBytesPerPartition,
     minBytes,
@@ -35,7 +35,7 @@ module.exports = class ConsumerGroup {
     this.topicConfigurations = topicConfigurations
     this.logger = logger.namespace('ConsumerGroup')
     this.instrumentationEmitter = instrumentationEmitter
-    this.assigner = assigner
+    this.assigners = assigners
     this.sessionTimeout = sessionTimeout
     this.maxBytesPerPartition = maxBytesPerPartition
     this.minBytes = minBytes
@@ -48,6 +48,7 @@ module.exports = class ConsumerGroup {
     this.leaderId = null
     this.memberId = null
     this.members = null
+    this.groupProtocol = null
 
     this.memberAssignment = null
     this.offsetManager = null
@@ -68,20 +69,14 @@ module.exports = class ConsumerGroup {
       groupId,
       sessionTimeout,
       memberId: this.memberId || '',
-
-      // Keep the default procotol in the list to enable consumers running an old
-      // version of Kafkajs to smoothly transition to the new protocol. The changes
-      // in the protocol format and name happened on PR #27
-      groupProtocols: [
-        this.assigner.protocol({ topics: this.topics }),
-        { name: 'default', metadata: Buffer.from([0, 0]) },
-      ],
+      groupProtocols: this.assigners.map(assigner => assigner.protocol({ topics: this.topics })),
     })
 
     this.generationId = groupData.generationId
     this.leaderId = groupData.leaderId
     this.memberId = groupData.memberId
     this.members = groupData.members
+    this.groupProtocol = groupData.groupProtocol
   }
 
   async leave() {
@@ -93,12 +88,26 @@ module.exports = class ConsumerGroup {
 
   async sync() {
     let assignment = []
-    const { groupId, generationId, memberId, members, topics, coordinator } = this
+    const { groupId, generationId, memberId, members, groupProtocol, topics, coordinator } = this
 
     if (this.isLeader()) {
       this.logger.debug('Chosen as group leader', { groupId, generationId, memberId, topics })
-      assignment = this.assigner.assign({ members, topics })
-      this.logger.debug('Group assignment', { groupId, generationId, topics, assignment })
+      const assigner = this.assigners.find(({ name }) => name === groupProtocol)
+
+      if (!assigner) {
+        throw new KafkaJSNonRetriableError(
+          `Unsupported partition assigner "${groupProtocol}", the assigner wasn't found in the assigners list`
+        )
+      }
+
+      assignment = await assigner.assign({ members, topics })
+      this.logger.debug('Group assignment', {
+        groupId,
+        generationId,
+        topics,
+        groupProtocol,
+        assignment,
+      })
     }
 
     const { memberAssignment } = await this.coordinator.syncGroup({
@@ -108,16 +117,7 @@ module.exports = class ConsumerGroup {
       groupAssignment: assignment,
     })
 
-    // Make the change in the member assignment protocol compatible with KafkaJS <= 0.7.0
-    // This can be removed later on
-    let decodedAssigment
-    try {
-      decodedAssigment = MemberAssignment.decode(memberAssignment).assignment
-    } catch (_) {
-      this.logger.warn('Using fallback for member assignment', { groupId, generationId, memberId })
-      decodedAssigment = JSON.parse(memberAssignment.toString('utf-8'))
-    }
-
+    const decodedAssigment = MemberAssignment.decode(memberAssignment).assignment
     this.logger.debug('Received assignment', {
       groupId,
       generationId,
