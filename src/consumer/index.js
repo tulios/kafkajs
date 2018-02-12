@@ -1,11 +1,11 @@
 const Long = require('long')
 const createRetry = require('../retry')
-const createRoundRobinAssigned = require('./assigners/roundRobinAssigner')
 const ConsumerGroup = require('./consumerGroup')
 const Runner = require('./runner')
 const events = require('./instrumentationEvents')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const { KafkaJSNonRetriableError } = require('../errors')
+const { roundRobin } = require('./assigners')
 
 const { keys, values } = Object
 
@@ -18,7 +18,7 @@ module.exports = ({
   cluster,
   groupId,
   logger: rootLogger,
-  createPartitionAssigner = createRoundRobinAssigned,
+  partitionAssigners = [roundRobin],
   sessionTimeout = 30000,
   heartbeatInterval = 3000,
   maxBytesPerPartition = 1048576, // 1MB
@@ -29,9 +29,11 @@ module.exports = ({
     retries: 10,
   },
 }) => {
-  const instrumentationEmitter = new InstrumentationEventEmitter()
-  const assigner = createPartitionAssigner({ cluster })
   const logger = rootLogger.namespace('Consumer')
+  const instrumentationEmitter = new InstrumentationEventEmitter()
+  const assigners = partitionAssigners.map(createAssigner =>
+    createAssigner({ groupId, logger, cluster })
+  )
 
   const topics = {}
   let runner = null
@@ -44,7 +46,7 @@ module.exports = ({
       topicConfigurations: topics,
       cluster,
       groupId,
-      assigner,
+      assigners,
       sessionTimeout,
       maxBytesPerPartition,
       minBytes,

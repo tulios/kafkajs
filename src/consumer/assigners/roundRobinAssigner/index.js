@@ -32,7 +32,7 @@ module.exports = ({ cluster }) => ({
    *                     }
    *                   ]
    */
-  assign({ members, topics }) {
+  async assign({ members, topics }) {
     const membersCount = members.length
     const sortedMembers = members.map(({ memberId }) => memberId).sort()
     const assignment = {}
