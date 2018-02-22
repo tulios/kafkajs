@@ -1,3 +1,5 @@
+[![KafkaJS](https://raw.githubusercontent.com/klarna/phobos/master/logo.png)](https://github.com/tulios/kafkajs)
+
 [![Build Status](https://travis-ci.org/tulios/kafkajs.svg?branch=master)](https://travis-ci.org/tulios/kafkajs)
 [![npm version](https://badge.fury.io/js/kafkajs.svg)](https://badge.fury.io/js/kafkajs)
 
@@ -461,3 +463,11 @@ yarn test:local
 
 Password for test keystore and certificates: `testtest`  
 Password for SASL `test:testtest`
+
+## Acknowledgements
+
+Thanks to [Sebastian Norde](https://github.com/sebastiannorde) for the awesome logo!
+
+## License
+
+See [LICENSE](https://github.com/tulios/kafkajs/blob/master/LICENSE) for more details.
