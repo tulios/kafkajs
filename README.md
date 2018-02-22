@@ -1,4 +1,4 @@
-[![KafkaJS](https://raw.githubusercontent.com/klarna/phobos/master/logo.png)](https://github.com/tulios/kafkajs)
+[![KafkaJS](https://raw.githubusercontent.com/tulios/kafkajs/master/logo.png)](https://github.com/tulios/kafkajs)
 
 [![Build Status](https://travis-ci.org/tulios/kafkajs.svg?branch=master)](https://travis-ci.org/tulios/kafkajs)
 [![npm version](https://badge.fury.io/js/kafkajs.svg)](https://badge.fury.io/js/kafkajs)
