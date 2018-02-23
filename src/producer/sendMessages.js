@@ -4,6 +4,8 @@ const groupMessagesPerPartition = require('./groupMessagesPerPartition')
 const createTopicData = require('./createTopicData')
 const responseSerializer = require('./responseSerializer')
 
+const { keys } = Object
+
 module.exports = ({ logger, cluster, partitioner }) => {
   const retrier = createRetry()
 
@@ -17,23 +19,21 @@ module.exports = ({ logger, cluster, partitioner }) => {
       partitioner,
     })
 
-    const partitionsPerLeader = cluster.findLeaderForPartitions(
-      topic,
-      Object.keys(messagesPerPartition)
-    )
-
+    const partitions = keys(messagesPerPartition)
+    const partitionsPerLeader = cluster.findLeaderForPartitions(topic, partitions)
+    const leaders = keys(partitionsPerLeader)
     const responsePerBroker = new Map()
-    for (let nodeId of Object.keys(partitionsPerLeader)) {
+
+    for (let nodeId of leaders) {
       const broker = await cluster.findBroker({ nodeId })
       responsePerBroker.set(broker, null)
     }
 
     const produce = responsePerBroker => {
-      return Array.from(responsePerBroker.keys()).map(async broker => {
-        if (responsePerBroker.get(broker)) {
-          return
-        }
+      const brokers = Array.from(responsePerBroker.keys())
+      const brokersWithoutResponse = brokers.filter(broker => !responsePerBroker.get(broker))
 
+      return brokersWithoutResponse.map(async broker => {
         const partitions = partitionsPerLeader[broker.nodeId]
         const topicData = createTopicData({ topic, partitions, messagesPerPartition })
 
@@ -44,7 +44,8 @@ module.exports = ({ logger, cluster, partitioner }) => {
 
     return retrier(async (bail, retryCount, retryTime) => {
       await Promise.all(produce(responsePerBroker))
-      return flatten(Array.from(responsePerBroker.values()))
+      const responses = Array.from(responsePerBroker.values())
+      return flatten(responses)
     })
   }
 }
