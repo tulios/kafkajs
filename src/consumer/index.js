@@ -208,6 +208,58 @@ module.exports = ({
     })
   }
 
+  /**
+   * @param {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
+   *
+   * @typedef {Object} TopicPartitions
+   * @property {string} topic
+   * @property {Array<{number}>} [partitions] Not used at the moment. The entire topic will be paused,
+   *                                          regardless of the partitions passed in
+   */
+  const pause = (topicPartitions = []) => {
+    for (let topicPartition of topicPartitions) {
+      if (!topicPartition || !topicPartition.topic) {
+        throw new KafkaJSNonRetriableError(
+          `Invalid topic ${(topicPartition && topicPartition.topic) || topicPartition}`
+        )
+      }
+    }
+
+    if (!consumerGroup) {
+      throw new KafkaJSNonRetriableError(
+        'Consumer group was not initialized, consumer#run must be called first'
+      )
+    }
+
+    consumerGroup.pause(topicPartitions.map(({ topic }) => topic))
+  }
+
+  /**
+   * @param {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
+   *
+   * @typedef {Object} TopicPartitions
+   * @property {string} topic
+   * @property {Array<{number}>} [partitions] Not used at the moment. All partitions will be consumed regardless
+   *                                          of the partitions passed in.
+   */
+  const resume = (topicPartitions = []) => {
+    for (let topicPartition of topicPartitions) {
+      if (!topicPartition || !topicPartition.topic) {
+        throw new KafkaJSNonRetriableError(
+          `Invalid topic ${(topicPartition && topicPartition.topic) || topicPartition}`
+        )
+      }
+    }
+
+    if (!consumerGroup) {
+      throw new KafkaJSNonRetriableError(
+        'Consumer group was not initialized, consumer#run must be called first'
+      )
+    }
+
+    consumerGroup.resume(topicPartitions.map(({ topic }) => topic))
+  }
+
   return {
     connect,
     disconnect,
@@ -215,6 +267,8 @@ module.exports = ({
     run,
     seek,
     describeGroup,
+    pause,
+    resume,
     on,
     events,
   }
