@@ -34,6 +34,7 @@ __In active development - alpha__
     - [eachMessage](#consuming-messages-each-message)
     - [eachBatch](#consuming-messages-each-batch)
     - [Options](#consuming-messages-options)
+    - [Pause & Resume](#consuming-messages-pause-resume)
     - [Custom assigner](#consuming-messages-custom-assigner)
     - [Seek](#consuming-messages-seek)
     - [Describe group](#consuming-messages-describe-group)
@@ -424,6 +425,36 @@ await consumer.disconnect()
 - __maxBytes__ - Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0`. default: `10485760` (10MB)
 - __maxWaitTimeInMs__ - The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes`. default: `5000`,
 - __retry__ - default: `{ retries: 10 }`
+
+#### <a name="consuming-messages-pause-resume"></a> Pause & Resume
+
+In order to pause and resume consuming from one or more topics, the `Consumer` provides the methods `pause` and `resume`.
+
+```javascript
+await consumer.connect()
+
+await consumer.subscribe({ topic: 'jobs' })
+await consumer.subscribe({ topic: 'pause' })
+await consumer.subscribe({ topic: 'resume' })
+
+await consumer.run({ eachMessage: async ({ topic, message }) => {
+  switch(topic) {
+    case 'jobs':
+      doSomeWork(message)
+      break
+    case 'pause':
+      // Stop consuming from the 'jobs' topic
+      consumer.pause([{ topic: 'jobs' }])
+      break
+    case 'resume':
+      // Resume consming from the 'jobs' topic
+      consumer.resume([{ topic: 'jobs' }])
+      break
+  }
+}})
+```
+
+Calling `pause` with a topic that the consumer is not subscribed to is a no-op, as is calling `resume` with a topic that is not paused.
 
 #### <a name="consuming-messages-custom-assigner"></a> Custom assigner
 
