@@ -203,7 +203,7 @@ module.exports = class Runner {
         this.consuming = true
         await this.fetch()
         this.consuming = false
-        this.scheduleFetch()
+        setImmediate(() => this.scheduleFetch())
       } catch (e) {
         if (isRebalancing(e)) {
           this.logger.error('The group is rebalancing, re-joining', {
