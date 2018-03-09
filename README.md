@@ -428,7 +428,7 @@ await consumer.disconnect()
 
 #### <a name="consuming-messages-pause-resume"></a> Pause & Resume
 
-In order to pause and resume consuming from one or more topics, the `Consumer` provides the methods `pause` and `resume`.
+In order to pause and resume consuming from one or more topics, the `Consumer` provides the methods `pause` and `resume`. Note that pausing a topic means that it won't be fetched in the next cycle. You may still receive messages for the topic within the current batch.
 
 ```javascript
 await consumer.connect()
@@ -443,12 +443,24 @@ await consumer.run({ eachMessage: async ({ topic, message }) => {
       doSomeWork(message)
       break
     case 'pause':
-      // Stop consuming from the 'jobs' topic
-      consumer.pause([{ topic: 'jobs' }])
+      // Stop consuming from the 'jobs' topic.
+      consumer.pause([{ topic: 'jobs'}])
+
+      // `pause` accepts an optional `partitions` property for each topic
+      // to pause consuming only specific partitions. However, this
+      // functionality is not currently supported by the library.
+      //
+      // consumer.pause([{ topic: 'jobs', partitions: [0, 1] }])
       break
     case 'resume':
       // Resume consming from the 'jobs' topic
       consumer.resume([{ topic: 'jobs' }])
+
+      // `resume` accepts an optional `partitions` property for each topic
+      // to resume consuming only specific partitions. However, this
+      // functionality is not currently supported by the library.
+      //
+      // consumer.resume([{ topic: 'jobs', partitions: [0, 1] }])
       break
   }
 }})
