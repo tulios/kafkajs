@@ -444,7 +444,7 @@ TODO: write
 ## <a name="development"></a> Development
 
 https://cwiki.apache.org/confluence/display/KAFKA/A+Guide+To+The+Kafka+Protocol  
-http://kafka.apache.org/protocol.html
+https://kafka.apache.org/protocol.html
 
 ```sh
 yarn test
