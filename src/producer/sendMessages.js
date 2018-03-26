@@ -5,9 +5,11 @@ const createTopicData = require('./createTopicData')
 const responseSerializer = require('./responseSerializer')
 
 const { keys } = Object
+const TOTAL_INDIVIDUAL_ATTEMPTS = 5
 
 module.exports = ({ logger, cluster, partitioner }) => {
   const retrier = createRetry()
+  const retrier = createRetry({ retries: TOTAL_INDIVIDUAL_ATTEMPTS })
 
   return async ({ topic, messages, acks, timeout, compression }) => {
     await cluster.addTargetTopic(topic)
