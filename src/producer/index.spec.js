@@ -23,6 +23,22 @@ describe('Producer', () => {
     await producer.disconnect()
   })
 
+  test('throws an error if the topic is invalid', async () => {
+    producer = createProducer({ cluster: createCluster(), logger: newLogger() })
+    await expect(producer.send({ topic: null })).rejects.toHaveProperty(
+      'message',
+      'Invalid topic null'
+    )
+  })
+
+  test('throws an error if messages is invalid', async () => {
+    producer = createProducer({ cluster: createCluster(), logger: newLogger() })
+    await expect(producer.send({ topic: topicName, messages: null })).rejects.toHaveProperty(
+      'message',
+      'Invalid messages array null'
+    )
+  })
+
   test('support SSL connections', async () => {
     const cluster = createCluster(sslConnectionOpts(), sslBrokers())
     producer = createProducer({ cluster, logger: newLogger() })

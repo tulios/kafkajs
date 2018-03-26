@@ -60,4 +60,14 @@ describe('Producer > Partitioner > Default', () => {
 
     expect(partition).toEqual(99)
   })
+
+  test('returns the configured partition even if the partition is falsy', () => {
+    const partition = partitioner({
+      topic,
+      partitionMetadata,
+      message: { key: '1', partition: 0 },
+    })
+
+    expect(partition).toEqual(0)
+  })
 })

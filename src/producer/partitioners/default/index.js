@@ -26,7 +26,7 @@ module.exports = () => {
     const availablePartitions = partitionMetadata.filter(p => p.leader >= 0)
     const numAvailablePartitions = availablePartitions.length
 
-    if (message.partition) {
+    if (message.partition !== null && message.partition !== undefined) {
       return message.partition
     }
 

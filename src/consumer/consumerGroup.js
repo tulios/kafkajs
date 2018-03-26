@@ -1,7 +1,9 @@
 const flatten = require('../utils/flatten')
+const sleep = require('../utils/sleep')
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
+const SubscriptionState = require('./subscriptionState')
 const { KafkaJSError, KafkaJSNonRetriableError } = require('../errors')
 const { HEARTBEAT } = require('./instrumentationEvents')
 const { MemberAssignment } = require('./assignerProtocol')
@@ -52,6 +54,7 @@ module.exports = class ConsumerGroup {
 
     this.memberAssignment = null
     this.offsetManager = null
+    this.subscriptionState = new SubscriptionState()
 
     this.lastRequest = Date.now()
   }
@@ -160,6 +163,24 @@ module.exports = class ConsumerGroup {
     this.seekOffset.set(topic, partition, offset)
   }
 
+  pause(topics) {
+    this.logger.info(`Pausing fetching from ${topics.length} topics`, {
+      topics,
+    })
+    this.subscriptionState.pause(topics)
+  }
+
+  resume(topics) {
+    this.logger.info(`Resuming fetching from ${topics.length} topics`, {
+      topics,
+    })
+    this.subscriptionState.resume(topics)
+  }
+
+  paused() {
+    return this.subscriptionState.paused()
+  }
+
   async commitOffsets() {
     await this.offsetManager.commitOffsets()
   }
@@ -197,7 +218,27 @@ module.exports = class ConsumerGroup {
 
       await this.offsetManager.resolveOffsets()
 
-      for (let topic of topics) {
+      const pausedTopics = this.subscriptionState.paused()
+      const activeTopics = topics.filter(topic => !pausedTopics.includes(topic))
+
+      if (activeTopics.length === 0) {
+        this.logger.debug(`No active topics, sleeping for ${this.maxWaitTime}ms`, {
+          topics,
+          activeTopics,
+          pausedTopics,
+        })
+
+        await sleep(this.maxWaitTime)
+        return []
+      }
+
+      this.logger.debug(`Fetching from ${activeTopics.length} out of ${topics.length} topics`, {
+        topics,
+        activeTopics,
+        pausedTopics,
+      })
+
+      for (let topic of activeTopics) {
         const partitionsPerLeader = this.cluster.findLeaderForPartitions(
           topic,
           this.memberAssignment[topic]
