@@ -61,7 +61,7 @@ const errorCodes = [
     type: 'REPLICA_NOT_AVAILABLE',
     code: 9,
     retriable: false,
-    message: 'The replica is not available for the requested topic-partitio',
+    message: 'The replica is not available for the requested topic-partition',
   },
   {
     type: 'MESSAGE_TOO_LARGE',
