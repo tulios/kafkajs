@@ -6,9 +6,12 @@ const responseSerializer = require('./responseSerializer')
 
 const { keys } = Object
 const TOTAL_INDIVIDUAL_ATTEMPTS = 5
+const staleMetadata = e =>
+  ['UNKNOWN_TOPIC_OR_PARTITION', 'LEADER_NOT_AVAILABLE', 'NOT_LEADER_FOR_PARTITION'].includes(
+    e.type
+  )
 
 module.exports = ({ logger, cluster, partitioner }) => {
-  const retrier = createRetry()
   const retrier = createRetry({ retries: TOTAL_INDIVIDUAL_ATTEMPTS })
 
   return async ({ topic, messages, acks, timeout, compression }) => {
@@ -45,9 +48,17 @@ module.exports = ({ logger, cluster, partitioner }) => {
     }
 
     return retrier(async (bail, retryCount, retryTime) => {
-      await Promise.all(produce(responsePerBroker))
-      const responses = Array.from(responsePerBroker.values())
-      return flatten(responses)
+      try {
+        await Promise.all(produce(responsePerBroker))
+        const responses = Array.from(responsePerBroker.values())
+        return flatten(responses)
+      } catch (e) {
+        if (staleMetadata(e)) {
+          await cluster.refreshMetadata()
+        }
+
+        throw e
+      }
     })
   }
 }
