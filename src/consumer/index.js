@@ -93,6 +93,10 @@ module.exports = ({
    * @return {Promise}
    */
   const subscribe = async ({ topic, fromBeginning = false }) => {
+    if (!topic) {
+      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    }
+
     topics[topic] = { fromBeginning }
     await cluster.addTargetTopic(topic)
   }
