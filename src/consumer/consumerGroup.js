@@ -1,4 +1,5 @@
 const flatten = require('../utils/flatten')
+const sleep = require('../utils/sleep')
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
@@ -219,6 +220,17 @@ module.exports = class ConsumerGroup {
 
       const pausedTopics = this.subscriptionState.paused()
       const activeTopics = topics.filter(topic => !pausedTopics.includes(topic))
+
+      if (activeTopics.length === 0) {
+        this.logger.debug(`No active topics, sleeping for ${this.maxWaitTime}ms`, {
+          topics,
+          activeTopics,
+          pausedTopics,
+        })
+
+        await sleep(this.maxWaitTime)
+        return []
+      }
 
       this.logger.debug(`Fetching from ${activeTopics.length} out of ${topics.length} topics`, {
         topics,

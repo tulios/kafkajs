@@ -11,7 +11,7 @@ const {
 } = require('testHelpers')
 
 describe('Consumer', () => {
-  let groupId, cluster, producer, consumer, topics
+  let groupId, producer, consumer, topics
 
   beforeEach(async () => {
     topics = [`test-topic-${secureRandom()}`, `test-topic-${secureRandom()}`]
@@ -21,14 +21,15 @@ describe('Consumer', () => {
       await createTopic({ topic, partitions: 2 })
     }
 
-    cluster = createCluster()
+    const producerCluster = createCluster()
     producer = createProducer({
-      cluster,
+      cluster: producerCluster,
       logger: newLogger(),
     })
 
+    const consumerCluster = createCluster()
     consumer = createConsumer({
-      cluster,
+      cluster: consumerCluster,
       groupId,
       maxWaitTimeInMs: 1,
       maxBytesPerPartition: 180,
@@ -107,6 +108,39 @@ describe('Consumer', () => {
           message: expect.objectContaining({ offset: '0' }),
         },
       ])
+    })
+  })
+
+  describe('when all topics are paused', () => {
+    it('does not fetch messages and wait maxWaitTimeInMs per attempt', async () => {
+      const consumerCluster = createCluster()
+      consumer = createConsumer({
+        cluster: consumerCluster,
+        groupId,
+        maxWaitTimeInMs: 100,
+        maxBytesPerPartition: 180,
+        logger: newLogger(),
+      })
+
+      await producer.connect()
+      await consumer.connect()
+
+      const [topic1, topic2] = topics
+      await consumer.subscribe({ topic: topic1, fromBeginning: true })
+      await consumer.subscribe({ topic: topic2, fromBeginning: true })
+
+      const eachMessage = jest.fn()
+      await consumer.run({ eachMessage })
+
+      consumer.pause([{ topic: topic1 }, { topic: topic2 }])
+
+      const key1 = secureRandom()
+      const message1 = { key: `key-${key1}`, value: `value-${key1}`, partition: 0 }
+
+      await producer.send({ topic: topic1, messages: [message1] })
+      await producer.send({ topic: topic2, messages: [message1] })
+
+      expect(eachMessage).not.toHaveBeenCalled()
     })
   })
 
