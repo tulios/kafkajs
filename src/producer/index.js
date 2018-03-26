@@ -1,6 +1,7 @@
 const createRetry = require('../retry')
 const createDefaultPartitioner = require('./partitioners/default')
 const createSendMessages = require('./sendMessages')
+const { KafkaJSNonRetriableError } = require('../errors')
 
 module.exports = ({
   cluster,
@@ -37,6 +38,13 @@ module.exports = ({
      * @returns {Promise}
      */
     send: async ({ topic, messages, acks, timeout, compression }) => {
+      if (!topic) {
+        throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+      }
+      if (!messages) {
+        throw new KafkaJSNonRetriableError(`Invalid messages array ${messages}`)
+      }
+
       return retrier(async (bail, retryCount, retryTime) => {
         try {
           return await sendMessages({
