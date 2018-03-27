@@ -453,7 +453,7 @@ await consumer.run({ eachMessage: async ({ topic, message }) => {
       // consumer.pause([{ topic: 'jobs', partitions: [0, 1] }])
       break
     case 'resume':
-      // Resume consming from the 'jobs' topic
+      // Resume consuming from the 'jobs' topic
       consumer.resume([{ topic: 'jobs' }])
 
       // `resume` accepts an optional `partitions` property for each topic
