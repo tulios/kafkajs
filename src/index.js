@@ -49,7 +49,7 @@ module.exports = class Client {
   consumer(
     {
       groupId,
-      createPartitionAssigner,
+      partitionAssigners,
       sessionTimeout,
       heartbeatInterval,
       maxBytesPerPartition,
@@ -65,7 +65,7 @@ module.exports = class Client {
       logger: this.logger,
       cluster,
       groupId,
-      createPartitionAssigner,
+      partitionAssigners,
       sessionTimeout,
       heartbeatInterval,
       maxBytesPerPartition,
