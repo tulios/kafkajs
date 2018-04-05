@@ -12,6 +12,7 @@ module.exports = class Runner {
   constructor({
     consumerGroup,
     logger,
+    eachBatchAutoResolve = true,
     eachBatch,
     eachMessage,
     heartbeatInterval,
@@ -20,6 +21,7 @@ module.exports = class Runner {
   }) {
     this.consumerGroup = consumerGroup
     this.logger = logger.namespace('Runner')
+    this.eachBatchAutoResolve = eachBatchAutoResolve
     this.eachBatch = eachBatch
     this.eachMessage = eachMessage
     this.heartbeatInterval = heartbeatInterval
@@ -163,7 +165,11 @@ module.exports = class Runner {
       throw e
     }
 
-    this.consumerGroup.resolveOffset({ topic, partition, offset: batch.lastOffset() })
+    // resolveOffset for the last offset can be disabled to allow the users of eachBatch to
+    // stop their consumers without resolving unprocessed offsets (issues/18)
+    if (this.eachBatchAutoResolve) {
+      this.consumerGroup.resolveOffset({ topic, partition, offset: batch.lastOffset() })
+    }
   }
 
   async fetch() {

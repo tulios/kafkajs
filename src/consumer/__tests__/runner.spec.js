@@ -1,4 +1,5 @@
 const Runner = require('../runner')
+const Batch = require('../batch')
 const { KafkaJSProtocolError } = require('../../errors')
 const { createErrorFromCode } = require('../../protocol/error')
 const { newLogger } = require('testHelpers')
@@ -12,7 +13,14 @@ describe('Consumer > Runner', () => {
 
   beforeEach(() => {
     onCrash = jest.fn()
-    consumerGroup = { join: jest.fn(), sync: jest.fn() }
+    consumerGroup = {
+      join: jest.fn(),
+      sync: jest.fn(),
+      fetch: jest.fn(),
+      resolveOffset: jest.fn(),
+      commitOffsets: jest.fn(),
+      heartbeat: jest.fn(),
+    }
     runner = new Runner({ consumerGroup, onCrash, logger: newLogger() })
   })
 
@@ -31,6 +39,37 @@ describe('Consumer > Runner', () => {
       await runner.start()
       expect(runner.scheduleFetch).toHaveBeenCalled()
       expect(onCrash).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when eachBatchAutoResolve is set to false', () => {
+    let eachBatch
+
+    beforeEach(() => {
+      eachBatch = jest.fn()
+      runner = new Runner({
+        consumerGroup,
+        eachBatchAutoResolve: false,
+        eachBatch,
+        onCrash,
+        logger: newLogger(),
+      })
+      runner.scheduleFetch = jest.fn(() => runner.fetch())
+    })
+
+    it('does not call resolveOffset with the last offset', async () => {
+      const topic = 'topic-name'
+      const partition = 0
+      const batch = new Batch(topic, {
+        partition,
+        highWatermark: 5,
+        messages: [{ offset: 4, key: '1', value: '2' }],
+      })
+
+      consumerGroup.fetch.mockImplementationOnce(() => [batch])
+      await runner.start()
+      expect(onCrash).not.toHaveBeenCalled()
+      expect(consumerGroup.resolveOffset).not.toHaveBeenCalled()
     })
   })
 

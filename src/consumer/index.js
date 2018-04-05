@@ -56,10 +56,11 @@ module.exports = ({
     })
   }
 
-  const createRunner = ({ eachBatch, eachMessage, onCrash }) => {
+  const createRunner = ({ eachBatchAutoResolve, eachBatch, eachMessage, onCrash }) => {
     return new Runner({
       logger: rootLogger,
       consumerGroup,
+      eachBatchAutoResolve,
       eachBatch,
       eachMessage,
       heartbeatInterval,
@@ -102,16 +103,20 @@ module.exports = ({
   }
 
   /**
+   * @param {boolean} [eachBatchAutoResolve=true] Automatically resolves the last offset of the batch when the
+   *                                              the callback succeeds
    * @param {Function} [eachBatch=null]
    * @param {Function} [eachMessage=null]
    * @return {Promise}
    */
-  const run = async ({ eachBatch = null, eachMessage = null } = {}) => {
+  const run = async (
+    { eachBatchAutoResolve = true, eachBatch = null, eachMessage = null } = {}
+  ) => {
     consumerGroup = createConsumerGroup()
 
     const start = async onCrash => {
       logger.info('Starting', { groupId })
-      runner = createRunner({ eachBatch, eachMessage, onCrash })
+      runner = createRunner({ eachBatchAutoResolve, eachBatch, eachMessage, onCrash })
       await runner.start()
     }
 
