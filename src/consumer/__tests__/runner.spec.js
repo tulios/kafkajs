@@ -69,7 +69,7 @@ describe('Consumer > Runner', () => {
       consumerGroup.fetch.mockImplementationOnce(() => [batch])
       await runner.start()
       expect(onCrash).not.toHaveBeenCalled()
-      expect(consumerGroup.resolveOffset).not.toHaveBeenCalledWith({ topic, partition, offset: 4 })
+      expect(consumerGroup.resolveOffset).not.toHaveBeenCalled()
     })
   })
 
