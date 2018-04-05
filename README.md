@@ -7,8 +7,6 @@
 
 A modern Apache Kafka client for node.js. This library is compatible with Kafka `0.10+`.
 
-__In active development - alpha__
-
 ## Features
 
 - Producer
