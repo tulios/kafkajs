@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
 const execa = require('execa')
+const crypto = require('crypto')
+
+const secureRandom = (length = 10) => crypto.randomBytes(length).toString('hex')
 
 const findContainerId = node => {
   const cmd = `
@@ -28,12 +31,25 @@ const waitForNode = containerId => {
   console.log(`Kafka container ${containerId} is running`)
 }
 
-const createTopic = containerId => {
+const createTopic = (containerId, topicName) => {
   const cmd = `
     docker exec \
       ${containerId} \
-      bash -c "JMX_PORT=9998 /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --topic test-topic-already-exists --replication-factor 1 --partitions 2 --zookeeper zk:2181 2> /dev/null"
-    sleep 3
+      bash -c "JMX_PORT=9998 /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --topic ${topicName} --replication-factor 1 --partitions 2 --zookeeper zk:2181 2> /dev/null"
+  `
+
+  return execa.shellSync(cmd).stdout.toString('utf-8')
+}
+
+const consumerGroupDescribe = containerId => {
+  const cmd = `
+  docker exec \
+    ${containerId} \
+    /opt/kafka/bin/kafka-consumer-groups.sh \
+      --bootstrap-server localhost:9092 \
+      --new-consumer \
+      --group test-group-${secureRandom()} \
+      --describe > /dev/null 2>&1
   `
 
   return execa.shellSync(cmd).stdout.toString('utf-8')
@@ -55,4 +71,17 @@ console.log(
 )
 
 console.log('\nCreating default topics...')
-createTopic(kafka1ContainerId)
+createTopic(kafka1ContainerId, 'test-topic-already-exists')
+
+console.log('\nWarming up Kafka...')
+
+const totalRandomTopics = 10
+console.log(`  -> creating ${totalRandomTopics} random topics...`)
+Array(totalRandomTopics)
+  .fill()
+  .forEach(() => {
+    createTopic(kafka1ContainerId, `test-topic-${secureRandom()}`)
+  })
+
+console.log('  -> running consumer describe')
+consumerGroupDescribe(kafka1ContainerId)
