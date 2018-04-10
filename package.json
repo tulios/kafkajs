@@ -1,6 +1,6 @@
 {
   "name": "kafkajs",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "A modern Apache Kafka client for node.js",
   "author": "Tulio Ornelas <ornelas.tulio@gmail.com>",
   "main": "index.js",
