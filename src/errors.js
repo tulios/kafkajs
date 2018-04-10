@@ -33,6 +33,7 @@ class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
 class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
   constructor(e, { retryCount, retryTime }) {
     super(e)
+    this.originalError = e
     this.retryCount = retryCount
     this.retryTime = retryTime
   }
