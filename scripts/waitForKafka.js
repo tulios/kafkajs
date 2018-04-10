@@ -43,13 +43,10 @@ const createTopic = (containerId, topicName) => {
 
 const consumerGroupDescribe = containerId => {
   const cmd = `
-  docker exec \
-    ${containerId} \
-    /opt/kafka/bin/kafka-consumer-groups.sh \
-      --bootstrap-server localhost:9092 \
-      --new-consumer \
-      --group test-group-${secureRandom()} \
-      --describe > /dev/null 2>&1
+    docker exec \
+      ${containerId} \
+      bash -c "JMX_PORT=9998 /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --new-consumer --group test-group-${secureRandom()} --describe > /dev/null 2>&1"
+    sleep 1
   `
 
   return execa.shellSync(cmd).stdout.toString('utf-8')
