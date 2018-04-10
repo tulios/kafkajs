@@ -1,4 +1,4 @@
-const { KafkaJSPartialMessageError, KafkaJSError } = require('../../errors')
+const { KafkaJSPartialMessageError, KafkaJSNonRetriableError } = require('../../errors')
 const V0Decoder = require('./v0/decoder')
 const V1Decoder = require('./v1/decoder')
 
@@ -9,7 +9,7 @@ const decodeMessage = (decoder, magicByte) => {
     case 1:
       return V1Decoder(decoder)
     default:
-      throw new KafkaJSError(`Unsupported message version, magic byte: ${magicByte}`)
+      throw new KafkaJSNonRetriableError(`Unsupported message version, magic byte: ${magicByte}`)
   }
 }
 
