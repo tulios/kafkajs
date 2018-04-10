@@ -47,7 +47,7 @@ module.exports = ({ logger, cluster, partitioner }) => {
       })
     }
 
-    return retrier(async (bail, retryCount, retryTime) => {
+    const makeRequests = async (bail, retryCount, retryTime) => {
       try {
         await Promise.all(produce(responsePerBroker))
         const responses = Array.from(responsePerBroker.values())
@@ -59,6 +59,10 @@ module.exports = ({ logger, cluster, partitioner }) => {
 
         throw e
       }
+    }
+
+    return retrier(makeRequests).catch(e => {
+      throw e.originalError || e
     })
   }
 }
