@@ -16,25 +16,28 @@ module.exports = ({ logger, cluster, partitioner }) => {
 
   return async ({ topic, messages, acks, timeout, compression }) => {
     await cluster.addTargetTopic(topic)
-    const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
-    const messagesPerPartition = groupMessagesPerPartition({
-      topic,
-      partitionMetadata,
-      messages,
-      partitioner,
-    })
-
-    const partitions = keys(messagesPerPartition)
-    const partitionsPerLeader = cluster.findLeaderForPartitions(topic, partitions)
-    const leaders = keys(partitionsPerLeader)
     const responsePerBroker = new Map()
 
-    for (let nodeId of leaders) {
-      const broker = await cluster.findBroker({ nodeId })
-      responsePerBroker.set(broker, null)
-    }
+    const createProducerRequests = async responsePerBroker => {
+      const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
+      const messagesPerPartition = groupMessagesPerPartition({
+        topic,
+        partitionMetadata,
+        messages,
+        partitioner,
+      })
 
-    const produce = responsePerBroker => {
+      const partitions = keys(messagesPerPartition)
+      const partitionsPerLeader = cluster.findLeaderForPartitions(topic, partitions)
+      const leaders = keys(partitionsPerLeader)
+
+      for (let nodeId of leaders) {
+        const broker = await cluster.findBroker({ nodeId })
+        if (!responsePerBroker.has(broker)) {
+          responsePerBroker.set(broker, null)
+        }
+      }
+
       const brokers = Array.from(responsePerBroker.keys())
       const brokersWithoutResponse = brokers.filter(broker => !responsePerBroker.get(broker))
 
@@ -47,9 +50,10 @@ module.exports = ({ logger, cluster, partitioner }) => {
       })
     }
 
-    return retrier(async (bail, retryCount, retryTime) => {
+    const makeRequests = async (bail, retryCount, retryTime) => {
       try {
-        await Promise.all(produce(responsePerBroker))
+        const requests = await createProducerRequests(responsePerBroker)
+        await Promise.all(requests)
         const responses = Array.from(responsePerBroker.values())
         return flatten(responses)
       } catch (e) {
@@ -59,6 +63,10 @@ module.exports = ({ logger, cluster, partitioner }) => {
 
         throw e
       }
+    }
+
+    return retrier(makeRequests).catch(e => {
+      throw e.originalError || e
     })
   }
 }
