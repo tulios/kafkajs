@@ -84,7 +84,7 @@ new Kafka({
 })
 ```
 
-Take a look at [TLS create secure context](https://nodejs.org/dist/latest-v8.x/docs/api/tls.html#tls_tls_createsecurecontext_options) for more information.
+Take a look at [TLS create secure context](https://nodejs.org/dist/latest-v8.x/docs/api/tls.html#tls_tls_createsecurecontext_options) for more information. `NODE_EXTRA_CA_CERTS` can be used to add custom CAs. Use `ssl: true` if you don't have any extra configurations and want to enable SSL.
 
 #### <a name="setup-client-sasl"></a> SASL
 
@@ -311,7 +311,7 @@ async () => {
 
 #### <a name="producing-messages-custom-partitioner"></a> Custom partitioner
 
-It's possible to assign a custom partitioner to the consumer. A partitioner is a function which returns another function responsible for the partition selection, something like this:
+It's possible to assign a custom partitioner to the producer. A partitioner is a function which returns another function responsible for the partition selection, something like this:
 
 ```javascript
 const MyPartitioner = () => {
@@ -527,11 +527,90 @@ Calling `pause` with a topic that the consumer is not subscribed to is a no-op, 
 
 #### <a name="consuming-messages-seek"></a> Seek
 
-TODO: write
+To move the offset position in a topic/partition the `Consumer` provides the method `seek`. This method has to be called after the consumer is initialized and is running (after consumer#run).
+
+```javascript
+await consumer.connect()
+await consumer.subscribe({ topic: 'example' })
+
+// you don't need to await consumer#run
+consumer.run({ eachMessage: async ({ topic, message }) => true })
+consumer.seek({ topic: 'example', partition: 0, offset: 12384 })
+```
 
 #### <a name="consuming-messages-custom-partition-assigner"></a> Custom partition assigner
 
-TODO: write
+It's possible to configure the strategy the consumer will use to distribute partitions amongst the consumer group. KafkaJS has a round robin assigner configured by default.
+
+A partition assigner is a function which returns an object with the following interface:
+
+```javascript
+const MyPartitionAssigner = ({ cluster }) => ({
+  name: 'MyPartitionAssigner',
+  version: 1,
+  async assign({ members, topics }) {},
+  protocol({ topics }) {}
+})
+```
+
+The method `assign` has to return an assignment plan with partitions per topic. A partition plan consists of a list of `memberId` and `memberAssignment`. The member assignment has to be encoded, use the `MemberAssignment` utility for that. Example:
+
+```javascript
+const { AssignerProtocol: { MemberAssignment } } = require('kafkajs')
+
+const MyPartitionAssigner = ({ cluster }) => ({
+  // ...
+  version: 1,
+  async assign({ members, topics }) {
+    // perform assignment
+    return myCustomAssignmentArray.map(memberId => ({
+      memberId,
+      memberAssignment: MemberAssignment.encode({
+        version: this.version,
+        assignment: assignment[memberId],
+      })
+    }))
+  }
+  // ...
+})
+```
+
+The method `protocol` has to return `name` and `metadata`. Metadata has to be encoded, use the `MemberMetadata` utility for that. Example:
+
+```javascript
+const { AssignerProtocol: { MemberMetadata } } = require('kafkajs')
+
+const MyPartitionAssigner = ({ cluster }) => ({
+  name: 'MyPartitionAssigner',
+  version: 1,
+  protocol({ topics }) {
+    return {
+      name: this.name,
+      metadata: MemberMetadata.encode({
+        version: this.version,
+        topics,
+      }),
+    }
+  }
+  // ...
+})
+```
+
+Your `protocol` method will probably look like the example but it's not implemented by default because extra data can be included as `userData`, take a look at the `MemberMetadata#encode` for more information.
+
+Once your assigner is done add it to the list of assigners, it's important to keep the default assigner there to allow the old consumers to have a common ground with the new consumers when deploying.
+
+```javascript
+const { PartitionAssigners: { roundRobin } } = require('kafkajs')
+
+kafka.consumer({
+  groupId: 'my-group',
+  partitionAssigners: [
+    MyPartitionAssigner,
+    roundRobin
+  ]
+})
+```
 
 #### <a name="consuming-messages-describe-group"></a> Describe group
 
