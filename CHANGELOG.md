@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2018-04-10
+### Fixed
+  - Throw unretriable error for incompatible message format #49
+  - Producer can't reconnect after broker disconnection #48
+
 ## [0.8.0] - 2018-04-05
 ### Removed
   - Backwards compatibility with the old member assignment protocol (<= 0.6.x). __v0.7.x__ is the last version with support for both protocols (commit f965e91cf883bff74332e53a8c1d25c2af39e566)
