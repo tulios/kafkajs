@@ -1,16 +1,18 @@
 [![KafkaJS](https://raw.githubusercontent.com/tulios/kafkajs/master/logo.png)](https://github.com/tulios/kafkajs)
 
+# KafkaJS
+
 [![Build Status](https://travis-ci.org/tulios/kafkajs.svg?branch=master)](https://travis-ci.org/tulios/kafkajs)
 [![npm version](https://badge.fury.io/js/kafkajs.svg)](https://badge.fury.io/js/kafkajs)
 
-# KafkaJS
-
 A modern Apache Kafka client for node.js. This library is compatible with Kafka `0.10+`.
+
+KafkaJS is battle-tested and ready for production.
 
 ## Features
 
 - Producer
-- Consumer groups
+- Consumer groups with pause, resume, and seek
 - GZIP compression
 - Plain, SSL and SASL_SSL implementations
 
@@ -26,17 +28,18 @@ A modern Apache Kafka client for node.js. This library is compatible with Kafka 
     - [Logger](#setup-client-logger)
   - [Producing Messages to Kafka](#producing-messages)
     - [Custom partitioner](#producing-messages-custom-partitioner)
-    - [GZIP compression](#producing-messages-gzip-compression)
+    - [Compression](#producing-messages-gzip-compression)
     - [Retry](#producing-messages-retry)
   - [Consuming messages from Kafka](#consuming-messages)
     - [eachMessage](#consuming-messages-each-message)
     - [eachBatch](#consuming-messages-each-batch)
     - [Options](#consuming-messages-options)
-    - [Pause & Resume](#consuming-messages-pause-resume)
-    - [Custom assigner](#consuming-messages-custom-assigner)
+    - [Pause, Resume, & Seek](#consuming-messages-pause-resume)
     - [Seek](#consuming-messages-seek)
+    - [Custom partition assigner](#consuming-messages-custom-partition-assigner)
     - [Describe group](#consuming-messages-describe-group)
   - [Instrumentation](#instrumentation)
+  - [Custom logger](#custom-logger)
   - [Development](#development)
 
 ## <a name="installation"></a> Installation
@@ -81,7 +84,7 @@ new Kafka({
 })
 ```
 
-Take a look at [TLS create secure context](https://nodejs.org/dist/latest-v8.x/docs/api/tls.html#tls_tls_createsecurecontext_options) for more information.
+Take a look at [TLS create secure context](https://nodejs.org/dist/latest-v8.x/docs/api/tls.html#tls_tls_createsecurecontext_options) for more information. `NODE_EXTRA_CA_CERTS` can be used to add custom CAs. Use `ssl: true` if you don't have any extra configurations and want to enable SSL.
 
 #### <a name="setup-client-sasl"></a> SASL
 
@@ -119,13 +122,17 @@ The `retry` option can be used to set the default configuration. The retry mecha
 
 If the max number of retries is exceeded the retrier will throw `KafkaJSNumberOfRetriesExceeded` and interrupt. Producers will bubble up the error to the user code; Consumers will wait the retry time attached to the exception (it will be based on the number of attempts) and perform a full restart.
 
-Available options:
+__Available options:__
 
-* __maxRetryTime__ - Maximum wait time for a retry in milliseconds. Default: `30000`
-* __initialRetryTime__ - Initial value used to calculate the retry in milliseconds (This is still randomized following the randomization factor). Default: `300`
-* __factor__ - Randomization factor. Default: `0.2`
-* __multiplier__ - Exponential factor. Default: `2`
-* __retries__ - Max number of retries per call. Default: `5`
+| option | description | default |
+| ------ | ----------- | ------- |
+| maxRetryTime | Maximum wait time for a retry in milliseconds | `30000`|
+| initialRetryTime | Initial value used to calculate the retry in milliseconds (This is still randomized following the randomization factor) | `300` |
+| factor | Randomization factor | `0.2` |
+| multiplier | Exponential factor | `2` |
+| retries | Max number of retries per call | `5` |
+
+Example:
 
 ```javascript
 new Kafka({
@@ -162,9 +169,508 @@ The environment variable `KAFKAJS_LOG_LEVEL` can also be used and it has precede
 KAFKAJS_LOG_LEVEL=info node code.js
 ```
 
-__How to create a log creator?__
+NOTE: for more information on how to customize your logs, take a look at [Custom logger](#custom-logger)
 
-A log creator is a function which receives a log level and returns a log function. The log function receives: namespace, level, label, and log.
+### <a name="producing-messages"></a> Producing Messages to Kafka
+
+To publish messages to Kafka you have to create a producer; with a client in hand you just have to call the `producer` function, for example:
+
+```javascript
+const producer = kafka.producer()
+```
+
+By default, the producer is configured to distribute the messages with the following logic:
+
+- If a partition is specified in the message, use it
+- If no partition is specified but a key is present choose a partition based on a hash (murmur2) of the key
+- If no partition or key is present choose a partition in a round-robin fashion
+
+The method `send` is used to publish messages to the Kafka cluster.
+
+```javascript
+const producer = kafka.producer()
+
+async () => {
+  await producer.connect()
+  await producer.send({
+    topic: 'topic-name',
+    messages: [
+      { key: 'key1', value: 'hello world' },
+      { key: 'key2', value: 'hey hey!' }
+    ],
+  })
+
+  // before you exit your app
+  await producer.disconnect()
+}
+```
+
+Example with a defined partition:
+
+```javascript
+// ...require and connect...
+async () => {
+  await producer.send({
+    topic: 'topic-name',
+    messages: [
+      { key: 'key1', value: 'hello world', partition: 0 },
+      { key: 'key2', value: 'hey hey!', partition: 1 }
+    ],
+  })
+}
+```
+
+The method `send` has the following signature:
+
+```javascript
+await producer.send({
+  topic: <String>,
+  messages: <Message[]>,
+  acks: <Number>,
+  timeout: <Number>,
+  compression: <CompressionTypes>,
+})
+```
+
+| property    | description |
+| ----------- | ----------- |
+| topic       | topic name  |
+| messages    | An array of objects with "key" and "value", example: <br> `[{ key: 'my-key', value: 'my-value'}]` |
+| acks        | Control the number of required acks. <br> __-1__ = all replicas must acknowledge _(default)_ <br> __0__ = no acknowledgments <br> __1__ = only waits for the leader to acknowledge |
+| timeout     | The time to await a response in ms. Default value _30000_ |
+| compression | Compression codec. Default value `CompressionTypes.None` |
+
+#### <a name="producing-messages-gzip-compression"></a> Compression
+
+KafkaJS __only__ supports GZIP natively; the library aims to have a small footprint and as little dependencies as possible. The remaining codecs can be easily implemented using existing libraries. Plugins providing other codecs might exist in the future, but there are no plans to implement them shortly.
+
+##### GZIP
+
+```javascript
+const { CompressionTypes } = require('kafkajs')
+
+async () => {
+  await producer.send({
+    topic: 'topic-name',
+    compression: CompressionTypes.GZIP,
+    messages: [
+      { key: 'key1', value: 'hello world' },
+      { key: 'key2', value: 'hey hey!' }
+    ],
+  })
+}
+```
+
+The consumers know how to decompress GZIP, so no further work is necessary.
+
+##### Adding Snappy or LZ4 codecs
+
+A codec is an object with two `async` functions: `compress` and `decompress`.
+
+Example using the snappy package:
+
+```javascript
+const { promisify } = require('util')
+const snappy = require('snappy')
+
+const snappyCompress = promisify(snappy.compress)
+const snappyDecompress = promisify(snappy.uncompress)
+
+const SnappyCodec = {
+  async compress(encoder) {
+    return snappyCompress(encoder.buffer)
+  },
+
+  async decompress(buffer) {
+    return snappyDecompress(buffer)
+  }
+}
+```
+
+Then, to add this implementation:
+
+```javascript
+const { CompressionTypes, CompressionCodecs } = require('kafkajs')
+CompressionCodecs[CompressionTypes.Snappy] = SnappyCodec
+```
+
+The new codec can now be used with the `send` method, example:
+
+```javascript
+async () => {
+  await producer.send({
+    topic: 'topic-name',
+    compression: CompressionTypes.Snappy,
+    messages: [
+      { key: 'key1', value: 'hello world' },
+      { key: 'key2', value: 'hey hey!' }
+    ],
+  })
+}
+```
+
+#### <a name="producing-messages-custom-partitioner"></a> Custom partitioner
+
+It's possible to assign a custom partitioner to the producer. A partitioner is a function which returns another function responsible for the partition selection, something like this:
+
+```javascript
+const MyPartitioner = () => {
+  // some initialization
+  return ({ topic, partitionMetadata, message }) => {
+    // select a partition based on some logic
+    // return the partition number
+    return 0
+  }
+}
+```
+
+`partitionMetadata` is an array of partitions with the following structure:
+
+`{ partitionId: <NodeId>, leader: <NodeId> }`
+
+Example:
+
+```javascript
+[
+  { partitionId: 1, leader: 1 },
+  { partitionId: 2, leader: 2 },
+  { partitionId: 0, leader: 0 }
+]
+```
+
+To Configure your partitioner use the option `createPartitioner`.
+
+```javascript
+kafka.producer({ createPartitioner: MyPartitioner })
+```
+
+#### <a name="producing-messages-retry"></a> Retry
+
+The option `retry` can be used to customize the configuration for the producer.
+
+Take a look at [Retry](#setup-client-default-retry) for more information.
+
+### <a name="consuming-messages"></a> Consuming messages from Kafka
+
+Consumer groups allow a group of machines or processes to coordinate access to a list of topics, distributing the load among the consumers. When a consumer fails the load is automatically distributed to other members of the group. Consumer groups must have unique group ids.
+
+Creating the consumer:
+
+```javascript
+const consumer = kafka.consumer({ groupId: 'my-group' })
+```
+
+Subscribing to some topics:
+
+```javascript
+async () => {
+  await consumer.connect()
+
+  // Subscribe can be called several times
+  await consumer.subscribe({ topic: 'topic-A' })
+  await consumer.subscribe({ topic: 'topic-B' })
+
+  // It's possible to start from the beginning:
+  // await consumer.subscribe({ topic: 'topic-C', fromBeginning: true })
+}
+```
+
+KafkaJS offers you two ways to process your data: `eachMessage` and `eachBatch`
+
+#### <a name="consuming-messages-each-message"></a> eachMessage
+
+This handler provides a convenient API, feeding your function one message at a time. The handler will automatically commit your offsets and heartbeat at the configured interval. If you are just looking to get started with Kafka consumers this should be your first solution.
+
+```javascript
+async () => {
+  await consumer.connect()
+
+  // Subscribe can be called several times
+  await consumer.subscribe({ topic: 'topic-name' })
+
+  // It's possible to start from the beginning:
+  // await consumer.subscribe({ topic: 'topic-name', fromBeginning: true })
+
+  await consumer.run({
+    eachMessage: async ({ topic, partition, message }) => {
+      console.log({
+        key: message.key.toString(),
+        value: message.value.toString()
+      })
+    },
+  })
+
+  // before you exit your app
+  await consumer.disconnect()
+}
+```
+
+#### <a name="consuming-messages-each-batch"></a> eachBatch
+
+Some use cases can be optimized by dealing with batches rather than single messages. This handler will feed your function batches and some utility functions to give your code more flexibility. Be aware that using `eachBatch` is considered a more advanced use case since you will have to understand how session timeouts and heartbeats are connected. All resolved offsets will be automatically committed after the function is executed.
+
+```javascript
+// create consumer, connect and subscribe ...
+
+await consumer.run({
+  eachBatch: async ({ batch, resolveOffset, heartbeat, isRunning }) => {
+    for (let message of batch.messages) {
+      console.log({
+        topic: batch.topic,
+        partition: batch.partition,
+        highWatermark: batch.highWatermark,
+        message: {
+          offset: message.offset,
+          key: message.key.toString(),
+          value: message.value.toString()
+        }
+      })
+
+      await resolveOffset(message.offset)
+      await heartbeat()
+    }
+  },
+})
+
+// remember to close your consumer when you leave
+await consumer.disconnect()
+```
+
+> `highWatermark` is the last committed offset within the topic partition. It can be useful for calculating lag.
+
+`resolveOffset` is used to mark the message as processed. In case of errors, the consumer will automatically commit the resolved offsets. With the default configuration, the function can't be interrupted without ignoring the unprocessed message; this happens because after the function is executed the last offset of the batch is automatically resolved and committed. To have a fine grain control of message processing it's possible to disable the auto-resolve, setting the property `eachBatchAutoResolve` to false. Example:
+
+```javascript
+consumer.run({
+  eachBatchAutoResolve: false,
+  eachBatch: ({ batch, resolveOffset, heartbeat, isRunning }) => {
+    for (let message of batch.messages) {
+      if (!isRunning()) break
+      await processMessage(message)
+      await resolveOffset(message.offset)
+      await heartbeat()
+    }
+  }
+})
+```
+
+In this example, if the consumer is shutting down in the middle of the batch, the remaining messages won't be resolved and therefore not committed.
+
+#### <a name="consuming-messages-options"></a> Options
+
+```javascript
+kafka.consumer({
+  groupId: <String>,
+  partitionAssigners: <Array>,
+  sessionTimeout: <Number>,
+  heartbeatInterval: <Number>,
+  maxBytesPerPartition: <Number>,
+  minBytes: <Number>,
+  maxBytes: <Number>,
+  maxWaitTimeInMs: <Number>,
+  retry: <Object>,
+})
+```
+
+| option | description | default |
+| ------ | ----------- | ------- |
+| partitionAssigners | List of partition assigners | `[PartitionAssigners.roundRobin]` |
+| sessionTimeout | Timeout in milliseconds used to detect failures. The consumer sends periodic heartbeats to indicate its liveness to the broker. If no heartbeats are received by the broker before the expiration of this session timeout, then the broker will remove this consumer from the group and initiate a rebalance | `30000` |
+| heartbeatInterval | The expected time in milliseconds between heartbeats to the consumer coordinator. Heartbeats are used to ensure that the consumer's session stays active. The value must be set lower than session timeout | `3000` |
+| maxBytesPerPartition | The maximum amount of data per-partition the server will return. This size must be at least as large as the maximum message size the server allows or else it is possible for the producer to send messages larger than the consumer can fetch. If that happens, the consumer can get stuck trying to fetch a large message on a certain partition | `1048576` (1MB) |
+| minBytes | Minimum amount of data the server should return for a fetch request, otherwise wait up to `maxWaitTimeInMs` for more data to accumulate. default: `1` |
+| maxBytes | Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0` | `10485760` (10MB) |
+| maxWaitTimeInMs | The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes` | `5000` |
+| retry | Take a look at [Retry](#setup-client-default-retry) for more information\ | `{ retries: 10 }` |
+
+#### <a name="consuming-messages-pause-resume"></a> Pause & Resume
+
+In order to pause and resume consuming from one or more topics, the `Consumer` provides the methods `pause` and `resume`. Note that pausing a topic means that it won't be fetched in the next cycle. You may still receive messages for the topic within the current batch.
+
+```javascript
+await consumer.connect()
+
+await consumer.subscribe({ topic: 'jobs' })
+await consumer.subscribe({ topic: 'pause' })
+await consumer.subscribe({ topic: 'resume' })
+
+await consumer.run({ eachMessage: async ({ topic, message }) => {
+  switch(topic) {
+    case 'jobs':
+      doSomeWork(message)
+      break
+    case 'pause':
+      // Stop consuming from the 'jobs' topic.
+      consumer.pause([{ topic: 'jobs'}])
+
+      // `pause` accepts an optional `partitions` property for each topic
+      // to pause consuming only specific partitions. However, this
+      // functionality is not currently supported by the library.
+      //
+      // consumer.pause([{ topic: 'jobs', partitions: [0, 1] }])
+      break
+    case 'resume':
+      // Resume consuming from the 'jobs' topic
+      consumer.resume([{ topic: 'jobs' }])
+
+      // `resume` accepts an optional `partitions` property for each topic
+      // to resume consuming only specific partitions. However, this
+      // functionality is not currently supported by the library.
+      //
+      // consumer.resume([{ topic: 'jobs', partitions: [0, 1] }])
+      break
+  }
+}})
+```
+
+Calling `pause` with a topic that the consumer is not subscribed to is a no-op, as is calling `resume` with a topic that is not paused.
+
+#### <a name="consuming-messages-seek"></a> Seek
+
+To move the offset position in a topic/partition the `Consumer` provides the method `seek`. This method has to be called after the consumer is initialized and is running (after consumer#run).
+
+```javascript
+await consumer.connect()
+await consumer.subscribe({ topic: 'example' })
+
+// you don't need to await consumer#run
+consumer.run({ eachMessage: async ({ topic, message }) => true })
+consumer.seek({ topic: 'example', partition: 0, offset: 12384 })
+```
+
+#### <a name="consuming-messages-custom-partition-assigner"></a> Custom partition assigner
+
+It's possible to configure the strategy the consumer will use to distribute partitions amongst the consumer group. KafkaJS has a round robin assigner configured by default.
+
+A partition assigner is a function which returns an object with the following interface:
+
+```javascript
+const MyPartitionAssigner = ({ cluster }) => ({
+  name: 'MyPartitionAssigner',
+  version: 1,
+  async assign({ members, topics }) {},
+  protocol({ topics }) {}
+})
+```
+
+The method `assign` has to return an assignment plan with partitions per topic. A partition plan consists of a list of `memberId` and `memberAssignment`. The member assignment has to be encoded, use the `MemberAssignment` utility for that. Example:
+
+```javascript
+const { AssignerProtocol: { MemberAssignment } } = require('kafkajs')
+
+const MyPartitionAssigner = ({ cluster }) => ({
+  // ...
+  version: 1,
+  async assign({ members, topics }) {
+    // perform assignment
+    return myCustomAssignmentArray.map(memberId => ({
+      memberId,
+      memberAssignment: MemberAssignment.encode({
+        version: this.version,
+        assignment: assignment[memberId],
+      })
+    }))
+  }
+  // ...
+})
+```
+
+The method `protocol` has to return `name` and `metadata`. Metadata has to be encoded, use the `MemberMetadata` utility for that. Example:
+
+```javascript
+const { AssignerProtocol: { MemberMetadata } } = require('kafkajs')
+
+const MyPartitionAssigner = ({ cluster }) => ({
+  name: 'MyPartitionAssigner',
+  version: 1,
+  protocol({ topics }) {
+    return {
+      name: this.name,
+      metadata: MemberMetadata.encode({
+        version: this.version,
+        topics,
+      }),
+    }
+  }
+  // ...
+})
+```
+
+Your `protocol` method will probably look like the example but it's not implemented by default because extra data can be included as `userData`, take a look at the `MemberMetadata#encode` for more information.
+
+Once your assigner is done add it to the list of assigners, it's important to keep the default assigner there to allow the old consumers to have a common ground with the new consumers when deploying.
+
+```javascript
+const { PartitionAssigners: { roundRobin } } = require('kafkajs')
+
+kafka.consumer({
+  groupId: 'my-group',
+  partitionAssigners: [
+    MyPartitionAssigner,
+    roundRobin
+  ]
+})
+```
+
+#### <a name="consuming-messages-describe-group"></a> Describe group
+
+> Experimental - This feature may be removed or changed in new versions of KafkaJS
+
+Returns metadata for the configured consumer group, example:
+
+```javascript
+const data = await consumer.describeGroup()
+// {
+//  errorCode: 0,
+//  groupId: 'consumer-group-id-f104efb0e1044702e5f6',
+//  members: [
+//    {
+//      clientHost: '/172.19.0.1',
+//      clientId: 'test-3e93246fe1f4efa7380a',
+//      memberAssignment: Buffer,
+//      memberId: 'test-3e93246fe1f4efa7380a-ff87d06d-5c87-49b8-a1f1-c4f8e3ffe7eb',
+//      memberMetadata: Buffer,
+//    },
+//  ],
+//  protocol: 'RoundRobinAssigner',
+//  protocolType: 'consumer',
+//  state: 'Stable',
+// },
+```
+
+## <a name="instrumentation"></a> Instrumentation
+
+> Experimental - This feature may be removed or changed in new versions of KafkaJS
+
+Some operations are instrumented using the `EventEmitter`. To receive the events use the method `consumer#on`, example:
+
+```javascript
+const { HEARTBEAT } = consumer.events
+const removeListener = consumer.on(HEARTBEAT, e => console.log(`heartbeat at ${e.timestamp}`))
+// removeListener()
+```
+
+The listeners are always async, even when using regular functions. The consumer will never block when executing your listeners. Errors in the listeners won't affect the consumer.
+
+List of available events:
+
+* consumer.events.HEARTBEAT
+* consumer.events.COMMIT_OFFSETS
+
+Instrumentation Event:
+
+```javascript
+{
+  id: <Number>,
+  type: <String>,
+  timestamp: <Number>,
+  payload: <Object>
+}
+```
+
+## <a name="custom-logger"></a> Custom logger
+
+The logger is customized using log creators. A log creator is a function which receives a log level and returns a log function. The log function receives namespace, level, label, and log.
 
 `namespace` identifies the component which is performing the log, for example, connection or consumer.
 
@@ -241,246 +747,6 @@ const kafka = new Kafka({
   logCreator: WinstonLogCreator
 })
 ```
-
-### <a name="producing-messages"></a> Producing Messages to Kafka
-
-To publish messages to Kafka you have to create a producer. By default the producer is configured to distribute the messages with the following logic:
-
-- If a partition is specified in the message, use it
-- If no partition is specified but a key is present choose a partition based on a hash (murmur2) of the key
-- If no partition or key is present choose a partition in a round-robin fashion
-
-```javascript
-const producer = kafka.producer()
-
-async () => {
-  await producer.connect()
-  await producer.send({
-    topic: 'topic-name',
-    messages: [
-      { key: 'key1', value: 'hello world' },
-      { key: 'key2', value: 'hey hey!' }
-    ],
-  })
-
-  // before you exit your app
-  await producer.disconnect()
-}
-```
-
-Example with a defined partition:
-
-```javascript
-// ...require and connect...
-await producer.send({
-  topic: 'topic-name',
-  messages: [
-    { key: 'key1', value: 'hello world', partition: 0 },
-    { key: 'key2', value: 'hey hey!', partition: 1 }
-  ],
-})
-```
-
-#### <a name="producing-messages-gzip-compression"></a> GZIP compression
-
-TODO: write
-
-#### <a name="producing-messages-custom-partitioner"></a> Custom partitioner
-
-It's possible to assign a custom partitioner to the consumer. A partitioner is a function which returns another function responsible for the partition selection, something like this:
-
-```javascript
-const MyPartitioner = () => {
-  // some initialization
-  return ({ topic, partitionMetadata, message }) => {
-    // select a partition based on some logic
-    // return the partition number
-    return 0
-  }
-}
-```
-
-`partitionMetadata` is an array of partitions with the following structure:
-
-`{ partitionId: <NodeId>, leader: <NodeId> }`
-
-Example:
-
-```javascript
-[
-  { partitionId: 1, leader: 1 },
-  { partitionId: 2, leader: 2 },
-  { partitionId: 0, leader: 0 }
-]
-```
-
-To Configure your partitioner use the option `createPartitioner`.
-
-```javascript
-kafka.producer({ createPartitioner: MyPartitioner })
-```
-
-#### <a name="producing-messages-retry"></a> Retry
-
-The option `retry` can be used to customize the configuration for the producer.
-
-Take a look at [Retry](#setup-client-default-retry) for more information.
-
-### <a name="consuming-messages"></a> Consuming messages from Kafka
-
-Consumer groups allow a group of machines or processes to coordinate access to a list of topics, distributing the load among the consumers. When a consumer fails the load is automatically distributed to other members of the group. Consumer groups must have unique group ids.
-
-Creating the consumer:
-
-```javascript
-const consumer = kafka.consumer({ groupId: 'my-group' })
-```
-
-Subscribing to some topics:
-
-```javascript
-async () => {
-  await consumer.connect()
-
-  // Subscribe can be called several times
-  await consumer.subscribe({ topic: 'topic-name' })
-
-  // It's possible to start from the beginning:
-  // await consumer.subscribe({ topic: 'topic-name', fromBeginning: true })
-}
-```
-
-KafkaJS offers you two ways to process your data: `eachMessage` and `eachBatch`
-
-#### <a name="consuming-messages-each-message"></a> eachMessage
-
-This handler provides a convenient API, feeding your function one message at a time. The handler will automatically commit your offsets and heartbeat at the configured interval. If you are just looking to get started with Kafka consumers this should be your first solution.
-
-```javascript
-async () => {
-  await consumer.connect()
-
-  // Subscribe can be called several times
-  await consumer.subscribe({ topic: 'topic-name' })
-
-  // It's possible to start from the beginning:
-  // await consumer.subscribe({ topic: 'topic-name', fromBeginning: true })
-
-  await consumer.run({
-    eachMessage: async ({ topic, partition, message }) => {
-      console.log({
-        key: message.key.toString(),
-        value: message.value.toString()
-      })
-    },
-  })
-
-  // before you exit your app
-  await consumer.disconnect()
-}
-```
-
-#### <a name="consuming-messages-each-batch"></a> eachBatch
-
-Some use cases can be optimized by dealing with batches rather than single messages. This handler will feed your function batches and some utility functions to give your code more flexibility. Be aware that using `eachBatch` is considered a more advanced use case since you will have to understand how session timeouts and heartbeats are connected. All resolved offsets will be automatically committed after the function is executed.
-
-```javascript
-// create consumer, connect and subscribe ...
-
-await consumer.run({
-  eachBatch: async ({ batch, resolveOffset, heartbeat }) => {
-    for (let message of batch.messages) {
-      console.log({
-        topic: batch.topic,
-        partition: batch.partition,
-        highWatermark: batch.highWatermark,
-        message: {
-          offset: message.offset,
-          key: message.key.toString(),
-          value: message.value.toString()
-        }
-      })
-
-      await resolveOffset(message.offset)
-      await heartbeat()
-    }
-  },
-})
-
-// remember to close your consumer when you leave
-await consumer.disconnect()
-```
-
-* `highWatermark` is the last committed offset within the topic partition. It can be useful for calculating lag.
-
-#### <a name="consuming-messages-options"></a> Options
-
-- __createPartitionAssigner__ - default: `round robin`
-- __sessionTimeout__ - Timeout in milliseconds used to detect failures. The consumer sends periodic heartbeats to indicate its liveness to the broker. If no heartbeats are received by the broker before the expiration of this session timeout, then the broker will remove this consumer from the group and initiate a rebalance. default: `30000`
-- __heartbeatInterval__ - The expected time in milliseconds between heartbeats to the consumer coordinator. Heartbeats are used to ensure that the consumer's session stays active. The value must be set lower than session timeout. default: `3000`
-- __maxBytesPerPartition__ - The maximum amount of data per-partition the server will return. This size must be at least as large as the maximum message size the server allows or else it is possible for the producer to send messages larger than the consumer can fetch. If that happens, the consumer can get stuck trying to fetch a large message on a certain partition. default: `1048576` (1MB)
-- __minBytes__ - Minimum amount of data the server should return for a fetch request, otherwise wait up to `maxWaitTimeInMs` for more data to accumulate. default: `1`
-- __maxBytes__ - Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0`. default: `10485760` (10MB)
-- __maxWaitTimeInMs__ - The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes`. default: `5000`,
-- __retry__ - default: `{ retries: 10 }`
-
-#### <a name="consuming-messages-pause-resume"></a> Pause & Resume
-
-In order to pause and resume consuming from one or more topics, the `Consumer` provides the methods `pause` and `resume`. Note that pausing a topic means that it won't be fetched in the next cycle. You may still receive messages for the topic within the current batch.
-
-```javascript
-await consumer.connect()
-
-await consumer.subscribe({ topic: 'jobs' })
-await consumer.subscribe({ topic: 'pause' })
-await consumer.subscribe({ topic: 'resume' })
-
-await consumer.run({ eachMessage: async ({ topic, message }) => {
-  switch(topic) {
-    case 'jobs':
-      doSomeWork(message)
-      break
-    case 'pause':
-      // Stop consuming from the 'jobs' topic.
-      consumer.pause([{ topic: 'jobs'}])
-
-      // `pause` accepts an optional `partitions` property for each topic
-      // to pause consuming only specific partitions. However, this
-      // functionality is not currently supported by the library.
-      //
-      // consumer.pause([{ topic: 'jobs', partitions: [0, 1] }])
-      break
-    case 'resume':
-      // Resume consuming from the 'jobs' topic
-      consumer.resume([{ topic: 'jobs' }])
-
-      // `resume` accepts an optional `partitions` property for each topic
-      // to resume consuming only specific partitions. However, this
-      // functionality is not currently supported by the library.
-      //
-      // consumer.resume([{ topic: 'jobs', partitions: [0, 1] }])
-      break
-  }
-}})
-```
-
-Calling `pause` with a topic that the consumer is not subscribed to is a no-op, as is calling `resume` with a topic that is not paused.
-
-#### <a name="consuming-messages-custom-assigner"></a> Custom assigner
-
-TODO: write
-
-#### <a name="consuming-messages-seek"></a> Seek
-
-TODO: write
-
-#### <a name="consuming-messages-describe-group"></a> Describe group
-
-TODO: write
-
-## <a name="instrumentation"></a> Instrumentation
-
-TODO: write
 
 ## <a name="development"></a> Development
 
