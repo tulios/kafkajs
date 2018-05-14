@@ -24,11 +24,12 @@ const plainTextBrokers = (host = getHost()) => [`${host}:9092`, `${host}:9095`, 
 const sslBrokers = (host = getHost()) => [`${host}:9093`, `${host}:9096`, `${host}:9099`]
 const saslBrokers = (host = getHost()) => [`${host}:9094`, `${host}:9097`, `${host}:9100`]
 
-const connectionOpts = () => ({
+const connectionOpts = (opts = {}) => ({
   clientId: `test-${secureRandom()}`,
   logger: newLogger(),
   host: getHost(),
   port: 9092,
+  ...opts,
 })
 
 const sslConnectionOpts = () =>
