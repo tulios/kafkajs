@@ -28,7 +28,7 @@ KafkaJS is battle-tested and ready for production.
     - [Logger](#setup-client-logger)
   - [Producing Messages to Kafka](#producing-messages)
     - [Custom partitioner](#producing-messages-custom-partitioner)
-    - [Compression](#producing-messages-compression)
+    - [Compression](#producing-messages-gzip-compression)
     - [Retry](#producing-messages-retry)
   - [Consuming messages from Kafka](#consuming-messages)
     - [eachMessage](#consuming-messages-each-message)
@@ -124,13 +124,13 @@ If the max number of retries is exceeded the retrier will throw `KafkaJSNumberOf
 
 __Available options:__
 
-| option | description |
-| ------ | ----------- |
-| maxRetryTime | Maximum wait time for a retry in milliseconds. Default: `30000` |
-| initialRetryTime | Initial value used to calculate the retry in milliseconds (This is still randomized following the randomization factor). Default: `300` |
-| factor | Randomization factor. Default: `0.2` |
-| multiplier | Exponential factor. Default: `2` |
-| retries | Max number of retries per call. Default: `5` |
+| option | description | default |
+| ------ | ----------- | ------- |
+| maxRetryTime | Maximum wait time for a retry in milliseconds | `30000`|
+| initialRetryTime | Initial value used to calculate the retry in milliseconds (This is still randomized following the randomization factor) | `300` |
+| factor | Randomization factor | `0.2` |
+| multiplier | Exponential factor | `2` |
+| retries | Max number of retries per call | `5` |
 
 Example:
 
@@ -225,7 +225,7 @@ The method `send` has the following signature:
 ```javascript
 await producer.send({
   topic: <String>,
-  messages: <Array>,
+  messages: <Message[]>,
   acks: <Number>,
   timeout: <Number>,
   compression: <CompressionTypes>,
@@ -436,7 +436,7 @@ await consumer.run({
 await consumer.disconnect()
 ```
 
-* `highWatermark` is the last committed offset within the topic partition. It can be useful for calculating lag.
+> `highWatermark` is the last committed offset within the topic partition. It can be useful for calculating lag.
 
 `resolveOffset` is used to mark the message as processed. In case of errors, the consumer will automatically commit the resolved offsets. With the default configuration, the function can't be interrupted without ignoring the unprocessed message; this happens because after the function is executed the last offset of the batch is automatically resolved and committed. To have a fine grain control of message processing it's possible to disable the auto-resolve, setting the property `eachBatchAutoResolve` to false. Example:
 
@@ -472,16 +472,16 @@ kafka.consumer({
 })
 ```
 
-| option | description |
-| ------ | ----------- |
-| partitionAssigners | default: `[PartitionAssigners.roundRobin]` |
-| sessionTimeout | Timeout in milliseconds used to detect failures. The consumer sends periodic heartbeats to indicate its liveness to the broker. If no heartbeats are received by the broker before the expiration of this session timeout, then the broker will remove this consumer from the group and initiate a rebalance. default: `30000` |
-| heartbeatInterval | The expected time in milliseconds between heartbeats to the consumer coordinator. Heartbeats are used to ensure that the consumer's session stays active. The value must be set lower than session timeout. default: `3000` |
-| maxBytesPerPartition | The maximum amount of data per-partition the server will return. This size must be at least as large as the maximum message size the server allows or else it is possible for the producer to send messages larger than the consumer can fetch. If that happens, the consumer can get stuck trying to fetch a large message on a certain partition. default: `1048576` (1MB) |
+| option | description | default |
+| ------ | ----------- | ------- |
+| partitionAssigners | List of partition assigners | `[PartitionAssigners.roundRobin]` |
+| sessionTimeout | Timeout in milliseconds used to detect failures. The consumer sends periodic heartbeats to indicate its liveness to the broker. If no heartbeats are received by the broker before the expiration of this session timeout, then the broker will remove this consumer from the group and initiate a rebalance | `30000` |
+| heartbeatInterval | The expected time in milliseconds between heartbeats to the consumer coordinator. Heartbeats are used to ensure that the consumer's session stays active. The value must be set lower than session timeout | `3000` |
+| maxBytesPerPartition | The maximum amount of data per-partition the server will return. This size must be at least as large as the maximum message size the server allows or else it is possible for the producer to send messages larger than the consumer can fetch. If that happens, the consumer can get stuck trying to fetch a large message on a certain partition | `1048576` (1MB) |
 | minBytes | Minimum amount of data the server should return for a fetch request, otherwise wait up to `maxWaitTimeInMs` for more data to accumulate. default: `1` |
-| maxBytes | Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0`. default: `10485760` (10MB) |
-| maxWaitTimeInMs | The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes`. default: `5000` |
-| retry | default: `{ retries: 10 }`. Take a look at [Retry](#setup-client-default-retry) for more information. |
+| maxBytes | Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0` | `10485760` (10MB) |
+| maxWaitTimeInMs | The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes` | `5000` |
+| retry | Take a look at [Retry](#setup-client-default-retry) for more information\ | `{ retries: 10 }` |
 
 #### <a name="consuming-messages-pause-resume"></a> Pause & Resume
 
@@ -614,11 +614,59 @@ kafka.consumer({
 
 #### <a name="consuming-messages-describe-group"></a> Describe group
 
-TODO: write
+> Experimental - This feature may be removed or changed in new versions of KafkaJS
+
+Returns metadata for the configured consumer group, example:
+
+```javascript
+const data = await consumer.describeGroup()
+// {
+//  errorCode: 0,
+//  groupId: 'consumer-group-id-f104efb0e1044702e5f6',
+//  members: [
+//    {
+//      clientHost: '/172.19.0.1',
+//      clientId: 'test-3e93246fe1f4efa7380a',
+//      memberAssignment: Buffer,
+//      memberId: 'test-3e93246fe1f4efa7380a-ff87d06d-5c87-49b8-a1f1-c4f8e3ffe7eb',
+//      memberMetadata: Buffer,
+//    },
+//  ],
+//  protocol: 'RoundRobinAssigner',
+//  protocolType: 'consumer',
+//  state: 'Stable',
+// },
+```
 
 ## <a name="instrumentation"></a> Instrumentation
 
-TODO: write
+> Experimental - This feature may be removed or changed in new versions of KafkaJS
+
+Some operations are instrumented using the `EventEmitter`. To receive the events use the method `consumer#on`, example:
+
+```javascript
+const { HEARTBEAT } = consumer.events
+const removeListener = consumer.on(HEARTBEAT, e => console.log(`heartbeat at ${e.timestamp}`))
+// removeListener()
+```
+
+The listeners are always async, even when using regular functions. The consumer will never block when executing your listeners. Errors in the listeners won't affect the consumer.
+
+List of available events:
+
+* consumer.events.HEARTBEAT
+* consumer.events.COMMIT_OFFSETS
+
+Instrumentation Event:
+
+```javascript
+{
+  id: <Number>,
+  type: <String>,
+  timestamp: <Number>,
+  payload: <Object>
+}
+```
 
 ## <a name="custom-logger"></a> Custom logger
 
