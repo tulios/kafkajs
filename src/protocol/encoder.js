@@ -8,6 +8,7 @@ const INT64_SIZE = 8
 const MOST_SIGNIFICANT_BIT = 0x80 // 128
 const OTHER_BITS = 0x7f // 127
 const UNSIGNED_INT32_MAX_NUMBER = 0xffffff80
+const UNSIGNED_INT64_MAX_NUMBER = Long.fromBytes([-1, -1, -1, -1, -1, -1, -1, -128])
 
 module.exports = class Encoder {
   constructor() {
@@ -130,6 +131,34 @@ module.exports = class Encoder {
   // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java#L95
   writeSignedVarInt32(value) {
     return this.writeUnsignedVarInt32((value << 1) ^ (value >> 31))
+  }
+
+  writeUnsignedVarInt64(value) {
+    const byteArray = []
+    let longValue = Long.fromValue(value)
+
+    while (longValue.and(UNSIGNED_INT64_MAX_NUMBER).notEquals(Long.fromInt(0))) {
+      byteArray.push(
+        longValue
+          .and(OTHER_BITS)
+          .or(MOST_SIGNIFICANT_BIT)
+          .toInt()
+      )
+      longValue = longValue.shiftRightUnsigned(7)
+    }
+
+    byteArray.push(longValue.toInt())
+
+    this.buffer = Buffer.concat([this.buffer, Buffer.from(byteArray)])
+    return this
+  }
+
+  writeSignedVarInt64(value) {
+    let longValue = Long.fromValue(value)
+    const unsignedLong = longValue.shiftLeft(1).xor(longValue.shiftRight(63))
+    this.writeUnsignedVarInt64(unsignedLong)
+
+    return this
   }
 
   size() {

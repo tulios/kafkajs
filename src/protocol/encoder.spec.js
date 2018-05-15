@@ -1,3 +1,5 @@
+const Long = require('long')
+
 const Encoder = require('./encoder')
 const Decoder = require('./decoder')
 
@@ -9,6 +11,8 @@ describe('Protocol > Encoder', () => {
   const signed32 = number => new Encoder().writeSignedVarInt32(number).buffer
   const decodeUnsigned32 = buffer => new Decoder(buffer).readUnsignedVarInt32()
   const decodeSigned32 = buffer => new Decoder(buffer).readSignedVarInt32()
+
+  const signed64 = number => new Encoder().writeSignedVarInt64(number).buffer
 
   describe('varint', () => {
     test('encode signed int32 numbers', () => {
@@ -72,6 +76,103 @@ describe('Protocol > Encoder', () => {
       )
       expect(decodeSigned32(signed32(MIN_SAFE_NEGATIVE_SIGNED_INT))).toEqual(
         MIN_SAFE_NEGATIVE_SIGNED_INT
+      )
+    })
+  })
+
+  describe('varlong', () => {
+    test('encode signed int64 number', () => {
+      expect(signed64(0)).toEqual(Buffer.from([0x00]))
+      expect(signed64(1)).toEqual(Buffer.from([0x02]))
+      expect(signed64(63)).toEqual(Buffer.from([0x7e]))
+      expect(signed64(64)).toEqual(Buffer.from([0x80, 0x01]))
+      expect(signed64(8191)).toEqual(Buffer.from([0xfe, 0x7f]))
+      expect(signed64(8192)).toEqual(Buffer.from([0x80, 0x80, 0x01]))
+      expect(signed64(1048575)).toEqual(Buffer.from([0xfe, 0xff, 0x7f]))
+      expect(signed64(1048576)).toEqual(Buffer.from([0x80, 0x80, 0x80, 0x01]))
+      expect(signed64(134217727)).toEqual(Buffer.from([0xfe, 0xff, 0xff, 0x7f]))
+      expect(signed64(134217728)).toEqual(Buffer.from([0x80, 0x80, 0x80, 0x80, 0x01]))
+      expect(signed64(MAX_SAFE_POSITIVE_SIGNED_INT)).toEqual(
+        Buffer.from([0xfe, 0xff, 0xff, 0xff, 0x0f])
+      )
+      expect(signed64(Long.fromString('17179869183'))).toEqual(
+        Buffer.from([0xfe, 0xff, 0xff, 0xff, 0x7f])
+      )
+      expect(signed64(Long.fromString('17179869184'))).toEqual(
+        Buffer.from([0x80, 0x80, 0x80, 0x80, 0x80, 0x01])
+      )
+      expect(signed64(Long.fromString('2199023255551'))).toEqual(
+        Buffer.from([0xfe, 0xff, 0xff, 0xff, 0xff, 0x7f])
+      )
+      expect(signed64(Long.fromString('2199023255552'))).toEqual(
+        Buffer.from([0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01])
+      )
+      expect(signed64(Long.fromString('281474976710655'))).toEqual(
+        Buffer.from([0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f])
+      )
+      expect(signed64(Long.fromString('281474976710656'))).toEqual(
+        Buffer.from([0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01])
+      )
+      expect(signed64(Long.fromString('36028797018963967'))).toEqual(
+        Buffer.from([0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f])
+      )
+      expect(signed64(Long.fromString('36028797018963968'))).toEqual(
+        Buffer.from([0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01])
+      )
+      expect(signed64(Long.fromString('4611686018427387903'))).toEqual(
+        Buffer.from([0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f])
+      )
+      expect(signed64(Long.fromString('4611686018427387904'))).toEqual(
+        Buffer.from([0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01])
+      )
+      expect(signed64(Long.MAX_VALUE)).toEqual(
+        Buffer.from([0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01])
+      )
+
+      expect(signed64(-1)).toEqual(Buffer.from([0x01]))
+      expect(signed64(-64)).toEqual(Buffer.from([0x7f]))
+      expect(signed64(-65)).toEqual(Buffer.from([0x81, 0x01]))
+      expect(signed64(-8192)).toEqual(Buffer.from([0xff, 0x7f]))
+      expect(signed64(-8193)).toEqual(Buffer.from([0x81, 0x80, 0x01]))
+      expect(signed64(-1048576)).toEqual(Buffer.from([0xff, 0xff, 0x7f]))
+      expect(signed64(-1048577)).toEqual(Buffer.from([0x81, 0x80, 0x80, 0x01]))
+      expect(signed64(-134217728)).toEqual(Buffer.from([0xff, 0xff, 0xff, 0x7f]))
+      expect(signed64(-134217729)).toEqual(Buffer.from([0x81, 0x80, 0x80, 0x80, 0x01]))
+      expect(signed64(MIN_SAFE_NEGATIVE_SIGNED_INT)).toEqual(
+        Buffer.from([0xff, 0xff, 0xff, 0xff, 0x0f])
+      )
+      expect(signed64(Long.fromString('-17179869184'))).toEqual(
+        Buffer.from([0xff, 0xff, 0xff, 0xff, 0x7f])
+      )
+      expect(signed64(Long.fromString('-17179869185'))).toEqual(
+        Buffer.from([0x81, 0x80, 0x80, 0x80, 0x80, 0x01])
+      )
+      expect(signed64(Long.fromString('-2199023255552'))).toEqual(
+        Buffer.from([0xff, 0xff, 0xff, 0xff, 0xff, 0x7f])
+      )
+      expect(signed64(Long.fromString('-2199023255553'))).toEqual(
+        Buffer.from([0x81, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01])
+      )
+      expect(signed64(Long.fromString('-281474976710656'))).toEqual(
+        Buffer.from([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f])
+      )
+      expect(signed64(Long.fromString('-281474976710657'))).toEqual(
+        Buffer.from([0x81, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 1])
+      )
+      expect(signed64(Long.fromString('-36028797018963968'))).toEqual(
+        Buffer.from([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f])
+      )
+      expect(signed64(Long.fromString('-36028797018963969'))).toEqual(
+        Buffer.from([0x81, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01])
+      )
+      expect(signed64(Long.fromString('-4611686018427387904'))).toEqual(
+        Buffer.from([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f])
+      )
+      expect(signed64(Long.fromString('-4611686018427387905'))).toEqual(
+        Buffer.from([0x81, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01])
+      )
+      expect(signed64(Long.MIN_VALUE)).toEqual(
+        Buffer.from([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01])
       )
     })
   })
