@@ -4,3 +4,4 @@ test-report.xml
 junit.xml
 coverage/
 yarn-error.log
+.vscode
