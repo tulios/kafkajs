@@ -163,25 +163,21 @@ module.exports = class Decoder {
   }
 
   readUnsignedVarInt64() {
-    let value = Long.fromInt(0)
-    let i = 0
     let currentByte
+    let result = Long.fromInt(0)
+    let i = 0
 
-    while (((currentByte = this.buffer[this.offset++]) & MOST_SIGNIFICANT_BIT) !== 0) {
-      value = value.or((currentByte & OTHER_BITS) << i)
+    do {
+      currentByte = this.buffer[this.offset++]
+      result = result.add(Long.fromInt(currentByte & OTHER_BITS).shiftLeft(i))
       i += 7
-
-      if (i > 63) {
-        throw new Error('Variable length quantity is too long')
-      }
-    }
-
-    return value.or(currentByte << i)
+    } while (currentByte >= MOST_SIGNIFICANT_BIT)
+    return result
   }
 
   readSignedVarInt64() {
     const longValue = this.readUnsignedVarInt64()
-    return longValue.shiftRightUnsigned(1).xor(longValue.and(1).multiply(-1))
+    return longValue.shiftRightUnsigned(1).xor(longValue.and(Long.fromInt(1)).negate())
   }
 
   slice(size) {
