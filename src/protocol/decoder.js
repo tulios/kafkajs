@@ -1,4 +1,5 @@
 const Long = require('long')
+const { KafkaJSNonRetriableError } = require('../errors')
 
 const INT8_SIZE = 1
 const INT16_SIZE = 2
@@ -141,7 +142,9 @@ module.exports = class Decoder {
       i += 7
 
       if (i > 35) {
-        throw new Error('Variable length quantity is too long')
+        throw new KafkaJSNonRetriableError(
+          `Failed to decode varint, variable length quantity is too long (i > 25) i = ${i}`
+        )
       }
     }
 
