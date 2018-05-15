@@ -47,7 +47,7 @@
     "prettier": "^1.7.0"
   },
   "dependencies": {
-    "long": "^3.2.0"
+    "long": "^4.0.0"
   },
   "lint-staged": {
     "*.js": [
