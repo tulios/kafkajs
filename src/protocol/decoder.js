@@ -5,6 +5,9 @@ const INT16_SIZE = 2
 const INT32_SIZE = 4
 const INT64_SIZE = 8
 
+const MOST_SIGNIFICANT_BIT = 0x80 // 128
+const OTHER_BITS = 0x7f // 127
+
 module.exports = class Decoder {
   static int32Size() {
     return INT32_SIZE
@@ -118,6 +121,45 @@ module.exports = class Decoder {
     }
 
     return array
+  }
+
+  // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java#L207
+  readUnsignedVarInt32() {
+    let value = 0
+    let i = 0
+    let lastByte = 0
+
+    while (true) {
+      const currentByte = this.buffer[this.offset++]
+      lastByte = currentByte
+      const isLastByte = (currentByte & MOST_SIGNIFICANT_BIT) === 0
+
+      if (isLastByte) break
+
+      // Concatenate the octets (sum the numbers)
+      value = value | ((currentByte & OTHER_BITS) << i)
+      i += 7
+
+      if (i > 35) {
+        throw new Error('Variable length quantity is too long')
+      }
+    }
+
+    return value | (lastByte << i)
+  }
+
+  // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java#L197
+  readSignedVarInt32() {
+    const raw = this.readUnsignedVarInt32()
+
+    // This undoes the trick in writeSignedVarInt()
+    // https://developers.google.com/protocol-buffers/docs/encoding?csw=1#types
+    const temp = (((raw << 31) >> 31) ^ raw) >> 1
+
+    // This extra step lets us deal with the largest signed values by treating
+    // negative results from read unsigned methods as like unsigned values.
+    // Must re-flip the top bit if the original read value had it set.
+    return temp ^ (raw & (1 << 31))
   }
 
   slice(size) {

@@ -5,6 +5,10 @@ const INT16_SIZE = 2
 const INT32_SIZE = 4
 const INT64_SIZE = 8
 
+const MOST_SIGNIFICANT_BIT = 0x80 // 128
+const OTHER_BITS = 0x7f // 127
+const UNSIGNED_INT32_MAX_NUMBER = 0xffffff80
+
 module.exports = class Encoder {
   constructor() {
     this.buffer = Buffer.alloc(0)
@@ -107,6 +111,25 @@ module.exports = class Encoder {
       }
     })
     return this
+  }
+
+  // Based on:
+  // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java#L106
+  writeUnsignedVarInt32(value) {
+    const byteArray = []
+    while ((value & UNSIGNED_INT32_MAX_NUMBER) !== 0) {
+      byteArray.push((value & OTHER_BITS) | MOST_SIGNIFICANT_BIT)
+      value >>>= 7
+    }
+
+    byteArray.push(value & OTHER_BITS)
+    this.buffer = Buffer.concat([this.buffer, Buffer.from(byteArray)])
+    return this
+  }
+
+  // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java#L95
+  writeSignedVarInt32(value) {
+    return this.writeUnsignedVarInt32((value << 1) ^ (value >> 31))
   }
 
   size() {
