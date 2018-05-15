@@ -7,12 +7,11 @@ const MAX_SAFE_POSITIVE_SIGNED_INT = 2147483647
 const MIN_SAFE_NEGATIVE_SIGNED_INT = -2147483648
 
 describe('Protocol > Encoder', () => {
-  const unsigned32 = number => new Encoder().writeUnsignedVarInt32(number).buffer
   const signed32 = number => new Encoder().writeSignedVarInt32(number).buffer
-  const decodeUnsigned32 = buffer => new Decoder(buffer).readUnsignedVarInt32()
   const decodeSigned32 = buffer => new Decoder(buffer).readSignedVarInt32()
 
   const signed64 = number => new Encoder().writeSignedVarInt64(number).buffer
+  const decode64 = buffer => new Decoder(buffer).readSignedVarInt64()
 
   describe('varint', () => {
     test('encode signed int32 numbers', () => {
@@ -174,6 +173,53 @@ describe('Protocol > Encoder', () => {
       expect(signed64(Long.MIN_VALUE)).toEqual(
         Buffer.from([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01])
       )
+    })
+
+    test('decode signed int64 number', () => {
+      expect(decode64(signed64(0))).toEqual(Long.fromInt(0))
+      expect(decode64(signed64(1))).toEqual(Long.fromInt(1))
+      expect(decode64(signed64(63))).toEqual(Long.fromInt(63))
+      expect(decode64(signed64(64))).toEqual(Long.fromInt(64))
+      expect(decode64(signed64(8191))).toEqual(Long.fromInt(8191))
+      expect(decode64(signed64(8192))).toEqual(Long.fromInt(8192))
+      expect(decode64(signed64(1048575))).toEqual(Long.fromInt(1048575))
+      expect(decode64(signed64(1048576))).toEqual(Long.fromInt(1048576))
+      expect(decode64(signed64(134217727))).toEqual(Long.fromInt(134217727))
+      expect(decode64(signed64(134217728))).toEqual(Long.fromInt(134217728))
+      expect(decode64(signed64(MAX_SAFE_POSITIVE_SIGNED_INT))).toEqual(
+        Long.fromInt(MAX_SAFE_POSITIVE_SIGNED_INT)
+      )
+      expect(decode64(signed64(Long.fromString('17179869183')))).toEqual(
+        Long.fromString('17179869183')
+      )
+      expect(decode64(signed64(Long.fromString('17179869184')))).toEqual(
+        Long.fromString('17179869184')
+      )
+      expect(decode64(signed64(Long.fromString('2199023255551')))).toEqual(
+        Long.fromString('2199023255551')
+      )
+      expect(decode64(signed64(Long.fromString('2199023255552')))).toEqual(
+        Long.fromString('2199023255552')
+      )
+      expect(decode64(signed64(Long.fromString('281474976710655')))).toEqual(
+        Long.fromString('281474976710655')
+      )
+      expect(decode64(signed64(Long.fromString('281474976710656')))).toEqual(
+        Long.fromString('281474976710656')
+      )
+      expect(decode64(signed64(Long.fromString('36028797018963967')))).toEqual(
+        Long.fromString('36028797018963967')
+      )
+      expect(decode64(signed64(Long.fromString('36028797018963968')))).toEqual(
+        Long.fromString('36028797018963968')
+      )
+      expect(decode64(signed64(Long.fromString('4611686018427387903')))).toEqual(
+        Long.fromString('4611686018427387903')
+      )
+      expect(decode64(signed64(Long.fromString('4611686018427387904')))).toEqual(
+        Long.fromString('4611686018427387904')
+      )
+      expect(decode64(signed64(Long.MAX_VALUE))).toEqual(Long.MAX_VALUE)
     })
   })
 })
