@@ -378,8 +378,6 @@ async () => {
 }
 ```
 
-### TODO: This is fine for producer. But how to implement custom decoder for consuming?
-
 ## <a name="consuming-messages"></a> Consuming messages from Kafka
 
 Consumer groups allow a group of machines or processes to coordinate access to a list of topics, distributing the load among the consumers. When a consumer fails the load is automatically distributed to other members of the group. Consumer groups must have unique group ids within the cluster, from a kafka broker perspective.
@@ -439,10 +437,7 @@ async () => {
 
 In order to process huge volumes of messages in a responsive manner, you need consider the `eachBatch` API. Dealing with batches rather than single messages reduces the network traffic and the communication overhead with the broker, allowing your consumer group to eat away at your partition lag in orders of magnitudes faster than `eachMessage`.
 
-This handler will feed your function batches. All resolved offsets will be automatically committed after the function is executed.
-
-This handler will also provide more utility functions to give your code more flexibility
-TODO> SUCH AS?
+This handler will feed your function batches. All resolved offsets will be automatically committed after the function is executed. It will also provide more utility functions to give your code more flexibility.
 
 Be aware that using `eachBatch` is considered a more advanced API, since you will have to do more configuration and understand how session timeouts and heartbeats are connected.
 
@@ -468,14 +463,11 @@ await consumer.run({
     }
   },
 })
-
-// remember to close your consumer when you leave
-await consumer.disconnect()
 ```
 
-> `highWatermark` is the last committed offset within the topic partition. It can be useful for calculating lag.
+> `batch.highWatermark` is the last committed offset within the topic partition. It can be useful for calculating lag.
 
-> `resolveOffset` is used to mark the message as processed. In case of errors, the consumer will automatically commit the resolved offsets. With the default configuration, the function can't be interrupted without ignoring the unprocessed message; this happens because after the function is executed the last offset of the batch is automatically resolved and committed. To have a fine grain control of message processing it's possible to disable the auto-resolve, setting the property `eachBatchAutoResolve` to false. Example:
+> `resolveOffset()` is used to mark the message as processed. In case of errors, the consumer will automatically commit the resolved offsets. With the default configuration, the function can't be interrupted without ignoring the unprocessed message; this happens because after the function is executed the last offset of the batch is automatically resolved and committed. To have a fine grain control of message processing it's possible to disable the auto-resolve, setting the property `eachBatchAutoResolve` to false. Example:
 
 ```javascript
 consumer.run({
@@ -518,7 +510,7 @@ kafka.consumer({
 | minBytes | Minimum amount of data the server should return for a fetch request, otherwise wait up to `maxWaitTimeInMs` for more data to accumulate. default: `1` |
 | maxBytes | Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0` | `10485760` (10MB) |
 | maxWaitTimeInMs | The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes` | `5000` |
-| retry | Take a look at [Retry](#configuration-default-retry) for more information\ | `{ retries: 10 }` |
+| retry | See [retry](#configuration-default-retry) for more information | `{ retries: 10 }` |
 
 ### <a name="consuming-messages-pause-resume"></a> Pause & Resume
 
@@ -539,28 +531,16 @@ await consumer.run({ eachMessage: async ({ topic, message }) => {
     case 'pause':
       // Stop consuming from the 'jobs' topic.
       consumer.pause([{ topic: 'jobs'}])
-
-      // `pause` accepts an optional `partitions` property for each topic
-      // to pause consuming only specific partitions. However, this
-      // functionality is not currently supported by the library.
-      //
-      // consumer.pause([{ topic: 'jobs', partitions: [0, 1] }])
       break
     case 'resume':
       // Resume consuming from the 'jobs' topic
       consumer.resume([{ topic: 'jobs' }])
-
-      // `resume` accepts an optional `partitions` property for each topic
-      // to resume consuming only specific partitions. However, this
-      // functionality is not currently supported by the library.
-      //
-      // consumer.resume([{ topic: 'jobs', partitions: [0, 1] }])
       break
   }
 }})
 ```
 
-Calling `pause` with a topic that the consumer is not subscribed to is a no-op, as is calling `resume` with a topic that is not paused.
+Calling `pause` with a topic that the consumer is not subscribed to is a no-op, calling `resume` with a topic that is not paused is also a no-op.
 
 ### <a name="consuming-messages-seek"></a> Seek
 
