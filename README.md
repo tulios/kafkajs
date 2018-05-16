@@ -613,9 +613,9 @@ const MyPartitionAssigner = ({ cluster }) => ({
 })
 ```
 
-Your `protocol` method will probably look like the example but it's not implemented by default because extra data can be included as `userData`, take a look at the `MemberMetadata#encode` for more information.
+Your `protocol` method will probably look like the example, but it's not implemented by default because extra data can be included as `userData`. Take a look at the `MemberMetadata#encode` for more information.
 
-Once your assigner is done add it to the list of assigners, it's important to keep the default assigner there to allow the old consumers to have a common ground with the new consumers when deploying.
+Once your assigner is done, add it to the list of assigners. It's important to keep the default assigner there to allow the old consumers to have a common ground with the new consumers when deploying.
 
 ```javascript
 const { PartitionAssigners: { roundRobin } } = require('kafkajs')
@@ -689,13 +689,10 @@ Instrumentation Event:
 
 The logger is customized using log creators. A log creator is a function which receives a log level and returns a log function. The log function receives namespace, level, label, and log.
 
-`namespace` identifies the component which is performing the log, for example, connection or consumer.
-
-`level` is the log level of the log entry.
-
-`label` is a text representation of the log level, example: 'INFO'.
-
-`log` is an object with the following keys: `timestamp`, `logger`, `message`, and the extra keys given by the user. (`logger.info('test', { extra_data: true })`)
+- `namespace` identifies the component which is performing the log, for example, connection or consumer.
+- `level` is the log level of the log entry.
+- `label` is a text representation of the log level, example: 'INFO'.
+- `log` is an object with the following keys: `timestamp`, `logger`, `message`, and the extra keys given by the user. (`logger.info('test', { extra_data: true })`)
 
 ```javascript
 {
@@ -718,7 +715,7 @@ const MyLogCreator = logLevel => ({ namespace, level, label, log }) => {
 }
 ```
 
-Example using [winston](https://github.com/winstonjs/winston):
+Example using [Winston](https://github.com/winstonjs/winston):
 
 ```javascript
 const { logLevel } = require('kafkajs')
@@ -768,6 +765,7 @@ const kafka = new Kafka({
 ## <a name="development"></a> Development
 
 https://cwiki.apache.org/confluence/display/KAFKA/A+Guide+To+The+Kafka+Protocol
+
 https://kafka.apache.org/protocol.html
 
 ```sh
@@ -790,7 +788,7 @@ Password for SASL `test:testtest`
 
 ## Acknowledgements
 
-Thanks to [Sebastian Norde](https://github.com/sebastiannorde) for the awesome logo!
+Thanks to [Sebastian Norde](https://github.com/sebastiannorde) for the logo ❤️
 
 ## License
 
