@@ -19,28 +19,29 @@ KafkaJS is battle-tested and ready for production.
 ## Table of Contents
 
 - [Installation](#installation)
-- [Usage](#usage)
-  - [Setting up the Client](#setup-client)
-    - [SSL](#setup-client-ssl)
-    - [SASL](#setup-client-sasl)
-    - [Connection timeout](#setup-client-connection-timeout)
-    - [Default retry](#setup-client-default-retry)
-    - [Logger](#setup-client-logger)
-  - [Producing Messages to Kafka](#producing-messages)
-    - [Custom partitioner](#producing-messages-custom-partitioner)
-    - [Compression](#producing-messages-gzip-compression)
-    - [Retry](#producing-messages-retry)
-  - [Consuming messages from Kafka](#consuming-messages)
-    - [eachMessage](#consuming-messages-each-message)
-    - [eachBatch](#consuming-messages-each-batch)
-    - [Options](#consuming-messages-options)
-    - [Pause, Resume, & Seek](#consuming-messages-pause-resume)
-    - [Seek](#consuming-messages-seek)
-    - [Custom partition assigner](#consuming-messages-custom-partition-assigner)
-    - [Describe group](#consuming-messages-describe-group)
-  - [Instrumentation](#instrumentation)
-  - [Custom logger](#custom-logger)
-  - [Development](#development)
+- [Configuration](#configuration)
+  - [SSL](#configuration-ssl)
+  - [SASL](#configuration-sasl)
+  - [Connection timeout](#configuration-connection-timeout)
+  - [Default retry](#configuration-default-retry)
+  - [Logging](#configuration-logging)
+- [Producing Messages](#producing-messages)
+  - [Custom partitioner](#producing-messages-custom-partitioner)
+  - [Retry](#producing-messages-retry)
+  - [Compression](#producing-messages-compression)
+    - [GZIP](#producing-messages-compression-gzip)
+    - [Other](#producing-messages-compression-other)
+- [Consuming messages](#consuming-messages)
+  - [eachMessage](#consuming-messages-each-message)
+  - [eachBatch](#consuming-messages-each-batch)
+  - [Options](#consuming-messages-options)
+  - [Pause, Resume, & Seek](#consuming-messages-pause-resume)
+  - [Seek](#consuming-messages-seek)
+  - [Custom partition assigner](#consuming-messages-custom-partition-assigner)
+  - [Describe group](#consuming-messages-describe-group)
+- [Instrumentation](#instrumentation)
+- [Custom logging](#custom-logging)
+- [Development](#development)
 
 ## <a name="installation"></a> Installation
 
@@ -49,9 +50,7 @@ npm install kafkajs
 # yarn add kafkajs
 ```
 
-## <a name="usage"></a> Usage
-
-### <a name="setup-client"></a> Setting up the Client
+## <a name="setup-client"></a> Configuration
 
 The client must be configured with at least one broker. The brokers on the list are considered seed brokers and are only used to bootstrap the client and load initial metadata.
 
@@ -65,7 +64,7 @@ const kafka = new Kafka({
 })
 ```
 
-#### <a name="setup-client-ssl"></a> SSL
+### <a name="configuration-ssl"></a> SSL
 
 The `ssl` option can be used to configure the TLS sockets. The options are passed directly to [`tls.connect`](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback) and used to create the TLS Secure Context, all options are accepted.
 
@@ -84,9 +83,9 @@ new Kafka({
 })
 ```
 
-Take a look at [TLS create secure context](https://nodejs.org/dist/latest-v8.x/docs/api/tls.html#tls_tls_createsecurecontext_options) for more information. `NODE_EXTRA_CA_CERTS` can be used to add custom CAs. Use `ssl: true` if you don't have any extra configurations and want to enable SSL.
+Refer to [TLS create secure context](https://nodejs.org/dist/latest-v8.x/docs/api/tls.html#tls_tls_createsecurecontext_options) for more information. `NODE_EXTRA_CA_CERTS` can be used to add custom CAs. Use `ssl: true` if you don't have any extra configurations and want to enable SSL.
 
-#### <a name="setup-client-sasl"></a> SASL
+### <a name="configuration-sasl"></a> SASL
 
 Kafka has support for using SASL to authenticate clients. The `sasl` option can be used to configure the authentication mechanism. Currently, KafkaJS only supports the `PLAIN` mechanism.
 
@@ -104,7 +103,7 @@ new Kafka({
 
 It is __highly recommended__ that you use SSL for encryption when using `PLAIN`.
 
-#### <a name="setup-client-connection-timeout"></a> Connection Timeout
+### <a name="configuration-connection-timeout"></a> Connection Timeout
 
 Time in milliseconds to wait for a successful connection. The default value is: `1000`.
 
@@ -116,9 +115,37 @@ new Kafka({
 })
 ```
 
-#### <a name="setup-client-default-retry"></a> Default Retry
+### <a name="configuration-default-retry"></a> Default Retry
 
-The `retry` option can be used to set the default configuration. The retry mechanism uses a randomization function that grows exponentially. The configuration will be used to retry connections and API calls to Kafka (when using producers or consumers).
+The `retry` option can be used to set the configuration of the retry mechanism, which is be used to retry connections and API calls to Kafka (when using producers or consumers).
+
+The retry mechanism uses a randomization function that grows exponentially. This formula and how the default values affect it is best desribed by the example below:
+
+- 1st retry:
+  - Always a flat `initialRetryTime` ms
+  - Default: `300ms`
+- Nth retry:
+  - Formula: `Random(previousRetryTime * (1 - factor), previousRetryTime * (1 + factor)) * multiplier`
+  - N = 1:
+    - Since `previousRetryTime == initialRetryTime` just plug the values in the formula:
+    - Random(300 * (1 - 0.2), 300 * (1 + 0.2)) * 2 => Random(240, 360) * 2 => (480, 720) ms
+    - Hence, somewhere between `480ms` to `720ms`
+  - N = 2:
+    - Since `previousRetryTime` from N = 1 was in a range between 480ms and 720ms, the retry for this step will be in the range of:
+    - `previousRetryTime = 480ms` => Random(480 * (1 - 0.2), 480 * (1 + 0.2)) * 2 => Random(384, 576) * 2 => (768, 1152) ms
+    - `previousRetryTime = 720ms` => Random(720 * (1 - 0.2), 720 * (1 + 0.2)) * 2 => Random(576, 864) * 2 => (1152, 1728) ms
+    - Hence, somewhere between `768ms` to `1728ms`
+  - And so on...
+
+Table of retry times for default values:
+
+| Retry # | min (ms) | max (ms) |
+| ------- | -------- | -------- |
+| 1 | 300 | 300 |
+| 2 | 480 | 720 |
+| 3 | 768 | 1728 |
+| 4 | 1229 | 4147 |
+| 5 | 1966 | 9953 |
 
 If the max number of retries is exceeded the retrier will throw `KafkaJSNumberOfRetriesExceeded` and interrupt. Producers will bubble up the error to the user code; Consumers will wait the retry time attached to the exception (it will be based on the number of attempts) and perform a full restart.
 
@@ -145,12 +172,11 @@ new Kafka({
 })
 ```
 
-#### <a name="setup-client-logger"></a> Logger
+### <a name="configuration-logging"></a> Logging
 
-KafkaJS has a built-in `STDOUT` logger which outputs JSON. It also accepts a custom log creator which allows you to integrate your favorite logger library.
-There are 5 log levels available: `NOTHING`, `ERROR`, `WARN`, `INFO`, and `DEBUG`. `INFO` is configured by default.
+KafkaJS has a built-in `STDOUT` logger which outputs JSON. It also accepts a custom log creator which allows you to integrate your favorite logger library. There are 5 log levels available: `NOTHING`, `ERROR`, `WARN`, `INFO`, and `DEBUG`. `INFO` is configured by default.
 
-__How to configure the log level?__
+##### Log level
 
 ```javascript
 const { Kafka, logLevel } = require('kafkajs')
@@ -169,21 +195,15 @@ The environment variable `KAFKAJS_LOG_LEVEL` can also be used and it has precede
 KAFKAJS_LOG_LEVEL=info node code.js
 ```
 
-NOTE: for more information on how to customize your logs, take a look at [Custom logger](#custom-logger)
+NOTE: for more information on how to customize your logs, take a look at [Custom logging](#custom-logging)
 
-### <a name="producing-messages"></a> Producing Messages to Kafka
+## <a name="producing-messages"></a> Producing Messages
 
-To publish messages to Kafka you have to create a producer; with a client in hand you just have to call the `producer` function, for example:
+To publish messages to Kafka you have to create a producer. Simply call the `producer` function of the client to create it:
 
 ```javascript
 const producer = kafka.producer()
 ```
-
-By default, the producer is configured to distribute the messages with the following logic:
-
-- If a partition is specified in the message, use it
-- If no partition is specified but a key is present choose a partition based on a hash (murmur2) of the key
-- If no partition or key is present choose a partition in a round-robin fashion
 
 The method `send` is used to publish messages to the Kafka cluster.
 
@@ -240,76 +260,13 @@ await producer.send({
 | timeout     | The time to await a response in ms. Default value _30000_ |
 | compression | Compression codec. Default value `CompressionTypes.None` |
 
-#### <a name="producing-messages-gzip-compression"></a> Compression
+By default, the producer is configured to distribute the messages with the following logic:
 
-KafkaJS __only__ supports GZIP natively; the library aims to have a small footprint and as little dependencies as possible. The remaining codecs can be easily implemented using existing libraries. Plugins providing other codecs might exist in the future, but there are no plans to implement them shortly.
+- If a partition is specified in the message, use it
+- If no partition is specified but a key is present choose a partition based on a hash (murmur2) of the key
+- If no partition or key is present choose a partition in a round-robin fashion
 
-##### GZIP
-
-```javascript
-const { CompressionTypes } = require('kafkajs')
-
-async () => {
-  await producer.send({
-    topic: 'topic-name',
-    compression: CompressionTypes.GZIP,
-    messages: [
-      { key: 'key1', value: 'hello world' },
-      { key: 'key2', value: 'hey hey!' }
-    ],
-  })
-}
-```
-
-The consumers know how to decompress GZIP, so no further work is necessary.
-
-##### Adding Snappy or LZ4 codecs
-
-A codec is an object with two `async` functions: `compress` and `decompress`.
-
-Example using the snappy package:
-
-```javascript
-const { promisify } = require('util')
-const snappy = require('snappy')
-
-const snappyCompress = promisify(snappy.compress)
-const snappyDecompress = promisify(snappy.uncompress)
-
-const SnappyCodec = {
-  async compress(encoder) {
-    return snappyCompress(encoder.buffer)
-  },
-
-  async decompress(buffer) {
-    return snappyDecompress(buffer)
-  }
-}
-```
-
-Then, to add this implementation:
-
-```javascript
-const { CompressionTypes, CompressionCodecs } = require('kafkajs')
-CompressionCodecs[CompressionTypes.Snappy] = SnappyCodec
-```
-
-The new codec can now be used with the `send` method, example:
-
-```javascript
-async () => {
-  await producer.send({
-    topic: 'topic-name',
-    compression: CompressionTypes.Snappy,
-    messages: [
-      { key: 'key1', value: 'hello world' },
-      { key: 'key2', value: 'hey hey!' }
-    ],
-  })
-}
-```
-
-#### <a name="producing-messages-custom-partitioner"></a> Custom partitioner
+### <a name="producing-messages-custom-partitioner"></a> Custom partitioner
 
 It's possible to assign a custom partitioner to the producer. A partitioner is a function which returns another function responsible for the partition selection, something like this:
 
@@ -344,15 +301,86 @@ To Configure your partitioner use the option `createPartitioner`.
 kafka.producer({ createPartitioner: MyPartitioner })
 ```
 
-#### <a name="producing-messages-retry"></a> Retry
+### <a name="producing-messages-retry"></a> Retry
 
 The option `retry` can be used to customize the configuration for the producer.
 
-Take a look at [Retry](#setup-client-default-retry) for more information.
+Take a look at [Retry](#configuration-default-retry) for more information.
 
-### <a name="consuming-messages"></a> Consuming messages from Kafka
+### <a name="producing-messages-compression"></a> Compression
 
-Consumer groups allow a group of machines or processes to coordinate access to a list of topics, distributing the load among the consumers. When a consumer fails the load is automatically distributed to other members of the group. Consumer groups must have unique group ids.
+Since KafkaJS aims to have as small footprint and as little dependencies as possible, only GZIP codec is part of the core functionality. Providing plugins supporting other codecs might be considered in the future.
+
+#### <a name="producing-messages-compression-gzip"></a> GZIP
+
+```javascript
+const { CompressionTypes } = require('kafkajs')
+
+async () => {
+  await producer.send({
+    topic: 'topic-name',
+    compression: CompressionTypes.GZIP,
+    messages: [
+      { key: 'key1', value: 'hello world' },
+      { key: 'key2', value: 'hey hey!' }
+    ],
+  })
+}
+```
+
+The consumers know how to decompress GZIP, so no further work is necessary.
+
+#### <a name="producing-messages-compression-other"></a> Other
+
+Any other codec than GZIP can be easily implemented using existing libraries.
+
+This is an example of how one would go about in order to add the Snappy codec.
+
+First of all, a codec is an object with two `async` functions: `compress` and `decompress`. Import the libraries and define the codec object:
+
+```javascript
+const { promisify } = require('util')
+const snappy = require('snappy')
+
+const snappyCompress = promisify(snappy.compress)
+const snappyDecompress = promisify(snappy.uncompress)
+
+const SnappyCodec = {
+  async compress(encoder) {
+    return snappyCompress(encoder.buffer)
+  },
+
+  async decompress(buffer) {
+    return snappyDecompress(buffer)
+  }
+}
+```
+
+Now we that have the codec object, we can add it to the implementation:
+
+```javascript
+const { CompressionTypes, CompressionCodecs } = require('kafkajs')
+CompressionCodecs[CompressionTypes.Snappy] = SnappyCodec
+```
+
+The new codec can now be used with the `send` method, example:
+
+```javascript
+async () => {
+  await producer.send({
+    topic: 'topic-name',
+    compression: CompressionTypes.Snappy,
+    messages: [
+      { key: 'key1', value: 'hello world' },
+      { key: 'key2', value: 'hey hey!' }
+    ],
+  })
+}
+```
+
+## <a name="consuming-messages"></a> Consuming messages from Kafka
+
+Consumer groups allow a group of machines or processes to coordinate access to a list of topics, distributing the load among the consumers. When a consumer fails the load is automatically distributed to other members of the group. Consumer groups must have unique group ids within the cluster, from a kafka broker perspective.
 
 Creating the consumer:
 
@@ -377,9 +405,9 @@ async () => {
 
 KafkaJS offers you two ways to process your data: `eachMessage` and `eachBatch`
 
-#### <a name="consuming-messages-each-message"></a> eachMessage
+### <a name="consuming-messages-each-message"></a> eachMessage
 
-This handler provides a convenient API, feeding your function one message at a time. The handler will automatically commit your offsets and heartbeat at the configured interval. If you are just looking to get started with Kafka consumers this should be your first solution.
+This handler provides a convenient API, feeding your function one message at a time. The handler will automatically commit your offsets and heartbeat at the configured interval. If you are just looking to get started with Kafka consumers this a good place to start.
 
 ```javascript
 async () => {
@@ -405,9 +433,13 @@ async () => {
 }
 ```
 
-#### <a name="consuming-messages-each-batch"></a> eachBatch
+### <a name="consuming-messages-each-batch"></a> eachBatch
 
-Some use cases can be optimized by dealing with batches rather than single messages. This handler will feed your function batches and some utility functions to give your code more flexibility. Be aware that using `eachBatch` is considered a more advanced use case since you will have to understand how session timeouts and heartbeats are connected. All resolved offsets will be automatically committed after the function is executed.
+In order to process huge volumes of messages in a responsive manner, you need consider the `eachBatch` API. Dealing with batches rather than single messages reduces the network traffic and the communication overhead with the broker, allowing your consumer group to eat away at your partition lag in orders of magnitudes faster than `eachMessage`.
+
+This handler will feed your function batches. All resolved offsets will be automatically committed after the function is executed. It will also provide more utility functions to give your code more flexibility.
+
+Be aware that using `eachBatch` is considered a more advanced API, since you will have to do more configuration and understand how session timeouts and heartbeats are connected.
 
 ```javascript
 // create consumer, connect and subscribe ...
@@ -431,14 +463,11 @@ await consumer.run({
     }
   },
 })
-
-// remember to close your consumer when you leave
-await consumer.disconnect()
 ```
 
-> `highWatermark` is the last committed offset within the topic partition. It can be useful for calculating lag.
+> `batch.highWatermark` is the last committed offset within the topic partition. It can be useful for calculating lag.
 
-`resolveOffset` is used to mark the message as processed. In case of errors, the consumer will automatically commit the resolved offsets. With the default configuration, the function can't be interrupted without ignoring the unprocessed message; this happens because after the function is executed the last offset of the batch is automatically resolved and committed. To have a fine grain control of message processing it's possible to disable the auto-resolve, setting the property `eachBatchAutoResolve` to false. Example:
+> `resolveOffset()` is used to mark the message as processed. In case of errors, the consumer will automatically commit the resolved offsets. With the default configuration, the function can't be interrupted without ignoring the unprocessed message; this happens because after the function is executed the last offset of the batch is automatically resolved and committed. To have a fine grain control of message processing it's possible to disable the auto-resolve, setting the property `eachBatchAutoResolve` to false. Example:
 
 ```javascript
 consumer.run({
@@ -456,7 +485,7 @@ consumer.run({
 
 In this example, if the consumer is shutting down in the middle of the batch, the remaining messages won't be resolved and therefore not committed.
 
-#### <a name="consuming-messages-options"></a> Options
+### <a name="consuming-messages-options"></a> Options
 
 ```javascript
 kafka.consumer({
@@ -481,9 +510,9 @@ kafka.consumer({
 | minBytes | Minimum amount of data the server should return for a fetch request, otherwise wait up to `maxWaitTimeInMs` for more data to accumulate. default: `1` |
 | maxBytes | Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0` | `10485760` (10MB) |
 | maxWaitTimeInMs | The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes` | `5000` |
-| retry | Take a look at [Retry](#setup-client-default-retry) for more information\ | `{ retries: 10 }` |
+| retry | See [retry](#configuration-default-retry) for more information | `{ retries: 10 }` |
 
-#### <a name="consuming-messages-pause-resume"></a> Pause & Resume
+### <a name="consuming-messages-pause-resume"></a> Pause & Resume
 
 In order to pause and resume consuming from one or more topics, the `Consumer` provides the methods `pause` and `resume`. Note that pausing a topic means that it won't be fetched in the next cycle. You may still receive messages for the topic within the current batch.
 
@@ -502,30 +531,18 @@ await consumer.run({ eachMessage: async ({ topic, message }) => {
     case 'pause':
       // Stop consuming from the 'jobs' topic.
       consumer.pause([{ topic: 'jobs'}])
-
-      // `pause` accepts an optional `partitions` property for each topic
-      // to pause consuming only specific partitions. However, this
-      // functionality is not currently supported by the library.
-      //
-      // consumer.pause([{ topic: 'jobs', partitions: [0, 1] }])
       break
     case 'resume':
       // Resume consuming from the 'jobs' topic
       consumer.resume([{ topic: 'jobs' }])
-
-      // `resume` accepts an optional `partitions` property for each topic
-      // to resume consuming only specific partitions. However, this
-      // functionality is not currently supported by the library.
-      //
-      // consumer.resume([{ topic: 'jobs', partitions: [0, 1] }])
       break
   }
 }})
 ```
 
-Calling `pause` with a topic that the consumer is not subscribed to is a no-op, as is calling `resume` with a topic that is not paused.
+Calling `pause` with a topic that the consumer is not subscribed to is a no-op, calling `resume` with a topic that is not paused is also a no-op.
 
-#### <a name="consuming-messages-seek"></a> Seek
+### <a name="consuming-messages-seek"></a> Seek
 
 To move the offset position in a topic/partition the `Consumer` provides the method `seek`. This method has to be called after the consumer is initialized and is running (after consumer#run).
 
@@ -538,7 +555,7 @@ consumer.run({ eachMessage: async ({ topic, message }) => true })
 consumer.seek({ topic: 'example', partition: 0, offset: 12384 })
 ```
 
-#### <a name="consuming-messages-custom-partition-assigner"></a> Custom partition assigner
+### <a name="consuming-messages-custom-partition-assigner"></a> Custom partition assigner
 
 It's possible to configure the strategy the consumer will use to distribute partitions amongst the consumer group. KafkaJS has a round robin assigner configured by default.
 
@@ -596,9 +613,9 @@ const MyPartitionAssigner = ({ cluster }) => ({
 })
 ```
 
-Your `protocol` method will probably look like the example but it's not implemented by default because extra data can be included as `userData`, take a look at the `MemberMetadata#encode` for more information.
+Your `protocol` method will probably look like the example, but it's not implemented by default because extra data can be included as `userData`. Take a look at the `MemberMetadata#encode` for more information.
 
-Once your assigner is done add it to the list of assigners, it's important to keep the default assigner there to allow the old consumers to have a common ground with the new consumers when deploying.
+Once your assigner is done, add it to the list of assigners. It's important to keep the default assigner there to allow the old consumers to have a common ground with the new consumers when deploying.
 
 ```javascript
 const { PartitionAssigners: { roundRobin } } = require('kafkajs')
@@ -612,7 +629,7 @@ kafka.consumer({
 })
 ```
 
-#### <a name="consuming-messages-describe-group"></a> Describe group
+### <a name="consuming-messages-describe-group"></a> Describe group
 
 > Experimental - This feature may be removed or changed in new versions of KafkaJS
 
@@ -668,17 +685,14 @@ Instrumentation Event:
 }
 ```
 
-## <a name="custom-logger"></a> Custom logger
+## <a name="custom-logging"></a> Custom logging
 
 The logger is customized using log creators. A log creator is a function which receives a log level and returns a log function. The log function receives namespace, level, label, and log.
 
-`namespace` identifies the component which is performing the log, for example, connection or consumer.
-
-`level` is the log level of the log entry.
-
-`label` is a text representation of the log level, example: 'INFO'.
-
-`log` is an object with the following keys: `timestamp`, `logger`, `message`, and the extra keys given by the user. (`logger.info('test', { extra_data: true })`)
+- `namespace` identifies the component which is performing the log, for example, connection or consumer.
+- `level` is the log level of the log entry.
+- `label` is a text representation of the log level, example: 'INFO'.
+- `log` is an object with the following keys: `timestamp`, `logger`, `message`, and the extra keys given by the user. (`logger.info('test', { extra_data: true })`)
 
 ```javascript
 {
@@ -701,7 +715,7 @@ const MyLogCreator = logLevel => ({ namespace, level, label, log }) => {
 }
 ```
 
-Example using [winston](https://github.com/winstonjs/winston):
+Example using [Winston](https://github.com/winstonjs/winston):
 
 ```javascript
 const { logLevel } = require('kafkajs')
@@ -750,7 +764,8 @@ const kafka = new Kafka({
 
 ## <a name="development"></a> Development
 
-https://cwiki.apache.org/confluence/display/KAFKA/A+Guide+To+The+Kafka+Protocol  
+https://cwiki.apache.org/confluence/display/KAFKA/A+Guide+To+The+Kafka+Protocol
+
 https://kafka.apache.org/protocol.html
 
 ```sh
@@ -768,12 +783,12 @@ yarn test:local
 # KAFKAJS_LOG_LEVEL=debug yarn test:local
 ```
 
-Password for test keystore and certificates: `testtest`  
+Password for test keystore and certificates: `testtest`
 Password for SASL `test:testtest`
 
 ## Acknowledgements
 
-Thanks to [Sebastian Norde](https://github.com/sebastiannorde) for the awesome logo!
+Thanks to [Sebastian Norde](https://github.com/sebastiannorde) for the logo ❤️
 
 ## License
 
