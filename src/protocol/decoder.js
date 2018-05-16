@@ -1,5 +1,4 @@
 const Long = require('long')
-const { KafkaJSNonRetriableError } = require('../errors')
 
 const INT8_SIZE = 1
 const INT16_SIZE = 2
@@ -124,48 +123,25 @@ module.exports = class Decoder {
     return array
   }
 
-  // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java#L207
-  readUnsignedVarInt32() {
-    let value = 0
-    let i = 0
-    let lastByte = 0
-
-    while (true) {
-      const currentByte = this.buffer[this.offset++]
-      lastByte = currentByte
-      const isLastByte = (currentByte & MOST_SIGNIFICANT_BIT) === 0
-
-      if (isLastByte) break
-
-      // Concatenate the octets (sum the numbers)
-      value = value | ((currentByte & OTHER_BITS) << i)
-      i += 7
-
-      if (i > 35) {
-        throw new KafkaJSNonRetriableError(
-          `Failed to decode varint, variable length quantity is too long (i > 25) i = ${i}`
-        )
-      }
-    }
-
-    return value | (lastByte << i)
-  }
-
-  // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java#L197
   readSignedVarInt32() {
-    const raw = this.readUnsignedVarInt32()
+    let currentByte
+    let result = 0
+    let i = 0
 
-    // This undoes the trick in writeSignedVarInt()
-    // https://developers.google.com/protocol-buffers/docs/encoding?csw=1#types
-    const temp = (((raw << 31) >> 31) ^ raw) >> 1
+    do {
+      currentByte = this.buffer[this.offset++]
+      result += (currentByte & OTHER_BITS) << i
+      i += 7
+    } while (currentByte >= MOST_SIGNIFICANT_BIT)
 
-    // This extra step lets us deal with the largest signed values by treating
-    // negative results from read unsigned methods as like unsigned values.
-    // Must re-flip the top bit if the original read value had it set.
-    return temp ^ (raw & (1 << 31))
+    return this.decodeZigZag(result)
   }
 
-  readUnsignedVarInt64() {
+  decodeZigZag(value) {
+    return (value >>> 1) ^ -(value & 1)
+  }
+
+  readSignedVarInt64() {
     let currentByte
     let result = Long.fromInt(0)
     let i = 0
@@ -175,11 +151,11 @@ module.exports = class Decoder {
       result = result.add(Long.fromInt(currentByte & OTHER_BITS).shiftLeft(i))
       i += 7
     } while (currentByte >= MOST_SIGNIFICANT_BIT)
-    return result
+
+    return this.decodeZigZag64(result)
   }
 
-  readSignedVarInt64() {
-    const longValue = this.readUnsignedVarInt64()
+  decodeZigZag64(longValue) {
     return longValue.shiftRightUnsigned(1).xor(longValue.and(Long.fromInt(1)).negate())
   }
 

@@ -116,26 +116,27 @@ module.exports = class Encoder {
 
   // Based on:
   // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java#L106
-  writeUnsignedVarInt32(value) {
+  writeSignedVarInt32(value) {
     const byteArray = []
-    while ((value & UNSIGNED_INT32_MAX_NUMBER) !== 0) {
-      byteArray.push((value & OTHER_BITS) | MOST_SIGNIFICANT_BIT)
-      value >>>= 7
+    let encodedValue = this.encodeZigZag(value)
+
+    while ((encodedValue & UNSIGNED_INT32_MAX_NUMBER) !== 0) {
+      byteArray.push((encodedValue & OTHER_BITS) | MOST_SIGNIFICANT_BIT)
+      encodedValue >>>= 7
     }
 
-    byteArray.push(value & OTHER_BITS)
+    byteArray.push(encodedValue & OTHER_BITS)
     this.buffer = Buffer.concat([this.buffer, Buffer.from(byteArray)])
     return this
   }
 
-  // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java#L95
-  writeSignedVarInt32(value) {
-    return this.writeUnsignedVarInt32((value << 1) ^ (value >> 31))
+  encodeZigZag(value) {
+    return (value << 1) ^ (value >> 31)
   }
 
-  writeUnsignedVarInt64(value) {
+  writeSignedVarInt64(value) {
     const byteArray = []
-    let longValue = Long.fromValue(value)
+    let longValue = this.encodeZigZag64(value)
 
     while (longValue.and(UNSIGNED_INT64_MAX_NUMBER).notEquals(Long.fromInt(0))) {
       byteArray.push(
@@ -153,12 +154,9 @@ module.exports = class Encoder {
     return this
   }
 
-  writeSignedVarInt64(value) {
-    let longValue = Long.fromValue(value)
-    const unsignedLong = longValue.shiftLeft(1).xor(longValue.shiftRight(63))
-    this.writeUnsignedVarInt64(unsignedLong)
-
-    return this
+  encodeZigZag64(value) {
+    const longValue = Long.fromValue(value)
+    return longValue.shiftLeft(1).xor(longValue.shiftRight(63))
   }
 
   size() {
