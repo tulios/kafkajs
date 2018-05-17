@@ -44,6 +44,16 @@ module.exports = class Encoder {
     return bytes
   }
 
+  static sizeOfVarIntBytes(value) {
+    const size = value === null ? -1 : Buffer.byteLength(value)
+
+    if (size < 0) {
+      return Encoder.sizeOfVarInt(-1)
+    }
+
+    return Encoder.sizeOfVarInt(size) + size
+  }
+
   constructor() {
     this.buffer = Buffer.alloc(0)
   }
@@ -97,6 +107,20 @@ module.exports = class Encoder {
     return this
   }
 
+  writeVarIntString(value) {
+    if (value == null) {
+      this.writeVarInt(-1)
+      return this
+    }
+
+    const byteLength = Buffer.byteLength(value, 'utf8')
+    this.writeVarInt(byteLength)
+    const tempBuffer = Buffer.alloc(byteLength)
+    tempBuffer.write(value, 0, byteLength, 'utf8')
+    this.buffer = Buffer.concat([this.buffer, tempBuffer])
+    return this
+  }
+
   writeBytes(value) {
     if (value == null) {
       this.writeInt32(-1)
@@ -111,6 +135,28 @@ module.exports = class Encoder {
       const valueToWrite = String(value)
       const byteLength = Buffer.byteLength(valueToWrite, 'utf8')
       this.writeInt32(byteLength)
+      const tempBuffer = Buffer.alloc(byteLength)
+      tempBuffer.write(valueToWrite, 0, byteLength, 'utf8')
+      this.buffer = Buffer.concat([this.buffer, tempBuffer])
+    }
+
+    return this
+  }
+
+  writeVarIntBytes(value) {
+    if (value == null) {
+      this.writeVarInt(-1)
+      return this
+    }
+
+    if (Buffer.isBuffer(value)) {
+      // raw bytes
+      this.writeVarInt(value.length)
+      this.buffer = Buffer.concat([this.buffer, value])
+    } else {
+      const valueToWrite = String(value)
+      const byteLength = Buffer.byteLength(valueToWrite, 'utf8')
+      this.writeVarInt(byteLength)
       const tempBuffer = Buffer.alloc(byteLength)
       tempBuffer.write(valueToWrite, 0, byteLength, 'utf8')
       this.buffer = Buffer.concat([this.buffer, tempBuffer])
@@ -139,6 +185,18 @@ module.exports = class Encoder {
         case 'string':
           this.writeString(value)
           break
+        case 'object':
+          this.writeEncoder(value)
+          break
+      }
+    })
+    return this
+  }
+
+  writeVarIntArray(array, type) {
+    this.writeVarInt(array.length)
+    array.forEach(value => {
+      switch (type || typeof value) {
         case 'object':
           this.writeEncoder(value)
           break
