@@ -19,6 +19,31 @@ module.exports = class Encoder {
     const longValue = Long.fromValue(value)
     return longValue.shiftLeft(1).xor(longValue.shiftRight(63))
   }
+
+  static sizeOfVarInt(value) {
+    let encodedValue = this.encodeZigZag(value)
+    let bytes = 1
+
+    while ((encodedValue & UNSIGNED_INT32_MAX_NUMBER) !== 0) {
+      bytes += 1
+      encodedValue >>>= 7
+    }
+
+    return bytes
+  }
+
+  static sizeOfVarLong(value) {
+    let longValue = Encoder.encodeZigZag64(value)
+    let bytes = 1
+
+    while (longValue.and(UNSIGNED_INT64_MAX_NUMBER).notEquals(Long.fromInt(0))) {
+      bytes += 1
+      longValue = longValue.shiftRightUnsigned(7)
+    }
+
+    return bytes
+  }
+
   constructor() {
     this.buffer = Buffer.alloc(0)
   }
