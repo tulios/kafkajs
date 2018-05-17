@@ -5,6 +5,9 @@ const INT16_SIZE = 2
 const INT32_SIZE = 4
 const INT64_SIZE = 8
 
+const MOST_SIGNIFICANT_BIT = 0x80 // 128
+const OTHER_BITS = 0x7f // 127
+
 module.exports = class Decoder {
   static int32Size() {
     return INT32_SIZE
@@ -118,6 +121,42 @@ module.exports = class Decoder {
     }
 
     return array
+  }
+
+  readSignedVarInt32() {
+    let currentByte
+    let result = 0
+    let i = 0
+
+    do {
+      currentByte = this.buffer[this.offset++]
+      result += (currentByte & OTHER_BITS) << i
+      i += 7
+    } while (currentByte >= MOST_SIGNIFICANT_BIT)
+
+    return this.decodeZigZag(result)
+  }
+
+  decodeZigZag(value) {
+    return (value >>> 1) ^ -(value & 1)
+  }
+
+  readSignedVarInt64() {
+    let currentByte
+    let result = Long.fromInt(0)
+    let i = 0
+
+    do {
+      currentByte = this.buffer[this.offset++]
+      result = result.add(Long.fromInt(currentByte & OTHER_BITS).shiftLeft(i))
+      i += 7
+    } while (currentByte >= MOST_SIGNIFICANT_BIT)
+
+    return this.decodeZigZag64(result)
+  }
+
+  decodeZigZag64(longValue) {
+    return longValue.shiftRightUnsigned(1).xor(longValue.and(Long.fromInt(1)).negate())
   }
 
   slice(size) {
