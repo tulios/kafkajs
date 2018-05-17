@@ -124,7 +124,7 @@ module.exports = class Encoder {
 
   // Based on:
   // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java#L106
-  writeSignedVarInt32(value) {
+  writeVarInt(value) {
     const byteArray = []
     let encodedValue = Encoder.encodeZigZag(value)
 
@@ -138,8 +138,7 @@ module.exports = class Encoder {
     return this
   }
 
-
-  writeSignedVarInt64(value) {
+  writeVarLong(value) {
     const byteArray = []
     let longValue = Encoder.encodeZigZag64(value)
 
