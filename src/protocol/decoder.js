@@ -123,7 +123,7 @@ module.exports = class Decoder {
     return array
   }
 
-  readSignedVarInt32() {
+  readVarInt() {
     let currentByte
     let result = 0
     let i = 0
@@ -141,7 +141,7 @@ module.exports = class Decoder {
     return (value >>> 1) ^ -(value & 1)
   }
 
-  readSignedVarInt64() {
+  readVarLong() {
     let currentByte
     let result = Long.fromInt(0)
     let i = 0
