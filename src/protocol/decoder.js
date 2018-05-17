@@ -13,6 +13,14 @@ module.exports = class Decoder {
     return INT32_SIZE
   }
 
+  static decodeZigZag(value) {
+    return (value >>> 1) ^ -(value & 1)
+  }
+
+  static decodeZigZag64(longValue) {
+    return longValue.shiftRightUnsigned(1).xor(longValue.and(Long.fromInt(1)).negate())
+  }
+
   constructor(buffer) {
     this.buffer = buffer
     this.offset = 0
@@ -134,11 +142,7 @@ module.exports = class Decoder {
       i += 7
     } while (currentByte >= MOST_SIGNIFICANT_BIT)
 
-    return this.decodeZigZag(result)
-  }
-
-  decodeZigZag(value) {
-    return (value >>> 1) ^ -(value & 1)
+    return Decoder.decodeZigZag(result)
   }
 
   readVarLong() {
@@ -152,11 +156,7 @@ module.exports = class Decoder {
       i += 7
     } while (currentByte >= MOST_SIGNIFICANT_BIT)
 
-    return this.decodeZigZag64(result)
-  }
-
-  decodeZigZag64(longValue) {
-    return longValue.shiftRightUnsigned(1).xor(longValue.and(Long.fromInt(1)).negate())
+    return Decoder.decodeZigZag64(result)
   }
 
   slice(size) {
