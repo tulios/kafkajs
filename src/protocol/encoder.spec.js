@@ -8,10 +8,10 @@ const MIN_SAFE_NEGATIVE_SIGNED_INT = -2147483648
 
 describe('Protocol > Encoder', () => {
   const signed32 = number => new Encoder().writeVarInt(number).buffer
-  const decode32 = buffer => new Decoder(buffer).readSignedVarInt32()
+  const decode32 = buffer => new Decoder(buffer).readVarInt()
 
   const signed64 = number => new Encoder().writeVarLong(number).buffer
-  const decode64 = buffer => new Decoder(buffer).readSignedVarInt64()
+  const decode64 = buffer => new Decoder(buffer).readVarLong()
 
   const B = (...args) => Buffer.from(args)
   const L = value => Long.fromString(`${value}`)
