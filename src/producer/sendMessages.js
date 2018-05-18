@@ -45,8 +45,13 @@ module.exports = ({ logger, cluster, partitioner }) => {
         const partitions = partitionsPerLeader[broker.nodeId]
         const topicData = createTopicData({ topic, partitions, messagesPerPartition })
 
-        const response = await broker.produce({ acks, timeout, compression, topicData })
-        responsePerBroker.set(broker, responseSerializer(response))
+        try {
+          const response = await broker.produce({ acks, timeout, compression, topicData })
+          responsePerBroker.set(broker, responseSerializer(response))
+        } catch (e) {
+          responsePerBroker.delete(broker)
+          throw e
+        }
       })
     }
 

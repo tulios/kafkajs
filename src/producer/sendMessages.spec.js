@@ -35,6 +35,7 @@ describe('Producer > sendMessages', () => {
       1: { nodeId: 1, produce: jest.fn(() => createProducerResponse(topic, 0)) },
       2: { nodeId: 2, produce: jest.fn(() => createProducerResponse(topic, 1)) },
       3: { nodeId: 3, produce: jest.fn(() => createProducerResponse(topic, 2)) },
+      4: { nodeId: 4, produce: jest.fn(() => createProducerResponse(topic, 1)) },
     }
     cluster = {
       addTargetTopic: jest.fn(),
@@ -75,8 +76,8 @@ describe('Producer > sendMessages', () => {
     expect(brokers[2].produce).toHaveBeenCalledTimes(1)
     expect(brokers[3].produce).toHaveBeenCalledTimes(3)
     expect(response).toEqual([
-      { errorCode: 0, offset: '0', partition: 0, timestamp: '-1', topicName: 'topic-name' },
       { errorCode: 0, offset: '1', partition: 1, timestamp: '-1', topicName: 'topic-name' },
+      { errorCode: 0, offset: '0', partition: 0, timestamp: '-1', topicName: 'topic-name' },
       { errorCode: 0, offset: '2', partition: 2, timestamp: '-1', topicName: 'topic-name' },
     ])
   })
@@ -108,4 +109,31 @@ describe('Producer > sendMessages', () => {
       expect(cluster.refreshMetadata).toHaveBeenCalled()
     })
   }
+
+  test('does not re-produce messages to brokers that are no longer leaders after metadata refresh', async () => {
+    const sendMessages = createSendMessages({ logger: newLogger(), cluster, partitioner })
+
+    brokers[2].produce
+      .mockImplementationOnce(() => {
+        const e = new Error('Some error broker 1')
+        e.type = 'NOT_LEADER_FOR_PARTITION'
+        throw e
+      })
+      .mockImplementationOnce(() => createProducerResponse(topic, 0))
+    cluster.findLeaderForPartitions
+      .mockImplementationOnce(() => partitionsPerLeader)
+      .mockImplementationOnce(() => ({
+        1: [0],
+        4: [1], // Broker 4 replaces broker 2 as leader for partition 1
+        3: [2],
+      }))
+
+    const response = await sendMessages({ topic, messages })
+
+    expect(response).toEqual([
+      { errorCode: 0, offset: '0', partition: 0, timestamp: '-1', topicName: 'topic-name' },
+      { errorCode: 0, offset: '2', partition: 2, timestamp: '-1', topicName: 'topic-name' },
+      { errorCode: 0, offset: '1', partition: 1, timestamp: '-1', topicName: 'topic-name' },
+    ])
+  })
 })
