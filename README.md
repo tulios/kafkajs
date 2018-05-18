@@ -514,31 +514,27 @@ kafka.consumer({
 
 In order to pause and resume consuming from one or more topics, the `Consumer` provides the methods `pause` and `resume`. Note that pausing a topic means that it won't be fetched in the next cycle. You may still receive messages for the topic within the current batch.
 
+Calling `pause` with a topic that the consumer is not subscribed to is a no-op, calling `resume` with a topic that is not paused is also a no-op.
+
+Example: A situation where this could be useful is when an external dependency used by the consumer is under too much load. Here we want to `pause` consumption from a topic when this happens, and after a predefined interval we `resume` again:
+
 ```javascript
 await consumer.connect()
-
 await consumer.subscribe({ topic: 'jobs' })
-await consumer.subscribe({ topic: 'pause' })
-await consumer.subscribe({ topic: 'resume' })
 
 await consumer.run({ eachMessage: async ({ topic, message }) => {
-  switch(topic) {
-    case 'jobs':
-      doSomeWork(message)
-      break
-    case 'pause':
-      // Stop consuming from the 'jobs' topic.
-      consumer.pause([{ topic: 'jobs'}])
-      break
-    case 'resume':
-      // Resume consuming from the 'jobs' topic
-      consumer.resume([{ topic: 'jobs' }])
-      break
+  try {
+    await sendToDependency(message)
+  } catch (e) {
+    if (e instanceof TooManyRequestsError) {
+      consumer.pause([{ topic }])
+      setTimeout(() => consumer.resume([{ topic }]), e.retryAfter * 1000)
+    }
+
+    throw e
   }
 }})
 ```
-
-Calling `pause` with a topic that the consumer is not subscribed to is a no-op, calling `resume` with a topic that is not paused is also a no-op.
 
 ### <a name="consuming-messages-seek"></a> Seek
 
