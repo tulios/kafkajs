@@ -407,7 +407,7 @@ KafkaJS offers you two ways to process your data: `eachMessage` and `eachBatch`
 
 ### <a name="consuming-messages-each-message"></a> eachMessage
 
-This handler provides a convenient API, feeding your function one message at a time. The handler will automatically commit your offsets and heartbeat at the configured interval. If you are just looking to get started with Kafka consumers this a good place to start.
+The `eachMessage` handler provides a convenient and easy to use API, feeding your function one message at a time. It is implemented on top of `eachBatch`, and it will automatically commit your offsets and heartbeat at the configured interval for you. If you are just looking to get started with Kafka consumers this a good place to start.
 
 ```javascript
 async () => {
@@ -435,11 +435,9 @@ async () => {
 
 ### <a name="consuming-messages-each-batch"></a> eachBatch
 
-In order to process huge volumes of messages in a responsive manner, you need consider the `eachBatch` API. Dealing with batches rather than single messages reduces the network traffic and the communication overhead with the broker, allowing your consumer group to eat away at your partition lag in orders of magnitudes faster than `eachMessage`.
+Some use cases requires dealing with batches directly. This handler will feed your function batches (and provide some utility functions) to give your code more flexibility. All resolved offsets will be automatically committed after the function is executed.
 
-This handler will feed your function batches. All resolved offsets will be automatically committed after the function is executed. It will also provide more utility functions to give your code more flexibility.
-
-Be aware that using `eachBatch` is considered a more advanced API, since you will have to do more configuration and understand how session timeouts and heartbeats are connected.
+Be aware that using `eachBatch` directly is considered a more advanced use case as compared to using `eachMessage`, since you will have to understand how session timeouts and heartbeats are connected.
 
 ```javascript
 // create consumer, connect and subscribe ...
