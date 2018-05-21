@@ -15,14 +15,26 @@ const Header = require('../../header/v0')
  *     HeaderValue => VarInt|Bytes
  */
 
-module.exports = ({ timestampDelta, offsetDelta, key, value, headers = [] }) => {
+/**
+ * @param [offsetDelta=0] {Integer}
+ * @param [timestampDelta=0] {Long}
+ * @param key {Buffer}
+ * @param value {Buffer}
+ * @param [headers={}] {Object}
+ */
+module.exports = ({ offsetDelta = 0, timestampDelta = 0, key, value, headers = {} }) => {
+  const headersArray = Object.keys(headers).map(headerKey => ({
+    key: headerKey,
+    value: headers[headerKey],
+  }))
+
   const sizeOfBody =
     1 + // always one byte for attributes
     Encoder.sizeOfVarInt(offsetDelta) +
     Encoder.sizeOfVarLong(timestampDelta) +
     Encoder.sizeOfVarIntBytes(key) +
     Encoder.sizeOfVarIntBytes(value) +
-    sizeOfHeaders(headers)
+    sizeOfHeaders(headersArray)
 
   return new Encoder()
     .writeVarInt(sizeOfBody)
@@ -31,13 +43,13 @@ module.exports = ({ timestampDelta, offsetDelta, key, value, headers = [] }) => 
     .writeVarInt(offsetDelta)
     .writeVarIntBytes(key)
     .writeVarIntBytes(value)
-    .writeVarIntArray(headers.map(Header))
+    .writeVarIntArray(headersArray.map(Header))
 }
 
-const sizeOfHeaders = headers => {
-  let size = Encoder.sizeOfVarInt(headers.length)
+const sizeOfHeaders = headersArray => {
+  let size = Encoder.sizeOfVarInt(headersArray.length)
 
-  for (let header of headers) {
+  for (let header of headersArray) {
     const keySize = Buffer.byteLength(header.key)
     const valueSize = Buffer.byteLength(header.value)
 
