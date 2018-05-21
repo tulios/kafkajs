@@ -34,7 +34,7 @@ module.exports = ({
   records = [],
 }) => {
   const batchBody = new Encoder()
-    .writeInt8(0) // TODO: attributes - add codec + others
+    .writeInt16(0) // TODO: attributes - add codec + others
     .writeInt32(lastOffsetDelta)
     .writeInt64(firstTimestamp)
     .writeInt64(maxTimestamp)
@@ -49,5 +49,5 @@ module.exports = ({
     .writeInt32(crc32(batchBody))
     .writeEncoder(batchBody)
 
-  return new Encoder().writeInt64(firstOffset).writeBytes(batch)
+  return new Encoder().writeInt64(firstOffset).writeBytes(batch.buffer)
 }

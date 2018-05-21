@@ -60,7 +60,18 @@ const topicEncoder = compression => async ({ topic, partitions }) => {
 }
 
 const partitionsEncoder = compression => async ({ partition, messages }) => {
-  const recordBatch = RecordBatch({ compression, records: messages.map(Record) })
+  const dateNow = Date.now()
+  const firstTimestamp = (messages[0] || {}).timestamp || dateNow
+
+  const records = messages.map((message, i) =>
+    Record({
+      ...message,
+      offsetDelta: i,
+      timestampDelta: (message.timestamp || dateNow) - firstTimestamp,
+    })
+  )
+
+  const recordBatch = RecordBatch({ compression, records, lastOffsetDelta: records.length - 1 })
 
   return new Encoder()
     .writeInt32(partition)
