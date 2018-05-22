@@ -73,12 +73,37 @@ module.exports = class Decoder {
     return value
   }
 
+  readVarIntString() {
+    const byteLength = this.readVarInt()
+
+    if (byteLength === -1) {
+      return null
+    }
+
+    const stringBuffer = this.buffer.slice(this.offset, this.offset + byteLength)
+    const value = stringBuffer.toString('utf8')
+    this.offset += byteLength
+    return value
+  }
+
   canReadBytes(length) {
     return Buffer.byteLength(this.buffer) - this.offset >= length
   }
 
   readBytes() {
     const byteLength = this.readInt32()
+
+    if (byteLength === -1) {
+      return null
+    }
+
+    const stringBuffer = this.buffer.slice(this.offset, this.offset + byteLength)
+    this.offset += byteLength
+    return stringBuffer
+  }
+
+  readVarIntBytes() {
+    const byteLength = this.readVarInt()
 
     if (byteLength === -1) {
       return null
