@@ -4,6 +4,7 @@ export HOST_IP=$(ifconfig | grep -E "([0-9]{1,3}\.){3}[0-9]{1,3}" | grep -v 127.
 
 COMPOSE_FILE=${COMPOSE_FILE:="docker-compose.yml"}
 
+echo "Running compose file: ${COMPOSE_FILE}:"
 docker-compose -f "${COMPOSE_FILE}" up --force-recreate -d
 if [ -z ${NO_LOGS} ]; then
   docker-compose logs -f
