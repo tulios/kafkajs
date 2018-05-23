@@ -1,6 +1,6 @@
 const Long = require('long')
 const Encoder = require('../../encoder')
-const crc32 = require('../../crc32')
+const crc32C = require('../crc32C')
 const { Types: Compression } = require('../../message/compression')
 
 /**
@@ -43,10 +43,13 @@ module.exports = ({
     .writeInt32(firstSequence)
     .writeArray(records)
 
+  // CRC32C validation is happening here:
+  // https://github.com/apache/kafka/blob/0.11.0.1/clients/src/main/java/org/apache/kafka/common/record/DefaultRecordBatch.java#L148
+
   const batch = new Encoder()
     .writeInt32(partitionLeaderEpoch)
     .writeInt8(2) // magicByte
-    .writeInt32(crc32(batchBody))
+    .writeUInt32(crc32C(batchBody.buffer))
     .writeEncoder(batchBody)
 
   return new Encoder().writeInt64(firstOffset).writeBytes(batch.buffer)

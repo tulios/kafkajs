@@ -79,6 +79,13 @@ module.exports = class Encoder {
     return this
   }
 
+  writeUInt32(value) {
+    const tempBuffer = Buffer.alloc(INT32_SIZE)
+    tempBuffer.writeUInt32BE(value)
+    this.buffer = Buffer.concat([this.buffer, tempBuffer])
+    return this
+  }
+
   writeInt64(value) {
     const tempBuffer = Buffer.alloc(INT64_SIZE)
     const longValue = Long.fromValue(value)
