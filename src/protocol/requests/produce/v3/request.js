@@ -20,6 +20,7 @@ const RecordBatch = require('../../../recordBatch/v0')
  * @param [transactionalId=null] {String} The transactional id or null if the producer is not transactional
  * @param acks {Integer} See producer request v0
  * @param timeout {Integer} See producer request v0
+ * @param [compression=CompressionTypes.None] {CompressionTypes}
  * @param topicData {Array}
  */
 module.exports = ({

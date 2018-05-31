@@ -9,25 +9,28 @@ describe('Protocol > Requests > Produce > v3', () => {
       compression: 0,
       topicData: [
         {
-          topic: 'test-topic-b9e9ddb9061e327b2d80',
+          topic: 'test-topic-ebba68879c6f5081d8c2',
           partitions: [
             {
               partition: 0,
               messages: [
                 {
-                  key: 'key-5d7b7f5e1099d6cebc05',
-                  value: 'some-value-a68c69a39c2183f75e68',
+                  key: 'key-9d0f348cb2e730e1edc4',
+                  value: 'some-value-a17b4c81f9ecd1e896e3',
                   timestamp: 1509928155660,
+                  headers: { a: 'b' },
                 },
                 {
-                  key: 'key-f39f8d5ad6fa246973da',
-                  value: 'some-value-474805f12b94db8eaecc',
-                  timestamp: 1509928155661,
+                  key: 'key-c7073e965c34b4cc6442',
+                  value: 'some-value-65df422070d7ad73914f',
+                  timestamp: 1509928155660,
+                  headers: { a: 'b' },
                 },
                 {
-                  key: 'key-cbe31a6b3145c40c29b1',
-                  value: 'some-value-914542c511ada04e118c',
-                  timestamp: 1509928155662,
+                  key: 'key-1693b184a9b52dbe03bc',
+                  value: 'some-value-3fcb65ffca087cba20ad',
+                  timestamp: 1509928155660,
+                  headers: { a: 'b' },
                 },
               ],
             },
