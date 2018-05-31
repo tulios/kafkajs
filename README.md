@@ -41,6 +41,7 @@ KafkaJS is battle-tested and ready for production.
   - [Describe group](#consuming-messages-describe-group)
 - [Instrumentation](#instrumentation)
 - [Custom logging](#custom-logging)
+- [Retry (detailed)](#configuration-default-retry-detailed)
 - [Development](#development)
 
 ## <a name="installation"></a> Installation
@@ -119,33 +120,8 @@ new Kafka({
 
 The `retry` option can be used to set the configuration of the retry mechanism, which is be used to retry connections and API calls to Kafka (when using producers or consumers).
 
-The retry mechanism uses a randomization function that grows exponentially. This formula and how the default values affect it is best desribed by the example below:
-
-- 1st retry:
-  - Always a flat `initialRetryTime` ms
-  - Default: `300ms`
-- Nth retry:
-  - Formula: `Random(previousRetryTime * (1 - factor), previousRetryTime * (1 + factor)) * multiplier`
-  - N = 1:
-    - Since `previousRetryTime == initialRetryTime` just plug the values in the formula:
-    - Random(300 * (1 - 0.2), 300 * (1 + 0.2)) * 2 => Random(240, 360) * 2 => (480, 720) ms
-    - Hence, somewhere between `480ms` to `720ms`
-  - N = 2:
-    - Since `previousRetryTime` from N = 1 was in a range between 480ms and 720ms, the retry for this step will be in the range of:
-    - `previousRetryTime = 480ms` => Random(480 * (1 - 0.2), 480 * (1 + 0.2)) * 2 => Random(384, 576) * 2 => (768, 1152) ms
-    - `previousRetryTime = 720ms` => Random(720 * (1 - 0.2), 720 * (1 + 0.2)) * 2 => Random(576, 864) * 2 => (1152, 1728) ms
-    - Hence, somewhere between `768ms` to `1728ms`
-  - And so on...
-
-Table of retry times for default values:
-
-| Retry # | min (ms) | max (ms) |
-| ------- | -------- | -------- |
-| 1 | 300 | 300 |
-| 2 | 480 | 720 |
-| 3 | 768 | 1728 |
-| 4 | 1229 | 4147 |
-| 5 | 1966 | 9953 |
+The retry mechanism uses a randomization function that grows exponentially.
+[Detailed example](#configuration-default-retry-detailed)
 
 If the max number of retries is exceeded the retrier will throw `KafkaJSNumberOfRetriesExceeded` and interrupt. Producers will bubble up the error to the user code; Consumers will wait the retry time attached to the exception (it will be based on the number of attempts) and perform a full restart.
 
@@ -755,6 +731,36 @@ const kafka = new Kafka({
   logCreator: WinstonLogCreator
 })
 ```
+
+## <a name="configuration-default-retry-detailed"></a> Retry (detailed)
+
+The retry mechanism uses a randomization function that grows exponentially. This formula and how the default values affect it is best described by the example below:
+
+- 1st retry:
+  - Always a flat `initialRetryTime` ms
+  - Default: `300ms`
+- Nth retry:
+  - Formula: `Random(previousRetryTime * (1 - factor), previousRetryTime * (1 + factor)) * multiplier`
+  - N = 1:
+    - Since `previousRetryTime == initialRetryTime` just plug the values in the formula:
+    - Random(300 * (1 - 0.2), 300 * (1 + 0.2)) * 2 => Random(240, 360) * 2 => (480, 720) ms
+    - Hence, somewhere between `480ms` to `720ms`
+  - N = 2:
+    - Since `previousRetryTime` from N = 1 was in a range between 480ms and 720ms, the retry for this step will be in the range of:
+    - `previousRetryTime = 480ms` => Random(480 * (1 - 0.2), 480 * (1 + 0.2)) * 2 => Random(384, 576) * 2 => (768, 1152) ms
+    - `previousRetryTime = 720ms` => Random(720 * (1 - 0.2), 720 * (1 + 0.2)) * 2 => Random(576, 864) * 2 => (1152, 1728) ms
+    - Hence, somewhere between `768ms` to `1728ms`
+  - And so on...
+
+Table of retry times for default values:
+
+| Retry # | min (ms) | max (ms) |
+| ------- | -------- | -------- |
+| 1 | 300 | 300 |
+| 2 | 480 | 720 |
+| 3 | 768 | 1728 |
+| 4 | 1229 | 4147 |
+| 5 | 1966 | 9953 |
 
 ## <a name="development"></a> Development
 
