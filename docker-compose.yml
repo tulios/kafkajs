@@ -29,7 +29,7 @@ services:
       KAFKA_SSL_TRUSTSTORE_LOCATION: "/var/private/ssl/certs/kafka.server.truststore.jks"
       KAFKA_SSL_TRUSTSTORE_PASSWORD: "testtest"
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: "PLAIN"
-      KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN"
+      KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN,SCRAM-SHA-256,SCRAM-SHA-512"
       KAFKA_OPTS: "-Djava.security.auth.login.config=/opt/kafka/config/server-jaas.conf"
       KAFKA_CREATE_TOPICS: "topic-test:6:3"
     volumes:
@@ -58,7 +58,7 @@ services:
       KAFKA_SSL_TRUSTSTORE_LOCATION: "/var/private/ssl/certs/kafka.server.truststore.jks"
       KAFKA_SSL_TRUSTSTORE_PASSWORD: "testtest"
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: "PLAIN"
-      KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN"
+      KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN,SCRAM-SHA-256,SCRAM-SHA-512"
       KAFKA_OPTS: "-Djava.security.auth.login.config=/opt/kafka/config/server-jaas.conf"
       KAFKA_CREATE_TOPICS: "topic-test:6:3"
     volumes:
@@ -87,7 +87,7 @@ services:
       KAFKA_SSL_TRUSTSTORE_LOCATION: "/var/private/ssl/certs/kafka.server.truststore.jks"
       KAFKA_SSL_TRUSTSTORE_PASSWORD: "testtest"
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: "PLAIN"
-      KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN"
+      KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN,SCRAM-SHA-256,SCRAM-SHA-512"
       KAFKA_OPTS: "-Djava.security.auth.login.config=/opt/kafka/config/server-jaas.conf"
       KAFKA_CREATE_TOPICS: "topic-test:6:3"
     volumes:
