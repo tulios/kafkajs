@@ -11,6 +11,49 @@ const UNSIGNED_INT32_MAX_NUMBER = 0xffffff80
 const UNSIGNED_INT64_MAX_NUMBER = Long.fromBytes([-1, -1, -1, -1, -1, -1, -1, -128])
 
 module.exports = class Encoder {
+  static encodeZigZag(value) {
+    return (value << 1) ^ (value >> 31)
+  }
+
+  static encodeZigZag64(value) {
+    const longValue = Long.fromValue(value)
+    return longValue.shiftLeft(1).xor(longValue.shiftRight(63))
+  }
+
+  static sizeOfVarInt(value) {
+    let encodedValue = this.encodeZigZag(value)
+    let bytes = 1
+
+    while ((encodedValue & UNSIGNED_INT32_MAX_NUMBER) !== 0) {
+      bytes += 1
+      encodedValue >>>= 7
+    }
+
+    return bytes
+  }
+
+  static sizeOfVarLong(value) {
+    let longValue = Encoder.encodeZigZag64(value)
+    let bytes = 1
+
+    while (longValue.and(UNSIGNED_INT64_MAX_NUMBER).notEquals(Long.fromInt(0))) {
+      bytes += 1
+      longValue = longValue.shiftRightUnsigned(7)
+    }
+
+    return bytes
+  }
+
+  static sizeOfVarIntBytes(value) {
+    const size = value === null ? -1 : Buffer.byteLength(value)
+
+    if (size < 0) {
+      return Encoder.sizeOfVarInt(-1)
+    }
+
+    return Encoder.sizeOfVarInt(size) + size
+  }
+
   constructor() {
     this.buffer = Buffer.alloc(0)
   }
@@ -32,6 +75,13 @@ module.exports = class Encoder {
   writeInt32(value) {
     const tempBuffer = Buffer.alloc(INT32_SIZE)
     tempBuffer.writeInt32BE(value)
+    this.buffer = Buffer.concat([this.buffer, tempBuffer])
+    return this
+  }
+
+  writeUInt32(value) {
+    const tempBuffer = Buffer.alloc(INT32_SIZE)
+    tempBuffer.writeUInt32BE(value)
     this.buffer = Buffer.concat([this.buffer, tempBuffer])
     return this
   }
@@ -64,6 +114,20 @@ module.exports = class Encoder {
     return this
   }
 
+  writeVarIntString(value) {
+    if (value == null) {
+      this.writeVarInt(-1)
+      return this
+    }
+
+    const byteLength = Buffer.byteLength(value, 'utf8')
+    this.writeVarInt(byteLength)
+    const tempBuffer = Buffer.alloc(byteLength)
+    tempBuffer.write(value, 0, byteLength, 'utf8')
+    this.buffer = Buffer.concat([this.buffer, tempBuffer])
+    return this
+  }
+
   writeBytes(value) {
     if (value == null) {
       this.writeInt32(-1)
@@ -78,6 +142,28 @@ module.exports = class Encoder {
       const valueToWrite = String(value)
       const byteLength = Buffer.byteLength(valueToWrite, 'utf8')
       this.writeInt32(byteLength)
+      const tempBuffer = Buffer.alloc(byteLength)
+      tempBuffer.write(valueToWrite, 0, byteLength, 'utf8')
+      this.buffer = Buffer.concat([this.buffer, tempBuffer])
+    }
+
+    return this
+  }
+
+  writeVarIntBytes(value) {
+    if (value == null) {
+      this.writeVarInt(-1)
+      return this
+    }
+
+    if (Buffer.isBuffer(value)) {
+      // raw bytes
+      this.writeVarInt(value.length)
+      this.buffer = Buffer.concat([this.buffer, value])
+    } else {
+      const valueToWrite = String(value)
+      const byteLength = Buffer.byteLength(valueToWrite, 'utf8')
+      this.writeVarInt(byteLength)
       const tempBuffer = Buffer.alloc(byteLength)
       tempBuffer.write(valueToWrite, 0, byteLength, 'utf8')
       this.buffer = Buffer.concat([this.buffer, tempBuffer])
@@ -114,11 +200,23 @@ module.exports = class Encoder {
     return this
   }
 
+  writeVarIntArray(array, type) {
+    this.writeVarInt(array.length)
+    array.forEach(value => {
+      switch (type || typeof value) {
+        case 'object':
+          this.writeEncoder(value)
+          break
+      }
+    })
+    return this
+  }
+
   // Based on:
   // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java#L106
-  writeSignedVarInt32(value) {
+  writeVarInt(value) {
     const byteArray = []
-    let encodedValue = this.encodeZigZag(value)
+    let encodedValue = Encoder.encodeZigZag(value)
 
     while ((encodedValue & UNSIGNED_INT32_MAX_NUMBER) !== 0) {
       byteArray.push((encodedValue & OTHER_BITS) | MOST_SIGNIFICANT_BIT)
@@ -130,13 +228,9 @@ module.exports = class Encoder {
     return this
   }
 
-  encodeZigZag(value) {
-    return (value << 1) ^ (value >> 31)
-  }
-
-  writeSignedVarInt64(value) {
+  writeVarLong(value) {
     const byteArray = []
-    let longValue = this.encodeZigZag64(value)
+    let longValue = Encoder.encodeZigZag64(value)
 
     while (longValue.and(UNSIGNED_INT64_MAX_NUMBER).notEquals(Long.fromInt(0))) {
       byteArray.push(
@@ -152,11 +246,6 @@ module.exports = class Encoder {
 
     this.buffer = Buffer.concat([this.buffer, Buffer.from(byteArray)])
     return this
-  }
-
-  encodeZigZag64(value) {
-    const longValue = Long.fromValue(value)
-    return longValue.shiftLeft(1).xor(longValue.shiftRight(63))
   }
 
   size() {

@@ -7,11 +7,11 @@ const MAX_SAFE_POSITIVE_SIGNED_INT = 2147483647
 const MIN_SAFE_NEGATIVE_SIGNED_INT = -2147483648
 
 describe('Protocol > Encoder', () => {
-  const signed32 = number => new Encoder().writeSignedVarInt32(number).buffer
-  const decode32 = buffer => new Decoder(buffer).readSignedVarInt32()
+  const signed32 = number => new Encoder().writeVarInt(number).buffer
+  const decode32 = buffer => new Decoder(buffer).readVarInt()
 
-  const signed64 = number => new Encoder().writeSignedVarInt64(number).buffer
-  const decode64 = buffer => new Decoder(buffer).readSignedVarInt64()
+  const signed64 = number => new Encoder().writeVarLong(number).buffer
+  const decode64 = buffer => new Decoder(buffer).readVarLong()
 
   const B = (...args) => Buffer.from(args)
   const L = value => Long.fromString(`${value}`)
@@ -171,6 +171,82 @@ describe('Protocol > Encoder', () => {
       expect(decode64(signed64(L('4611686018427387903')))).toEqual(L('4611686018427387903'))
       expect(decode64(signed64(L('4611686018427387904')))).toEqual(L('4611686018427387904'))
       expect(decode64(signed64(Long.MAX_VALUE))).toEqual(Long.MAX_VALUE)
+    })
+  })
+
+  describe('sizeOfVarInt', () => {
+    it('returns the size in bytes', () => {
+      expect(Encoder.sizeOfVarInt(0)).toEqual(signed32(1).length)
+      expect(Encoder.sizeOfVarInt(1)).toEqual(signed32(1).length)
+      expect(Encoder.sizeOfVarInt(63)).toEqual(signed32(63).length)
+      expect(Encoder.sizeOfVarInt(64)).toEqual(signed32(64).length)
+      expect(Encoder.sizeOfVarInt(8191)).toEqual(signed32(8191).length)
+      expect(Encoder.sizeOfVarInt(8192)).toEqual(signed32(8192).length)
+      expect(Encoder.sizeOfVarInt(1048575)).toEqual(signed32(1048575).length)
+      expect(Encoder.sizeOfVarInt(1048576)).toEqual(signed32(1048576).length)
+      expect(Encoder.sizeOfVarInt(134217727)).toEqual(signed32(134217727).length)
+      expect(Encoder.sizeOfVarInt(134217728)).toEqual(signed32(134217728).length)
+
+      expect(Encoder.sizeOfVarInt(-1)).toEqual(signed32(-1).length)
+      expect(Encoder.sizeOfVarInt(-64)).toEqual(signed32(-64).length)
+      expect(Encoder.sizeOfVarInt(-65)).toEqual(signed32(-65).length)
+      expect(Encoder.sizeOfVarInt(-8192)).toEqual(signed32(-8192).length)
+      expect(Encoder.sizeOfVarInt(-8193)).toEqual(signed32(-8193).length)
+      expect(Encoder.sizeOfVarInt(-1048576)).toEqual(signed32(-1048576).length)
+      expect(Encoder.sizeOfVarInt(-1048577)).toEqual(signed32(-1048577).length)
+      expect(Encoder.sizeOfVarInt(-134217728)).toEqual(signed32(-134217728).length)
+      expect(Encoder.sizeOfVarInt(-134217729)).toEqual(signed32(-134217729).length)
+
+      expect(Encoder.sizeOfVarInt(MAX_SAFE_POSITIVE_SIGNED_INT)).toEqual(
+        signed32(MAX_SAFE_POSITIVE_SIGNED_INT).length
+      )
+      expect(Encoder.sizeOfVarInt(MIN_SAFE_NEGATIVE_SIGNED_INT)).toEqual(
+        signed32(MIN_SAFE_NEGATIVE_SIGNED_INT).length
+      )
+    })
+  })
+
+  describe('sizeOfVarLong', () => {
+    it('returns the size in bytes', () => {
+      expect(Encoder.sizeOfVarLong(0)).toEqual(signed64(0).length)
+      expect(Encoder.sizeOfVarLong(1)).toEqual(signed64(1).length)
+      expect(Encoder.sizeOfVarLong(63)).toEqual(signed64(63).length)
+      expect(Encoder.sizeOfVarLong(64)).toEqual(signed64(64).length)
+      expect(Encoder.sizeOfVarLong(8191)).toEqual(signed64(8191).length)
+      expect(Encoder.sizeOfVarLong(8192)).toEqual(signed64(8192).length)
+      expect(Encoder.sizeOfVarLong(1048575)).toEqual(signed64(1048575).length)
+      expect(Encoder.sizeOfVarLong(1048576)).toEqual(signed64(1048576).length)
+      expect(Encoder.sizeOfVarLong(134217727)).toEqual(signed64(134217727).length)
+      expect(Encoder.sizeOfVarLong(134217728)).toEqual(signed64(134217728).length)
+
+      expect(Encoder.sizeOfVarLong(MAX_SAFE_POSITIVE_SIGNED_INT)).toEqual(
+        signed64(MAX_SAFE_POSITIVE_SIGNED_INT).length
+      )
+
+      expect(Encoder.sizeOfVarLong(L('17179869183'))).toEqual(signed64(L('17179869183')).length)
+      expect(Encoder.sizeOfVarLong(L('17179869184'))).toEqual(signed64(L('17179869184')).length)
+      expect(Encoder.sizeOfVarLong(L('2199023255551'))).toEqual(signed64(L('2199023255551')).length)
+      expect(Encoder.sizeOfVarLong(L('2199023255552'))).toEqual(signed64(L('2199023255552')).length)
+      expect(Encoder.sizeOfVarLong(L('281474976710655'))).toEqual(
+        signed64(L('281474976710655')).length
+      )
+      expect(Encoder.sizeOfVarLong(L('281474976710656'))).toEqual(
+        signed64(L('281474976710656')).length
+      )
+      expect(Encoder.sizeOfVarLong(L('-36028797018963968'))).toEqual(
+        signed64(L('-36028797018963968')).length
+      )
+      expect(Encoder.sizeOfVarLong(L('-36028797018963969'))).toEqual(
+        signed64(L('-36028797018963969')).length
+      )
+      expect(Encoder.sizeOfVarLong(L('-4611686018427387904'))).toEqual(
+        signed64(L('-4611686018427387904')).length
+      )
+      expect(Encoder.sizeOfVarLong(L('-4611686018427387905'))).toEqual(
+        signed64(L('-4611686018427387905')).length
+      )
+      expect(Encoder.sizeOfVarLong(Long.MIN_VALUE)).toEqual(signed64(Long.MIN_VALUE).length)
+      expect(Encoder.sizeOfVarLong(Long.MAX_VALUE)).toEqual(signed64(Long.MAX_VALUE).length)
     })
   })
 })
