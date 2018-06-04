@@ -28,7 +28,16 @@ const mergeTopics = (obj, { topic, partitions }) =>
  * @param {Object} logger
  */
 module.exports = class Cluster {
-  constructor({ brokers, ssl, sasl, clientId, connectionTimeout, retry, logger: rootLogger }) {
+  constructor({
+    brokers,
+    ssl,
+    sasl,
+    clientId,
+    connectionTimeout,
+    retry,
+    logger: rootLogger,
+    allowExperimentalV011,
+  }) {
     this.rootLogger = rootLogger
     this.logger = rootLogger.namespace('Cluster')
     this.retrier = createRetry(assign({}, retry))
@@ -47,6 +56,7 @@ module.exports = class Cluster {
       connectionBuilder: this.connectionBuilder,
       logger: this.rootLogger,
       retry,
+      allowExperimentalV011,
     })
   }
 
