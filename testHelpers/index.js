@@ -53,6 +53,16 @@ const saslConnectionOpts = () =>
     },
   })
 
+const saslSCRAM256ConnectionOpts = () =>
+  Object.assign(sslConnectionOpts(), {
+    port: 9094,
+    sasl: {
+      mechanism: 'scram-sha-256',
+      username: 'testscram',
+      password: 'testtestscram256',
+    },
+  })
+
 const createConnection = (opts = {}) => new Connection(Object.assign(connectionOpts(), opts))
 
 const createConnectionBuilder = (opts = {}, brokers = plainTextBrokers()) => {
@@ -129,6 +139,7 @@ module.exports = {
   connectionOpts,
   sslConnectionOpts,
   saslConnectionOpts,
+  saslSCRAM256ConnectionOpts,
   createConnection,
   createConnectionBuilder,
   createCluster,
