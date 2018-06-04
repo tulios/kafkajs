@@ -39,6 +39,7 @@ KafkaJS is battle-tested and ready for production.
   - [Seek](#consuming-messages-seek)
   - [Custom partition assigner](#consuming-messages-custom-partition-assigner)
   - [Describe group](#consuming-messages-describe-group)
+  - [Compression](#consuming-messages-compression)
 - [Instrumentation](#instrumentation)
 - [Custom logging](#custom-logging)
 - [Retry (detailed)](#configuration-default-retry-detailed)
@@ -411,7 +412,7 @@ async () => {
 
 ### <a name="consuming-messages-each-batch"></a> eachBatch
 
-Some use cases requires dealing with batches directly. This handler will feed your function batches (and provide some utility functions) to give your code more flexibility. All resolved offsets will be automatically committed after the function is executed.
+Some use cases requires dealing with batches directly. This handler will feed your function batches and provide some utility functions to give your code more flexibility: `resolveOffset`, `heartbeat`, and `isRunning`. All resolved offsets will be automatically committed after the function is executed.
 
 Be aware that using `eachBatch` directly is considered a more advanced use case as compared to using `eachMessage`, since you will have to understand how session timeouts and heartbeats are connected.
 
@@ -441,7 +442,11 @@ await consumer.run({
 
 > `batch.highWatermark` is the last committed offset within the topic partition. It can be useful for calculating lag.
 
-> `resolveOffset()` is used to mark the message as processed. In case of errors, the consumer will automatically commit the resolved offsets. With the default configuration, the function can't be interrupted without ignoring the unprocessed message; this happens because after the function is executed the last offset of the batch is automatically resolved and committed. To have a fine grain control of message processing it's possible to disable the auto-resolve, setting the property `eachBatchAutoResolve` to false. Example:
+> `eachBatchAutoResolve` configures auto-resolve of batch processing. If set to true, KafkaJS will automatically commit the last offset of the batch if `eachBatch` doesn't throw an error. Default: true.
+
+> `resolveOffset()` is used to mark a message in the batch as processed. In case of errors, the consumer will automatically commit the resolved offsets.
+
+Example:
 
 ```javascript
 consumer.run({
@@ -457,7 +462,7 @@ consumer.run({
 })
 ```
 
-In this example, if the consumer is shutting down in the middle of the batch, the remaining messages won't be resolved and therefore not committed.
+In the example above, if the consumer is shutting down in the middle of the batch, the remaining messages won't be resolved and therefore not committed. This way, you can quickly shut down the consumer without losing/skipping any messages.
 
 ### <a name="consuming-messages-options"></a> Options
 
@@ -624,6 +629,10 @@ const data = await consumer.describeGroup()
 //  state: 'Stable',
 // },
 ```
+
+### <a name="consuming-messages-compression"></a> Compression
+
+KafkaJS only support GZIP natively, but [other codecs can be supported](#producing-messages-compression-other).
 
 ## <a name="instrumentation"></a> Instrumentation
 
