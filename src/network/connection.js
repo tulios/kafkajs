@@ -50,6 +50,7 @@ module.exports = class Connection {
     this.correlationId = 0
     this.pendingQueue = {}
     this.authHandlers = null
+    this.authExpectResponse = false
 
     const log = level => (message, extra = {}) => {
       const logFn = this.logger[level]
@@ -173,11 +174,14 @@ module.exports = class Connection {
    * @public
    * @returns {Promise}
    */
-  authenticate({ request, response }) {
+  authenticate({ authExpectResponse = false, request, response }) {
+    this.authExpectResponse = authExpectResponse
     return new Promise(async (resolve, reject) => {
       this.authHandlers = {
         onSuccess: rawData => {
           this.authHandlers = null
+          this.authExpectResponse = false
+
           response
             .decode(rawData)
             .then(data => response.parse(data))
@@ -185,6 +189,8 @@ module.exports = class Connection {
         },
         onError: () => {
           this.authHandlers = null
+          this.authExpectResponse = false
+
           reject(
             new KafkaJSConnectionError('Connection closed by the server', {
               broker: `${this.host}:${this.port}`,
@@ -292,7 +298,7 @@ module.exports = class Connection {
    * @private
    */
   processData(rawData) {
-    if (this.authHandlers) {
+    if (this.authHandlers && !this.authExpectResponse) {
       return this.authHandlers.onSuccess(rawData)
     }
 
@@ -301,6 +307,10 @@ module.exports = class Connection {
     // Not enough bytes to read the expected response size, keep buffering
     if (Buffer.byteLength(this.buffer) <= Decoder.int32Size()) {
       return
+    }
+
+    if (this.authHandlers && this.authExpectResponse) {
+      return this.authHandlers.onSuccess(this.buffer)
     }
 
     const data = Buffer.from(this.buffer)
