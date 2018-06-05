@@ -6,7 +6,9 @@
   "main": "index.js",
   "license": "MIT",
   "keywords": [
-    "kafka"
+    "kafka",
+    "sasl",
+    "scram"
   ],
   "engines": {
     "node": ">=8.0.0"
