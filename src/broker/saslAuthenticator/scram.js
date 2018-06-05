@@ -1,6 +1,6 @@
 const crypto = require('crypto')
 const scram = require('../../protocol/sasl/scram')
-const { KafkaJSSASLAuthenticationError } = require('../../errors')
+const { KafkaJSSASLAuthenticationError, KafkaJSNonRetriableError } = require('../../errors')
 
 const GS2_HEADER = 'n,,'
 
@@ -96,7 +96,7 @@ class SCRAM {
     const length = Buffer.byteLength(bufferA)
 
     if (length !== Buffer.byteLength(bufferB)) {
-      throw new Error('Buffers must be of the same length')
+      throw new KafkaJSNonRetriableError('Buffers must be of the same length')
     }
 
     const result = []
@@ -118,7 +118,7 @@ class SCRAM {
   }
 
   digestDefinition() {
-    throw new Error('Not implemented')
+    throw new KafkaJSNonRetriableError('Not implemented')
   }
 
   async authenticate() {
