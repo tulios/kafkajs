@@ -787,6 +787,7 @@ or
 ```sh
 # This will run a kafka cluster configured with your current IP
 ./scripts/dockerComposeUp.sh
+./scripts/createScramCredentials.sh
 yarn test:local
 
 # To run with logs
