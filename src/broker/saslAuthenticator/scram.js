@@ -122,19 +122,30 @@ class SCRAM {
   }
 
   async authenticate() {
+    const digestType = this.digestDefinition().type.toUpperCase()
     const { host, port } = this.connection
     const broker = `${host}:${port}`
 
     try {
       this.logger.debug('Exchanging first client message', { broker })
-      const clientMessageResponse = await this.sendFirstClientMessage()
+      const clientMessageResponse = await this.sendClientFirstMessage()
 
       this.logger.debug('Sending final message', { broker })
       const finalResponse = await this.sendClientFinalMessage(clientMessageResponse)
-      console.log(finalResponse)
-      // TODO: wrap up auth
+
+      if (finalResponse.e) {
+        throw new Error(finalResponse.e)
+      }
+
+      const serverKey = await this.serverKey(clientMessageResponse)
+      const serverSignature = this.serverSignature(serverKey, clientMessageResponse)
+
+      if (finalResponse.v !== serverSignature) {
+        throw new Error('Invalid server signature in server final message')
+      }
+
+      this.logger.debug(`SASL SCRAM ${digestType} authentication successful`, { broker })
     } catch (e) {
-      const digestType = this.digestDefinition().type.toUpperCase()
       const error = new KafkaJSSASLAuthenticationError(
         `SASL SCRAM ${digestType} authentication failed: ${e.message}`
       )
@@ -146,7 +157,7 @@ class SCRAM {
   /**
    * @private
    */
-  async sendFirstClientMessage() {
+  async sendClientFirstMessage() {
     const clientFirstMessage = `${GS2_HEADER}${this.firstMessageBare()}`
     const request = scram.firstMessage.request({ clientFirstMessage })
     const response = scram.firstMessage.response
@@ -213,14 +224,34 @@ class SCRAM {
   /**
    * @private
    */
+  async serverKey(clientMessageResponse) {
+    const saltedPassword = await this.saltPassword(clientMessageResponse)
+    return this.HMAC(saltedPassword, HMAC_SERVER_KEY)
+  }
+
+  /**
+   * @private
+   */
   clientSignature(storedKey, clientMessageResponse) {
-    const authMessage = [
+    return this.HMAC(storedKey, this.authMessage(clientMessageResponse))
+  }
+
+  /**
+   * @private
+   */
+  serverSignature(serverKey, clientMessageResponse) {
+    return encode64(this.HMAC(serverKey, this.authMessage(clientMessageResponse)))
+  }
+
+  /**
+   * @private
+   */
+  authMessage(clientMessageResponse) {
+    return [
       this.firstMessageBare(),
       clientMessageResponse.original,
       this.finalMessageWithoutProof(clientMessageResponse),
     ].join(',')
-
-    return this.HMAC(storedKey, authMessage)
   }
 
   /**

@@ -2,7 +2,7 @@
 
 const Decoder = require('../../../decoder')
 
-const ENTRY_REGEX = /^([rsi])=(.*)$/
+const ENTRY_REGEX = /^([rsiev])=(.*)$/
 
 module.exports = {
   decode: async rawData => {

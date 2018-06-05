@@ -1,2 +1,1 @@
-const response = require('../firstMessage/response')
-module.exports = response
+module.exports = require('../firstMessage/response')

@@ -309,10 +309,6 @@ module.exports = class Connection {
       return
     }
 
-    if (this.authHandlers && this.authExpectResponse) {
-      return this.authHandlers.onSuccess(this.buffer)
-    }
-
     const data = Buffer.from(this.buffer)
     const decoder = new Decoder(data)
     const expectedResponseSize = decoder.readInt32()
@@ -323,6 +319,11 @@ module.exports = class Connection {
 
     // The full payload is loaded, erase the temporary buffer
     this.buffer = Buffer.alloc(0)
+
+    if (this.authHandlers && this.authExpectResponse) {
+      return this.authHandlers.onSuccess(data)
+    }
+
     const correlationId = decoder.readInt32()
     const payload = decoder.readAll()
 

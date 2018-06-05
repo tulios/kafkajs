@@ -44,8 +44,6 @@ describe('Broker > connect', () => {
   })
 
   test('authenticate with SASL SCRAM 256 if configured', async () => {
-    // TODO: Only the first message is implemented, this test is green but
-    // it isn't complete
     broker = new Broker({
       connection: createConnection(saslSCRAM256ConnectionOpts()),
       logger: newLogger(),
