@@ -110,19 +110,21 @@ class SCRAM {
   /**
    * @param {Connection} connection
    * @param {Logger} logger
+   * @param {DigestDefinition} digestDefinition
    */
-  constructor(connection, logger) {
+  constructor(connection, logger, digestDefinition) {
     this.connection = connection
     this.logger = logger
+    this.digestDefinition = digestDefinition
+
+    const digestType = digestDefinition.type.toUpperCase()
+    this.PREFIX = `SASL SCRAM ${digestType} authentication`
+
     this.currentNonce = SCRAM.nonce()
   }
 
-  digestDefinition() {
-    throw new KafkaJSNonRetriableError('Not implemented')
-  }
-
   async authenticate() {
-    const digestType = this.digestDefinition().type.toUpperCase()
+    const { PREFIX } = this
     const { host, port } = this.connection
     const broker = `${host}:${port}`
 
@@ -144,11 +146,9 @@ class SCRAM {
         throw new Error('Invalid server signature in server final message')
       }
 
-      this.logger.debug(`SASL SCRAM ${digestType} authentication successful`, { broker })
+      this.logger.debug(`${PREFIX} successful`, { broker })
     } catch (e) {
-      const error = new KafkaJSSASLAuthenticationError(
-        `SASL SCRAM ${digestType} authentication failed: ${e.message}`
-      )
+      const error = new KafkaJSSASLAuthenticationError(`${PREFIX} failed: ${e.message}`)
       this.logger.error(error.message, { broker })
       throw error
     }
@@ -173,20 +173,19 @@ class SCRAM {
    * @private
    */
   async sendClientFinalMessage(clientMessageResponse) {
-    const digestType = this.digestDefinition().type.toUpperCase()
+    const { PREFIX } = this
     const iterations = parseInt(clientMessageResponse.i, 10)
-    const { minIterations } = this.digestDefinition()
-    const PREFIX = `SASL SCRAM ${digestType} authentication failed`
+    const { minIterations } = this.digestDefinition
 
     if (!clientMessageResponse.r.startsWith(this.currentNonce)) {
       throw new KafkaJSSASLAuthenticationError(
-        `${PREFIX}: Invalid server nonce, it does not start with the client nonce`
+        `${PREFIX} failed: Invalid server nonce, it does not start with the client nonce`
       )
     }
 
     if (iterations < minIterations) {
       throw new KafkaJSSASLAuthenticationError(
-        `${PREFIX}: Requested iterations ${iterations} is less than the minimum ${minIterations} for ${digestType}`
+        `${PREFIX} failed: Requested iterations ${iterations} is less than the minimum ${minIterations}`
       )
     }
 
@@ -260,7 +259,7 @@ class SCRAM {
   async saltPassword(clientMessageResponse) {
     const salt = Buffer.from(clientMessageResponse.s, 'base64')
     const iterations = parseInt(clientMessageResponse.i, 10)
-    return SCRAM.hi(this.encodedPassword(), salt, iterations, this.digestDefinition())
+    return SCRAM.hi(this.encodedPassword(), salt, iterations, this.digestDefinition)
   }
 
   /**
@@ -299,7 +298,7 @@ class SCRAM {
    */
   H(data) {
     return crypto
-      .createHash(this.digestDefinition().type)
+      .createHash(this.digestDefinition.type)
       .update(data)
       .digest()
   }
@@ -309,7 +308,7 @@ class SCRAM {
    */
   HMAC(key, data) {
     return crypto
-      .createHmac(this.digestDefinition().type, key)
+      .createHmac(this.digestDefinition.type, key)
       .update(data)
       .digest()
   }
