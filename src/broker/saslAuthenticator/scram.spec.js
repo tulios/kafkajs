@@ -61,7 +61,7 @@ describe('Broker > SASL Authenticator > SCRAM', () => {
     describe('first message', () => {
       test('regular use case', async () => {
         scram.currentNonce = 'rOprNGfwEbeRWgbNEkqO'
-        await scram.sendFirstClientMessage()
+        await scram.sendClientFirstMessage()
         expect(connection.authenticate).toHaveBeenCalledWith({
           authExpectResponse: true,
           request: expect.any(Object),
@@ -76,7 +76,7 @@ describe('Broker > SASL Authenticator > SCRAM', () => {
 
       test('username with comma', async () => {
         connection.sasl.username = 'bob,'
-        await scram.sendFirstClientMessage()
+        await scram.sendClientFirstMessage()
         expect(connection.authenticate).toHaveBeenCalledWith({
           authExpectResponse: true,
           request: expect.any(Object),
@@ -91,7 +91,7 @@ describe('Broker > SASL Authenticator > SCRAM', () => {
 
       test('username with equals', async () => {
         connection.sasl.username = 'bob='
-        await scram.sendFirstClientMessage()
+        await scram.sendClientFirstMessage()
         expect(connection.authenticate).toHaveBeenCalledWith({
           authExpectResponse: true,
           request: expect.any(Object),
