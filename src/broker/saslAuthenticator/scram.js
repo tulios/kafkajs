@@ -63,12 +63,12 @@ class SCRAM {
   }
 
   /**
-  * Hi() is, essentially, PBKDF2 [RFC2898] with HMAC() as the
-  * pseudorandom function (PRF) and with dkLen == output length of
-  * HMAC() == output length of H()
-  *
-  * @returns {Promise<Buffer>}
-  */
+   * Hi() is, essentially, PBKDF2 [RFC2898] with HMAC() as the
+   * pseudorandom function (PRF) and with dkLen == output length of
+   * HMAC() == output length of H()
+   *
+   * @returns {Promise<Buffer>}
+   */
   static hi(password, salt, iterations, digestDefinition) {
     return new Promise((resolve, reject) => {
       crypto.pbkdf2(
@@ -83,13 +83,13 @@ class SCRAM {
   }
 
   /**
-  * Apply the exclusive-or operation to combine the octet string
-  * on the left of this operator with the octet string on the right of
-  * this operator.  The length of the output and each of the two
-  * inputs will be the same for this use
-  *
-  * @returns {Buffer}
-  */
+   * Apply the exclusive-or operation to combine the octet string
+   * on the left of this operator with the octet string on the right of
+   * this operator.  The length of the output and each of the two
+   * inputs will be the same for this use
+   *
+   * @returns {Buffer}
+   */
   static xor(left, right) {
     const bufferA = Buffer.from(left)
     const bufferB = Buffer.from(right)
