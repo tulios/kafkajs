@@ -15,6 +15,7 @@ KafkaJS is battle-tested and ready for production.
 - Consumer groups with pause, resume, and seek
 - GZIP compression
 - Plain, SSL and SASL_SSL implementations
+- Support for SCRAM-SHA-256 and SCRAM-SHA-512
 
 ## Table of Contents
 
@@ -89,14 +90,14 @@ Refer to [TLS create secure context](https://nodejs.org/dist/latest-v8.x/docs/ap
 
 ### <a name="configuration-sasl"></a> SASL
 
-Kafka has support for using SASL to authenticate clients. The `sasl` option can be used to configure the authentication mechanism. Currently, KafkaJS only supports the `PLAIN` mechanism.
+Kafka has support for using SASL to authenticate clients. The `sasl` option can be used to configure the authentication mechanism. Currently, KafkaJS supports `PLAIN`, `SCRAM-SHA-256`, and `SCRAM-SHA-512` mechanisms.
 
 ```javascript
 new Kafka({
   clientId: 'my-app',
   brokers: ['kafka1:9092', 'kafka2:9092'],
   sasl: {
-    mechanism: 'plain',
+    mechanism: 'plain', // scram-sha-256 or scram-sha-512
     username: 'my-username',
     password: 'my-password'
   },
@@ -786,6 +787,7 @@ or
 ```sh
 # This will run a kafka cluster configured with your current IP
 ./scripts/dockerComposeUp.sh
+./scripts/createScramCredentials.sh
 yarn test:local
 
 # To run with logs

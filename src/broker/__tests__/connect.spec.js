@@ -1,4 +1,12 @@
-const { createConnection, connectionOpts, saslConnectionOpts, newLogger } = require('testHelpers')
+const {
+  createConnection,
+  connectionOpts,
+  saslConnectionOpts,
+  saslSCRAM256ConnectionOpts,
+  saslSCRAM512ConnectionOpts,
+  newLogger,
+} = require('testHelpers')
+
 const Broker = require('../index')
 
 describe('Broker > connect', () => {
@@ -26,9 +34,29 @@ describe('Broker > connect', () => {
     expect(broker.versions).toBeTruthy()
   })
 
-  test('authenticate with SASL if configured', async () => {
+  test('authenticate with SASL PLAIN if configured', async () => {
     broker = new Broker({
       connection: createConnection(saslConnectionOpts()),
+      logger: newLogger(),
+    })
+    expect(broker.authenticated).toEqual(false)
+    await broker.connect()
+    expect(broker.authenticated).toEqual(true)
+  })
+
+  test('authenticate with SASL SCRAM 256 if configured', async () => {
+    broker = new Broker({
+      connection: createConnection(saslSCRAM256ConnectionOpts()),
+      logger: newLogger(),
+    })
+    expect(broker.authenticated).toEqual(false)
+    await broker.connect()
+    expect(broker.authenticated).toEqual(true)
+  })
+
+  test('authenticate with SASL SCRAM 512 if configured', async () => {
+    broker = new Broker({
+      connection: createConnection(saslSCRAM512ConnectionOpts()),
       logger: newLogger(),
     })
     expect(broker.authenticated).toEqual(false)
