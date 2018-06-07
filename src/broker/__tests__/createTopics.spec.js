@@ -28,12 +28,33 @@ describe('Broker > createTopics', () => {
     expect(response).toEqual({
       topicErrors: [
         {
-          errorCode: 0,
           topic: topicName1,
+          errorCode: 0,
+          errorMessage: null,
         },
         {
-          errorCode: 0,
           topic: topicName2,
+          errorCode: 0,
+          errorMessage: null,
+        },
+      ].sort(topicNameComparator),
+    })
+  })
+
+  test('request with validateOnly', async () => {
+    await broker.connect()
+    const topicName = `test-topic-${secureRandom()}`
+    const response = await broker.createTopics({
+      topics: [{ topic: topicName }],
+      validateOnly: true,
+    })
+
+    expect(response).toEqual({
+      topicErrors: [
+        {
+          topic: topicName,
+          errorCode: 0,
+          errorMessage: null,
         },
       ].sort(topicNameComparator),
     })

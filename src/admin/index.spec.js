@@ -84,8 +84,9 @@ describe('Admin', () => {
     await expect(admin.createTopics({ topics: [{ topic: topicName }] })).resolves.toEqual({
       topicErrors: [
         {
-          errorCode: 0,
           topic: topicName,
+          errorCode: 0,
+          errorMessage: null,
         },
       ],
     })

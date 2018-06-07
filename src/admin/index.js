@@ -13,10 +13,11 @@ module.exports = ({ logger: rootLogger, cluster }) => {
 
   /**
    * @param {array} topics
+   * @param {boolean} [validateOnly=false]
    * @param {number} [timeout=5000]
    * @return {Promise}
    */
-  const createTopics = async ({ topics, timeout }) => {
+  const createTopics = async ({ topics, validateOnly, timeout }) => {
     if (!topics || !Array.isArray(topics)) {
       throw new KafkaJSNonRetriableError(`Invalid topics array ${topics}`)
     }
@@ -35,7 +36,7 @@ module.exports = ({ logger: rootLogger, cluster }) => {
     }
 
     const broker = await cluster.pickOneBroker()
-    return broker.createTopics({ topics, timeout })
+    return broker.createTopics({ topics, validateOnly, timeout })
   }
 
   return {
