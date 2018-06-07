@@ -8,6 +8,8 @@ const { failure, createErrorFromCode } = require('../../../error')
  *     error_code => INT16
  */
 
+const topicNameComparator = (a, b) => a.topic.localeCompare(b.topic)
+
 const topicErrors = decoder => ({
   topic: decoder.readString(),
   errorCode: decoder.readInt16(),
@@ -16,7 +18,7 @@ const topicErrors = decoder => ({
 const decode = async rawData => {
   const decoder = new Decoder(rawData)
   return {
-    topicErrors: decoder.readArray(topicErrors),
+    topicErrors: decoder.readArray(topicErrors).sort(topicNameComparator),
   }
 }
 

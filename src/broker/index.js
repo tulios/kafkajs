@@ -334,4 +334,23 @@ module.exports = class Broker {
     const describeGroups = this.lookupRequest(apiKeys.DescribeGroups, requests.DescribeGroups)
     return await this.connection.send(describeGroups({ groupIds }))
   }
+
+  /**
+   * @public
+   * @param {Array} topics e.g:
+   *                 [
+   *                   {
+   *                     topic: 'topic-name',
+   *                     numPartitions: 1,
+   *                     replicationFactor: 1
+   *                   }
+   *                 ]
+   * @param {number} [timeout=5000] The time in ms to wait for a topic to be completely created
+   *                                on the controller node
+   * @returns {Promise}
+   */
+  async createTopics({ topics, timeout = 5000 }) {
+    const createTopics = this.lookupRequest(apiKeys.CreateTopics, requests.CreateTopics)
+    return await this.connection.send(createTopics({ topics, timeout }))
+  }
 }
