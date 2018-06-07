@@ -320,7 +320,7 @@ module.exports = class Connection {
     // The full payload is loaded, erase the temporary buffer
     this.buffer = Buffer.alloc(0)
 
-    if (this.authHandlers && this.authExpectResponse) {
+    if (this.authHandlers) {
       return this.authHandlers.onSuccess(data)
     }
 
