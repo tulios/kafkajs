@@ -104,6 +104,14 @@ module.exports = class Cluster {
 
   /**
    * @public
+   * @returns {Promise<Broker>}
+   */
+  async pickOneBroker() {
+    return this.brokerPool.findConnectedBroker()
+  }
+
+  /**
+   * @public
    * @param {string} topic
    * @returns {Object} Example:
    *                   [{
