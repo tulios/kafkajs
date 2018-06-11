@@ -4,8 +4,10 @@ const connectionBuilder = require('./connectionBuilder')
 const flatten = require('../utils/flatten')
 const {
   KafkaJSError,
-  KafkaJSGroupCoordinatorNotFound,
+  KafkaJSBrokerNotFound,
+  KafkaJSMetadataNotLoaded,
   KafkaJSTopicMetadataNotLoaded,
+  KafkaJSGroupCoordinatorNotFound,
 } = require('../errors')
 
 const { keys, assign } = Object
@@ -106,8 +108,22 @@ module.exports = class Cluster {
    * @public
    * @returns {Promise<Broker>}
    */
-  async pickOneBroker() {
-    return this.brokerPool.findConnectedBroker()
+  async findControllerBroker() {
+    const { metadata } = this.brokerPool
+
+    if (!metadata || !metadata.controllerId) {
+      throw new KafkaJSMetadataNotLoaded('Topic metadata not loaded')
+    }
+
+    const broker = await this.findBroker({ nodeId: metadata.controllerId })
+
+    if (!broker) {
+      throw new KafkaJSBrokerNotFound(
+        `Controller broker with id ${metadata.controllerId} not found in the cached metadata`
+      )
+    }
+
+    return broker
   }
 
   /**
