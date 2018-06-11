@@ -86,7 +86,7 @@ module.exports = class Cluster {
   async addTargetTopic(topic) {
     const previousSize = this.targetTopics.size
     this.targetTopics.add(topic)
-    const hasChanged = previousSize !== this.targetTopics.size || !this.metadata
+    const hasChanged = previousSize !== this.targetTopics.size || !this.brokerPool.metadata
 
     if (hasChanged) {
       await this.refreshMetadata()
