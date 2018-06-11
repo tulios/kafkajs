@@ -6,18 +6,23 @@ describe('Cluster > findControllerBroker', () => {
 
   beforeEach(async () => {
     cluster = createCluster()
-    cluster.brokerPool.metadata = { controllerId: 'controllerNodeId' }
+    cluster.brokerPool.metadata = { controllerId: '0' }
     cluster.findBroker = jest.fn()
   })
 
   test('finds the broker of the controller', async () => {
     cluster.findBroker.mockImplementationOnce(() => true)
     await expect(cluster.findControllerBroker()).resolves.toEqual(true)
-    expect(cluster.findBroker).toHaveBeenCalledWith({ nodeId: 'controllerNodeId' })
+    expect(cluster.findBroker).toHaveBeenCalledWith({ nodeId: '0' })
   })
 
   test('throws KafkaJSTopicMetadataNotLoaded if metadata is not loaded', async () => {
     cluster.brokerPool.metadata = null
+    await expect(cluster.findControllerBroker()).rejects.toThrow(KafkaJSMetadataNotLoaded)
+  })
+
+  test('throws KafkaJSTopicMetadataNotLoaded if the controllerId is invalid', async () => {
+    cluster.brokerPool.metadata = { controllerId: 'invalidStuff' }
     await expect(cluster.findControllerBroker()).rejects.toThrow(KafkaJSMetadataNotLoaded)
   })
 
