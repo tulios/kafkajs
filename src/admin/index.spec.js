@@ -15,6 +15,7 @@ const {
 } = require('testHelpers')
 
 const NOT_CONTROLLER = 41
+const TOPIC_ALREADY_EXISTS = 36
 
 describe('Admin', () => {
   let topicName, admin
@@ -83,7 +84,7 @@ describe('Admin', () => {
       )
     })
 
-    test('create topics', async () => {
+    test('create the new topics and return true', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
 
       await admin.connect()
@@ -107,6 +108,24 @@ describe('Admin', () => {
 
       expect(cluster.refreshMetadata).toHaveBeenCalledTimes(2)
       expect(cluster.findControllerBroker).toHaveBeenCalledTimes(2)
+      expect(broker.createTopics).toHaveBeenCalledTimes(1)
+    })
+
+    test('ignore already created topics and return false', async () => {
+      const cluster = createCluster()
+      const broker = { createTopics: jest.fn() }
+
+      cluster.refreshMetadata = jest.fn()
+      cluster.findControllerBroker = jest.fn(() => broker)
+      broker.createTopics.mockImplementationOnce(() => {
+        throw new KafkaJSProtocolError(createErrorFromCode(TOPIC_ALREADY_EXISTS))
+      })
+
+      admin = createAdmin({ cluster, logger: newLogger() })
+      await expect(admin.createTopics({ topics: [{ topic: topicName }] })).resolves.toEqual(false)
+
+      expect(cluster.refreshMetadata).toHaveBeenCalledTimes(1)
+      expect(cluster.findControllerBroker).toHaveBeenCalledTimes(1)
       expect(broker.createTopics).toHaveBeenCalledTimes(1)
     })
   })

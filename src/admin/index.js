@@ -52,6 +52,11 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
           throw e
         }
 
+        if (e.type === 'TOPIC_ALREADY_EXISTS') {
+          logger.warn(e.message)
+          return false
+        }
+
         bail(e)
       }
     })
