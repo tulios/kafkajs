@@ -79,9 +79,10 @@ module.exports = class Client {
   /**
    * @public
    */
-  admin() {
+  admin({ retry } = {}) {
     const cluster = this.createCluster()
     return createAdmin({
+      retry: assign({}, cluster.retry, retry),
       logger: this.logger,
       cluster,
     })

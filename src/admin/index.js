@@ -1,6 +1,9 @@
+const createRetry = require('../retry')
 const { KafkaJSNonRetriableError } = require('../errors')
 
-module.exports = ({ logger: rootLogger, cluster }) => {
+module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
+  const logger = rootLogger.namespace('Admin')
+
   /**
    * @returns {Promise}
    */
@@ -35,8 +38,23 @@ module.exports = ({ logger: rootLogger, cluster }) => {
       )
     }
 
-    const broker = await cluster.pickOneBroker()
-    return broker.createTopics({ topics, validateOnly, timeout })
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        await broker.createTopics({ topics, validateOnly, timeout })
+        return true
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not create topics', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
   }
 
   return {

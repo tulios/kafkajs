@@ -1,4 +1,7 @@
 const createAdmin = require('./index')
+const { KafkaJSProtocolError } = require('../errors')
+const { createErrorFromCode } = require('../protocol/error')
+
 const {
   secureRandom,
   sslConnectionOpts,
@@ -10,6 +13,8 @@ const {
   saslBrokers,
   newLogger,
 } = require('testHelpers')
+
+const NOT_CONTROLLER = 41
 
 describe('Admin', () => {
   let topicName, admin
@@ -47,48 +52,62 @@ describe('Admin', () => {
     await admin.connect()
   })
 
-  test('throws an error if the topics array is invalid', async () => {
-    admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
-    await expect(admin.createTopics({ topics: null })).rejects.toHaveProperty(
-      'message',
-      'Invalid topics array null'
-    )
+  describe('createTopics', () => {
+    test('throws an error if the topics array is invalid', async () => {
+      admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
+      await expect(admin.createTopics({ topics: null })).rejects.toHaveProperty(
+        'message',
+        'Invalid topics array null'
+      )
 
-    await expect(admin.createTopics({ topics: 'this-is-not-an-array' })).rejects.toHaveProperty(
-      'message',
-      'Invalid topics array this-is-not-an-array'
-    )
-  })
+      await expect(admin.createTopics({ topics: 'this-is-not-an-array' })).rejects.toHaveProperty(
+        'message',
+        'Invalid topics array this-is-not-an-array'
+      )
+    })
 
-  test('throws an error if the topic name is not a valid string', async () => {
-    admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
-    await expect(admin.createTopics({ topics: [{ topic: 123 }] })).rejects.toHaveProperty(
-      'message',
-      'Invalid topics array, the topic names have to be a valid string'
-    )
-  })
+    test('throws an error if the topic name is not a valid string', async () => {
+      admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
+      await expect(admin.createTopics({ topics: [{ topic: 123 }] })).rejects.toHaveProperty(
+        'message',
+        'Invalid topics array, the topic names have to be a valid string'
+      )
+    })
 
-  test('throws an error if there are multiple entries for the same topic', async () => {
-    admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
-    const topics = [{ topic: 'topic-123' }, { topic: 'topic-123' }]
-    await expect(admin.createTopics({ topics })).rejects.toHaveProperty(
-      'message',
-      'Invalid topics array, it cannot have multiple entries for the same topic'
-    )
-  })
+    test('throws an error if there are multiple entries for the same topic', async () => {
+      admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
+      const topics = [{ topic: 'topic-123' }, { topic: 'topic-123' }]
+      await expect(admin.createTopics({ topics })).rejects.toHaveProperty(
+        'message',
+        'Invalid topics array, it cannot have multiple entries for the same topic'
+      )
+    })
 
-  test('create topics', async () => {
-    admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
+    test('create topics', async () => {
+      admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
 
-    await admin.connect()
-    await expect(admin.createTopics({ topics: [{ topic: topicName }] })).resolves.toEqual({
-      topicErrors: [
-        {
-          topic: topicName,
-          errorCode: 0,
-          errorMessage: null,
-        },
-      ],
+      await admin.connect()
+      await expect(admin.createTopics({ topics: [{ topic: topicName }] })).resolves.toEqual(true)
+    })
+
+    test('retries if the controller has moved', async () => {
+      const cluster = createCluster()
+      const broker = { createTopics: jest.fn(() => true) }
+
+      cluster.refreshMetadata = jest.fn()
+      cluster.findControllerBroker = jest
+        .fn()
+        .mockImplementationOnce(() => {
+          throw new KafkaJSProtocolError(createErrorFromCode(NOT_CONTROLLER))
+        })
+        .mockImplementationOnce(() => broker)
+
+      admin = createAdmin({ cluster, logger: newLogger() })
+      await expect(admin.createTopics({ topics: [{ topic: topicName }] })).resolves.toEqual(true)
+
+      expect(cluster.refreshMetadata).toHaveBeenCalledTimes(2)
+      expect(cluster.findControllerBroker).toHaveBeenCalledTimes(2)
+      expect(broker.createTopics).toHaveBeenCalledTimes(1)
     })
   })
 })

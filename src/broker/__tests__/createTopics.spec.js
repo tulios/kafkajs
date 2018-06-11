@@ -4,16 +4,26 @@ const Broker = require('../index')
 const topicNameComparator = (a, b) => a.topic.localeCompare(b.topic)
 
 describe('Broker > createTopics', () => {
-  let broker
+  let seedBroker, broker
 
-  beforeEach(() => {
-    broker = new Broker({
+  beforeEach(async () => {
+    seedBroker = new Broker({
       connection: createConnection(connectionOpts()),
+      logger: newLogger(),
+    })
+    await seedBroker.connect()
+
+    const metadata = await seedBroker.metadata()
+    const newBrokerData = metadata.brokers.find(b => b.nodeId === metadata.controllerId)
+
+    broker = new Broker({
+      connection: createConnection(newBrokerData),
       logger: newLogger(),
     })
   })
 
   afterEach(async () => {
+    seedBroker && (await seedBroker.disconnect())
     broker && (await broker.disconnect())
   })
 
