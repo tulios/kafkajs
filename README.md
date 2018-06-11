@@ -41,6 +41,8 @@ KafkaJS is battle-tested and ready for production.
   - [Custom partition assigner](#consuming-messages-custom-partition-assigner)
   - [Describe group](#consuming-messages-describe-group)
   - [Compression](#consuming-messages-compression)
+- [Admin](#admin)
+  - [Create Topics](#admin-create-topics)
 - [Instrumentation](#instrumentation)
 - [Custom logging](#custom-logging)
 - [Retry (detailed)](#configuration-default-retry-detailed)
@@ -634,6 +636,55 @@ const data = await consumer.describeGroup()
 ### <a name="consuming-messages-compression"></a> Compression
 
 KafkaJS only support GZIP natively, but [other codecs can be supported](#producing-messages-compression-other).
+
+## <a name="admin"></a> Admin
+
+The admin client will host all the cluster operations, such as: `createTopics`, `createPartitions`, etc. Currently, only `createTopics` is available.
+
+```javascript
+const kafka = new Kafka(...)
+const admin = kafka.admin() // kafka.admin({ retry: { retries: 2 } })
+
+// remember to connect/disconnect the client
+await admin.connect()
+await admin.disconnect()
+```
+
+The option `retry` can be used to customize the configuration for the admin.
+
+Take a look at [Retry](#configuration-default-retry) for more information.
+
+### <a name="admin-create-topics"></a> Create topics
+
+`createTopics` will resolve to `true` if the topic was created successfully or `false` if it already exists. The method will throw exceptions in case of errors.
+
+```javascript
+await admin.createTopics({
+  validateOnly: <boolean>,
+  waitForLeaders: <boolean>
+  timeout: <Number>,
+  topics: <Topic[]>,
+})
+```
+
+`Topic` structure:
+
+```javascript
+{
+  topic: <String>,
+  numPartitions: <Number>,     // default: 1
+  replicationFactor: <Number>, // default: 1
+  replicaAssignment: <Array>,  // Example: [{ partition: 0, replicas: [0,1,2] }] - default: []
+  configEntries: <Array>       // Example: [{ name: 'cleanup.policy', value: 'compact' }] - default: []
+}
+```
+
+| property       | description | default |
+| -------------- | ----------- | ------- |
+| topics         | Topic definition | |
+| validateOnly   | If this is `true`, the request will be validated, but the topic won't be created. | false |
+| timeout        | The time in ms to wait for a topic to be completely created on the controller node | 5000 |
+| waitForLeaders | If this is `true` it will wait until metadata for the new topics doesn't throw `LEADER_NOT_AVAILABLE` | true |
 
 ## <a name="instrumentation"></a> Instrumentation
 
