@@ -96,6 +96,8 @@ const createModPartitioner = () => ({ partitionMetadata, message }) => {
   return ((key || 0) % 3) % numPartitions
 }
 
+const testWaitFor = async (fn, opts = {}) => waitFor(fn, { ...opts, ignoreTimeout: true })
+
 const retryProtocol = (errorType, fn) =>
   waitFor(
     async () => {
@@ -146,6 +148,6 @@ module.exports = {
   newLogger,
   retryProtocol,
   createTopic,
-  waitFor,
+  waitFor: testWaitFor,
   waitForMessages,
 }
