@@ -1,5 +1,22 @@
 const createRetry = require('../retry')
+const waitFor = require('../utils/waitFor')
 const { KafkaJSNonRetriableError } = require('../errors')
+
+const retryOnLeaderNotAvailable = (fn, opts = {}) => {
+  const callback = async () => {
+    try {
+      return await fn()
+    } catch (e) {
+      console.error(e)
+      if (e.type !== 'LEADER_NOT_AVAILABLE') {
+        throw e
+      }
+      return false
+    }
+  }
+
+  return waitFor(callback, opts)
+}
 
 module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
   const logger = rootLogger.namespace('Admin')
@@ -18,9 +35,10 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
    * @param {array} topics
    * @param {boolean} [validateOnly=false]
    * @param {number} [timeout=5000]
+   * @param {boolean} [waitForLeaders=true]
    * @return {Promise}
    */
-  const createTopics = async ({ topics, validateOnly, timeout }) => {
+  const createTopics = async ({ topics, validateOnly, timeout, waitForLeaders = true }) => {
     if (!topics || !Array.isArray(topics)) {
       throw new KafkaJSNonRetriableError(`Invalid topics array ${topics}`)
     }
@@ -31,8 +49,8 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
       )
     }
 
-    const set = new Set(topics.map(({ topic }) => topic))
-    if (set.size < topics.length) {
+    const topicNames = new Set(topics.map(({ topic }) => topic))
+    if (topicNames.size < topics.length) {
       throw new KafkaJSNonRetriableError(
         'Invalid topics array, it cannot have multiple entries for the same topic'
       )
@@ -45,6 +63,15 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
         await cluster.refreshMetadata()
         const broker = await cluster.findControllerBroker()
         await broker.createTopics({ topics, validateOnly, timeout })
+
+        if (waitForLeaders) {
+          const topicNamesArray = Array.from(topicNames.values())
+          await retryOnLeaderNotAvailable(async () => await broker.metadata(topicNamesArray), {
+            delay: 100,
+            timeoutMessage: 'Timed out while waiting for topic leaders',
+          })
+        }
+
         return true
       } catch (e) {
         if (e.type === 'NOT_CONTROLLER') {

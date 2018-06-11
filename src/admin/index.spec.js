@@ -88,7 +88,12 @@ describe('Admin', () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
 
       await admin.connect()
-      await expect(admin.createTopics({ topics: [{ topic: topicName }] })).resolves.toEqual(true)
+      await expect(
+        admin.createTopics({
+          waitForLeaders: false,
+          topics: [{ topic: topicName }],
+        })
+      ).resolves.toEqual(true)
     })
 
     test('retries if the controller has moved', async () => {
@@ -104,7 +109,12 @@ describe('Admin', () => {
         .mockImplementationOnce(() => broker)
 
       admin = createAdmin({ cluster, logger: newLogger() })
-      await expect(admin.createTopics({ topics: [{ topic: topicName }] })).resolves.toEqual(true)
+      await expect(
+        admin.createTopics({
+          waitForLeaders: false,
+          topics: [{ topic: topicName }],
+        })
+      ).resolves.toEqual(true)
 
       expect(cluster.refreshMetadata).toHaveBeenCalledTimes(2)
       expect(cluster.findControllerBroker).toHaveBeenCalledTimes(2)
@@ -122,11 +132,40 @@ describe('Admin', () => {
       })
 
       admin = createAdmin({ cluster, logger: newLogger() })
-      await expect(admin.createTopics({ topics: [{ topic: topicName }] })).resolves.toEqual(false)
+      await expect(
+        admin.createTopics({
+          waitForLeaders: false,
+          topics: [{ topic: topicName }],
+        })
+      ).resolves.toEqual(false)
 
       expect(cluster.refreshMetadata).toHaveBeenCalledTimes(1)
       expect(cluster.findControllerBroker).toHaveBeenCalledTimes(1)
       expect(broker.createTopics).toHaveBeenCalledTimes(1)
+    })
+
+    test('query metadata if waitForLeaders is true', async () => {
+      const topic2 = `test-topic-${secureRandom()}`
+      const topic3 = `test-topic-${secureRandom()}`
+
+      const cluster = createCluster()
+      const broker = { createTopics: jest.fn(), metadata: jest.fn(() => true) }
+
+      cluster.refreshMetadata = jest.fn()
+      cluster.findControllerBroker = jest.fn(() => broker)
+
+      broker.createTopics.mockImplementationOnce(() => true)
+      admin = createAdmin({ cluster, logger: newLogger() })
+
+      await expect(
+        admin.createTopics({
+          waitForLeaders: true,
+          topics: [{ topic: topicName }, { topic: topic2 }, { topic: topic3 }],
+        })
+      ).resolves.toEqual(true)
+
+      expect(broker.metadata).toHaveBeenCalledTimes(1)
+      expect(broker.metadata).toHaveBeenCalledWith([topicName, topic2, topic3])
     })
   })
 })
