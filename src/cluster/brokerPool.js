@@ -162,7 +162,7 @@ module.exports = class BrokerPool {
   }
 
   /**
-   * @private
+   * @public
    * @returns {Promise<Broker>}
    */
   async findConnectedBroker() {

@@ -6,7 +6,7 @@ describe('Cluster > addTargetTopic', () => {
   beforeEach(async () => {
     cluster = createCluster()
     await cluster.connect()
-    cluster.metadata = { some: 'metadata' }
+    cluster.brokerPool.metadata = { some: 'metadata' }
   })
 
   afterEach(async () => {
@@ -42,7 +42,7 @@ describe('Cluster > addTargetTopic', () => {
     await cluster.addTargetTopic(topic1)
     expect(cluster.refreshMetadata).toHaveBeenCalledTimes(1)
 
-    cluster.metadata = null
+    cluster.brokerPool.metadata = null
     await cluster.addTargetTopic(topic1)
     expect(cluster.refreshMetadata).toHaveBeenCalledTimes(2)
   })

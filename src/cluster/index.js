@@ -4,8 +4,10 @@ const connectionBuilder = require('./connectionBuilder')
 const flatten = require('../utils/flatten')
 const {
   KafkaJSError,
-  KafkaJSGroupCoordinatorNotFound,
+  KafkaJSBrokerNotFound,
+  KafkaJSMetadataNotLoaded,
   KafkaJSTopicMetadataNotLoaded,
+  KafkaJSGroupCoordinatorNotFound,
 } = require('../errors')
 
 const { keys, assign } = Object
@@ -86,7 +88,7 @@ module.exports = class Cluster {
   async addTargetTopic(topic) {
     const previousSize = this.targetTopics.size
     this.targetTopics.add(topic)
-    const hasChanged = previousSize !== this.targetTopics.size || !this.metadata
+    const hasChanged = previousSize !== this.targetTopics.size || !this.brokerPool.metadata
 
     if (hasChanged) {
       await this.refreshMetadata()
@@ -100,6 +102,29 @@ module.exports = class Cluster {
    */
   async findBroker({ nodeId }) {
     return await this.brokerPool.findBroker({ nodeId })
+  }
+
+  /**
+   * @public
+   * @returns {Promise<Broker>}
+   */
+  async findControllerBroker() {
+    const { metadata } = this.brokerPool
+
+    // controllerId is an int32, it's safe to cast to Number
+    if (!metadata || Number.isNaN(Number(metadata.controllerId))) {
+      throw new KafkaJSMetadataNotLoaded('Topic metadata not loaded')
+    }
+
+    const broker = await this.findBroker({ nodeId: metadata.controllerId })
+
+    if (!broker) {
+      throw new KafkaJSBrokerNotFound(
+        `Controller broker with id ${metadata.controllerId} not found in the cached metadata`
+      )
+    }
+
+    return broker
   }
 
   /**

@@ -1,14 +1,13 @@
 const fs = require('fs')
 const ip = require('ip')
-const path = require('path')
-const execa = require('execa')
 const crypto = require('crypto')
 const Cluster = require('../src/cluster')
-const Broker = require('../src/broker')
+const waitFor = require('../src/utils/waitFor')
 const connectionBuilder = require('../src/cluster/connectionBuilder')
 const Connection = require('../src/network/connection')
 const { createLogger, LEVELS: { NOTHING, INFO, DEBUG } } = require('../src/loggers')
 const LoggerConsole = require('../src/loggers/console')
+const Kafka = require('../src/index')
 
 const isTravis = process.env.TRAVIS === 'true'
 const travisLevel = process.env.VERBOSE ? DEBUG : INFO
@@ -97,51 +96,39 @@ const createModPartitioner = () => ({ partitionMetadata, message }) => {
   return ((key || 0) % 3) % numPartitions
 }
 
-const waitFor = (fn, { delay = 50 } = {}) => {
-  let totalWait = 0
-  return new Promise((resolve, reject) => {
-    const check = () => {
-      totalWait += delay
-      setTimeout(async () => {
-        try {
-          const result = await fn(totalWait)
-          result ? resolve(result) : check()
-        } catch (e) {
-          reject(e)
-        }
-      }, delay)
-    }
-    check(totalWait)
-  })
-}
+const testWaitFor = async (fn, opts = {}) => waitFor(fn, { ...opts, ignoreTimeout: true })
 
 const retryProtocol = (errorType, fn) =>
-  waitFor(async () => {
-    try {
-      return await fn()
-    } catch (e) {
-      if (e.type !== errorType) {
-        throw e
+  waitFor(
+    async () => {
+      try {
+        return await fn()
+      } catch (e) {
+        if (e.type !== errorType) {
+          throw e
+        }
+        return false
       }
-      return false
-    }
-  })
+    },
+    { ignoreTimeout: true }
+  )
 
 const waitForMessages = (buffer, { number = 1, delay = 50 } = {}) =>
-  waitFor(() => (buffer.length >= number ? buffer : false), { delay })
+  waitFor(() => (buffer.length >= number ? buffer : false), { delay, ignoreTimeout: true })
 
 const createTopic = async ({ topic, partitions = 1 }) => {
-  const cmd = path.join(__dirname, '../scripts/createTopic.sh')
-  execa.shellSync(`TOPIC=${topic} PARTITIONS=${partitions} ${cmd}`)
+  const kafka = new Kafka({ clientId: 'testHelpers', brokers: [`${getHost()}:9092`] })
+  const admin = kafka.admin()
 
-  const broker = new Broker({
-    connection: createConnection(),
-    logger: newLogger(),
-  })
-
-  await broker.connect()
-  await retryProtocol('LEADER_NOT_AVAILABLE', async () => await broker.metadata([topic]))
-  await broker.disconnect()
+  try {
+    await admin.connect()
+    await admin.createTopics({
+      waitForLeaders: true,
+      topics: [{ topic, numPartitions: partitions }],
+    })
+  } finally {
+    admin && (await admin.disconnect())
+  }
 }
 
 module.exports = {
@@ -161,6 +148,6 @@ module.exports = {
   newLogger,
   retryProtocol,
   createTopic,
-  waitFor,
+  waitFor: testWaitFor,
   waitForMessages,
 }
