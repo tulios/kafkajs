@@ -381,6 +381,73 @@ const errorCodes = [
     retriable: false,
     message: 'A partition reassignment is in progress',
   },
+  {
+    type: 'DELEGATION_TOKEN_AUTH_DISABLED',
+    code: 61,
+    retriable: false,
+    message: 'Delegation Token feature is not enabled',
+  },
+  {
+    type: 'DELEGATION_TOKEN_NOT_FOUND',
+    code: 62,
+    retriable: false,
+    message: 'Delegation Token is not found on server',
+  },
+  {
+    type: 'DELEGATION_TOKEN_OWNER_MISMATCH',
+    code: 63,
+    retriable: false,
+    message: 'Specified Principal is not valid Owner/Renewer',
+  },
+  {
+    type: 'DELEGATION_TOKEN_REQUEST_NOT_ALLOWED',
+    code: 64,
+    retriable: false,
+    message:
+      'Delegation Token requests are not allowed on PLAINTEXT/1-way SSL channels and on delegation token authenticated channels',
+  },
+  {
+    type: 'DELEGATION_TOKEN_AUTHORIZATION_FAILED',
+    code: 65,
+    retriable: false,
+    message: 'Delegation Token authorization failed',
+  },
+  {
+    type: 'DELEGATION_TOKEN_EXPIRED',
+    code: 66,
+    retriable: false,
+    message: 'Delegation Token is expired',
+  },
+  {
+    type: 'INVALID_PRINCIPAL_TYPE',
+    code: 67,
+    retriable: false,
+    message: 'Supplied principalType is not supported',
+  },
+  {
+    type: 'NON_EMPTY_GROUP',
+    code: 68,
+    retriable: false,
+    message: 'The group is not empty',
+  },
+  {
+    type: 'GROUP_ID_NOT_FOUND',
+    code: 69,
+    retriable: false,
+    message: 'The group id was not found',
+  },
+  {
+    type: 'FETCH_SESSION_ID_NOT_FOUND',
+    code: 70,
+    retriable: true,
+    message: 'The fetch session ID was not found',
+  },
+  {
+    type: 'INVALID_FETCH_SESSION_EPOCH',
+    code: 71,
+    retriable: true,
+    message: 'The fetch session epoch is invalid',
+  },
 ]
 
 const unknownErrorCode = errorCode => ({
