@@ -31,8 +31,6 @@ describe('Consumer', () => {
     consumer = createConsumer({
       cluster,
       groupId,
-      maxWaitTimeInMs: 1,
-      maxBytesPerPartition: 180,
       logger: newLogger(),
     })
   })
@@ -220,9 +218,12 @@ describe('Consumer', () => {
       await expect(waitFor(() => succeeded)).resolves.toBeTruthy()
 
       // retry the same batch
-      expect(batches.map(b => b.lastOffset())).toEqual(['1', '1'])
+      expect(batches.map(b => b.messages.map(m => m.offset).join(','))).toEqual(['0,1,2', '0,1,2'])
       const batchMessages = batches.map(b => b.messages.map(m => m.key.toString()).join('-'))
-      expect(batchMessages).toEqual([`key-${key1}-key-${key2}`, `key-${key1}-key-${key2}`])
+      expect(batchMessages).toEqual([
+        `key-${key1}-key-${key2}-key-${key3}`,
+        `key-${key1}-key-${key2}-key-${key3}`,
+      ])
     })
 
     it('commits the previous offsets', async () => {
