@@ -15,6 +15,7 @@ module.exports = class Client {
     clientId,
     connectionTimeout,
     retry,
+    allowExperimentalV011,
     logLevel = INFO,
     logCreator = LoggerConsole,
   }) {
@@ -28,6 +29,7 @@ module.exports = class Client {
         clientId,
         connectionTimeout,
         retry,
+        allowExperimentalV011,
       })
   }
 
