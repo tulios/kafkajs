@@ -1,3 +1,5 @@
+const apiKeys = require('./apiKeys')
+
 const requests = {
   Produce: require('./produce'),
   Fetch: require('./fetch'),
@@ -23,8 +25,8 @@ const requests = {
 }
 
 const BEGIN_EXPERIMENTAL_V011_REQUEST_VERSION = {
-  Produce: 3,
-  Fetch: 4,
+  [apiKeys.Produce]: 3,
+  [apiKeys.Fetch]: 4,
 }
 
 const lookup = (versions, allowExperimentalV011) => (apiKey, definition) => {
