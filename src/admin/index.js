@@ -7,7 +7,6 @@ const retryOnLeaderNotAvailable = (fn, opts = {}) => {
     try {
       return await fn()
     } catch (e) {
-      console.error(e)
       if (e.type !== 'LEADER_NOT_AVAILABLE') {
         throw e
       }
@@ -80,7 +79,6 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
         }
 
         if (e.type === 'TOPIC_ALREADY_EXISTS') {
-          logger.warn(e.message)
           return false
         }
 
