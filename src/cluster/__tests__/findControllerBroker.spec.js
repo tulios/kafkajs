@@ -22,7 +22,7 @@ describe('Cluster > findControllerBroker', () => {
   })
 
   test('throws KafkaJSTopicMetadataNotLoaded if the controllerId is invalid', async () => {
-    cluster.brokerPool.metadata = { controllerId: 'invalidStuff' }
+    cluster.brokerPool.metadata = { controllerId: undefined }
     await expect(cluster.findControllerBroker()).rejects.toThrow(KafkaJSMetadataNotLoaded)
   })
 

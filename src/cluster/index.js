@@ -111,8 +111,7 @@ module.exports = class Cluster {
   async findControllerBroker() {
     const { metadata } = this.brokerPool
 
-    // controllerId is an int32, it's safe to cast to Number
-    if (!metadata || Number.isNaN(Number(metadata.controllerId))) {
+    if (!metadata || metadata.controllerId == null) {
       throw new KafkaJSMetadataNotLoaded('Topic metadata not loaded')
     }
 
