@@ -13,6 +13,14 @@ module.exports = class Decoder {
     return INT32_SIZE
   }
 
+  static decodeZigZag(value) {
+    return (value >>> 1) ^ -(value & 1)
+  }
+
+  static decodeZigZag64(longValue) {
+    return longValue.shiftRightUnsigned(1).xor(longValue.and(Long.fromInt(1)).negate())
+  }
+
   constructor(buffer) {
     this.buffer = buffer
     this.offset = 0
@@ -65,12 +73,37 @@ module.exports = class Decoder {
     return value
   }
 
+  readVarIntString() {
+    const byteLength = this.readVarInt()
+
+    if (byteLength === -1) {
+      return null
+    }
+
+    const stringBuffer = this.buffer.slice(this.offset, this.offset + byteLength)
+    const value = stringBuffer.toString('utf8')
+    this.offset += byteLength
+    return value
+  }
+
   canReadBytes(length) {
     return Buffer.byteLength(this.buffer) - this.offset >= length
   }
 
   readBytes() {
     const byteLength = this.readInt32()
+
+    if (byteLength === -1) {
+      return null
+    }
+
+    const stringBuffer = this.buffer.slice(this.offset, this.offset + byteLength)
+    this.offset += byteLength
+    return stringBuffer
+  }
+
+  readVarIntBytes() {
+    const byteLength = this.readVarInt()
 
     if (byteLength === -1) {
       return null
@@ -123,7 +156,7 @@ module.exports = class Decoder {
     return array
   }
 
-  readSignedVarInt32() {
+  readVarInt() {
     let currentByte
     let result = 0
     let i = 0
@@ -134,14 +167,10 @@ module.exports = class Decoder {
       i += 7
     } while (currentByte >= MOST_SIGNIFICANT_BIT)
 
-    return this.decodeZigZag(result)
+    return Decoder.decodeZigZag(result)
   }
 
-  decodeZigZag(value) {
-    return (value >>> 1) ^ -(value & 1)
-  }
-
-  readSignedVarInt64() {
+  readVarLong() {
     let currentByte
     let result = Long.fromInt(0)
     let i = 0
@@ -152,11 +181,7 @@ module.exports = class Decoder {
       i += 7
     } while (currentByte >= MOST_SIGNIFICANT_BIT)
 
-    return this.decodeZigZag64(result)
-  }
-
-  decodeZigZag64(longValue) {
-    return longValue.shiftRightUnsigned(1).xor(longValue.and(Long.fromInt(1)).negate())
+    return Decoder.decodeZigZag64(result)
   }
 
   slice(size) {

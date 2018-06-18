@@ -19,23 +19,23 @@ services:
     environment:
       KAFKA_BROKER_ID: 0
       KAFKA_ADVERTISED_HOST_NAME: ${HOST_IP}
-      KAFKA_PORT: 9092
       KAFKA_ZOOKEEPER_CONNECT: zk:2181
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_LISTENERS: "PLAINTEXT://:9092,SSL://:9093,SASL_SSL://:9094"
-      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://${HOST_IP}:9092,SSL://${HOST_IP}:9093,SASL_SSL://${HOST_IP}:9094"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,SSL:SSL,SASL_SSL:SASL_SSL
       KAFKA_SSL_KEYSTORE_LOCATION: "/var/private/ssl/certs/kafka.server.keystore.jks"
       KAFKA_SSL_KEYSTORE_PASSWORD: "testtest"
       KAFKA_SSL_KEY_PASSWORD: "testtest"
       KAFKA_SSL_TRUSTSTORE_LOCATION: "/var/private/ssl/certs/kafka.server.truststore.jks"
       KAFKA_SSL_TRUSTSTORE_PASSWORD: "testtest"
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: "PLAIN"
-      KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN"
+      KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN,SCRAM-SHA-256,SCRAM-SHA-512"
       KAFKA_OPTS: "-Djava.security.auth.login.config=/opt/kafka/config/server-jaas.conf"
-      KAFKA_CREATE_TOPICS: "topic-test:6:3"
+      KAFKA_CREATE_TOPICS: "topic-test:6:1"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./testHelpers/certs:/var/private/ssl/certs
+      - ./testHelpers/kafka/start-kafka-011.sh:/usr/bin/start-kafka.sh
       - ./testHelpers/kafka/server-jaas.conf:/opt/kafka/config/server-jaas.conf
       # - ./testHelpers/kafka/log4j.properties:/opt/kafka/config/log4j.properties
   kafka2:
@@ -49,23 +49,24 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ADVERTISED_HOST_NAME: ${HOST_IP}
-      KAFKA_PORT: 9095
       KAFKA_ZOOKEEPER_CONNECT: zk:2181
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_LISTENERS: "PLAINTEXT://:9095,SSL://:9096,SASL_SSL://:9097"
       KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://${HOST_IP}:9095,SSL://${HOST_IP}:9096,SASL_SSL://${HOST_IP}:9097"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,SSL:SSL,SASL_SSL:SASL_SSL
       KAFKA_SSL_KEYSTORE_LOCATION: "/var/private/ssl/certs/kafka.server.keystore.jks"
       KAFKA_SSL_KEYSTORE_PASSWORD: "testtest"
       KAFKA_SSL_KEY_PASSWORD: "testtest"
       KAFKA_SSL_TRUSTSTORE_LOCATION: "/var/private/ssl/certs/kafka.server.truststore.jks"
       KAFKA_SSL_TRUSTSTORE_PASSWORD: "testtest"
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: "PLAIN"
-      KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN"
+      KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN,SCRAM-SHA-256,SCRAM-SHA-512"
       KAFKA_OPTS: "-Djava.security.auth.login.config=/opt/kafka/config/server-jaas.conf"
-      KAFKA_CREATE_TOPICS: "topic-test:6:3"
+      KAFKA_CREATE_TOPICS: "topic-test:6:1"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./testHelpers/certs:/var/private/ssl/certs
+      - ./testHelpers/kafka/start-kafka-011.sh:/usr/bin/start-kafka.sh
       - ./testHelpers/kafka/server-jaas.conf:/opt/kafka/config/server-jaas.conf
       # - ./testHelpers/kafka/log4j.properties:/opt/kafka/config/log4j.properties
   kafka3:
@@ -79,22 +80,23 @@ services:
     environment:
       KAFKA_BROKER_ID: 2
       KAFKA_ADVERTISED_HOST_NAME: ${HOST_IP}
-      KAFKA_PORT: 9098
       KAFKA_ZOOKEEPER_CONNECT: zk:2181
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_LISTENERS: "PLAINTEXT://:9098,SSL://:9099,SASL_SSL://:9100"
       KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://${HOST_IP}:9098,SSL://${HOST_IP}:9099,SASL_SSL://${HOST_IP}:9100"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,SSL:SSL,SASL_SSL:SASL_SSL
       KAFKA_SSL_KEYSTORE_LOCATION: "/var/private/ssl/certs/kafka.server.keystore.jks"
       KAFKA_SSL_KEYSTORE_PASSWORD: "testtest"
       KAFKA_SSL_KEY_PASSWORD: "testtest"
       KAFKA_SSL_TRUSTSTORE_LOCATION: "/var/private/ssl/certs/kafka.server.truststore.jks"
       KAFKA_SSL_TRUSTSTORE_PASSWORD: "testtest"
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: "PLAIN"
-      KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN"
+      KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN,SCRAM-SHA-256,SCRAM-SHA-512"
       KAFKA_OPTS: "-Djava.security.auth.login.config=/opt/kafka/config/server-jaas.conf"
-      KAFKA_CREATE_TOPICS: "topic-test:6:3"
+      KAFKA_CREATE_TOPICS: "topic-test:6:1"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./testHelpers/certs:/var/private/ssl/certs
+      - ./testHelpers/kafka/start-kafka-011.sh:/usr/bin/start-kafka.sh
       - ./testHelpers/kafka/server-jaas.conf:/opt/kafka/config/server-jaas.conf
       # - ./testHelpers/kafka/log4j.properties:/opt/kafka/config/log4j.properties

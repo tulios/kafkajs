@@ -30,8 +30,6 @@ describe('Consumer', () => {
     consumer = createConsumer({
       cluster,
       groupId,
-      maxWaitTimeInMs: 1,
-      maxBytesPerPartition: 180,
       logger: newLogger(),
     })
   })

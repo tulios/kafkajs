@@ -46,7 +46,8 @@ class KafkaJSConnectionError extends KafkaJSError {
   }
 }
 
-class KafkaJSTopicMetadataNotLoaded extends KafkaJSError {
+class KafkaJSMetadataNotLoaded extends KafkaJSError {}
+class KafkaJSTopicMetadataNotLoaded extends KafkaJSMetadataNotLoaded {
   constructor(e, { topic } = {}) {
     super(e)
     this.topic = topic
@@ -58,6 +59,7 @@ class KafkaJSPartialMessageError extends KafkaJSNonRetriableError {}
 class KafkaJSSASLAuthenticationError extends KafkaJSNonRetriableError {}
 class KafkaJSGroupCoordinatorNotFound extends KafkaJSNonRetriableError {}
 class KafkaJSNotImplemented extends KafkaJSNonRetriableError {}
+class KafkaJSTimeout extends KafkaJSNonRetriableError {}
 
 module.exports = {
   KafkaJSError,
@@ -71,5 +73,7 @@ module.exports = {
   KafkaJSOffsetOutOfRange,
   KafkaJSGroupCoordinatorNotFound,
   KafkaJSNotImplemented,
+  KafkaJSMetadataNotLoaded,
   KafkaJSTopicMetadataNotLoaded,
+  KafkaJSTimeout,
 }

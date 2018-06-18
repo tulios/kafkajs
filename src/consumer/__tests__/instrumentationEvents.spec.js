@@ -30,7 +30,6 @@ describe('Consumer > Instrumentation Events', () => {
     consumer = createConsumer({
       cluster,
       groupId,
-      maxWaitTimeInMs: 1,
       logger: newLogger(),
       heartbeatInterval: 100,
     })

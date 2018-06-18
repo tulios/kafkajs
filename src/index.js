@@ -3,6 +3,7 @@ const LoggerConsole = require('./loggers/console')
 const Cluster = require('./cluster')
 const createProducer = require('./producer')
 const createConsumer = require('./consumer')
+const createAdmin = require('./admin')
 
 const { assign } = Object
 
@@ -72,6 +73,18 @@ module.exports = class Client {
       minBytes,
       maxBytes,
       maxWaitTimeInMs,
+    })
+  }
+
+  /**
+   * @public
+   */
+  admin({ retry } = {}) {
+    const cluster = this.createCluster()
+    return createAdmin({
+      retry: assign({}, cluster.retry, retry),
+      logger: this.logger,
+      cluster,
     })
   }
 }

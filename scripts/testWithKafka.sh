@@ -34,6 +34,9 @@ fi
 
 $PWD/scripts/waitForKafka.js
 echo
+echo -e "Create SCRAM credentials"
+$PWD/scripts/createScramCredentials.sh
+echo
 
 eval "${testCommand} ${extraArgs}"
 TEST_EXIT=$?

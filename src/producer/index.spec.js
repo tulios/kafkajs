@@ -3,6 +3,8 @@ const {
   secureRandom,
   connectionOpts,
   sslConnectionOpts,
+  saslSCRAM256ConnectionOpts,
+  saslSCRAM512ConnectionOpts,
   createCluster,
   createModPartitioner,
   sslBrokers,
@@ -60,6 +62,18 @@ describe('Producer', () => {
     await producer.connect()
   })
 
+  test('support SASL SCRAM 256 connections', async () => {
+    const cluster = createCluster(saslSCRAM256ConnectionOpts(), saslBrokers())
+    producer = createProducer({ cluster, logger: newLogger() })
+    await producer.connect()
+  })
+
+  test('support SASL SCRAM 512 connections', async () => {
+    const cluster = createCluster(saslSCRAM512ConnectionOpts(), saslBrokers())
+    producer = createProducer({ cluster, logger: newLogger() })
+    await producer.connect()
+  })
+
   test('throws an error if SASL PLAIN fails to authenticate', async () => {
     const cluster = createCluster(
       Object.assign(sslConnectionOpts(), {
@@ -76,6 +90,46 @@ describe('Producer', () => {
     await expect(producer.connect()).rejects.toEqual(
       new KafkaJSSASLAuthenticationError(
         'SASL PLAIN authentication failed: Connection closed by the server'
+      )
+    )
+  })
+
+  test('throws an error if SASL SCRAM 256 fails to authenticate', async () => {
+    const cluster = createCluster(
+      Object.assign(sslConnectionOpts(), {
+        sasl: {
+          mechanism: 'SCRAM-SHA-256',
+          username: 'wrong',
+          password: 'wrong',
+        },
+      }),
+      saslBrokers()
+    )
+
+    producer = createProducer({ cluster, logger: newLogger() })
+    await expect(producer.connect()).rejects.toEqual(
+      new KafkaJSSASLAuthenticationError(
+        'SASL SCRAM SHA256 authentication failed: Connection closed by the server'
+      )
+    )
+  })
+
+  test('throws an error if SASL SCRAM 512 fails to authenticate', async () => {
+    const cluster = createCluster(
+      Object.assign(sslConnectionOpts(), {
+        sasl: {
+          mechanism: 'SCRAM-SHA-512',
+          username: 'wrong',
+          password: 'wrong',
+        },
+      }),
+      saslBrokers()
+    )
+
+    producer = createProducer({ cluster, logger: newLogger() })
+    await expect(producer.connect()).rejects.toEqual(
+      new KafkaJSSASLAuthenticationError(
+        'SASL SCRAM SHA512 authentication failed: Connection closed by the server'
       )
     )
   })
