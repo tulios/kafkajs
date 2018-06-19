@@ -1,4 +1,5 @@
 const Long = require('long')
+const flatten = require('../../utils/flatten')
 const isInvalidOffset = require('./isInvalidOffset')
 const initializeConsumerOffsets = require('./initializeConsumerOffsets')
 const { COMMIT_OFFSETS } = require('../instrumentationEvents')
@@ -40,7 +41,7 @@ module.exports = class OffsetManager {
   /**
    * @param {string} topic
    * @param {number} partition
-   * @returns {string}
+   * @returns {Long}
    */
   nextOffset(topic, partition) {
     if (!this.resolvedOffsets[topic][partition]) {
@@ -83,6 +84,32 @@ module.exports = class OffsetManager {
     this.resolvedOffsets[topic][partition] = Long.fromValue(offset)
       .add(1)
       .toString()
+  }
+
+  /**
+   * @returns {Long}
+   */
+  countResolvedOffsets() {
+    const toPartitions = topic => keys(this.resolvedOffsets[topic])
+
+    const subtractOffsets = (resolvedOffset, committedOffset) => {
+      const resolvedOffsetLong = Long.fromValue(resolvedOffset)
+      return committedOffset === '-1'
+        ? resolvedOffsetLong
+        : resolvedOffsetLong.subtract(Long.fromValue(committedOffset))
+    }
+
+    const subtractPartitionOffsets = (topic, partition) =>
+      subtractOffsets(
+        this.resolvedOffsets[topic][partition],
+        this.committedOffsets[topic][partition]
+      )
+
+    const subtractTopicOffsets = topic =>
+      toPartitions(topic).map(partition => subtractPartitionOffsets(topic, partition))
+
+    const offsetsDiff = this.topics.map(subtractTopicOffsets)
+    return flatten(offsetsDiff).reduce((sum, offset) => sum.add(offset), Long.fromValue(0))
   }
 
   /**
