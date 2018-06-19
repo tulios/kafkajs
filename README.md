@@ -415,7 +415,7 @@ async () => {
 
 ### <a name="consuming-messages-each-batch"></a> eachBatch
 
-Some use cases requires dealing with batches directly. This handler will feed your function batches and provide some utility functions to give your code more flexibility: `resolveOffset`, `heartbeat`, and `isRunning`. All resolved offsets will be automatically committed after the function is executed.
+Some use cases require dealing with batches directly. This handler will feed your function batches and provide some utility functions to give your code more flexibility: `resolveOffset`, `heartbeat`, and `isRunning`. All resolved offsets will be automatically committed after the function is executed.
 
 Be aware that using `eachBatch` directly is considered a more advanced use case as compared to using `eachMessage`, since you will have to understand how session timeouts and heartbeats are connected.
 
