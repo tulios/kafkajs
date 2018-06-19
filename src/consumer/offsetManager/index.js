@@ -12,6 +12,8 @@ module.exports = class OffsetManager {
     cluster,
     coordinator,
     memberAssignment,
+    autoCommitInterval,
+    autoCommitThreshold,
     topicConfigurations,
     instrumentationEmitter,
     groupId,
@@ -33,6 +35,10 @@ module.exports = class OffsetManager {
     this.groupId = groupId
     this.generationId = generationId
     this.memberId = memberId
+
+    this.autoCommitInterval = autoCommitInterval
+    this.autoCommitThreshold = autoCommitThreshold
+    this.lastCommit = Date.now()
 
     this.topics = keys(memberAssignment)
     this.clearAllOffsets()
@@ -167,6 +173,21 @@ module.exports = class OffsetManager {
     this.clearOffsets({ topic, partition })
   }
 
+  async commitOffsetsIfNecessary() {
+    const now = Date.now()
+
+    const timeoutReached =
+      this.autoCommitInterval != null && now >= this.lastCommit + this.autoCommitInterval
+
+    const thresholdReached =
+      this.autoCommitThreshold != null &&
+      this.countResolvedOffsets().gte(Long.fromValue(this.autoCommitThreshold))
+
+    if (timeoutReached || thresholdReached) {
+      return this.commitOffsets()
+    }
+  }
+
   async commitOffsets() {
     const { groupId, generationId, memberId } = this
 
@@ -194,6 +215,7 @@ module.exports = class OffsetManager {
       .filter(emptyPartitions)
 
     if (topicsWithPartitionsToCommit.length === 0) {
+      this.lastCommit = Date.now()
       return
     }
 
@@ -216,6 +238,8 @@ module.exports = class OffsetManager {
       )
       assign(this.committedOffsets[topic], updatedOffsets)
     })
+
+    this.lastCommit = Date.now()
   }
 
   async resolveOffsets() {
