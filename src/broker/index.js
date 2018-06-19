@@ -13,11 +13,12 @@ const SASLAuthenticator = require('./saslAuthenticator')
  *                                 supported by this cluster. The output of broker#apiVersions
  */
 module.exports = class Broker {
-  constructor({ connection, logger, nodeId = null, versions = null }) {
+  constructor({ connection, logger, allowExperimentalV011, nodeId = null, versions = null }) {
     this.connection = connection
     this.nodeId = nodeId
     this.rootLogger = logger
     this.versions = versions
+    this.allowExperimentalV011 = allowExperimentalV011
     this.authenticated = false
     this.lookupRequest = () => {
       throw new Error('Broker not connected')
@@ -45,7 +46,7 @@ module.exports = class Broker {
       this.versions = await this.apiVersions()
     }
 
-    this.lookupRequest = lookup(this.versions)
+    this.lookupRequest = lookup(this.versions, this.allowExperimentalV011)
 
     if (!this.authenticated && this.connection.sasl) {
       await new SASLAuthenticator(this.connection, this.rootLogger, this.versions).authenticate()

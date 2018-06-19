@@ -17,6 +17,7 @@ module.exports = class Client {
     retry,
     logLevel = INFO,
     logCreator = LoggerConsole,
+    allowExperimentalV011 = false,
   }) {
     this.logger = createLogger({ level: logLevel, logCreator })
     this.createCluster = () =>
@@ -28,6 +29,7 @@ module.exports = class Client {
         clientId,
         connectionTimeout,
         retry,
+        allowExperimentalV011,
       })
   }
 

@@ -11,12 +11,14 @@ module.exports = class BrokerPool {
    * @param {Logger} logger
    * @param {Object} retry
    */
-  constructor({ connectionBuilder, logger, retry }) {
+  constructor({ connectionBuilder, logger, retry, allowExperimentalV011 }) {
     this.connectionBuilder = connectionBuilder
     this.rootLogger = logger
     this.logger = logger.namespace('BrokerPool')
     this.retrier = createRetry(assign({}, retry))
-    this.seedBroker = new Broker({
+
+    this.createBroker = options => new Broker({ allowExperimentalV011, ...options })
+    this.seedBroker = this.createBroker({
       connection: this.connectionBuilder.build(),
       logger: this.rootLogger,
     })
@@ -53,7 +55,7 @@ module.exports = class BrokerPool {
 
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
           // Connection builder will always rotate the seed broker
-          this.seedBroker = new Broker({
+          this.seedBroker = this.createBroker({
             connection: this.connectionBuilder.build(),
             logger: this.rootLogger,
           })
@@ -106,7 +108,7 @@ module.exports = class BrokerPool {
           }
 
           return assign(result, {
-            [nodeId]: new Broker({
+            [nodeId]: this.createBroker({
               logger: this.rootLogger,
               versions: this.versions,
               connection: this.connectionBuilder.build({ host, port, rack }),
