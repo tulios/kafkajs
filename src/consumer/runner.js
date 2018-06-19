@@ -148,6 +148,9 @@ module.exports = class Runner {
         heartbeat: async () => {
           await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
         },
+        commitOffsetsIfNecessary: async () => {
+          await this.consumerGroup.commitOffsetsIfNecessary()
+        },
         isRunning: () => this.running,
       })
     } catch (e) {
