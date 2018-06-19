@@ -1,4 +1,4 @@
-const initializeConsumerOffsets = require('./initializeConsumerOffsets')
+const initializeConsumerOffsets = require('../initializeConsumerOffsets')
 
 describe('Consumer > OffsetMananger > initializeConsumerOffsets', () => {
   it('initialize consumer offsets assigned to -1 with topic offsets', () => {
