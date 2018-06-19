@@ -39,7 +39,7 @@ module.exports = ({
   let runner = null
   let consumerGroup = null
 
-  const createConsumerGroup = () => {
+  const createConsumerGroup = ({ autoCommitInterval, autoCommitThreshold }) => {
     return new ConsumerGroup({
       logger: rootLogger,
       topics: keys(topics),
@@ -53,6 +53,8 @@ module.exports = ({
       maxBytes,
       maxWaitTimeInMs,
       instrumentationEmitter,
+      autoCommitInterval,
+      autoCommitThreshold,
     })
   }
 
@@ -103,6 +105,8 @@ module.exports = ({
   }
 
   /**
+   * @param {number} [autoCommitInterval=null]
+   * @param {number} [autoCommitThreshold=null]
    * @param {boolean} [eachBatchAutoResolve=true] Automatically resolves the last offset of the batch when the
    *                                              the callback succeeds
    * @param {Function} [eachBatch=null]
@@ -110,18 +114,37 @@ module.exports = ({
    * @return {Promise}
    */
   const run = async (
-    { eachBatchAutoResolve = true, eachBatch = null, eachMessage = null } = {}
+    {
+      autoCommitInterval = null,
+      autoCommitThreshold = null,
+      eachBatchAutoResolve = true,
+      eachBatch = null,
+      eachMessage = null,
+    } = {}
   ) => {
-    consumerGroup = createConsumerGroup()
+    consumerGroup = createConsumerGroup({
+      autoCommitInterval,
+      autoCommitThreshold,
+    })
 
     const start = async onCrash => {
       logger.info('Starting', { groupId })
-      runner = createRunner({ eachBatchAutoResolve, eachBatch, eachMessage, onCrash })
+      runner = createRunner({
+        eachBatchAutoResolve,
+        eachBatch,
+        eachMessage,
+        onCrash,
+      })
+
       await runner.start()
     }
 
     const restart = onCrash => {
-      consumerGroup = createConsumerGroup()
+      consumerGroup = createConsumerGroup({
+        autoCommitInterval,
+        autoCommitThreshold,
+      })
+
       start(onCrash)
     }
 
