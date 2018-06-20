@@ -18,8 +18,8 @@ const versions = {
     return { request: request({ replicaId, maxWaitTime, minBytes, topics }), response }
   },
   3: ({ replicaId = REPLICA_ID, maxWaitTime, minBytes, maxBytes, topics }) => {
-    const request = require('./v2/request')
-    const response = require('./v2/response')
+    const request = require('./v3/request')
+    const response = require('./v3/response')
     return { request: request({ replicaId, maxWaitTime, minBytes, maxBytes, topics }), response }
   },
 }
