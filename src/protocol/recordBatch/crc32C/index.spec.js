@@ -12,4 +12,20 @@ describe('Protocol > RecordBatch > crc32C', () => {
     const buffer = Buffer.from(require('./fixtures/crcPayload.json'))
     expect(crc32C(buffer)).toEqual(818496390)
   })
+
+  test('samples', () => {
+    const samples = require('./fixtures/samples')
+    for (let sample of samples) {
+      const buffer = Buffer.from(sample.input)
+      expect(crc32C(buffer)).toEqual(sample.output)
+    }
+  })
+
+  test('empty', () => {
+    expect(crc32C(Buffer.alloc(0))).toEqual(0)
+  })
+
+  test('unicode null', () => {
+    expect(crc32C(Buffer.from('\u0000'))).toEqual(1383945041)
+  })
 })
