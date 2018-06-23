@@ -67,7 +67,7 @@ describe('Consumer', () => {
       const message2 = { key: `key-${key2}`, value: `value-${key2}`, partition: 1 }
 
       for (let topic of topics) {
-        await producer.send({ topic, messages: [message1] })
+        await producer.send({ acks: 1, topic, messages: [message1] })
         await consumer.subscribe({ topic, fromBeginning: true })
       }
 
@@ -80,7 +80,7 @@ describe('Consumer', () => {
       consumer.pause([{ topic: pausedTopic }])
 
       for (let topic of topics) {
-        await producer.send({ topic, messages: [message2] })
+        await producer.send({ acks: 1, topic, messages: [message2] })
       }
 
       const consumedMessages = await waitForMessages(messagesConsumed, { number: 3 })
@@ -137,8 +137,8 @@ describe('Consumer', () => {
       const key1 = secureRandom()
       const message1 = { key: `key-${key1}`, value: `value-${key1}`, partition: 0 }
 
-      await producer.send({ topic: topic1, messages: [message1] })
-      await producer.send({ topic: topic2, messages: [message1] })
+      await producer.send({ acks: 1, topic: topic1, messages: [message1] })
+      await producer.send({ acks: 1, topic: topic2, messages: [message1] })
 
       expect(eachMessage).not.toHaveBeenCalled()
     })
@@ -177,7 +177,7 @@ describe('Consumer', () => {
       consumer.pause([{ topic: pausedTopic }])
 
       for (let topic of topics) {
-        await producer.send({ topic, messages: [message] })
+        await producer.send({ acks: 1, topic, messages: [message] })
       }
 
       await waitForMessages(messagesConsumed, { number: 1 })
