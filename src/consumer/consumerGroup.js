@@ -86,6 +86,7 @@ module.exports = class ConsumerGroup {
     const { groupId, memberId } = this
     if (memberId) {
       await this.coordinator.leaveGroup({ groupId, memberId })
+      this.memberId = null
     }
   }
 
