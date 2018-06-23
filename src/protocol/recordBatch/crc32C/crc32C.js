@@ -3,7 +3,7 @@
  * the CRC32-C polynomial, the same polynomial used by iSCSI
  *
  * also known as CRC32 Castagnoli
- * based on: https://github.com/apache/kafka/blob/6feaa8a581daaa76ff7c85e4a0b9c9aa4284fe99/clients/src/main/java/org/apache/kafka/common/utils/PureJavaCrc32C.java
+ * based on: https://github.com/ashi009/node-fast-crc32c/blob/master/impls/js_crc32c.js
  */
 const crc32C = buffer => {
   let crc = 0 ^ -1
