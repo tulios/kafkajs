@@ -9,7 +9,6 @@ branches:
     - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
 env:
   - DOCKER_COMPOSE_VERSION=1.16.1
-  - KAFKA_VERSION=0.10.2
 before_install:
   - sudo rm /usr/local/bin/docker-compose
   - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
