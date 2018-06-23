@@ -141,6 +141,21 @@ module.exports = class Decoder {
     return array
   }
 
+  readVarIntArray(reader) {
+    const length = this.readVarInt()
+
+    if (length === -1) {
+      return []
+    }
+
+    const array = []
+    for (let i = 0; i < length; i++) {
+      array.push(reader(this))
+    }
+
+    return array
+  }
+
   async readArrayAsync(reader) {
     const length = this.readInt32()
 
