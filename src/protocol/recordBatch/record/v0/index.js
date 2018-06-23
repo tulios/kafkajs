@@ -30,8 +30,8 @@ module.exports = ({ offsetDelta = 0, timestampDelta = 0, key, value, headers = {
 
   const sizeOfBody =
     1 + // always one byte for attributes
-    Encoder.sizeOfVarInt(offsetDelta) +
     Encoder.sizeOfVarLong(timestampDelta) +
+    Encoder.sizeOfVarInt(offsetDelta) +
     Encoder.sizeOfVarIntBytes(key) +
     Encoder.sizeOfVarIntBytes(value) +
     sizeOfHeaders(headersArray)

@@ -2,7 +2,7 @@ const Encoder = require('../../../encoder')
 const { Produce: apiKey } = require('../../apiKeys')
 const { Types } = require('../../../message/compression')
 const Record = require('../../../recordBatch/record/v0')
-const RecordBatch = require('../../../recordBatch/v0')
+const { RecordBatch } = require('../../../recordBatch/v0')
 
 /**
  * Produce Request (Version: 3) => transactional_id acks timeout [topic_data]
