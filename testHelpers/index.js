@@ -131,6 +131,12 @@ const createTopic = async ({ topic, partitions = 1 }) => {
   }
 }
 
+const testIfKafka011 = (description, callback) => {
+  return process.env.KAFKA_VERSION === '0.11'
+    ? test(description, callback)
+    : test.skip(description, callback)
+}
+
 module.exports = {
   secureRandom,
   connectionOpts,
@@ -150,4 +156,5 @@ module.exports = {
   createTopic,
   waitFor: testWaitFor,
   waitForMessages,
+  testIfKafka011,
 }
