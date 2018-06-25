@@ -27,6 +27,7 @@ describe('Cluster > fetchTopicsOffset', () => {
 
     await producer.send({
       topic,
+      acks: 1,
       messages: [
         { key: 'k1', value: 'v1' },
         { key: 'k2', value: 'v2' },

@@ -86,7 +86,7 @@ describe('Consumer', () => {
       const key3 = secureRandom()
       const message3 = { key: `key-${key3}`, value: `value-${key3}` }
 
-      await producer.send({ topic: topicName, messages: [message1, message2, message3] })
+      await producer.send({ acks: 1, topic: topicName, messages: [message1, message2, message3] })
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
       const messagesConsumed = []
@@ -119,7 +119,7 @@ describe('Consumer', () => {
       const key3 = secureRandom()
       const message3 = { key: `key-${key3}`, value: `value-${key3}` }
 
-      await producer.send({ topic: topicName, messages: [message1, message2, message3] })
+      await producer.send({ acks: 1, topic: topicName, messages: [message1, message2, message3] })
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
       const messagesConsumed = []
@@ -144,7 +144,7 @@ describe('Consumer', () => {
       const key1 = secureRandom()
       const message1 = { key: `key-${key1}`, value: `value-${key1}` }
 
-      await producer.send({ topic: topicName, messages: [message1] })
+      await producer.send({ acks: 1, topic: topicName, messages: [message1] })
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
       const messagesConsumed = []

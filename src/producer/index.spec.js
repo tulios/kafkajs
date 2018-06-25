@@ -27,7 +27,7 @@ describe('Producer', () => {
 
   test('throws an error if the topic is invalid', async () => {
     producer = createProducer({ cluster: createCluster(), logger: newLogger() })
-    await expect(producer.send({ topic: null })).rejects.toHaveProperty(
+    await expect(producer.send({ acks: 1, topic: null })).rejects.toHaveProperty(
       'message',
       'Invalid topic null'
     )
@@ -35,10 +35,9 @@ describe('Producer', () => {
 
   test('throws an error if messages is invalid', async () => {
     producer = createProducer({ cluster: createCluster(), logger: newLogger() })
-    await expect(producer.send({ topic: topicName, messages: null })).rejects.toHaveProperty(
-      'message',
-      'Invalid messages array null'
-    )
+    await expect(
+      producer.send({ acks: 1, topic: topicName, messages: null })
+    ).rejects.toHaveProperty('message', 'Invalid messages array null')
   })
 
   test('support SSL connections', async () => {
@@ -144,6 +143,7 @@ describe('Producer', () => {
     producer = createProducer({ cluster, logger: newLogger() })
     await producer.connect()
     await producer.send({
+      acks: 1,
       topic: topicName,
       messages: [{ key: '1', value: '1' }],
     })
@@ -153,6 +153,7 @@ describe('Producer', () => {
     expect(cluster.isConnected()).toEqual(false)
 
     await producer.send({
+      acks: 1,
       topic: topicName,
       messages: [{ key: '2', value: '2' }],
     })
@@ -172,6 +173,7 @@ describe('Producer', () => {
 
     const sendMessages = async () =>
       await producer.send({
+        acks: 1,
         topic: topicName,
         messages: new Array(10).fill().map((_, i) => ({
           key: `key-${i}`,

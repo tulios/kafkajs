@@ -14,6 +14,14 @@ const versions = {
     const response = require('./v2/response')
     return { request: request({ acks, timeout, compression, topicData }), response }
   },
+  3: ({ transactionalId = null, acks, timeout, compression, topicData }) => {
+    const request = require('./v3/request')
+    const response = require('./v3/response')
+    return {
+      request: request({ transactionalId, acks, timeout, compression, topicData }),
+      response,
+    }
+  },
 }
 
 module.exports = {

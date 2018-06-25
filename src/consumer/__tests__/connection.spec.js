@@ -125,6 +125,7 @@ describe('Consumer', () => {
 
     try {
       await producer.send({
+        acks: 1,
         topic: topicName,
         messages: [{ key: `key-${secureRandom()}`, value: `value-${secureRandom()}` }],
       })

@@ -62,7 +62,7 @@ describe('Consumer > Instrumentation Events', () => {
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
     await consumer.run({ eachMessage: () => true })
-    await producer.send({ topic: topicName, messages: [message] })
+    await producer.send({ acks: 1, topic: topicName, messages: [message] })
 
     await waitFor(() => heartbeats > 0)
     expect(onHeartbeat).toHaveBeenCalledWith({
@@ -89,7 +89,7 @@ describe('Consumer > Instrumentation Events', () => {
     await producer.connect()
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
     await consumer.run({ eachMessage: () => true })
-    await producer.send({ topic: topicName, messages: [message] })
+    await producer.send({ acks: 1, topic: topicName, messages: [message] })
 
     await waitFor(() => commitOffsets > 0)
     expect(onCommitOffsets).toHaveBeenCalledWith({
