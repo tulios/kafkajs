@@ -205,6 +205,7 @@ module.exports = class BrokerPool {
         await broker.connect()
       } catch (e) {
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
+          await broker.disconnect()
           // Rebuild the connection since it can't recover from illegal SASL state
           broker.connection = this.connectionBuilder.build({
             host: broker.connection.host,
