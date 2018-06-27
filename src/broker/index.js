@@ -54,7 +54,7 @@ module.exports = class Broker {
       await this.lock.acquire({ timeout: this.authenticationTimeout })
 
       if (this.isConnected()) {
-        return false
+        return
       }
 
       this.authenticated = false
@@ -70,8 +70,6 @@ module.exports = class Broker {
         await new SASLAuthenticator(this.connection, this.rootLogger, this.versions).authenticate()
         this.authenticated = true
       }
-
-      return true
     } finally {
       await this.lock.release()
     }

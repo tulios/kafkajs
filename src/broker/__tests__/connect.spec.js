@@ -24,7 +24,7 @@ describe('Broker > connect', () => {
   })
 
   test('establish the connection', async () => {
-    await expect(broker.connect()).resolves.toEqual(true)
+    await broker.connect()
     expect(broker.connection.connected).toEqual(true)
   })
 
