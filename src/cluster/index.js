@@ -26,18 +26,20 @@ const mergeTopics = (obj, { topic, partitions }) =>
  * @param {Object} sasl
  * @param {string} clientId
  * @param {number} connectionTimeout
+ * @param {number} authenticationTimeout
  * @param {Object} retry
  * @param {Object} logger
  */
 module.exports = class Cluster {
   constructor({
+    logger: rootLogger,
     brokers,
     ssl,
     sasl,
     clientId,
     connectionTimeout,
+    authenticationTimeout,
     retry,
-    logger: rootLogger,
     allowExperimentalV011,
   }) {
     this.rootLogger = rootLogger
@@ -59,6 +61,7 @@ module.exports = class Cluster {
       logger: this.rootLogger,
       retry,
       allowExperimentalV011,
+      authenticationTimeout,
     })
   }
 

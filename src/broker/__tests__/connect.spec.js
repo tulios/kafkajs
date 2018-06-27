@@ -24,7 +24,7 @@ describe('Broker > connect', () => {
   })
 
   test('establish the connection', async () => {
-    await expect(broker.connect()).resolves.toEqual(true)
+    await broker.connect()
     expect(broker.connection.connected).toEqual(true)
   })
 
@@ -61,6 +61,25 @@ describe('Broker > connect', () => {
     })
     expect(broker.authenticated).toEqual(false)
     await broker.connect()
+    expect(broker.authenticated).toEqual(true)
+  })
+
+  test('parallel calls to connect using SCRAM', async () => {
+    broker = new Broker({
+      connection: createConnection(saslSCRAM256ConnectionOpts()),
+      logger: newLogger(),
+    })
+
+    expect(broker.authenticated).toEqual(false)
+
+    await Promise.all([
+      broker.connect(),
+      broker.connect(),
+      broker.connect(),
+      broker.connect(),
+      broker.connect(),
+    ])
+
     expect(broker.authenticated).toEqual(true)
   })
 

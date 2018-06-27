@@ -25,6 +25,7 @@ const saslBrokers = (host = getHost()) => [`${host}:9094`, `${host}:9097`, `${ho
 
 const connectionOpts = (opts = {}) => ({
   clientId: `test-${secureRandom()}`,
+  connectionTimeout: 3000,
   logger: newLogger(),
   host: getHost(),
   port: 9092,
