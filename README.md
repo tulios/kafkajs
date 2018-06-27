@@ -98,6 +98,7 @@ Kafka has support for using SASL to authenticate clients. The `sasl` option can 
 new Kafka({
   clientId: 'my-app',
   brokers: ['kafka1:9092', 'kafka2:9092'],
+  // authenticationTimeout: 1000,
   sasl: {
     mechanism: 'plain', // scram-sha-256 or scram-sha-512
     username: 'my-username',
