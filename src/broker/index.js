@@ -12,14 +12,23 @@ const SASLAuthenticator = require('./saslAuthenticator')
  * @param {Object} logger
  * @param {Object} [versions=null] The object with all available versions and APIs
  *                                 supported by this cluster. The output of broker#apiVersions
+ * @param {number} [authenticationTimeout=1000]
  */
 module.exports = class Broker {
-  constructor({ connection, logger, allowExperimentalV011, nodeId = null, versions = null }) {
+  constructor({
+    connection,
+    logger,
+    allowExperimentalV011,
+    nodeId = null,
+    versions = null,
+    authenticationTimeout = 1000,
+  }) {
     this.connection = connection
     this.nodeId = nodeId
     this.rootLogger = logger
     this.versions = versions
     this.allowExperimentalV011 = allowExperimentalV011
+    this.authenticationTimeout = authenticationTimeout
     this.authenticated = false
     this.lock = new Lock()
     this.lookupRequest = () => {
@@ -42,7 +51,7 @@ module.exports = class Broker {
    */
   async connect() {
     try {
-      await this.lock.acquire()
+      await this.lock.acquire({ timeout: this.authenticationTimeout })
 
       if (this.isConnected()) {
         return false
