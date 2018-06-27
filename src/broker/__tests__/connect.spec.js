@@ -64,6 +64,25 @@ describe('Broker > connect', () => {
     expect(broker.authenticated).toEqual(true)
   })
 
+  test('parallel calls to connect using SCRAM', async () => {
+    broker = new Broker({
+      connection: createConnection(saslSCRAM256ConnectionOpts()),
+      logger: newLogger(),
+    })
+
+    expect(broker.authenticated).toEqual(false)
+
+    await Promise.all([
+      broker.connect(),
+      broker.connect(),
+      broker.connect(),
+      broker.connect(),
+      broker.connect(),
+    ])
+
+    expect(broker.authenticated).toEqual(true)
+  })
+
   test('switches the authenticated flag to false', async () => {
     const error = new Error('not connected')
     broker.authenticated = true

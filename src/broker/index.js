@@ -1,3 +1,4 @@
+const Lock = require('../utils/lock')
 const { Types: Compression } = require('../protocol/message/compression')
 const { requests, lookup } = require('../protocol/requests')
 const apiKeys = require('../protocol/requests/apiKeys')
@@ -20,6 +21,7 @@ module.exports = class Broker {
     this.versions = versions
     this.allowExperimentalV011 = allowExperimentalV011
     this.authenticated = false
+    this.lock = new Lock()
     this.lookupRequest = () => {
       throw new Error('Broker not connected')
     }
@@ -39,21 +41,31 @@ module.exports = class Broker {
    * @returns {Promise}
    */
   async connect() {
-    this.authenticated = false
-    await this.connection.connect()
+    try {
+      await this.lock.acquire()
 
-    if (!this.versions) {
-      this.versions = await this.apiVersions()
+      if (this.isConnected()) {
+        return false
+      }
+
+      this.authenticated = false
+      await this.connection.connect()
+
+      if (!this.versions) {
+        this.versions = await this.apiVersions()
+      }
+
+      this.lookupRequest = lookup(this.versions, this.allowExperimentalV011)
+
+      if (!this.authenticated && this.connection.sasl) {
+        await new SASLAuthenticator(this.connection, this.rootLogger, this.versions).authenticate()
+        this.authenticated = true
+      }
+
+      return true
+    } finally {
+      await this.lock.release()
     }
-
-    this.lookupRequest = lookup(this.versions, this.allowExperimentalV011)
-
-    if (!this.authenticated && this.connection.sasl) {
-      await new SASLAuthenticator(this.connection, this.rootLogger, this.versions).authenticate()
-      this.authenticated = true
-    }
-
-    return true
   }
 
   /**
