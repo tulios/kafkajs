@@ -71,7 +71,7 @@ describe('Producer > sendMessages', () => {
       })
       .mockImplementationOnce(() => createProducerResponse(topic, 2))
 
-    const response = await sendMessages({ topic, messages })
+    const response = await sendMessages({ topicMessages: [{ topic, messages }] })
     expect(brokers[1].produce).toHaveBeenCalledTimes(2)
     expect(brokers[2].produce).toHaveBeenCalledTimes(1)
     expect(brokers[3].produce).toHaveBeenCalledTimes(3)
@@ -104,7 +104,7 @@ describe('Producer > sendMessages', () => {
         })
         .mockImplementationOnce(() => createProducerResponse(topic, 0))
 
-      await sendMessages({ topic, messages })
+      await sendMessages({ topicMessages: [{ topic, messages }] })
       expect(brokers[1].produce).toHaveBeenCalledTimes(2)
       expect(cluster.refreshMetadata).toHaveBeenCalled()
     })
@@ -128,7 +128,7 @@ describe('Producer > sendMessages', () => {
         3: [2],
       }))
 
-    const response = await sendMessages({ topic, messages })
+    const response = await sendMessages({ topicMessages: [{ topic, messages }] })
 
     expect(response).toEqual([
       { errorCode: 0, offset: '0', partition: 0, timestamp: '-1', topicName: 'topic-name' },
