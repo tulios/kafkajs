@@ -32,8 +32,8 @@ module.exports = ({
    * @param {SendBatchRequest}
    * @returns {Promise}
    */
-  const sendBatch = async ({ acks, timeout, compression, topicMessages }) => {
-    if (topicMessages && topicMessages.length > 0 && topicMessages.some(({ topic }) => !topic)) {
+  const sendBatch = async ({ acks, timeout, compression, topicMessages = [] }) => {
+    if (topicMessages.length === 0 || topicMessages.some(({ topic }) => !topic)) {
       throw new KafkaJSNonRetriableError(`Invalid topic`)
     }
 
