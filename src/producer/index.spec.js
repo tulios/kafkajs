@@ -29,7 +29,7 @@ describe('Producer', () => {
     producer = createProducer({ cluster: createCluster(), logger: newLogger() })
     await expect(producer.send({ acks: 1, topic: null })).rejects.toHaveProperty(
       'message',
-      'Invalid topic null'
+      'Invalid topic'
     )
   })
 
@@ -37,7 +37,7 @@ describe('Producer', () => {
     producer = createProducer({ cluster: createCluster(), logger: newLogger() })
     await expect(
       producer.send({ acks: 1, topic: topicName, messages: null })
-    ).rejects.toHaveProperty('message', 'Invalid messages array null')
+    ).rejects.toHaveProperty('message', `Invalid messages array [null] for topic "${topicName}"`)
   })
 
   test('support SSL connections', async () => {
@@ -200,5 +200,73 @@ describe('Producer', () => {
         timestamp: '-1',
       },
     ])
+  })
+
+  test('produce messages to multiple topics', async () => {
+    const topics = [`test-topic-${secureRandom()}`, `test-topic-${secureRandom()}`]
+    const cluster = createCluster({
+      ...connectionOpts(),
+      createPartitioner: createModPartitioner,
+    })
+    const byTopicName = (a, b) => a.topicName.localeCompare(b.topicName)
+
+    producer = createProducer({ cluster, logger: newLogger() })
+    await producer.connect()
+
+    const sendBatch = async topics => {
+      const topicMessages = topics.map(topic => ({
+        acks: 1,
+        topic,
+        messages: new Array(10).fill().map((_, i) => ({
+          key: `key-${i}`,
+          value: `value-${i}`,
+        })),
+      }))
+
+      return producer.sendBatch({
+        acks: 1,
+        topicMessages,
+      })
+    }
+
+    let result = await sendBatch(topics)
+    expect(result.sort(byTopicName)).toEqual(
+      [
+        {
+          topicName: topics[0],
+          errorCode: 0,
+          offset: '0',
+          partition: 0,
+          timestamp: '-1',
+        },
+        {
+          topicName: topics[1],
+          errorCode: 0,
+          offset: '0',
+          partition: 0,
+          timestamp: '-1',
+        },
+      ].sort(byTopicName)
+    )
+
+    result = await sendBatch(topics)
+    expect(result.sort(byTopicName)).toEqual(
+      [
+        {
+          topicName: topics[0],
+          errorCode: 0,
+          offset: '10',
+          partition: 0,
+          timestamp: '-1',
+        },
+        {
+          topicName: topics[1],
+          errorCode: 0,
+          offset: '10',
+          partition: 0,
+          timestamp: '-1',
+        },
+      ].sort(byTopicName)
+    )
   })
 })
