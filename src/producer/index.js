@@ -14,8 +14,26 @@ module.exports = ({
   const sendMessages = createSendMessages({ cluster, partitioner })
   const logger = rootLogger.namespace('Producer')
 
+  /**
+   * @typedef {Object} TopicMessages
+   * @property {string} topic
+   * @property {Array} messages An array of objects with "key" and "value", example:
+   *                         [{ key: 'my-key', value: 'my-value'}]
+   *
+   * @typedef {Object} SendBatchRequest
+   * @property {Array<TopicMessages>} topicMessages
+   * @property {number} [acks=-1] Control the number of required acks.
+   *                           -1 = all replicas must acknowledge
+   *                            0 = no acknowledgments
+   *                            1 = only waits for the leader to acknowledge
+   * @property {number} [timeout=30000] The time to await a response in ms
+   * @property {Compression.Types} [compression=Compression.Types.None] Compression codec
+   *
+   * @param {SendBatchRequest}
+   * @returns {Promise}
+   */
   const sendBatch = async ({ acks, timeout, compression, topicMessages }) => {
-    if (topicMessages.some(({ topic }) => !topic)) {
+    if (topicMessages && topicMessages.length > 0 && topicMessages.some(({ topic }) => !topic)) {
       throw new KafkaJSNonRetriableError(`Invalid topic`)
     }
 
@@ -64,6 +82,21 @@ module.exports = ({
     })
   }
 
+  /**
+   * @param {ProduceRequest} ProduceRequest
+   * @returns {Promise}
+   *
+   * @typedef {Object} ProduceRequest
+   * @property {string} topic
+   * @property {Array} messages An array of objects with "key" and "value", example:
+   *                         [{ key: 'my-key', value: 'my-value'}]
+   * @property {number} [acks=-1] Control the number of required acks.
+   *                           -1 = all replicas must acknowledge
+   *                            0 = no acknowledgments
+   *                            1 = only waits for the leader to acknowledge
+   * @property {number} [timeout=30000] The time to await a response in ms
+   * @property {Compression.Types} [compression=Compression.Types.None] Compression codec
+   */
   const send = async ({ acks, timeout, compression, topic, messages }) => {
     const topicMessage = { topic, messages }
     return sendBatch({
@@ -85,41 +118,8 @@ module.exports = ({
      */
     disconnect: async () => await cluster.disconnect(),
 
-    /**
-     * @param {ProduceRequest} ProduceRequest
-     * @returns {Promise}
-     *
-     * @typedef {Object} ProduceRequest
-     * @property {string} topic
-     * @property {Array} messages An array of objects with "key" and "value", example:
-     *                         [{ key: 'my-key', value: 'my-value'}]
-     * @property {number} [acks=-1] Control the number of required acks.
-     *                           -1 = all replicas must acknowledge
-     *                            0 = no acknowledgments
-     *                            1 = only waits for the leader to acknowledge
-     * @property {number} [timeout=30000] The time to await a response in ms
-     * @property {Compression.Types} [compression=Compression.Types.None] Compression codec
-     */
     send,
 
-    /**
-     * @typedef {Object} TopicMessages
-     * @property {string} topic
-     * @property {Array} messages An array of objects with "key" and "value", example:
-     *                         [{ key: 'my-key', value: 'my-value'}]
-     *
-     * @typedef {Object} SendBatchRequest
-     * @property {Array<TopicMessages>} topicMessages
-     * @property {number} [acks=-1] Control the number of required acks.
-     *                           -1 = all replicas must acknowledge
-     *                            0 = no acknowledgments
-     *                            1 = only waits for the leader to acknowledge
-     * @property {number} [timeout=30000] The time to await a response in ms
-     * @property {Compression.Types} [compression=Compression.Types.None] Compression codec
-     *
-     * @param {SendBatchRequest}
-     * @returns {Promise}
-     */
     sendBatch,
   }
 }
