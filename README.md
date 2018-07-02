@@ -132,13 +132,13 @@ If the max number of retries is exceeded the retrier will throw `KafkaJSNumberOf
 
 __Available options:__
 
-| option | description | default |
-| ------ | ----------- | ------- |
-| maxRetryTime | Maximum wait time for a retry in milliseconds | `30000`|
-| initialRetryTime | Initial value used to calculate the retry in milliseconds (This is still randomized following the randomization factor) | `300` |
-| factor | Randomization factor | `0.2` |
-| multiplier | Exponential factor | `2` |
-| retries | Max number of retries per call | `5` |
+| option           | description                                                                                                             | default |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------- | ------- |
+| maxRetryTime     | Maximum wait time for a retry in milliseconds                                                                           | `30000` |
+| initialRetryTime | Initial value used to calculate the retry in milliseconds (This is still randomized following the randomization factor) | `300`   |
+| factor           | Randomization factor                                                                                                    | `0.2`   |
+| multiplier       | Exponential factor                                                                                                      | `2`     |
+| retries          | Max number of retries per call                                                                                          | `5`     |
 
 Example:
 
@@ -233,19 +233,52 @@ await producer.send({
 })
 ```
 
-| property    | description |
-| ----------- | ----------- |
-| topic       | topic name  |
-| messages    | An array of objects with "key" and "value", example: <br> `[{ key: 'my-key', value: 'my-value'}]` |
+| property    | description                                                                                                                                                                        |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| topic       | topic name                                                                                                                                                                         |
+| messages    | An array of objects with "key" and "value", example: <br> `[{ key: 'my-key', value: 'my-value'}]`                                                                                  |
 | acks        | Control the number of required acks. <br> __-1__ = all replicas must acknowledge _(default)_ <br> __0__ = no acknowledgments <br> __1__ = only waits for the leader to acknowledge |
-| timeout     | The time to await a response in ms. Default value _30000_ |
-| compression | Compression codec. Default value `CompressionTypes.None` |
+| timeout     | The time to await a response in ms. Default value _30000_                                                                                                                          |
+| compression | Compression codec. Default value `CompressionTypes.None`                                                                                                                           |
 
 By default, the producer is configured to distribute the messages with the following logic:
 
 - If a partition is specified in the message, use it
 - If no partition is specified but a key is present choose a partition based on a hash (murmur2) of the key
 - If no partition or key is present choose a partition in a round-robin fashion
+
+### <a name="producing-messages-to-multiple-topics"></a> Producing to multiple topics
+
+To produce to multiple topics at the same time, use `sendBatch`. This can be useful, for example, when migrating between two topics.
+
+```javascript
+const topicMessages = [
+  {
+    topic: 'topic-a',
+    messages: [{ key: 'key', value: 'hello topic-a' }],
+  },
+  {
+    topic: 'topic-b',
+    messages: [{ key: 'key', value: 'hello topic-b' }],
+  }
+]
+await producer.send({ topicMessages })
+```
+
+`sendBatch` has the same signature as `send`, except `topic` and `messages` are replaced with `topicMessages`:
+
+```javascript
+await producer.send({
+  topicMessages: <TopicMessages[]>,
+  acks: <Number>,
+  timeout: <Number>,
+  compression: <CompressionTypes>,
+})
+```
+
+| property      | description                                                                                                |
+| ------------- | ---------------------------------------------------------------------------------------------------------- |
+| topicMessages | An array of objects with `topic` and `messages`.<br>`messages` is an array of the same type as for `send`. |
 
 ### <a name="producing-messages-custom-partitioner"></a> Custom partitioner
 
@@ -484,16 +517,16 @@ kafka.consumer({
 })
 ```
 
-| option | description | default |
-| ------ | ----------- | ------- |
-| partitionAssigners | List of partition assigners | `[PartitionAssigners.roundRobin]` |
-| sessionTimeout | Timeout in milliseconds used to detect failures. The consumer sends periodic heartbeats to indicate its liveness to the broker. If no heartbeats are received by the broker before the expiration of this session timeout, then the broker will remove this consumer from the group and initiate a rebalance | `30000` |
-| heartbeatInterval | The expected time in milliseconds between heartbeats to the consumer coordinator. Heartbeats are used to ensure that the consumer's session stays active. The value must be set lower than session timeout | `3000` |
-| maxBytesPerPartition | The maximum amount of data per-partition the server will return. This size must be at least as large as the maximum message size the server allows or else it is possible for the producer to send messages larger than the consumer can fetch. If that happens, the consumer can get stuck trying to fetch a large message on a certain partition | `1048576` (1MB) |
-| minBytes | Minimum amount of data the server should return for a fetch request, otherwise wait up to `maxWaitTimeInMs` for more data to accumulate. default: `1` |
-| maxBytes | Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0` | `10485760` (10MB) |
-| maxWaitTimeInMs | The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes` | `5000` |
-| retry | See [retry](#configuration-default-retry) for more information | `{ retries: 10 }` |
+| option               | description                                                                                                                                                                                                                                                                                                                                        | default                           |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| partitionAssigners   | List of partition assigners                                                                                                                                                                                                                                                                                                                        | `[PartitionAssigners.roundRobin]` |
+| sessionTimeout       | Timeout in milliseconds used to detect failures. The consumer sends periodic heartbeats to indicate its liveness to the broker. If no heartbeats are received by the broker before the expiration of this session timeout, then the broker will remove this consumer from the group and initiate a rebalance                                       | `30000`                           |
+| heartbeatInterval    | The expected time in milliseconds between heartbeats to the consumer coordinator. Heartbeats are used to ensure that the consumer's session stays active. The value must be set lower than session timeout                                                                                                                                         | `3000`                            |
+| maxBytesPerPartition | The maximum amount of data per-partition the server will return. This size must be at least as large as the maximum message size the server allows or else it is possible for the producer to send messages larger than the consumer can fetch. If that happens, the consumer can get stuck trying to fetch a large message on a certain partition | `1048576` (1MB)                   |
+| minBytes             | Minimum amount of data the server should return for a fetch request, otherwise wait up to `maxWaitTimeInMs` for more data to accumulate. default: `1`                                                                                                                                                                                              |
+| maxBytes             | Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0`                                                                                                                                                                                                                                                            | `10485760` (10MB)                 |
+| maxWaitTimeInMs      | The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes`                                                                                                                                                     | `5000`                            |
+| retry                | See [retry](#configuration-default-retry) for more information                                                                                                                                                                                                                                                                                     | `{ retries: 10 }`                 |
 
 ### <a name="consuming-messages-pause-resume"></a> Pause & Resume
 
@@ -680,12 +713,12 @@ await admin.createTopics({
 }
 ```
 
-| property       | description | default |
-| -------------- | ----------- | ------- |
-| topics         | Topic definition | |
-| validateOnly   | If this is `true`, the request will be validated, but the topic won't be created. | false |
-| timeout        | The time in ms to wait for a topic to be completely created on the controller node | 5000 |
-| waitForLeaders | If this is `true` it will wait until metadata for the new topics doesn't throw `LEADER_NOT_AVAILABLE` | true |
+| property       | description                                                                                           | default |
+| -------------- | ----------------------------------------------------------------------------------------------------- | ------- |
+| topics         | Topic definition                                                                                      |         |
+| validateOnly   | If this is `true`, the request will be validated, but the topic won't be created.                     | false   |
+| timeout        | The time in ms to wait for a topic to be completely created on the controller node                    | 5000    |
+| waitForLeaders | If this is `true` it will wait until metadata for the new topics doesn't throw `LEADER_NOT_AVAILABLE` | true    |
 
 ## <a name="instrumentation"></a> Instrumentation
 
@@ -818,11 +851,11 @@ Table of retry times for default values:
 
 | Retry # | min (ms) | max (ms) |
 | ------- | -------- | -------- |
-| 1 | 300 | 300 |
-| 2 | 480 | 720 |
-| 3 | 768 | 1728 |
-| 4 | 1229 | 4147 |
-| 5 | 1966 | 9953 |
+| 1       | 300      | 300      |
+| 2       | 480      | 720      |
+| 3       | 768      | 1728     |
+| 4       | 1229     | 4147     |
+| 5       | 1966     | 9953     |
 
 ## <a name="development"></a> Development
 
