@@ -122,15 +122,15 @@ module.exports = class ConsumerGroup {
       groupAssignment: assignment,
     })
 
-    const decodedAssigment = MemberAssignment.decode(memberAssignment).assignment
+    const decodedAssignment = MemberAssignment.decode(memberAssignment).assignment
     this.logger.debug('Received assignment', {
       groupId,
       generationId,
       memberId,
-      memberAssignment: decodedAssigment,
+      memberAssignment: decodedAssignment,
     })
 
-    let currentMemberAssignment = decodedAssigment
+    let currentMemberAssignment = decodedAssignment
     const assignedTopics = keys(currentMemberAssignment)
     const topicsNotSubscribed = arrayDiff(assignedTopics, this.topics)
 
@@ -147,7 +147,7 @@ module.exports = class ConsumerGroup {
       // Remove unsubscribed topics from the list
       const safeAssignment = arrayDiff(assignedTopics, topicsNotSubscribed)
       currentMemberAssignment = safeAssignment.reduce(
-        (assignment, topic) => ({ ...assignment, [topic]: decodedAssigment[topic] }),
+        (assignment, topic) => ({ ...assignment, [topic]: decodedAssignment[topic] }),
         {}
       )
     }

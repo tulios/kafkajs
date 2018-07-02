@@ -60,7 +60,7 @@ const MemberAssignment = {
   decode(buffer) {
     const decoder = new Decoder(buffer)
     const decodePartitions = d => d.readInt32()
-    const decodeAssigment = d => ({
+    const decodeAssignment = d => ({
       topic: d.readString(),
       partitions: d.readArray(decodePartitions),
     })
@@ -69,7 +69,7 @@ const MemberAssignment = {
 
     return {
       version: decoder.readInt16(),
-      assignment: decoder.readArray(decodeAssigment).reduce(indexAssignment, {}),
+      assignment: decoder.readArray(decodeAssignment).reduce(indexAssignment, {}),
       userData: decoder.readBytes(),
     }
   },
