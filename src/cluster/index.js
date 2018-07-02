@@ -10,15 +10,15 @@ const {
   KafkaJSGroupCoordinatorNotFound,
 } = require('../errors')
 
-const { keys, assign } = Object
+const { keys } = Object
 
 const EARLIEST_OFFSET = -2
 const LATEST_OFFSET = -1
 
-const mergeTopics = (obj, { topic, partitions }) =>
-  assign(obj, {
-    [topic]: [...(obj[topic] || []), ...partitions],
-  })
+const mergeTopics = (obj, { topic, partitions }) => ({
+  ...obj,
+  [topic]: [...(obj[topic] || []), ...partitions],
+})
 
 /**
  * @param {Array<string>} brokers example: ['127.0.0.1:9092', '127.0.0.1:9094']
@@ -44,7 +44,7 @@ module.exports = class Cluster {
   }) {
     this.rootLogger = rootLogger
     this.logger = rootLogger.namespace('Cluster')
-    this.retrier = createRetry(assign({}, retry))
+    this.retrier = createRetry({ ...retry })
     this.connectionBuilder = connectionBuilder({
       logger: rootLogger,
       brokers,
@@ -187,7 +187,7 @@ module.exports = class Cluster {
 
       const { leader } = metadata
       const current = result[leader] || []
-      return assign(result, { [leader]: [...current, partitionId] })
+      return { ...result, [leader]: [...current, partitionId] }
     }, {})
   }
 
@@ -299,7 +299,7 @@ module.exports = class Cluster {
 
     const addDefaultOffset = topic => partition => {
       const { fromBeginning } = topicConfigurations[topic]
-      return Object.assign({}, partition, { timestamp: this.defaultOffset({ fromBeginning }) })
+      return { partition, timestamp: this.defaultOffset({ fromBeginning }) }
     }
 
     // Index all topics and partitions per leader (nodeId)
