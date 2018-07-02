@@ -298,6 +298,14 @@ module.exports = class ConsumerGroup {
         return flatten(batchesPerPartition)
       })
 
+      // fetch can generate empty requests when the consumer group receives an assignment
+      // with more topics than the subscribed, so to prevent a busy loop we wait the
+      // configured max wait time
+      if (requests.length === 0) {
+        await sleep(this.maxWaitTime)
+        return []
+      }
+
       const results = await Promise.all(requests)
       return flatten(results)
     } catch (e) {
