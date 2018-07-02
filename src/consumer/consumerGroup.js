@@ -1,5 +1,6 @@
 const flatten = require('../utils/flatten')
 const sleep = require('../utils/sleep')
+const arrayDiff = require('../utils/arrayDiff')
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
@@ -129,7 +130,29 @@ module.exports = class ConsumerGroup {
       memberAssignment: decodedAssigment,
     })
 
-    this.memberAssignment = decodedAssigment
+    let currentMemberAssignment = decodedAssigment
+    const assignedTopics = keys(currentMemberAssignment)
+    const topicsNotSubscribed = arrayDiff(assignedTopics, this.topics)
+
+    if (topicsNotSubscribed.length > 0) {
+      this.logger.warn('Consumer group received unsubscribed topics', {
+        groupId,
+        generationId,
+        memberId,
+        assignedTopics,
+        topicsSubscribed: this.topics,
+        topicsNotSubscribed,
+      })
+
+      // Remove unsubscribed topics from the list
+      const safeAssignment = arrayDiff(assignedTopics, topicsNotSubscribed)
+      currentMemberAssignment = safeAssignment.reduce(
+        (assignment, topic) => ({ ...assignment, [topic]: decodedAssigment[topic] }),
+        {}
+      )
+    }
+
+    this.memberAssignment = currentMemberAssignment
     this.topics = keys(this.memberAssignment)
     this.offsetManager = new OffsetManager({
       cluster: this.cluster,
