@@ -27,6 +27,7 @@ KafkaJS is battle-tested and ready for production.
   - [Default retry](#configuration-default-retry)
   - [Logging](#configuration-logging)
 - [Producing Messages](#producing-messages)
+  - [Producing to multiple topics](#producing-messages-to-multiple-topics)
   - [Custom partitioner](#producing-messages-custom-partitioner)
   - [Retry](#producing-messages-retry)
   - [Compression](#producing-messages-compression)
