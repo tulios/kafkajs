@@ -157,7 +157,8 @@ module.exports = class Cluster {
       throw new KafkaJSTopicMetadataNotLoaded('Topic metadata not loaded', { topic })
     }
 
-    return metadata.topicMetadata.find(t => t.topic === topic).partitionMetadata
+    const topicMetadata = metadata.topicMetadata.find(t => t.topic === topic)
+    return topicMetadata ? topicMetadata.partitionMetadata : []
   }
 
   /**
@@ -175,6 +176,11 @@ module.exports = class Cluster {
     return partitions.reduce((result, id) => {
       const partitionId = parseInt(id, 10)
       const metadata = partitionMetadata.find(p => p.partitionId === partitionId)
+
+      if (!metadata) {
+        return result
+      }
+
       if (metadata.leader === null || metadata.leader === undefined) {
         throw new KafkaJSError('Invalid partition metadata', { topic, partitionId, metadata })
       }

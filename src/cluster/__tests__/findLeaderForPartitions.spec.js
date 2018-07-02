@@ -64,4 +64,27 @@ describe('Cluster > findLeaderForPartitions', () => {
     const partitions = [0, 5]
     expect(cluster.findLeaderForPartitions(topic, partitions)).toEqual({ '0': [0], '2': [5] })
   })
+
+  it('does not include leaders for topics without metadata', () => {
+    cluster.brokerPool.metadata = {
+      topicMetadata: [
+        {
+          topic,
+          partitionMetadata: [
+            {
+              partitionErrorCode: 0,
+              partitionId: 2,
+              leader: 2,
+              replicas: [0, 1, 2],
+              isr: [2, 0, 1],
+            },
+          ],
+        },
+      ],
+    }
+
+    const anotherTopic = `test-topic-${secureRandom()}`
+    const partitions = [0]
+    expect(cluster.findLeaderForPartitions(anotherTopic, partitions)).toEqual({})
+  })
 })
