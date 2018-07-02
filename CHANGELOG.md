@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2018-07-02
+### Fixed
+  - Make sure authentication handshake remains consistent event when `broker.connect` is called concurrently #81
+
+### Added
+  - Add `producer.sendBatch` to produce to multiple topics at once #82
+  - Experimental support to native Kafka 0.11 (`allowExperimentalV011`) #61 #68 #75 #76 #78
+  - Enabled protocol `fetch` v3
+
 ## [1.1.0] - 2018-06-14
 ### Added
   - Support to SASL SCRAM (`scram-sha-256` and `scram-sha-512`) #72
