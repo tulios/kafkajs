@@ -263,13 +263,13 @@ const topicMessages = [
     messages: [{ key: 'key', value: 'hello topic-b' }],
   }
 ]
-await producer.send({ topicMessages })
+await producer.sendBatch({ topicMessages })
 ```
 
 `sendBatch` has the same signature as `send`, except `topic` and `messages` are replaced with `topicMessages`:
 
 ```javascript
-await producer.send({
+await producer.sendBatch({
   topicMessages: <TopicMessages[]>,
   acks: <Number>,
   timeout: <Number>,
