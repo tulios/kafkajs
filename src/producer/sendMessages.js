@@ -1,5 +1,6 @@
 const createRetry = require('../retry')
 const flatten = require('../utils/flatten')
+const { KafkaJSMetadataNotLoaded } = require('../errors')
 const groupMessagesPerPartition = require('./groupMessagesPerPartition')
 const createTopicData = require('./createTopicData')
 const responseSerializer = require('./responseSerializer')
@@ -26,6 +27,16 @@ module.exports = ({ logger, cluster, partitioner }) => {
 
       for (let { topic, messages } of topicMessages) {
         const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
+
+        if (keys(partitionMetadata).length === 0) {
+          logger.error('Producing to topic without metadata', {
+            topic,
+            targetTopics: Array.from(cluster.targetTopics),
+          })
+
+          throw new KafkaJSMetadataNotLoaded('Producing to topic without metadata')
+        }
+
         const messagesPerPartition = groupMessagesPerPartition({
           topic,
           partitionMetadata,
@@ -36,6 +47,7 @@ module.exports = ({ logger, cluster, partitioner }) => {
         const partitions = keys(messagesPerPartition)
         const partitionsPerLeader = cluster.findLeaderForPartitions(topic, partitions)
         const leaders = keys(partitionsPerLeader)
+
         topicMetadata.set(topic, { partitionsPerLeader, messagesPerPartition })
 
         for (let nodeId of leaders) {
@@ -78,7 +90,7 @@ module.exports = ({ logger, cluster, partitioner }) => {
         const responses = Array.from(responsePerBroker.values())
         return flatten(responses)
       } catch (e) {
-        if (staleMetadata(e)) {
+        if (staleMetadata(e) || e.name === 'KafkaJSMetadataNotLoaded') {
           await cluster.refreshMetadata()
         }
 
