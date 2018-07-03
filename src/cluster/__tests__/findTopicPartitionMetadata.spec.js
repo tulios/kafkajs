@@ -31,4 +31,17 @@ describe('Cluster > findTopicPartitionMetadata', () => {
       /Topic metadata not loaded/
     )
   })
+
+  it('returns an empty array if there is no metadata for a given topic', () => {
+    const partitionMetadata = {
+      isr: [2],
+      leader: 2,
+      partitionErrorCode: 0,
+      partitionId: 0,
+      replicas: [2],
+    }
+    cluster.brokerPool.metadata = { topicMetadata: [{ topic, partitionMetadata }] }
+    const anotherTopic = `test-topic-${secureRandom()}`
+    expect(cluster.findTopicPartitionMetadata(anotherTopic)).toEqual([])
+  })
 })
