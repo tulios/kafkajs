@@ -34,4 +34,10 @@ describe('Producer > groupMessagesPerPartition', () => {
       '2': [{ key: '2' }, { key: '5' }, { key: '8' }],
     })
   })
+
+  test('returns empty when called with no partition metadata', () => {
+    expect(
+      groupMessagesPerPartition({ topic, partitionMetadata: [], messages, partitioner })
+    ).toEqual({})
+  })
 })
