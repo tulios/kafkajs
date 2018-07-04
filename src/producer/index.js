@@ -11,8 +11,8 @@ module.exports = ({
 }) => {
   const partitioner = createPartitioner()
   const retrier = createRetry(Object.assign({}, cluster.retry, retry))
-  const sendMessages = createSendMessages({ cluster, partitioner })
   const logger = rootLogger.namespace('Producer')
+  const sendMessages = createSendMessages({ logger, cluster, partitioner })
 
   /**
    * @typedef {Object} TopicMessages
