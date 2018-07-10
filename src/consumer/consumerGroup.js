@@ -1,5 +1,6 @@
 const flatten = require('../utils/flatten')
 const sleep = require('../utils/sleep')
+const arrayDiff = require('../utils/arrayDiff')
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
@@ -90,6 +91,7 @@ module.exports = class ConsumerGroup {
     const { groupId, memberId } = this
     if (memberId) {
       await this.coordinator.leaveGroup({ groupId, memberId })
+      this.memberId = null
     }
   }
 
@@ -124,15 +126,37 @@ module.exports = class ConsumerGroup {
       groupAssignment: assignment,
     })
 
-    const decodedAssigment = MemberAssignment.decode(memberAssignment).assignment
+    const decodedAssignment = MemberAssignment.decode(memberAssignment).assignment
     this.logger.debug('Received assignment', {
       groupId,
       generationId,
       memberId,
-      memberAssignment: decodedAssigment,
+      memberAssignment: decodedAssignment,
     })
 
-    this.memberAssignment = decodedAssigment
+    let currentMemberAssignment = decodedAssignment
+    const assignedTopics = keys(currentMemberAssignment)
+    const topicsNotSubscribed = arrayDiff(assignedTopics, this.topics)
+
+    if (topicsNotSubscribed.length > 0) {
+      this.logger.warn('Consumer group received unsubscribed topics', {
+        groupId,
+        generationId,
+        memberId,
+        assignedTopics,
+        topicsSubscribed: this.topics,
+        topicsNotSubscribed,
+      })
+
+      // Remove unsubscribed topics from the list
+      const safeAssignment = arrayDiff(assignedTopics, topicsNotSubscribed)
+      currentMemberAssignment = safeAssignment.reduce(
+        (assignment, topic) => ({ ...assignment, [topic]: decodedAssignment[topic] }),
+        {}
+      )
+    }
+
+    this.memberAssignment = currentMemberAssignment
     this.topics = keys(this.memberAssignment)
     this.offsetManager = new OffsetManager({
       cluster: this.cluster,
@@ -283,6 +307,14 @@ module.exports = class ConsumerGroup {
 
         return flatten(batchesPerPartition)
       })
+
+      // fetch can generate empty requests when the consumer group receives an assignment
+      // with more topics than the subscribed, so to prevent a busy loop we wait the
+      // configured max wait time
+      if (requests.length === 0) {
+        await sleep(this.maxWaitTime)
+        return []
+      }
 
       const results = await Promise.all(requests)
       return flatten(results)

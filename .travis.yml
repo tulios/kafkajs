@@ -10,18 +10,19 @@ branches:
 env:
   - DOCKER_COMPOSE_VERSION=1.16.1
 before_install:
-  - sudo rm /usr/local/bin/docker-compose
-  - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
-  - chmod +x docker-compose
-  - sudo mv docker-compose /usr/local/bin
-  - curl -o- -L https://yarnpkg.com/install.sh | bash
-  - export PATH=$HOME/.yarn/bin:$PATH
+  - bash ./scripts/isMarkdownOnly.sh && MD_ONLY=true && echo "Only .md files have changed!" || test true
+  - test $MD_ONLY && echo "Skipped!" || sudo rm /usr/local/bin/docker-compose
+  - test $MD_ONLY && echo "Skipped!" || curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+  - test $MD_ONLY && echo "Skipped!" || chmod +x docker-compose
+  - test $MD_ONLY && echo "Skipped!" || sudo mv docker-compose /usr/local/bin
+  - test $MD_ONLY && echo "Skipped!" || curl -o- -L https://yarnpkg.com/install.sh | bash
+  - test $MD_ONLY && echo "Skipped!" || export PATH=$HOME/.yarn/bin:$PATH
 install:
-  - yarn install
+  - test $MD_ONLY && echo "Skipped!" || yarn install
 script:
   - env
-  - docker-compose pull
-  - yarn test
+  - test $MD_ONLY && echo "Skipped!" || docker-compose pull
+  - test $MD_ONLY && echo "Skipped!" || yarn test
 deploy:
   provider: npm
   email: ornelas.tulio@gmail.com

@@ -10,14 +10,17 @@ module.exports = class BrokerPool {
    * @param {ConnectionBuilder} connectionBuilder
    * @param {Logger} logger
    * @param {Object} retry
+   * @param {number} authenticationTimeout
    */
-  constructor({ connectionBuilder, logger, retry, allowExperimentalV011 }) {
+  constructor({ connectionBuilder, logger, retry, allowExperimentalV011, authenticationTimeout }) {
     this.connectionBuilder = connectionBuilder
     this.rootLogger = logger
     this.logger = logger.namespace('BrokerPool')
     this.retrier = createRetry(assign({}, retry))
 
-    this.createBroker = options => new Broker({ allowExperimentalV011, ...options })
+    this.createBroker = options =>
+      new Broker({ allowExperimentalV011, authenticationTimeout, ...options })
+
     this.seedBroker = this.createBroker({
       connection: this.connectionBuilder.build(),
       logger: this.rootLogger,
@@ -202,6 +205,7 @@ module.exports = class BrokerPool {
         await broker.connect()
       } catch (e) {
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
+          await broker.disconnect()
           // Rebuild the connection since it can't recover from illegal SASL state
           broker.connection = this.connectionBuilder.build({
             host: broker.connection.host,

@@ -31,6 +31,7 @@ describe('Consumer', () => {
     consumer = createConsumer({
       cluster,
       groupId,
+      maxWaitTimeInMs: 100,
       logger: newLogger(),
     })
   })
@@ -55,7 +56,7 @@ describe('Consumer', () => {
         return { key: `key-${value}`, value: `value-${value}` }
       })
 
-    await producer.send({ topic: topicName, messages })
+    await producer.send({ acks: 1, topic: topicName, messages })
     await waitForMessages(messagesConsumed, { number: messages.length })
 
     expect(messagesConsumed[0]).toEqual({
@@ -96,6 +97,7 @@ describe('Consumer', () => {
     const message2 = { key: `key-${key2}`, value: `value-${key2}` }
 
     await producer.send({
+      acks: 1,
       topic: topicName,
       compression: Types.GZIP,
       messages: [message1, message2],
@@ -142,7 +144,7 @@ describe('Consumer', () => {
     const key2 = secureRandom()
     const message2 = { key: `key-${key2}`, value: `value-${key2}` }
 
-    await producer.send({ topic: topicName, messages: [message1, message2] })
+    await producer.send({ acks: 1, topic: topicName, messages: [message1, message2] })
 
     await expect(waitForMessages(batchesConsumed)).resolves.toEqual([
       {
@@ -191,7 +193,7 @@ describe('Consumer', () => {
     const key2 = secureRandom()
     const message2 = { key: `key-${key2}`, value: `value-${key2}` }
 
-    await producer.send({ topic: topicName, messages: [message1, message2] })
+    await producer.send({ acks: 1, topic: topicName, messages: [message1, message2] })
     await sleep(80) // wait for 1 message
     await consumer.disconnect() // don't give the consumer the chance to consume the 2nd message
 

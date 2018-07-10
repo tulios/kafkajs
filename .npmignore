@@ -11,8 +11,12 @@ testHelpers/
 scripts/
 examples/
 docker-compose.yml
+docker-compose.*.yml
 jest.config.js
 .prettierrc
 .eslintrc
 .eslintignore
 .travis.yml
+*.png
+*.svg
+logo

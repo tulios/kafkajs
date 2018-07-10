@@ -14,6 +14,7 @@ module.exports = class Client {
     sasl,
     clientId,
     connectionTimeout,
+    authenticationTimeout,
     retry,
     logLevel = INFO,
     logCreator = LoggerConsole,
@@ -28,6 +29,7 @@ module.exports = class Client {
         sasl,
         clientId,
         connectionTimeout,
+        authenticationTimeout,
         retry,
         allowExperimentalV011,
       })

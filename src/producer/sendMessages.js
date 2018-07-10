@@ -1,5 +1,6 @@
 const createRetry = require('../retry')
 const flatten = require('../utils/flatten')
+const { KafkaJSMetadataNotLoaded } = require('../errors')
 const groupMessagesPerPartition = require('./groupMessagesPerPartition')
 const createTopicData = require('./createTopicData')
 const responseSerializer = require('./responseSerializer')
@@ -14,27 +15,46 @@ const staleMetadata = e =>
 module.exports = ({ logger, cluster, partitioner }) => {
   const retrier = createRetry({ retries: TOTAL_INDIVIDUAL_ATTEMPTS })
 
-  return async ({ topic, messages, acks, timeout, compression }) => {
-    await cluster.addTargetTopic(topic)
+  return async ({ acks, timeout, compression, topicMessages }) => {
     const responsePerBroker = new Map()
 
+    for (let { topic } of topicMessages) {
+      await cluster.addTargetTopic(topic)
+    }
+
     const createProducerRequests = async responsePerBroker => {
-      const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
-      const messagesPerPartition = groupMessagesPerPartition({
-        topic,
-        partitionMetadata,
-        messages,
-        partitioner,
-      })
+      const topicMetadata = new Map()
 
-      const partitions = keys(messagesPerPartition)
-      const partitionsPerLeader = cluster.findLeaderForPartitions(topic, partitions)
-      const leaders = keys(partitionsPerLeader)
+      for (let { topic, messages } of topicMessages) {
+        const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
 
-      for (let nodeId of leaders) {
-        const broker = await cluster.findBroker({ nodeId })
-        if (!responsePerBroker.has(broker)) {
-          responsePerBroker.set(broker, null)
+        if (keys(partitionMetadata).length === 0) {
+          logger.error('Producing to topic without metadata', {
+            topic,
+            targetTopics: Array.from(cluster.targetTopics),
+          })
+
+          throw new KafkaJSMetadataNotLoaded('Producing to topic without metadata')
+        }
+
+        const messagesPerPartition = groupMessagesPerPartition({
+          topic,
+          partitionMetadata,
+          messages,
+          partitioner,
+        })
+
+        const partitions = keys(messagesPerPartition)
+        const partitionsPerLeader = cluster.findLeaderForPartitions(topic, partitions)
+        const leaders = keys(partitionsPerLeader)
+
+        topicMetadata.set(topic, { partitionsPerLeader, messagesPerPartition })
+
+        for (let nodeId of leaders) {
+          const broker = await cluster.findBroker({ nodeId })
+          if (!responsePerBroker.has(broker)) {
+            responsePerBroker.set(broker, null)
+          }
         }
       }
 
@@ -42,8 +62,16 @@ module.exports = ({ logger, cluster, partitioner }) => {
       const brokersWithoutResponse = brokers.filter(broker => !responsePerBroker.get(broker))
 
       return brokersWithoutResponse.map(async broker => {
-        const partitions = partitionsPerLeader[broker.nodeId]
-        const topicData = createTopicData({ topic, partitions, messagesPerPartition })
+        const entries = Array.from(topicMetadata.entries())
+        const topicDataForBroker = entries
+          .filter(([_, { partitionsPerLeader }]) => !!partitionsPerLeader[broker.nodeId])
+          .map(([topic, { partitionsPerLeader, messagesPerPartition }]) => ({
+            topic,
+            partitions: partitionsPerLeader[broker.nodeId],
+            messagesPerPartition,
+          }))
+
+        const topicData = createTopicData(topicDataForBroker)
 
         try {
           const response = await broker.produce({ acks, timeout, compression, topicData })
@@ -62,7 +90,7 @@ module.exports = ({ logger, cluster, partitioner }) => {
         const responses = Array.from(responsePerBroker.values())
         return flatten(responses)
       } catch (e) {
-        if (staleMetadata(e)) {
+        if (staleMetadata(e) || e.name === 'KafkaJSMetadataNotLoaded') {
           await cluster.refreshMetadata()
         }
 

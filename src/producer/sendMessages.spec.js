@@ -26,7 +26,7 @@ describe('Producer > sendMessages', () => {
     3: [2],
   }
 
-  let messages, partitioner, brokers, cluster, messagesPerPartition
+  let messages, partitioner, brokers, cluster, messagesPerPartition, topicPartitionMetadata
 
   beforeEach(() => {
     messages = []
@@ -37,12 +37,22 @@ describe('Producer > sendMessages', () => {
       3: { nodeId: 3, produce: jest.fn(() => createProducerResponse(topic, 2)) },
       4: { nodeId: 4, produce: jest.fn(() => createProducerResponse(topic, 1)) },
     }
+    topicPartitionMetadata = [
+      {
+        isr: [2],
+        leader: 1,
+        partitionErrorCode: 0,
+        partitionId: 0,
+        replicas: [2],
+      },
+    ]
     cluster = {
       addTargetTopic: jest.fn(),
       refreshMetadata: jest.fn(),
-      findTopicPartitionMetadata: jest.fn(),
+      findTopicPartitionMetadata: jest.fn(() => topicPartitionMetadata),
       findLeaderForPartitions: jest.fn(() => partitionsPerLeader),
       findBroker: jest.fn(({ nodeId }) => brokers[nodeId]),
+      targetTopics: new Set(),
     }
     messagesPerPartition = {
       '0': [{ key: '3' }, { key: '6' }, { key: '9' }],
@@ -71,7 +81,7 @@ describe('Producer > sendMessages', () => {
       })
       .mockImplementationOnce(() => createProducerResponse(topic, 2))
 
-    const response = await sendMessages({ topic, messages })
+    const response = await sendMessages({ topicMessages: [{ topic, messages }] })
     expect(brokers[1].produce).toHaveBeenCalledTimes(2)
     expect(brokers[2].produce).toHaveBeenCalledTimes(1)
     expect(brokers[3].produce).toHaveBeenCalledTimes(3)
@@ -104,7 +114,7 @@ describe('Producer > sendMessages', () => {
         })
         .mockImplementationOnce(() => createProducerResponse(topic, 0))
 
-      await sendMessages({ topic, messages })
+      await sendMessages({ topicMessages: [{ topic, messages }] })
       expect(brokers[1].produce).toHaveBeenCalledTimes(2)
       expect(cluster.refreshMetadata).toHaveBeenCalled()
     })
@@ -128,12 +138,24 @@ describe('Producer > sendMessages', () => {
         3: [2],
       }))
 
-    const response = await sendMessages({ topic, messages })
+    const response = await sendMessages({ topicMessages: [{ topic, messages }] })
 
     expect(response).toEqual([
       { errorCode: 0, offset: '0', partition: 0, timestamp: '-1', topicName: 'topic-name' },
       { errorCode: 0, offset: '2', partition: 2, timestamp: '-1', topicName: 'topic-name' },
       { errorCode: 0, offset: '1', partition: 1, timestamp: '-1', topicName: 'topic-name' },
     ])
+  })
+
+  test('refreshes metadata if partition metadata is empty', async () => {
+    const sendMessages = createSendMessages({ logger: newLogger(), cluster, partitioner })
+
+    cluster.findTopicPartitionMetadata
+      .mockImplementationOnce(() => ({}))
+      .mockImplementationOnce(() => partitionsPerLeader)
+
+    await sendMessages({ topicMessages: [{ topic, messages }] })
+
+    expect(cluster.refreshMetadata).toHaveBeenCalled()
   })
 })

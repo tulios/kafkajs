@@ -215,6 +215,15 @@ module.exports = class Runner {
         this.consuming = false
         setImmediate(() => this.scheduleFetch())
       } catch (e) {
+        if (!this.running) {
+          this.logger.debug('consumer not running, exiting', {
+            error: e.message,
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+          })
+          return
+        }
+
         if (isRebalancing(e)) {
           this.logger.error('The group is rebalancing, re-joining', {
             groupId: this.consumerGroup.groupId,

@@ -9,7 +9,9 @@ const decodeMessage = (decoder, magicByte) => {
     case 1:
       return V1Decoder(decoder)
     default:
-      throw new KafkaJSNonRetriableError(`Unsupported message version, magic byte: ${magicByte}`)
+      throw new KafkaJSNonRetriableError(
+        `Unsupported MessageSet message version, magic byte: ${magicByte}`
+      )
   }
 }
 

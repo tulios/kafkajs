@@ -3,6 +3,8 @@ const Encoder = require('../../encoder')
 const crc32C = require('../crc32C')
 const { Types: Compression } = require('../../message/compression')
 
+const MAGIC_BYTE = 2
+
 /**
  * v0
  * RecordBatch =>
@@ -21,14 +23,14 @@ const { Types: Compression } = require('../../message/compression')
  *  Records => [Record]
  */
 
-module.exports = ({
+const RecordBatch = ({
   compression = Compression.None,
   firstOffset = Long.fromInt(0),
   firstTimestamp = Date.now(),
   maxTimestamp = Date.now(),
   partitionLeaderEpoch = 0,
   lastOffsetDelta = 0,
-  producerId = -1, // for idempotent messages
+  producerId = Long.fromValue(-1), // for idempotent messages
   producerEpoch = 0, // for idempotent messages
   firstSequence = 0, // for idempotent messages
   records = [],
@@ -48,9 +50,14 @@ module.exports = ({
 
   const batch = new Encoder()
     .writeInt32(partitionLeaderEpoch)
-    .writeInt8(2) // magicByte
+    .writeInt8(MAGIC_BYTE)
     .writeUInt32(crc32C(batchBody.buffer))
     .writeEncoder(batchBody)
 
   return new Encoder().writeInt64(firstOffset).writeBytes(batch.buffer)
+}
+
+module.exports = {
+  RecordBatch,
+  MAGIC_BYTE,
 }

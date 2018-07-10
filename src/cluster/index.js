@@ -10,15 +10,15 @@ const {
   KafkaJSGroupCoordinatorNotFound,
 } = require('../errors')
 
-const { keys, assign } = Object
+const { keys } = Object
 
 const EARLIEST_OFFSET = -2
 const LATEST_OFFSET = -1
 
-const mergeTopics = (obj, { topic, partitions }) =>
-  assign(obj, {
-    [topic]: [...(obj[topic] || []), ...partitions],
-  })
+const mergeTopics = (obj, { topic, partitions }) => ({
+  ...obj,
+  [topic]: [...(obj[topic] || []), ...partitions],
+})
 
 /**
  * @param {Array<string>} brokers example: ['127.0.0.1:9092', '127.0.0.1:9094']
@@ -26,23 +26,25 @@ const mergeTopics = (obj, { topic, partitions }) =>
  * @param {Object} sasl
  * @param {string} clientId
  * @param {number} connectionTimeout
+ * @param {number} authenticationTimeout
  * @param {Object} retry
  * @param {Object} logger
  */
 module.exports = class Cluster {
   constructor({
+    logger: rootLogger,
     brokers,
     ssl,
     sasl,
     clientId,
     connectionTimeout,
+    authenticationTimeout,
     retry,
-    logger: rootLogger,
     allowExperimentalV011,
   }) {
     this.rootLogger = rootLogger
     this.logger = rootLogger.namespace('Cluster')
-    this.retrier = createRetry(assign({}, retry))
+    this.retrier = createRetry({ ...retry })
     this.connectionBuilder = connectionBuilder({
       logger: rootLogger,
       brokers,
@@ -59,6 +61,7 @@ module.exports = class Cluster {
       logger: this.rootLogger,
       retry,
       allowExperimentalV011,
+      authenticationTimeout,
     })
   }
 
@@ -154,7 +157,8 @@ module.exports = class Cluster {
       throw new KafkaJSTopicMetadataNotLoaded('Topic metadata not loaded', { topic })
     }
 
-    return metadata.topicMetadata.find(t => t.topic === topic).partitionMetadata
+    const topicMetadata = metadata.topicMetadata.find(t => t.topic === topic)
+    return topicMetadata ? topicMetadata.partitionMetadata : []
   }
 
   /**
@@ -172,13 +176,18 @@ module.exports = class Cluster {
     return partitions.reduce((result, id) => {
       const partitionId = parseInt(id, 10)
       const metadata = partitionMetadata.find(p => p.partitionId === partitionId)
+
+      if (!metadata) {
+        return result
+      }
+
       if (metadata.leader === null || metadata.leader === undefined) {
         throw new KafkaJSError('Invalid partition metadata', { topic, partitionId, metadata })
       }
 
       const { leader } = metadata
       const current = result[leader] || []
-      return assign(result, { [leader]: [...current, partitionId] })
+      return { ...result, [leader]: [...current, partitionId] }
     }, {})
   }
 
@@ -290,7 +299,7 @@ module.exports = class Cluster {
 
     const addDefaultOffset = topic => partition => {
       const { fromBeginning } = topicConfigurations[topic]
-      return Object.assign({}, partition, { timestamp: this.defaultOffset({ fromBeginning }) })
+      return { ...partition, timestamp: this.defaultOffset({ fromBeginning }) }
     }
 
     // Index all topics and partitions per leader (nodeId)
