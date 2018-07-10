@@ -35,6 +35,7 @@ KafkaJS is battle-tested and ready for production.
     - [Other](#producing-messages-compression-other)
 - [Consuming messages](#consuming-messages)
   - [eachMessage](#consuming-messages-each-message)
+  - [autoCommit](#autoCommit)
   - [eachBatch](#consuming-messages-each-batch)
   - [Options](#consuming-messages-options)
   - [Pause, Resume, & Seek](#consuming-messages-pause-resume)
@@ -448,9 +449,33 @@ async () => {
 }
 ```
 
+### <a name="consuming-messages-auto-commit"></a> autoCommit
+
+The messages are always fetched in batches from Kafka, even when using the `eachMessage` handler. All resolved offsets will be committed to Kafka after processing the whole batch. Auto-commit offers more flexibility when committing offsets; there are two flavors available:
+
+`autoCommitInterval`: The consumer will commit offsets after a given period, for example, five seconds. Value in milliseconds. Default: `null`
+
+```javascript
+consumer.run({
+  autoCommitInterval: 5000,
+  // ...
+})
+```
+
+`autoCommitThreshold`: The consumer will commit offsets after resolving a given number of messages, for example, a hundred messages. Default: `null`
+
+```javascript
+consumer.run({
+  autoCommitThreshold: 100,
+  // ...
+})
+```
+
+Having both flavors at the same time is also possible, the consumer will commit the offsets if any of the use cases (interval or number of messages) happens.
+
 ### <a name="consuming-messages-each-batch"></a> eachBatch
 
-Some use cases require dealing with batches directly. This handler will feed your function batches and provide some utility functions to give your code more flexibility: `resolveOffset`, `heartbeat`, and `isRunning`. All resolved offsets will be automatically committed after the function is executed.
+Some use cases require dealing with batches directly. This handler will feed your function batches and provide some utility functions to give your code more flexibility: `resolveOffset`, `heartbeat`, `isRunning`, and `commitOffsetsIfNecessary`. All resolved offsets will be automatically committed after the function is executed.
 
 Be aware that using `eachBatch` directly is considered a more advanced use case as compared to using `eachMessage`, since you will have to understand how session timeouts and heartbeats are connected.
 
@@ -483,6 +508,8 @@ await consumer.run({
 > `eachBatchAutoResolve` configures auto-resolve of batch processing. If set to true, KafkaJS will automatically commit the last offset of the batch if `eachBatch` doesn't throw an error. Default: true.
 
 > `resolveOffset()` is used to mark a message in the batch as processed. In case of errors, the consumer will automatically commit the resolved offsets.
+
+> `commitOffsetsIfNecessary` is used to commit offsets based on the autoCommit configurations (`autoCommitInterval` and `autoCommitThreshold`). Note that auto commit won't happen in `eachBatch` if `commitOffsetsIfNecessary` is not invoked
 
 Example:
 
