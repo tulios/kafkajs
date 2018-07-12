@@ -132,6 +132,7 @@ module.exports = class Runner {
 
       this.consumerGroup.resolveOffset({ topic, partition, offset: message.offset })
       await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+      await this.consumerGroup.commitOffsetsIfNecessary()
     }
   }
 
@@ -146,6 +147,9 @@ module.exports = class Runner {
         },
         heartbeat: async () => {
           await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+        },
+        commitOffsetsIfNecessary: async () => {
+          await this.consumerGroup.commitOffsetsIfNecessary()
         },
         isRunning: () => this.running,
       })

@@ -1,4 +1,4 @@
-const OffsetManager = require('./index')
+const OffsetManager = require('../index')
 
 describe('Consumer > OffsetMananger > seek', () => {
   let offsetManager, coordinator

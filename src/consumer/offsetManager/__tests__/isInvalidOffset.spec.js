@@ -1,4 +1,4 @@
-const isInvalidOffset = require('./isInvalidOffset')
+const isInvalidOffset = require('../isInvalidOffset')
 
 describe('Consumer > OffsetMananger > isInvalidOffset', () => {
   it('returns true for negative offsets', () => {

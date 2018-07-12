@@ -31,6 +31,8 @@ module.exports = class ConsumerGroup {
     minBytes,
     maxBytes,
     maxWaitTimeInMs,
+    autoCommitInterval,
+    autoCommitThreshold,
   }) {
     this.cluster = cluster
     this.groupId = groupId
@@ -44,6 +46,8 @@ module.exports = class ConsumerGroup {
     this.minBytes = minBytes
     this.maxBytes = maxBytes
     this.maxWaitTime = maxWaitTimeInMs
+    this.autoCommitInterval = autoCommitInterval
+    this.autoCommitThreshold = autoCommitThreshold
 
     this.seekOffset = new SeekOffsets()
     this.coordinator = null
@@ -159,6 +163,8 @@ module.exports = class ConsumerGroup {
       topicConfigurations: this.topicConfigurations,
       instrumentationEmitter: this.instrumentationEmitter,
       memberAssignment: this.memberAssignment,
+      autoCommitInterval: this.autoCommitInterval,
+      autoCommitThreshold: this.autoCommitThreshold,
       coordinator,
       groupId,
       generationId,
@@ -205,6 +211,10 @@ module.exports = class ConsumerGroup {
     return this.subscriptionState.paused()
   }
 
+  async commitOffsetsIfNecessary() {
+    await this.offsetManager.commitOffsetsIfNecessary()
+  }
+
   async commitOffsets() {
     await this.offsetManager.commitOffsets()
   }
@@ -212,7 +222,7 @@ module.exports = class ConsumerGroup {
   async heartbeat({ interval }) {
     const { groupId, generationId, memberId } = this
     const now = Date.now()
-    if (now > this.lastRequest + interval) {
+    if (now >= this.lastRequest + interval) {
       const payload = {
         groupId,
         memberId,
