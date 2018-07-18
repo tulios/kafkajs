@@ -39,6 +39,12 @@ module.exports = ({
   let runner = null
   let consumerGroup = null
 
+  if (heartbeatInterval >= sessionTimeout) {
+    throw new KafkaJSNonRetriableError(
+      `Consumer heartbeatInterval (${heartbeatInterval}) must be lower than sessionTimeout (${sessionTimeout}). It is recommended to set heartbeatInterval to approximately a third of the sessionTimeout.`
+    )
+  }
+
   const createConsumerGroup = ({ autoCommitInterval, autoCommitThreshold }) => {
     return new ConsumerGroup({
       logger: rootLogger,
