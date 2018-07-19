@@ -9,7 +9,7 @@ services:
     volumes:
       - ./testHelpers/kafka/server-jaas.conf:/etc/kafka/server-jaas.conf
   kafka1:
-    image: wurstmeister/kafka:0.11.0.1
+    image: wurstmeister/kafka:2.11-0.11.0.2
     ports:
       - "9092:9092"
       - "9093:9093"
@@ -35,11 +35,10 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./testHelpers/certs:/var/private/ssl/certs
-      - ./testHelpers/kafka/start-kafka-011.sh:/usr/bin/start-kafka.sh
       - ./testHelpers/kafka/server-jaas.conf:/opt/kafka/config/server-jaas.conf
       # - ./testHelpers/kafka/log4j.properties:/opt/kafka/config/log4j.properties
   kafka2:
-    image: wurstmeister/kafka:0.11.0.1
+    image: wurstmeister/kafka:2.11-0.11.0.2
     ports:
       - "9095:9095"
       - "9096:9096"
@@ -66,11 +65,10 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./testHelpers/certs:/var/private/ssl/certs
-      - ./testHelpers/kafka/start-kafka-011.sh:/usr/bin/start-kafka.sh
       - ./testHelpers/kafka/server-jaas.conf:/opt/kafka/config/server-jaas.conf
       # - ./testHelpers/kafka/log4j.properties:/opt/kafka/config/log4j.properties
   kafka3:
-    image: wurstmeister/kafka:0.11.0.1
+    image: wurstmeister/kafka:2.11-0.11.0.2
     ports:
       - "9098:9098"
       - "9099:9099"
@@ -97,6 +95,5 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./testHelpers/certs:/var/private/ssl/certs
-      - ./testHelpers/kafka/start-kafka-011.sh:/usr/bin/start-kafka.sh
       - ./testHelpers/kafka/server-jaas.conf:/opt/kafka/config/server-jaas.conf
       # - ./testHelpers/kafka/log4j.properties:/opt/kafka/config/log4j.properties
