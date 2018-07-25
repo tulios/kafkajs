@@ -42,6 +42,8 @@ describe('Consumer', () => {
   })
 
   it('consume messages', async () => {
+    jest.spyOn(cluster, 'refreshMetadataIfNecessary')
+
     await consumer.connect()
     await producer.connect()
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
@@ -58,6 +60,8 @@ describe('Consumer', () => {
 
     await producer.send({ acks: 1, topic: topicName, messages })
     await waitForMessages(messagesConsumed, { number: messages.length })
+
+    expect(cluster.refreshMetadataIfNecessary).toHaveBeenCalled()
 
     expect(messagesConsumed[0]).toEqual({
       topic: topicName,

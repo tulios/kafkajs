@@ -272,6 +272,8 @@ module.exports = class ConsumerGroup {
         pausedTopics,
       })
 
+      await this.cluster.refreshMetadataIfNecessary()
+
       for (let topic of activeTopics) {
         const partitionsPerLeader = this.cluster.findLeaderForPartitions(
           topic,
