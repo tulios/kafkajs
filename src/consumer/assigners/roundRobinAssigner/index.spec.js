@@ -6,10 +6,7 @@ describe('Consumer > assigners > RoundRobinAssigner', () => {
 
   beforeEach(() => {
     metadata = {}
-    cluster = {
-      refreshMetadataIfNecessary: jest.fn(),
-      findTopicPartitionMetadata: topic => metadata[topic],
-    }
+    cluster = { findTopicPartitionMetadata: topic => metadata[topic] }
     assigner = RoundRobinAssigner({ cluster })
     topics = ['topic-A', 'topic-B']
   })
@@ -33,7 +30,6 @@ describe('Consumer > assigners > RoundRobinAssigner', () => {
 
       const assignment = await assigner.assign({ members, topics })
 
-      expect(cluster.refreshMetadataIfNecessary).toHaveBeenCalled()
       expect(assignment).toEqual([
         {
           memberId: 'member-1',

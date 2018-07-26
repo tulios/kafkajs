@@ -109,6 +109,7 @@ module.exports = class ConsumerGroup {
         )
       }
 
+      await this.cluster.refreshMetadataIfNecessary()
       assignment = await assigner.assign({ members, topics })
       this.logger.debug('Group assignment', {
         groupId,
