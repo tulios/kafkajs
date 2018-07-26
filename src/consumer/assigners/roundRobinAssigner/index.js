@@ -41,9 +41,6 @@ module.exports = ({ cluster }) => ({
       assignment[memberId] = {}
     })
 
-    // Make sure the assigner always work with up to date metadata
-    await cluster.refreshMetadataIfNecessary()
-
     topics.forEach(topic => {
       const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
       const partitions = partitionMetadata.map(m => m.partitionId)
