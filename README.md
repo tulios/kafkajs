@@ -28,6 +28,7 @@ KafkaJS is battle-tested and ready for production.
   - [Logging](#configuration-logging)
 - [Producing Messages](#producing-messages)
   - [Producing to multiple topics](#producing-messages-to-multiple-topics)
+  - [Options](#producing-messages-options)
   - [Custom partitioner](#producing-messages-custom-partitioner)
   - [Retry](#producing-messages-retry)
   - [Compression](#producing-messages-compression)
@@ -191,7 +192,7 @@ const producer = kafka.producer()
 The method `send` is used to publish messages to the Kafka cluster.
 
 ```javascript
-const producer = kafka.producer()
+const producer = kafka.producer() // or with options kafka.producer({ metadataMaxAge: 300000 })
 
 async () => {
   await producer.connect()
@@ -235,13 +236,13 @@ await producer.send({
 })
 ```
 
-| property    | description                                                                                                                                                                        |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| topic       | topic name                                                                                                                                                                         |
-| messages    | An array of objects with "key" and "value", example: <br> `[{ key: 'my-key', value: 'my-value'}]`                                                                                  |
-| acks        | Control the number of required acks. <br> __-1__ = all replicas must acknowledge _(default)_ <br> __0__ = no acknowledgments <br> __1__ = only waits for the leader to acknowledge |
-| timeout     | The time to await a response in ms. Default value _30000_                                                                                                                          |
-| compression | Compression codec. Default value `CompressionTypes.None`                                                                                                                           |
+| property    | description                                                                                       | default |
+| ----------- |-------------------------------------------------------------------------------------------------- | ------- |
+| topic       | topic name                                                                                        | `null`  |
+| messages    | An array of objects with "key" and "value", example: <br> `[{ key: 'my-key', value: 'my-value'}]` | `null`  |
+| acks        | Control the number of required acks. <br> __-1__ = all replicas must acknowledge _(default)_ <br> __0__ = no acknowledgments <br> __1__ = only waits for the leader to acknowledge | `-1` all replicas must acknowledge |
+| timeout     | The time to await a response in ms                                                                | `30000` |
+| compression | Compression codec                                                                                 | `CompressionTypes.None` |
 
 By default, the producer is configured to distribute the messages with the following logic:
 
@@ -281,6 +282,14 @@ await producer.sendBatch({
 | property      | description                                                                                                |
 | ------------- | ---------------------------------------------------------------------------------------------------------- |
 | topicMessages | An array of objects with `topic` and `messages`.<br>`messages` is an array of the same type as for `send`. |
+
+### <a name="producing-messages-options"></a> Options
+
+| option            | description                                                                          | default |
+| ----------------- | ------------------------------------------------------------------------------------ | ------- |
+| createPartitioner | Take a look at [Custom](#producing-messages-custom-partitioner) for more information | `null`  |
+| retry             | Take a look at [Producer Retry](#producing-messages-retry) for more information      | `null`  |
+| metadataMaxAge    | The period of time in milliseconds after which we force a refresh of metadata even if we haven't seen any partition leadership changes to proactively discover any new brokers or partitions | `300000` - 5 minutes |
 
 ### <a name="producing-messages-custom-partitioner"></a> Custom partitioner
 
@@ -539,6 +548,7 @@ kafka.consumer({
   partitionAssigners: <Array>,
   sessionTimeout: <Number>,
   heartbeatInterval: <Number>,
+  metadataMaxAge: <Number>,
   maxBytesPerPartition: <Number>,
   minBytes: <Number>,
   maxBytes: <Number>,
@@ -547,16 +557,17 @@ kafka.consumer({
 })
 ```
 
-| option               | description                                                                                                                                                                                                                                                                                                                                        | default                           |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| partitionAssigners   | List of partition assigners                                                                                                                                                                                                                                                                                                                        | `[PartitionAssigners.roundRobin]` |
-| sessionTimeout       | Timeout in milliseconds used to detect failures. The consumer sends periodic heartbeats to indicate its liveness to the broker. If no heartbeats are received by the broker before the expiration of this session timeout, then the broker will remove this consumer from the group and initiate a rebalance                                       | `30000`                           |
-| heartbeatInterval    | The expected time in milliseconds between heartbeats to the consumer coordinator. Heartbeats are used to ensure that the consumer's session stays active. The value must be set lower than session timeout                                                                                                                                         | `3000`                            |
-| maxBytesPerPartition | The maximum amount of data per-partition the server will return. This size must be at least as large as the maximum message size the server allows or else it is possible for the producer to send messages larger than the consumer can fetch. If that happens, the consumer can get stuck trying to fetch a large message on a certain partition | `1048576` (1MB)                   |
-| minBytes             | Minimum amount of data the server should return for a fetch request, otherwise wait up to `maxWaitTimeInMs` for more data to accumulate. default: `1`                                                                                                                                                                                              |
-| maxBytes             | Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0`                                                                                                                                                                                                                                                            | `10485760` (10MB)                 |
-| maxWaitTimeInMs      | The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes`                                                                                                                                                     | `5000`                            |
-| retry                | See [retry](#configuration-default-retry) for more information                                                                                                                                                                                                                                                                                     | `{ retries: 10 }`                 |
+| option               | description | default |
+| -------------------- | ----------- | ------- |
+| partitionAssigners   | List of partition assigners | `[PartitionAssigners.roundRobin]` |
+| sessionTimeout       | Timeout in milliseconds used to detect failures. The consumer sends periodic heartbeats to indicate its liveness to the broker. If no heartbeats are received by the broker before the expiration of this session timeout, then the broker will remove this consumer from the group and initiate a rebalance | `30000` |
+| heartbeatInterval    | The expected time in milliseconds between heartbeats to the consumer coordinator. Heartbeats are used to ensure that the consumer's session stays active. The value must be set lower than session timeout | `3000` |
+| metadataMaxAge       | The period of time in milliseconds after which we force a refresh of metadata even if we haven't seen any partition leadership changes to proactively discover any new brokers or partitions | `300000` (5 minutes) |
+| maxBytesPerPartition | The maximum amount of data per-partition the server will return. This size must be at least as large as the maximum message size the server allows or else it is possible for the producer to send messages larger than the consumer can fetch. If that happens, the consumer can get stuck trying to fetch a large message on a certain partition | `1048576` (1MB) |
+| minBytes | Minimum amount of data the server should return for a fetch request, otherwise wait up to `maxWaitTimeInMs` for more data to accumulate. default: `1` |
+| maxBytes             | Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0` | `10485760` (10MB) |
+| maxWaitTimeInMs      | The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes` | `5000` |
+| retry                | See [retry](#configuration-default-retry) for more information | `{ retries: 10 }` |
 
 ### <a name="consuming-messages-pause-resume"></a> Pause & Resume
 

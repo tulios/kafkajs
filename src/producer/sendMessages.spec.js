@@ -49,6 +49,7 @@ describe('Producer > sendMessages', () => {
     cluster = {
       addTargetTopic: jest.fn(),
       refreshMetadata: jest.fn(),
+      refreshMetadataIfNecessary: jest.fn(),
       findTopicPartitionMetadata: jest.fn(() => topicPartitionMetadata),
       findLeaderForPartitions: jest.fn(() => partitionsPerLeader),
       findBroker: jest.fn(({ nodeId }) => brokers[nodeId]),
@@ -82,6 +83,9 @@ describe('Producer > sendMessages', () => {
       .mockImplementationOnce(() => createProducerResponse(topic, 2))
 
     const response = await sendMessages({ topicMessages: [{ topic, messages }] })
+
+    expect(cluster.refreshMetadataIfNecessary).toHaveBeenCalled()
+
     expect(brokers[1].produce).toHaveBeenCalledTimes(2)
     expect(brokers[2].produce).toHaveBeenCalledTimes(1)
     expect(brokers[3].produce).toHaveBeenCalledTimes(3)

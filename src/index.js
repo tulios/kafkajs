@@ -6,6 +6,7 @@ const createConsumer = require('./consumer')
 const createAdmin = require('./admin')
 
 const { assign } = Object
+const privateCreateCluster = Symbol('private:Kafka:createCluster')
 
 module.exports = class Client {
   constructor({
@@ -21,7 +22,7 @@ module.exports = class Client {
     allowExperimentalV011 = false,
   }) {
     this.logger = createLogger({ level: logLevel, logCreator })
-    this.createCluster = () =>
+    this[privateCreateCluster] = (metadataMaxAge = 300000) =>
       new Cluster({
         logger: this.logger,
         brokers,
@@ -30,6 +31,7 @@ module.exports = class Client {
         clientId,
         connectionTimeout,
         authenticationTimeout,
+        metadataMaxAge,
         retry,
         allowExperimentalV011,
       })
@@ -38,8 +40,8 @@ module.exports = class Client {
   /**
    * @public
    */
-  producer({ createPartitioner, retry } = {}) {
-    const cluster = this.createCluster()
+  producer({ createPartitioner, retry, metadataMaxAge } = {}) {
+    const cluster = this[privateCreateCluster](metadataMaxAge)
     return createProducer({
       retry: assign({}, cluster.retry, retry),
       logger: this.logger,
@@ -55,6 +57,7 @@ module.exports = class Client {
     {
       groupId,
       partitionAssigners,
+      metadataMaxAge,
       sessionTimeout,
       heartbeatInterval,
       maxBytesPerPartition,
@@ -64,7 +67,7 @@ module.exports = class Client {
       retry,
     } = {}
   ) {
-    const cluster = this.createCluster()
+    const cluster = this[privateCreateCluster](metadataMaxAge)
     return createConsumer({
       retry: assign({}, cluster.retry, retry),
       logger: this.logger,
@@ -84,7 +87,7 @@ module.exports = class Client {
    * @public
    */
   admin({ retry } = {}) {
-    const cluster = this.createCluster()
+    const cluster = this[privateCreateCluster]()
     return createAdmin({
       retry: assign({}, cluster.retry, retry),
       logger: this.logger,

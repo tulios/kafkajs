@@ -23,6 +23,10 @@ describe('Cluster > BrokerPool', () => {
     await brokerPool.disconnect()
   })
 
+  it('defaults metadataMaxAge to 0', () => {
+    expect(brokerPool.metadataMaxAge).toEqual(0)
+  })
+
   describe('#connect', () => {
     it('connects to the seed broker when the broker pool is created', async () => {
       expect(brokerPool.seedBroker.isConnected()).toEqual(false)
@@ -205,6 +209,39 @@ describe('Cluster > BrokerPool', () => {
       expect(brokerPool.metadata).toEqual(null)
       await brokerPool.refreshMetadata([topicName])
       expect(brokerPool.metadata).not.toEqual(null)
+    })
+  })
+
+  describe('#refreshMetadataIfNecessary', () => {
+    beforeEach(() => {
+      brokerPool.refreshMetadata = jest.fn()
+      brokerPool.metadataMaxAge = 1
+      brokerPool.metadata = {}
+    })
+
+    it('calls refreshMetadata if metadataExpireAt is not defined', async () => {
+      brokerPool.metadataExpireAt = null
+      await brokerPool.refreshMetadataIfNecessary([topicName])
+      expect(brokerPool.refreshMetadata).toHaveBeenCalledWith([topicName])
+    })
+
+    it('calls refreshMetadata if metadata is not present', async () => {
+      brokerPool.metadataExpireAt = Date.now() + 1000
+      brokerPool.metadata = null
+      await brokerPool.refreshMetadataIfNecessary([topicName])
+      expect(brokerPool.refreshMetadata).toHaveBeenCalledWith([topicName])
+    })
+
+    it('calls refreshMetadata if metadata is expired', async () => {
+      brokerPool.metadataExpireAt = Date.now() - 1000
+      await brokerPool.refreshMetadataIfNecessary([topicName])
+      expect(brokerPool.refreshMetadata).toHaveBeenCalledWith([topicName])
+    })
+
+    it('does not call refreshMetadata if metadata is valid and up to date', async () => {
+      brokerPool.metadataExpireAt = Date.now() + 1000
+      await brokerPool.refreshMetadataIfNecessary([topicName])
+      expect(brokerPool.refreshMetadata).not.toHaveBeenCalled()
     })
   })
 

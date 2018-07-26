@@ -11,10 +11,19 @@ module.exports = class BrokerPool {
    * @param {Logger} logger
    * @param {Object} retry
    * @param {number} authenticationTimeout
+   * @param {number} metadataMaxAge
    */
-  constructor({ connectionBuilder, logger, retry, allowExperimentalV011, authenticationTimeout }) {
-    this.connectionBuilder = connectionBuilder
+  constructor({
+    connectionBuilder,
+    logger,
+    retry,
+    allowExperimentalV011,
+    authenticationTimeout,
+    metadataMaxAge,
+  }) {
     this.rootLogger = logger
+    this.connectionBuilder = connectionBuilder
+    this.metadataMaxAge = metadataMaxAge || 0
     this.logger = logger.namespace('BrokerPool')
     this.retrier = createRetry(assign({}, retry))
 
@@ -28,6 +37,7 @@ module.exports = class BrokerPool {
 
     this.brokers = {}
     this.metadata = null
+    this.metadataExpireAt = null
     this.versions = null
   }
 
@@ -98,6 +108,7 @@ module.exports = class BrokerPool {
     return this.retrier(async (bail, retryCount, retryTime) => {
       try {
         this.metadata = await broker.metadata(topics)
+        this.metadataExpireAt = Date.now() + this.metadataMaxAge
         this.brokers = this.metadata.brokers.reduce((result, { nodeId, host, port, rack }) => {
           if (result[nodeId]) {
             return result
@@ -127,6 +138,22 @@ module.exports = class BrokerPool {
         bail(e)
       }
     })
+  }
+
+  /**
+   * Only refreshes metadata if the data is stale according to the `metadataMaxAge` param
+   *
+   * @public
+   * @param {Array<String>} topics
+   * @returns {Promise<null>}
+   */
+  async refreshMetadataIfNecessary(topics) {
+    const shouldRefresh =
+      this.metadata == null || this.metadataExpireAt == null || Date.now() > this.metadataExpireAt
+
+    if (shouldRefresh) {
+      return this.refreshMetadata(topics)
+    }
   }
 
   /**

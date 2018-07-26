@@ -25,8 +25,9 @@ const mergeTopics = (obj, { topic, partitions }) => ({
  * @param {Object} ssl
  * @param {Object} sasl
  * @param {string} clientId
- * @param {number} connectionTimeout
- * @param {number} authenticationTimeout
+ * @param {number} connectionTimeout - in milliseconds
+ * @param {number} authenticationTimeout - in milliseconds
+ * @param {number} metadataMaxAge - in milliseconds
  * @param {Object} retry
  * @param {Object} logger
  */
@@ -39,6 +40,7 @@ module.exports = class Cluster {
     clientId,
     connectionTimeout,
     authenticationTimeout,
+    metadataMaxAge,
     retry,
     allowExperimentalV011,
   }) {
@@ -62,6 +64,7 @@ module.exports = class Cluster {
       retry,
       allowExperimentalV011,
       authenticationTimeout,
+      metadataMaxAge,
     })
   }
 
@@ -91,6 +94,14 @@ module.exports = class Cluster {
    */
   async refreshMetadata() {
     await this.brokerPool.refreshMetadata(Array.from(this.targetTopics))
+  }
+
+  /**
+   * @public
+   * @returns {Promise<null>}
+   */
+  async refreshMetadataIfNecessary() {
+    await this.brokerPool.refreshMetadataIfNecessary(Array.from(this.targetTopics))
   }
 
   /**

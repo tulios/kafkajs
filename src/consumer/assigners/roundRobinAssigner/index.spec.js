@@ -29,6 +29,7 @@ describe('Consumer > assigners > RoundRobinAssigner', () => {
       ]
 
       const assignment = await assigner.assign({ members, topics })
+
       expect(assignment).toEqual([
         {
           memberId: 'member-1',

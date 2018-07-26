@@ -25,6 +25,8 @@ module.exports = ({ logger, cluster, partitioner }) => {
     const createProducerRequests = async responsePerBroker => {
       const topicMetadata = new Map()
 
+      await cluster.refreshMetadataIfNecessary()
+
       for (let { topic, messages } of topicMessages) {
         const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
 
