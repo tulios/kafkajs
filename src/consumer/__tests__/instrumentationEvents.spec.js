@@ -32,6 +32,8 @@ describe('Consumer > Instrumentation Events', () => {
       groupId,
       logger: newLogger(),
       heartbeatInterval: 100,
+      maxWaitTimeInMs: 1,
+      maxBytesPerPartition: 180,
     })
 
     message = { key: `key-${secureRandom()}`, value: `value-${secureRandom()}` }
@@ -111,6 +113,122 @@ describe('Consumer > Instrumentation Events', () => {
             ],
           },
         ],
+      },
+    })
+  })
+
+  it('emits group join', async () => {
+    const onGroupJoin = jest.fn()
+    let groupJoin = 0
+    consumer.on(consumer.events.GROUP_JOIN, async event => {
+      onGroupJoin(event)
+      groupJoin++
+    })
+
+    await consumer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    await consumer.run({ eachMessage: () => true })
+
+    await waitFor(() => groupJoin > 0)
+    expect(onGroupJoin).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.group_join',
+      payload: {
+        duration: expect.any(Number),
+        groupId: expect.any(String),
+        isLeader: true,
+        leaderId: expect.any(String),
+        memberId: expect.any(String),
+      },
+    })
+  })
+
+  it('emits fetch', async () => {
+    const onFetch = jest.fn()
+    let fetch = 0
+    consumer.on(consumer.events.FETCH, async event => {
+      onFetch(event)
+      fetch++
+    })
+
+    await consumer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    await consumer.run({ eachMessage: () => true })
+
+    await waitFor(() => fetch > 0)
+    expect(onFetch).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.fetch',
+      payload: {
+        numberOfBatches: expect.any(Number),
+        duration: expect.any(Number),
+      },
+    })
+  })
+
+  it('emits start batch process', async () => {
+    const onStartBatchProcess = jest.fn()
+    let startBatchProcess = 0
+    consumer.on(consumer.events.START_BATCH_PROCESS, async event => {
+      onStartBatchProcess(event)
+      startBatchProcess++
+    })
+
+    await consumer.connect()
+    await producer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.run({ eachMessage: () => true })
+    await producer.send({ acks: 1, topic: topicName, messages: [message] })
+
+    await waitFor(() => startBatchProcess > 0)
+    expect(onStartBatchProcess).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.start_batch_process',
+      payload: {
+        topic: topicName,
+        partition: 0,
+        highWatermark: expect.any(String),
+        offsetLag: expect.any(String),
+        batchSize: 1,
+        firstOffset: expect.any(String),
+        lastOffset: expect.any(String),
+      },
+    })
+  })
+
+  it('emits end batch process', async () => {
+    const onEndBatchProcess = jest.fn()
+    let endBatchProcess = 0
+    consumer.on(consumer.events.END_BATCH_PROCESS, async event => {
+      onEndBatchProcess(event)
+      endBatchProcess++
+    })
+
+    await consumer.connect()
+    await producer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.run({ eachMessage: () => true })
+    await producer.send({ acks: 1, topic: topicName, messages: [message] })
+
+    await waitFor(() => endBatchProcess > 0)
+    expect(onEndBatchProcess).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.end_batch_process',
+      payload: {
+        topic: topicName,
+        partition: 0,
+        highWatermark: expect.any(String),
+        offsetLag: expect.any(String),
+        batchSize: 1,
+        firstOffset: expect.any(String),
+        lastOffset: expect.any(String),
+        duration: expect.any(Number),
       },
     })
   })

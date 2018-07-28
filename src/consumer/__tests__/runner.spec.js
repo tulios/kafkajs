@@ -2,6 +2,7 @@ const Runner = require('../runner')
 const Batch = require('../batch')
 const { KafkaJSProtocolError } = require('../../errors')
 const { createErrorFromCode } = require('../../protocol/error')
+const InstrumentationEventEmitter = require('../../instrumentation/emitter')
 const { newLogger } = require('testHelpers')
 
 const UNKNOWN = -1
@@ -20,8 +21,10 @@ describe('Consumer > Runner', () => {
       resolveOffset: jest.fn(),
       commitOffsets: jest.fn(),
       heartbeat: jest.fn(),
+      isLeader: jest.fn(() => true),
     }
-    runner = new Runner({ consumerGroup, onCrash, logger: newLogger() })
+    const instrumentationEmitter = new InstrumentationEventEmitter()
+    runner = new Runner({ consumerGroup, instrumentationEmitter, onCrash, logger: newLogger() })
   })
 
   describe('when the group is rebalancing before the new consumer has joined', () => {
@@ -49,6 +52,7 @@ describe('Consumer > Runner', () => {
       eachBatch = jest.fn()
       runner = new Runner({
         consumerGroup,
+        instrumentationEmitter: new InstrumentationEventEmitter(),
         eachBatchAutoResolve: false,
         eachBatch,
         onCrash,

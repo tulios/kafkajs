@@ -68,6 +68,7 @@ module.exports = ({
     return new Runner({
       logger: rootLogger,
       consumerGroup,
+      instrumentationEmitter,
       eachBatchAutoResolve,
       eachBatch,
       eachMessage,
