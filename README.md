@@ -777,8 +777,23 @@ The listeners are always async, even when using regular functions. The consumer 
 
 List of available events:
 
-* consumer.events.HEARTBEAT
-* consumer.events.COMMIT_OFFSETS
+* consumer.events.HEARTBEAT  
+  payload: {`groupId`, `memberId`, `groupGenerationId`}
+
+* consumer.events.COMMIT_OFFSETS  
+  payload: {`groupId`, `memberId`, `groupGenerationId`, `topics`}
+
+* consumer.events.GROUP_JOIN  
+  payload: {`groupId`, `memberId`, `leaderId`, `isLeader`, `duration`}
+
+* consumer.events.FETCH  
+  payload: {`numberOfBatches`, `duration`}
+
+* consumer.events.START_BATCH_PROCESS  
+  payload: {`topic`, `partition`, `highWatermark`, `offsetLag`, `batchSize`, `firstOffset`, `lastOffset`}
+
+* consumer.events.END_BATCH_PROCESS  
+  payload: {`topic`, `partition`, `highWatermark`, `offsetLag`, `batchSize`, `firstOffset`, `lastOffset`, `duration`}
 
 Instrumentation Event:
 
