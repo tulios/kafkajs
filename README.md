@@ -868,6 +868,17 @@ const kafka = new Kafka({
 })
 ```
 
+To get access to the namespaced logger of a consumer or producer after instantiation, you can use the `logger` method:
+
+```javascript
+const consumer = kafka.consumer( ... )
+consumer.logger().info('Hello from the consumer')
+
+const producer = kafka.producer( ... )
+producer.logger().info('Hello from the producer')
+
+```
+
 ## <a name="configuration-default-retry-detailed"></a> Retry (detailed)
 
 The retry mechanism uses a randomization function that grows exponentially. This formula and how the default values affect it is best described by the example below:

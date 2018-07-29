@@ -269,4 +269,10 @@ describe('Producer', () => {
       ].sort(byTopicName)
     )
   })
+
+  test('gives access to its logger', () => {
+    producer = createProducer({ cluster: createCluster(), logger: newLogger() })
+
+    expect(producer.logger()).toMatchSnapshot()
+  })
 })

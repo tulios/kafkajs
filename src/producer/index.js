@@ -107,6 +107,11 @@ module.exports = ({
     })
   }
 
+  /**
+   * @returns {Object} logger
+   */
+  const getLogger = () => logger
+
   return {
     /**
      * @returns {Promise}
@@ -121,5 +126,7 @@ module.exports = ({
     send,
 
     sendBatch,
+
+    logger: getLogger,
   }
 }
