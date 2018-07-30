@@ -64,7 +64,7 @@ describe('Consumer > Runner', () => {
     it('does not call resolveOffset with the last offset', async () => {
       const topic = 'topic-name'
       const partition = 0
-      const batch = new Batch(topic, {
+      const batch = new Batch(topic, 0, {
         partition,
         highWatermark: 5,
         messages: [{ offset: 4, key: '1', value: '2' }],

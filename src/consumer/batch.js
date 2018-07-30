@@ -1,11 +1,19 @@
 const Long = require('long')
 
 module.exports = class Batch {
-  constructor(topic, partitionData) {
+  constructor(topic, fetchedOffset, partitionData) {
+    const longFetchedOffset = Long.fromValue(fetchedOffset)
+
     this.topic = topic
     this.partition = partitionData.partition
     this.highWatermark = partitionData.highWatermark
-    this.messages = partitionData.messages
+
+    // Apparently fetch can return different offsets than the target offset provided to the fetch API.
+    // Discard messages that are not in the requested offset
+    // https://github.com/apache/kafka/blob/bf237fa7c576bd141d78fdea9f17f65ea269c290/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L912
+    this.messages = partitionData.messages.filter(message =>
+      Long.fromValue(message.offset).gte(longFetchedOffset)
+    )
   }
 
   isEmpty() {
