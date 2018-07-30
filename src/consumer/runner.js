@@ -1,5 +1,11 @@
 const createRetry = require('../retry')
 const { KafkaJSError } = require('../errors')
+const {
+  GROUP_JOIN,
+  FETCH,
+  START_BATCH_PROCESS,
+  END_BATCH_PROCESS,
+} = require('./instrumentationEvents')
 
 const isTestMode = process.env.NODE_ENV === 'test'
 
@@ -10,8 +16,9 @@ const isKafkaJSError = e => e instanceof KafkaJSError
 
 module.exports = class Runner {
   constructor({
-    consumerGroup,
     logger,
+    consumerGroup,
+    instrumentationEmitter,
     eachBatchAutoResolve = true,
     eachBatch,
     eachMessage,
@@ -19,8 +26,9 @@ module.exports = class Runner {
     onCrash,
     retry,
   }) {
-    this.consumerGroup = consumerGroup
     this.logger = logger.namespace('Runner')
+    this.consumerGroup = consumerGroup
+    this.instrumentationEmitter = instrumentationEmitter
     this.eachBatchAutoResolve = eachBatchAutoResolve
     this.eachBatch = eachBatch
     this.eachMessage = eachMessage
@@ -35,13 +43,21 @@ module.exports = class Runner {
   async join() {
     return this.retrier(async (bail, retryCount, retryTime) => {
       try {
+        const startJoin = Date.now()
+
         await this.consumerGroup.join()
         await this.consumerGroup.sync()
-        this.logger.info('Consumer has joined the group', {
+
+        const payload = {
           groupId: this.consumerGroup.groupId,
           memberId: this.consumerGroup.memberId,
           leaderId: this.consumerGroup.leaderId,
-        })
+          isLeader: this.consumerGroup.isLeader(),
+          duration: Date.now() - startJoin,
+        }
+
+        this.instrumentationEmitter.emit(GROUP_JOIN, payload)
+        this.logger.info('Consumer has joined the group', payload)
       } catch (e) {
         if (isRebalancing(e)) {
           // Rebalance in progress isn't a retriable error since the consumer
@@ -177,7 +193,14 @@ module.exports = class Runner {
   }
 
   async fetch() {
+    const startFetch = Date.now()
     const batches = await this.consumerGroup.fetch()
+
+    this.instrumentationEmitter.emit(FETCH, {
+      numberOfBatches: batches.length,
+      duration: Date.now() - startFetch,
+    })
+
     for (let batch of batches) {
       if (!this.running) {
         break
@@ -188,11 +211,29 @@ module.exports = class Runner {
         continue
       }
 
+      const startBatchProcess = Date.now()
+      const payload = {
+        topic: batch.topic,
+        partition: batch.partition,
+        highWatermark: batch.highWatermark,
+        offsetLag: batch.offsetLag(),
+        batchSize: batch.messages.length,
+        firstOffset: batch.firstOffset(),
+        lastOffset: batch.lastOffset(),
+      }
+
+      this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
+
       if (this.eachMessage) {
         await this.processEachMessage(batch)
       } else if (this.eachBatch) {
         await this.processEachBatch(batch)
       }
+
+      this.instrumentationEmitter.emit(END_BATCH_PROCESS, {
+        ...payload,
+        duration: Date.now() - startBatchProcess,
+      })
     }
 
     await this.consumerGroup.commitOffsets()
