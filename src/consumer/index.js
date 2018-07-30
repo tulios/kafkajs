@@ -299,6 +299,11 @@ module.exports = ({
     consumerGroup.resume(topicPartitions.map(({ topic }) => topic))
   }
 
+  /**
+   * @return {Object} logger
+   */
+  const getLogger = () => logger
+
   return {
     connect,
     disconnect,
@@ -310,5 +315,6 @@ module.exports = ({
     resume,
     on,
     events,
+    logger: getLogger,
   }
 }
