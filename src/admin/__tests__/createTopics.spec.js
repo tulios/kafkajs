@@ -1,18 +1,8 @@
-const createAdmin = require('./index')
-const { KafkaJSProtocolError } = require('../errors')
-const { createErrorFromCode } = require('../protocol/error')
+const createAdmin = require('../index')
+const { KafkaJSProtocolError } = require('../../errors')
+const { createErrorFromCode } = require('../../protocol/error')
 
-const {
-  secureRandom,
-  sslConnectionOpts,
-  saslConnectionOpts,
-  saslSCRAM256ConnectionOpts,
-  saslSCRAM512ConnectionOpts,
-  createCluster,
-  sslBrokers,
-  saslBrokers,
-  newLogger,
-} = require('testHelpers')
+const { secureRandom, createCluster, newLogger } = require('testHelpers')
 
 const NOT_CONTROLLER = 41
 const TOPIC_ALREADY_EXISTS = 36
@@ -26,31 +16,6 @@ describe('Admin', () => {
 
   afterEach(async () => {
     await admin.disconnect()
-  })
-
-  test('support SSL connections', async () => {
-    const cluster = createCluster(sslConnectionOpts(), sslBrokers())
-    admin = createAdmin({ cluster, logger: newLogger() })
-
-    await admin.connect()
-  })
-
-  test('support SASL PLAIN connections', async () => {
-    const cluster = createCluster(saslConnectionOpts(), saslBrokers())
-    admin = createAdmin({ cluster, logger: newLogger() })
-    await admin.connect()
-  })
-
-  test('support SASL SCRAM 256 connections', async () => {
-    const cluster = createCluster(saslSCRAM256ConnectionOpts(), saslBrokers())
-    admin = createAdmin({ cluster, logger: newLogger() })
-    await admin.connect()
-  })
-
-  test('support SASL SCRAM 512 connections', async () => {
-    const cluster = createCluster(saslSCRAM512ConnectionOpts(), saslBrokers())
-    admin = createAdmin({ cluster, logger: newLogger() })
-    await admin.connect()
   })
 
   describe('createTopics', () => {
