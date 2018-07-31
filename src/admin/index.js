@@ -1,5 +1,6 @@
 const createRetry = require('../retry')
 const waitFor = require('../utils/waitFor')
+const createConsumer = require('../consumer')
 const { KafkaJSNonRetriableError } = require('../errors')
 
 const retryOnLeaderNotAvailable = (fn, opts = {}) => {
@@ -16,6 +17,8 @@ const retryOnLeaderNotAvailable = (fn, opts = {}) => {
 
   return waitFor(callback, opts)
 }
+
+const isConsumerGroupRunning = description => ['Empty', 'Dead'].includes(description.state)
 
 module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
   const logger = rootLogger.namespace('Admin')
@@ -87,9 +90,59 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     })
   }
 
+  const setOffsets = async ({ groupId, topic, partitions }) => {
+    if (!groupId) {
+      throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
+    }
+
+    if (!topic) {
+      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    }
+
+    if (!partitions || partitions.length === 0) {
+      throw new KafkaJSNonRetriableError(`Invalid partitions`)
+    }
+
+    const consumer = createConsumer({ logger: rootLogger, cluster, groupId })
+
+    await consumer.connect()
+    await consumer.subscribe({ topic, fromBeginning: true })
+    const description = await consumer.describeGroup()
+
+    if (!isConsumerGroupRunning(description)) {
+      throw new KafkaJSNonRetriableError(
+        `The consumer group must have no running instances, current state: ${description.state}`
+      )
+    }
+
+    return new Promise((resolve, reject) => {
+      consumer.on(consumer.events.FETCH, async () =>
+        consumer
+          .disconnect()
+          .then(resolve)
+          .catch(reject)
+      )
+
+      consumer
+        .run({
+          eachBatchAutoResolve: false,
+          eachBatch: async () => true,
+        })
+        .catch(reject)
+
+      // This consumer doesn't need to consume any data
+      consumer.pause([{ topic }])
+
+      for (let seekData of partitions) {
+        consumer.seek({ topic, ...seekData })
+      }
+    })
+  }
+
   return {
     connect,
     disconnect,
     createTopics,
+    setOffsets,
   }
 }
