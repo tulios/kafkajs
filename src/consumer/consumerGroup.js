@@ -286,7 +286,7 @@ module.exports = class ConsumerGroup {
         for (let leader of leaders) {
           const partitions = partitionsPerLeader[leader].map(partition => ({
             partition,
-            fetchOffset: this.offsetManager.nextOffset(topic, partition),
+            fetchOffset: this.offsetManager.nextOffset(topic, partition).toString(),
             maxBytes: maxBytesPerPartition,
           }))
 
@@ -305,7 +305,19 @@ module.exports = class ConsumerGroup {
         })
 
         const batchesPerPartition = responses.map(({ topicName, partitions }) => {
-          return partitions.map(partition => new Batch(topicName, partition))
+          const topicRequestData = requestsPerLeader[nodeId].find(
+            ({ topic }) => topic === topicName
+          )
+
+          return partitions.map(partitionData => {
+            const partitionRequestData = topicRequestData.partitions.find(
+              ({ partition }) => partition === partitionData.partition
+            )
+
+            const fetchedOffset = partitionRequestData.fetchOffset
+
+            return new Batch(topicName, fetchedOffset, partitionData)
+          })
         })
 
         return flatten(batchesPerPartition)
