@@ -127,6 +127,31 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
       .map(({ partitions }) => partitions.map(({ partition, offset }) => ({ partition, offset })))
       .pop()
   }
+
+  /**
+   * @param {string} groupId
+   * @param {string} topic
+   * @param {boolean} [earliest=false]
+   * @return {Promise}
+   */
+  const resetOffsets = async ({ groupId, topic, earliest = false }) => {
+    if (!groupId) {
+      throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
+    }
+
+    if (!topic) {
+      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    }
+
+    const partitions = await findTopicPartitions(cluster, topic)
+    const partitionsToSeek = partitions.map(partition => ({
+      partition,
+      offset: cluster.defaultOffset({ fromBeginning: earliest }),
+    }))
+
+    return setOffsets({ groupId, topic, partitions: partitionsToSeek })
+  }
+
   const setOffsets = async ({ groupId, topic, partitions }) => {
     if (!groupId) {
       throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
@@ -181,5 +206,6 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     createTopics,
     fetchOffsets,
     setOffsets,
+    resetOffsets,
   }
 }
