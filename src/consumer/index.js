@@ -94,13 +94,25 @@ module.exports = ({
    */
   const disconnect = async () => {
     try {
-      if (runner) {
-        await runner.stop()
-        logger.debug('consumer has stopped, disconnecting', { groupId })
-      }
+      await stop()
+      logger.debug('consumer has stopped, disconnecting', { groupId })
       await cluster.disconnect()
     } catch (e) {}
-    logger.info('Stopped', { groupId })
+  }
+
+  /**
+   * @return {Promise}
+   */
+  const stop = async () => {
+    try {
+      if (runner) {
+        await runner.stop()
+        runner = null
+        consumerGroup = null
+      }
+
+      logger.info('Stopped', { groupId })
+    } catch (e) {}
   }
 
   /**
@@ -320,6 +332,7 @@ module.exports = ({
     connect,
     disconnect,
     subscribe,
+    stop,
     run,
     seek,
     describeGroup,

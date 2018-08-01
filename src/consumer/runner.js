@@ -88,10 +88,15 @@ module.exports = class Runner {
   }
 
   async stop() {
+    if (!this.running) {
+      return
+    }
+
     this.logger.debug('stop consumer group', {
       groupId: this.consumerGroup.groupId,
       memberId: this.consumerGroup.memberId,
     })
+
     this.running = false
 
     try {
