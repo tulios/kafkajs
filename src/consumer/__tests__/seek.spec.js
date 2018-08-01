@@ -61,8 +61,8 @@ describe('Consumer', () => {
       )
     })
 
-    it('throws an error if the offset is negative', () => {
-      expect(() => consumer.seek({ topic: topicName, partition: 0, offset: '-1' })).toThrow(
+    it('throws an error if the offset is negative and not a special offset', () => {
+      expect(() => consumer.seek({ topic: topicName, partition: 0, offset: '-32' })).toThrow(
         KafkaJSNonRetriableError,
         'Offset must not be a negative number'
       )
