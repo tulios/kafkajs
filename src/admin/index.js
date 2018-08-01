@@ -19,6 +19,15 @@ const retryOnLeaderNotAvailable = (fn, opts = {}) => {
 }
 
 const isConsumerGroupRunning = description => ['Empty', 'Dead'].includes(description.state)
+const findTopicPartitions = async (cluster, topic) => {
+  await cluster.addTargetTopic(topic)
+  await cluster.refreshMetadataIfNecessary()
+
+  return cluster
+    .findTopicPartitionMetadata(topic)
+    .map(({ partitionId }) => partitionId)
+    .sort()
+}
 
 module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
   const logger = rootLogger.namespace('Admin')
@@ -90,6 +99,34 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     })
   }
 
+  /**
+   * @param {string} groupId
+   * @param {string} topic
+   * @return {Promise}
+   */
+  const fetchOffsets = async ({ groupId, topic }) => {
+    if (!groupId) {
+      throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
+    }
+
+    if (!topic) {
+      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    }
+
+    const partitions = await findTopicPartitions(cluster, topic)
+    const coordinator = await cluster.findGroupCoordinator({ groupId })
+    const partitionsToFetch = partitions.map(partition => ({ partition }))
+
+    const { responses } = await coordinator.offsetFetch({
+      groupId,
+      topics: [{ topic, partitions: partitionsToFetch }],
+    })
+
+    return responses
+      .filter(response => response.topic === topic)
+      .map(({ partitions }) => partitions.map(({ partition, offset }) => ({ partition, offset })))
+      .pop()
+  }
   const setOffsets = async ({ groupId, topic, partitions }) => {
     if (!groupId) {
       throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
@@ -142,6 +179,7 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     connect,
     disconnect,
     createTopics,
+    fetchOffsets,
     setOffsets,
   }
 }

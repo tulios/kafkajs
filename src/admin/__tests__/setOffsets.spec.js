@@ -1,27 +1,16 @@
 const createAdmin = require('../index')
 const createConsumer = require('../../consumer')
 
-const { secureRandom, createCluster, newLogger } = require('testHelpers')
+const { secureRandom, createCluster, newLogger, createTopic } = require('testHelpers')
 
 describe('Admin', () => {
   let topicName, groupId, admin, consumer
 
-  const offsetFetch = async ({ cluster }) => {
-    const coordinator = await cluster.findGroupCoordinator({ groupId })
-    return coordinator.offsetFetch({
-      groupId,
-      topics: [
-        {
-          topic: topicName,
-          partitions: [{ partition: 0 }],
-        },
-      ],
-    })
-  }
-
-  beforeEach(() => {
+  beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
     groupId = `consumer-group-id-${secureRandom()}`
+
+    await createTopic({ topic: topicName })
   })
 
   afterEach(async () => {
@@ -29,7 +18,7 @@ describe('Admin', () => {
     consumer && (await consumer.disconnect())
   })
 
-  describe('createTopics', () => {
+  describe('setOffsets', () => {
     test('throws an error if the groupId is invalid', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
       await expect(admin.setOffsets({ groupId: null })).rejects.toHaveProperty(
@@ -60,22 +49,16 @@ describe('Admin', () => {
     test('set the consumer group to any offsets', async () => {
       const cluster = createCluster()
       admin = createAdmin({ cluster, logger: newLogger() })
+
+      await admin.connect()
       await admin.setOffsets({
         groupId,
         topic: topicName,
         partitions: [{ partition: 0, offset: 13 }],
       })
 
-      const offsets = await offsetFetch({ cluster })
-      expect(offsets).toEqual({
-        errorCode: 0,
-        responses: [
-          {
-            partitions: [{ errorCode: 0, metadata: '', offset: '13', partition: 0 }],
-            topic: topicName,
-          },
-        ],
-      })
+      const offsets = await admin.fetchOffsets({ groupId, topic: topicName })
+      expect(offsets).toEqual([{ partition: 0, offset: '13' }])
     })
 
     test('throws an error if the consumer group is runnig', async () => {
@@ -85,6 +68,8 @@ describe('Admin', () => {
       await consumer.run({ eachMessage: () => true })
 
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
+
+      await admin.connect()
       await expect(
         admin.setOffsets({
           groupId,
