@@ -152,6 +152,16 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     return setOffsets({ groupId, topic, partitions: partitionsToSeek })
   }
 
+  /**
+   * @param {string} groupId
+   * @param {string} topic
+   * @param {Array<SeekEntry>} partitions
+   * @return {Promise}
+   *
+   * @typedef {Object} SeekEntry
+   * @property {number} partition
+   * @property {string} offset
+   */
   const setOffsets = async ({ groupId, topic, partitions }) => {
     if (!groupId) {
       throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
