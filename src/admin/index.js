@@ -105,7 +105,6 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
 
     const consumer = createConsumer({ logger: rootLogger, cluster, groupId })
 
-    await consumer.connect()
     await consumer.subscribe({ topic, fromBeginning: true })
     const description = await consumer.describeGroup()
 
@@ -118,7 +117,7 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     return new Promise((resolve, reject) => {
       consumer.on(consumer.events.FETCH, async () =>
         consumer
-          .disconnect()
+          .stop()
           .then(resolve)
           .catch(reject)
       )
