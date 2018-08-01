@@ -46,6 +46,9 @@ KafkaJS is battle-tested and ready for production.
   - [Compression](#consuming-messages-compression)
 - [Admin](#admin)
   - [Create Topics](#admin-create-topics)
+  - [Fetch consumer group offsets](#admin-fetch-offsets)
+  - [Reset consumer group offsets](#admin-reset-offsets)
+  - [Set consumer group offsets](#admin-set-offsets)
 - [Instrumentation](#instrumentation)
 - [Custom logging](#custom-logging)
 - [Retry (detailed)](#configuration-default-retry-detailed)
@@ -760,6 +763,64 @@ await admin.createTopics({
 | validateOnly   | If this is `true`, the request will be validated, but the topic won't be created.                     | false   |
 | timeout        | The time in ms to wait for a topic to be completely created on the controller node                    | 5000    |
 | waitForLeaders | If this is `true` it will wait until metadata for the new topics doesn't throw `LEADER_NOT_AVAILABLE` | true    |
+
+### <a name="admin-fetch-offsets"></a> Fetch consumer group offsets
+
+`fetchOffsets` returns the consumer group offset for a topic.
+
+```javascript
+await admin.fetchOffsets({ groupId, topic })
+// [
+//   { partition: 0, offset: '31004' },
+//   { partition: 1, offset: '54312' },
+//   { partition: 2, offset: '32103' },
+//   { partition: 3, offset: '28' },
+// ]
+```
+
+### <a name="admin-reset-offsets"></a> Reset consumer group offsets
+
+`resetOffsets` resets the consumer group offset to the earliest or latest offset (latest by default).
+The consumer group must have no running instances when performing the reset. Otherwise, the command will be rejected.
+
+```javascript
+await admin.resetOffsets({ groupId, topic }) // latest by default
+// await admin.resetOffsets({ groupId, topic, earliest: true })
+```
+
+### <a name="admin-set-offsets"></a> Set consumer group offsets
+
+`setOffsets` allows you to set the consumer group offset to any value offset.
+
+```javascript
+await admin.setOffsets({
+  groupId: <String>,
+  topic: <String>,
+  partitions: <SeekEntry[]>,
+})
+```
+
+`SeekEntry` structure:
+
+```javascript
+{
+  partition: <Number>,
+  offset: <String>,
+}
+```
+
+Example:
+
+```javascript
+await admin.setOffsets({
+  groupId: 'my-consumer-group',
+  topic: 'custom-topic',
+  partitions: [
+    { partition: 0, offset: '35' },
+    { partition: 3, offset: '19' },
+  ]
+})
+```
 
 ## <a name="instrumentation"></a> Instrumentation
 
