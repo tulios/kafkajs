@@ -133,13 +133,4 @@ describe('Admin', () => {
       expect(broker.metadata).toHaveBeenCalledWith([topicName, topic2, topic3])
     })
   })
-
-  it('gives access to its logger', () => {
-    expect(
-      createAdmin({
-        cluster: createCluster(),
-        logger: newLogger(),
-      }).logger()
-    ).toMatchSnapshot()
-  })
 })
