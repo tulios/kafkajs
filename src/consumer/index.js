@@ -6,6 +6,7 @@ const events = require('./instrumentationEvents')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const { KafkaJSNonRetriableError } = require('../errors')
 const { roundRobin } = require('./assigners')
+const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
 
 const { keys, values } = Object
 
@@ -13,6 +14,11 @@ const eventNames = values(events)
 const eventKeys = keys(events)
   .map(key => `consumer.events.${key}`)
   .join(', ')
+
+const specialOffsets = [
+  Long.fromValue(EARLIEST_OFFSET).toString(),
+  Long.fromValue(LATEST_OFFSET).toString(),
+]
 
 module.exports = ({
   cluster,
@@ -88,13 +94,25 @@ module.exports = ({
    */
   const disconnect = async () => {
     try {
-      if (runner) {
-        await runner.stop()
-        logger.debug('consumer has stopped, disconnecting', { groupId })
-      }
+      await stop()
+      logger.debug('consumer has stopped, disconnecting', { groupId })
       await cluster.disconnect()
     } catch (e) {}
-    logger.info('Stopped', { groupId })
+  }
+
+  /**
+   * @return {Promise}
+   */
+  const stop = async () => {
+    try {
+      if (runner) {
+        await runner.stop()
+        runner = null
+        consumerGroup = null
+      }
+
+      logger.info('Stopped', { groupId })
+    } catch (e) {}
   }
 
   /**
@@ -200,25 +218,31 @@ module.exports = ({
     if (!topic) {
       throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
     }
+
     if (isNaN(partition)) {
       throw new KafkaJSNonRetriableError(
         `Invalid partition, expected a number received ${partition}`
       )
     }
+
+    let seekOffset
     try {
-      if (Long.fromValue(offset).lessThan(0)) {
-        throw new KafkaJSNonRetriableError('Offset must not be a negative number')
-      }
+      seekOffset = Long.fromValue(offset)
     } catch (_) {
       throw new KafkaJSNonRetriableError(`Invalid offset, expected a long received ${offset}`)
     }
+
+    if (seekOffset.lessThan(0) && !specialOffsets.includes(seekOffset.toString())) {
+      throw new KafkaJSNonRetriableError('Offset must not be a negative number')
+    }
+
     if (!consumerGroup) {
       throw new KafkaJSNonRetriableError(
         'Consumer group was not initialized, consumer#run must be called first'
       )
     }
 
-    consumerGroup.seek({ topic, partition, offset })
+    consumerGroup.seek({ topic, partition, offset: seekOffset.toString() })
   }
 
   /**
@@ -308,6 +332,7 @@ module.exports = ({
     connect,
     disconnect,
     subscribe,
+    stop,
     run,
     seek,
     describeGroup,

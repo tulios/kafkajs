@@ -82,4 +82,10 @@ describe('Loggers', () => {
       },
     })
   })
+
+  it('accepts a custom logLevel for the namespaced logger', () => {
+    const newLogger = logger.namespace('Custom', LEVELS.NOTHING)
+    newLogger.debug('<test custom logLevel for namespaced logger>')
+    expect(myLogger).not.toHaveBeenCalled()
+  })
 })

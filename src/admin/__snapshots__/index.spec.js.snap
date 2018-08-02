@@ -5,6 +5,7 @@ Object {
   "debug": [Function],
   "error": [Function],
   "info": [Function],
+  "namespace": [Function],
   "warn": [Function],
 }
 `;

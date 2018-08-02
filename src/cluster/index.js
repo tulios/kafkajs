@@ -2,6 +2,7 @@ const BrokerPool = require('./brokerPool')
 const createRetry = require('../retry')
 const connectionBuilder = require('./connectionBuilder')
 const flatten = require('../utils/flatten')
+const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
 const {
   KafkaJSError,
   KafkaJSBrokerNotFound,
@@ -11,9 +12,6 @@ const {
 } = require('../errors')
 
 const { keys } = Object
-
-const EARLIEST_OFFSET = -2
-const LATEST_OFFSET = -1
 
 const mergeTopics = (obj, { topic, partitions }) => ({
   ...obj,

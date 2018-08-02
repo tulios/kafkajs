@@ -1,5 +1,7 @@
 const createRetry = require('../retry')
 const waitFor = require('../utils/waitFor')
+const createConsumer = require('../consumer')
+const { LEVELS } = require('../loggers')
 const { KafkaJSNonRetriableError } = require('../errors')
 
 const retryOnLeaderNotAvailable = (fn, opts = {}) => {
@@ -15,6 +17,17 @@ const retryOnLeaderNotAvailable = (fn, opts = {}) => {
   }
 
   return waitFor(callback, opts)
+}
+
+const isConsumerGroupRunning = description => ['Empty', 'Dead'].includes(description.state)
+const findTopicPartitions = async (cluster, topic) => {
+  await cluster.addTargetTopic(topic)
+  await cluster.refreshMetadataIfNecessary()
+
+  return cluster
+    .findTopicPartitionMetadata(topic)
+    .map(({ partitionId }) => partitionId)
+    .sort()
 }
 
 module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
@@ -88,6 +101,121 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
   }
 
   /**
+   * @param {string} groupId
+   * @param {string} topic
+   * @return {Promise}
+   */
+  const fetchOffsets = async ({ groupId, topic }) => {
+    if (!groupId) {
+      throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
+    }
+
+    if (!topic) {
+      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    }
+
+    const partitions = await findTopicPartitions(cluster, topic)
+    const coordinator = await cluster.findGroupCoordinator({ groupId })
+    const partitionsToFetch = partitions.map(partition => ({ partition }))
+
+    const { responses } = await coordinator.offsetFetch({
+      groupId,
+      topics: [{ topic, partitions: partitionsToFetch }],
+    })
+
+    return responses
+      .filter(response => response.topic === topic)
+      .map(({ partitions }) => partitions.map(({ partition, offset }) => ({ partition, offset })))
+      .pop()
+  }
+
+  /**
+   * @param {string} groupId
+   * @param {string} topic
+   * @param {boolean} [earliest=false]
+   * @return {Promise}
+   */
+  const resetOffsets = async ({ groupId, topic, earliest = false }) => {
+    if (!groupId) {
+      throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
+    }
+
+    if (!topic) {
+      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    }
+
+    const partitions = await findTopicPartitions(cluster, topic)
+    const partitionsToSeek = partitions.map(partition => ({
+      partition,
+      offset: cluster.defaultOffset({ fromBeginning: earliest }),
+    }))
+
+    return setOffsets({ groupId, topic, partitions: partitionsToSeek })
+  }
+
+  /**
+   * @param {string} groupId
+   * @param {string} topic
+   * @param {Array<SeekEntry>} partitions
+   * @return {Promise}
+   *
+   * @typedef {Object} SeekEntry
+   * @property {number} partition
+   * @property {string} offset
+   */
+  const setOffsets = async ({ groupId, topic, partitions }) => {
+    if (!groupId) {
+      throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
+    }
+
+    if (!topic) {
+      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    }
+
+    if (!partitions || partitions.length === 0) {
+      throw new KafkaJSNonRetriableError(`Invalid partitions`)
+    }
+
+    const consumer = createConsumer({
+      logger: rootLogger.namespace('Admin', LEVELS.NOTHING),
+      cluster,
+      groupId,
+    })
+
+    await consumer.subscribe({ topic, fromBeginning: true })
+    const description = await consumer.describeGroup()
+
+    if (!isConsumerGroupRunning(description)) {
+      throw new KafkaJSNonRetriableError(
+        `The consumer group must have no running instances, current state: ${description.state}`
+      )
+    }
+
+    return new Promise((resolve, reject) => {
+      consumer.on(consumer.events.FETCH, async () =>
+        consumer
+          .stop()
+          .then(resolve)
+          .catch(reject)
+      )
+
+      consumer
+        .run({
+          eachBatchAutoResolve: false,
+          eachBatch: async () => true,
+        })
+        .catch(reject)
+
+      // This consumer doesn't need to consume any data
+      consumer.pause([{ topic }])
+
+      for (let seekData of partitions) {
+        consumer.seek({ topic, ...seekData })
+      }
+    })
+  }
+
+  /**
    * @return {Object} logger
    */
   const getLogger = () => logger
@@ -96,6 +224,9 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     connect,
     disconnect,
     createTopics,
+    fetchOffsets,
+    setOffsets,
+    resetOffsets,
     logger: getLogger,
   }
 }
