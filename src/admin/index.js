@@ -1,6 +1,7 @@
 const createRetry = require('../retry')
 const waitFor = require('../utils/waitFor')
 const createConsumer = require('../consumer')
+const { LEVELS } = require('../loggers')
 const { KafkaJSNonRetriableError } = require('../errors')
 
 const retryOnLeaderNotAvailable = (fn, opts = {}) => {
@@ -175,7 +176,11 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
       throw new KafkaJSNonRetriableError(`Invalid partitions`)
     }
 
-    const consumer = createConsumer({ logger: rootLogger, cluster, groupId })
+    const consumer = createConsumer({
+      logger: rootLogger.namespace('Admin', LEVELS.NOTHING),
+      cluster,
+      groupId,
+    })
 
     await consumer.subscribe({ topic, fromBeginning: true })
     const description = await consumer.describeGroup()
