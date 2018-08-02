@@ -28,21 +28,33 @@ const createLevel = (label, level, currentLevel, namespace, logFunction) => (
   })
 }
 
-const createLogger = ({ level = LEVELS.INFO, logCreator = null } = {}) => {
+const evaluateLogLevel = logLevel => {
   const envLogLevel = (process.env.KAFKAJS_LOG_LEVEL || '').toUpperCase()
-  const logLevel = LEVELS[envLogLevel] || level
+  return LEVELS[envLogLevel] == null ? logLevel : LEVELS[envLogLevel]
+}
+
+const createLogger = ({ level = LEVELS.INFO, logCreator = null } = {}) => {
+  const logLevel = evaluateLogLevel(level)
   const logFunction = logCreator(logLevel)
 
-  const createLogFunctions = namespace => ({
-    info: createLevel('INFO', LEVELS.INFO, logLevel, namespace, logFunction),
-    error: createLevel('ERROR', LEVELS.ERROR, logLevel, namespace, logFunction),
-    warn: createLevel('WARN', LEVELS.WARN, logLevel, namespace, logFunction),
-    debug: createLevel('DEBUG', LEVELS.DEBUG, logLevel, namespace, logFunction),
-  })
+  const createNamespace = (namespace, logLevel = null) => {
+    const namespaceLogLevel = evaluateLogLevel(logLevel)
+    return createLogFunctions(namespace, namespaceLogLevel)
+  }
 
-  return assign(createLogFunctions(), {
-    namespace: namespace => createLogFunctions(namespace),
-  })
+  const createLogFunctions = (namespace, namespaceLogLevel = null) => {
+    const currentLogLevel = namespaceLogLevel == null ? logLevel : namespaceLogLevel
+    const logger = {
+      info: createLevel('INFO', LEVELS.INFO, currentLogLevel, namespace, logFunction),
+      error: createLevel('ERROR', LEVELS.ERROR, currentLogLevel, namespace, logFunction),
+      warn: createLevel('WARN', LEVELS.WARN, currentLogLevel, namespace, logFunction),
+      debug: createLevel('DEBUG', LEVELS.DEBUG, currentLogLevel, namespace, logFunction),
+    }
+
+    return assign(logger, { namespace: createNamespace })
+  }
+
+  return createLogFunctions()
 }
 
 module.exports = {
