@@ -1,0 +1,10 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Admin gives access to its logger 1`] = `
+Object {
+  "debug": [Function],
+  "error": [Function],
+  "info": [Function],
+  "warn": [Function],
+}
+`;
