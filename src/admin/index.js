@@ -87,9 +87,15 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     })
   }
 
+  /**
+   * @return {Object} logger
+   */
+  const getLogger = () => logger
+
   return {
     connect,
     disconnect,
     createTopics,
+    logger: getLogger,
   }
 }
