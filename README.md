@@ -944,15 +944,20 @@ const kafka = new Kafka({
 })
 ```
 
-To get access to the namespaced logger of a consumer or producer after instantiation, you can use the `logger` method:
+To get access to the namespaced logger of a consumer, producer, admin or root Kafka client after instantiation, you can use the `logger` method:
 
 ```javascript
+const client = new Kafka( ... )
+client.logger().info( ... )
+
 const consumer = kafka.consumer( ... )
-consumer.logger().info('Hello from the consumer')
+consumer.logger().info( ... )
 
 const producer = kafka.producer( ... )
-producer.logger().info('Hello from the producer')
+producer.logger().info( ... )
 
+const admin = kafka.admin( ... )
+admin.logger().info( ... )
 ```
 
 ## <a name="configuration-default-retry-detailed"></a> Retry (detailed)

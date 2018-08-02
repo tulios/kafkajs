@@ -94,4 +94,11 @@ module.exports = class Client {
       cluster,
     })
   }
+
+  /**
+   * @public
+   */
+  logger() {
+    return this.logger
+  }
 }

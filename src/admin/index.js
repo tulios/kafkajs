@@ -210,6 +210,11 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     })
   }
 
+  /**
+   * @return {Object} logger
+   */
+  const getLogger = () => logger
+
   return {
     connect,
     disconnect,
@@ -217,5 +222,6 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     fetchOffsets,
     setOffsets,
     resetOffsets,
+    logger: getLogger,
   }
 }
