@@ -59,21 +59,9 @@ module.exports = async decoder => {
   const codec = lookupCodecByRecordBatchAttributes(attributes)
 
   const recordsSize = Buffer.byteLength(decoder.buffer)
-  let recordsDecoder = decoder.slice(recordsSize)
-  if (codec) {
-    // TODO: support compression, something like:
-    // const decompressedBuffer = await codec.decompress(recordsDecoder.buffer)
-    // recordsDecoder = new Decoder(decompressedBuffer)
-  }
-
-  const records = recordsDecoder.readArray(decoder => {
-    const recordBuffer = decoder.readVarIntBytes()
-    return RecordDecoder(new Decoder(recordBuffer), {
-      firstOffset,
-      firstTimestamp,
-      magicByte,
-    })
-  })
+  const recordsDecoder = decoder.slice(recordsSize)
+  const recordContext = { firstOffset, firstTimestamp, magicByte }
+  const records = await decodeRecords(codec, recordsDecoder, recordContext)
 
   return {
     firstOffset,
@@ -88,4 +76,32 @@ module.exports = async decoder => {
     maxTimestamp,
     records,
   }
+}
+
+const decodeRecords = async (codec, recordsDecoder, recordContext) => {
+  if (!codec) {
+    return recordsDecoder.readArray(decoder => decodeRecord(decoder, recordContext))
+  }
+
+  const length = recordsDecoder.readInt32()
+
+  if (length === -1) {
+    return []
+  }
+
+  const compressedRecordsBuffer = recordsDecoder.readAll()
+  const decompressedRecordBuffer = await codec.decompress(compressedRecordsBuffer)
+  const decompressedRecordDecoder = new Decoder(decompressedRecordBuffer)
+  const records = []
+
+  for (let i = 0; i < length; i++) {
+    records.push(decodeRecord(decompressedRecordDecoder, recordContext))
+  }
+
+  return records
+}
+
+const decodeRecord = (decoder, recordContext) => {
+  const recordBuffer = decoder.readVarIntBytes()
+  return RecordDecoder(new Decoder(recordBuffer), recordContext)
 }

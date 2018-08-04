@@ -398,5 +398,78 @@ describe('Broker > Fetch', () => {
       fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
     })
+
+    testIfKafka011('request with GZIP', async () => {
+      const targetPartition = 0
+      const messages = createMessages()
+      let topicData = createTopicData(targetPartition, messages)
+      await broker.produce({ topicData, compression: Compression.GZIP })
+
+      const topics = [
+        {
+          topic: topicName,
+          partitions: [
+            {
+              partition: targetPartition,
+              fetchOffset: 0,
+              maxBytes: maxBytesPerPartition,
+            },
+          ],
+        },
+      ]
+
+      let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
+      expect(fetchResponse).toEqual({
+        throttleTime: 0,
+        responses: [
+          {
+            topicName,
+            partitions: [
+              {
+                abortedTransactions: [],
+                errorCode: 0,
+                highWatermark: '3',
+                lastStableOffset: '3',
+                partition: 0,
+                messages: [
+                  {
+                    magicByte: 2,
+                    attributes: 0,
+                    offset: '0',
+                    timestamp: '1509827900073',
+                    headers: {},
+                    key: Buffer.from(messages[0].key),
+                    value: Buffer.from(messages[0].value),
+                  },
+                  {
+                    magicByte: 2,
+                    attributes: 0,
+                    offset: '1',
+                    timestamp: '1509827900073',
+                    headers: {},
+                    key: Buffer.from(messages[1].key),
+                    value: Buffer.from(messages[1].value),
+                  },
+                  {
+                    magicByte: 2,
+                    attributes: 0,
+                    offset: '2',
+                    timestamp: '1509827900073',
+                    headers: {},
+                    key: Buffer.from(messages[2].key),
+                    value: Buffer.from(messages[2].value),
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      })
+
+      topicData = createTopicData(targetPartition, createMessages(1))
+      await broker.produce({ topicData, compression: Compression.GZIP })
+      fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
+      expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
+    })
   })
 })
