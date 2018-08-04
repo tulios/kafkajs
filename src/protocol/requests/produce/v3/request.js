@@ -75,7 +75,7 @@ const partitionsEncoder = compression => async ({ partition, messages }) => {
     })
   )
 
-  const recordBatch = RecordBatch({
+  const recordBatch = await RecordBatch({
     compression,
     records,
     firstTimestamp,
