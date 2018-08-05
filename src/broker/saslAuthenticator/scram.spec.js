@@ -1,4 +1,5 @@
 const Decoder = require('../../protocol/decoder')
+const { newLogger } = require('testHelpers')
 const SCRAM256 = require('./scram256')
 
 describe('Broker > SASL Authenticator > SCRAM', () => {
@@ -12,6 +13,16 @@ describe('Broker > SASL Authenticator > SCRAM', () => {
 
     logger = { debug: jest.fn() }
     logger.namespace = () => logger
+  })
+
+  it('throws KafkaJSSASLAuthenticationError for invalid username', async () => {
+    const scram = new SCRAM256({ sasl: {} }, newLogger())
+    await expect(scram.authenticate()).rejects.toThrow('Invalid username or password')
+  })
+
+  it('throws KafkaJSSASLAuthenticationError for invalid password', async () => {
+    const scram = new SCRAM256({ sasl: { username: '<username>' } }, newLogger())
+    await expect(scram.authenticate()).rejects.toThrow('Invalid username or password')
   })
 
   describe('SCRAM 256', () => {
