@@ -52,4 +52,56 @@ describe('Protocol > Requests > Fetch > v4', () => {
 
     await expect(parse(data)).resolves.toBeTruthy()
   })
+
+  test('response with GZIP', async () => {
+    const data = await decode(Buffer.from(require('../fixtures/v4_response_gzip.json')))
+    expect(data).toEqual({
+      throttleTime: 0,
+      responses: [
+        {
+          topicName: 'test-topic-43c95a3dc68dbf78a359',
+          partitions: [
+            {
+              partition: 0,
+              errorCode: 0,
+              highWatermark: '6',
+              lastStableOffset: '6',
+              abortedTransactions: [],
+              messages: [
+                {
+                  magicByte: 2,
+                  attributes: 0,
+                  timestamp: '1509827900073',
+                  offset: '0',
+                  headers: {},
+                  key: Buffer.from('key-0'),
+                  value: Buffer.from('some-value-0'),
+                },
+                {
+                  magicByte: 2,
+                  attributes: 0,
+                  timestamp: '1509827900073',
+                  offset: '1',
+                  headers: {},
+                  key: Buffer.from('key-1'),
+                  value: Buffer.from('some-value-1'),
+                },
+                {
+                  magicByte: 2,
+                  attributes: 0,
+                  timestamp: '1509827900073',
+                  offset: '2',
+                  headers: {},
+                  key: Buffer.from('key-2'),
+                  value: Buffer.from('some-value-2'),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+
+    await expect(parse(data)).resolves.toBeTruthy()
+  })
 })

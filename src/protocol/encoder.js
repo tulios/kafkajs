@@ -181,6 +181,15 @@ module.exports = class Encoder {
     return this
   }
 
+  writeBuffer(value) {
+    if (value instanceof Buffer !== true) {
+      throw new Error('value should be an instance of Buffer')
+    }
+
+    this.buffer = Buffer.concat([this.buffer, value])
+    return this
+  }
+
   writeArray(array, type) {
     this.writeInt32(array.length)
     array.forEach(value => {
