@@ -125,8 +125,12 @@ class SCRAM {
 
   async authenticate() {
     const { PREFIX } = this
-    const { host, port } = this.connection
+    const { host, port, sasl } = this.connection
     const broker = `${host}:${port}`
+
+    if (sasl.username == null || sasl.password == null) {
+      throw new KafkaJSSASLAuthenticationError('SASL Plain: Invalid username or password')
+    }
 
     try {
       this.logger.debug('Exchanging first client message', { broker })
