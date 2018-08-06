@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2018-08-06
+### Fixed
+  - Skip unsubscribed topic assignment #86
+  - Refresh metadata when producing to a topic without metadata #87
+  - Discard messages with a lower offset than requested #100
+
+### Added
+  - Add consumer auto commit policies #89
+  - Notify user when setting heartbeat interval to same or higher than session timeout #91
+  - Constantly refresh metatada based on `metadataMaxAge` #94
+  - New instrumentation events #95
+  - Expose loggers #97 #102
+  - Add offset management operations to the admin client #101
+  - Support to record batch compression #103
+  - Handle missing username/password during authentication #104
+
 ## [1.2.0] - 2018-07-02
 ### Fixed
   - Make sure authentication handshake remains consistent event when `broker.connect` is called concurrently #81
