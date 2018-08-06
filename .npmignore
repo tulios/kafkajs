@@ -6,6 +6,7 @@ yarn-error.log
 **/*.spec.js
 !src/retry/defaults.test.js
 __tests__
+__snapshots__
 fixtures
 testHelpers/
 scripts/
@@ -20,3 +21,4 @@ jest.config.js
 *.png
 *.svg
 logo
+*.tgz
