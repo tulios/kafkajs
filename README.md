@@ -39,7 +39,7 @@ KafkaJS is battle-tested and ready for production.
   - [eachBatch](#consuming-messages-each-batch)
   - [autoCommit](#consuming-messages-auto-commit)
   - [Options](#consuming-messages-options)
-  - [Pause, Resume, & Seek](#consuming-messages-pause-resume)
+  - [Pause & Resume](#consuming-messages-pause-resume)
   - [Seek](#consuming-messages-seek)
   - [Custom partition assigner](#consuming-messages-custom-partition-assigner)
   - [Describe group](#consuming-messages-describe-group)
@@ -717,7 +717,7 @@ KafkaJS only support GZIP natively, but [other codecs can be supported](#produci
 
 ## <a name="admin"></a> Admin
 
-The admin client will host all the cluster operations, such as: `createTopics`, `createPartitions`, etc. Currently, only `createTopics` is available.
+The admin client will host all the cluster operations, such as: `createTopics`, `createPartitions`, etc.
 
 ```javascript
 const kafka = new Kafka(...)
@@ -790,7 +790,7 @@ await admin.resetOffsets({ groupId, topic }) // latest by default
 
 ### <a name="admin-set-offsets"></a> Set consumer group offsets
 
-`setOffsets` allows you to set the consumer group offset to any value offset.
+`setOffsets` allows you to set the consumer group offset to any value.
 
 ```javascript
 await admin.setOffsets({
