@@ -21,7 +21,7 @@ install:
   - test $MD_ONLY && echo "Skipped!" || yarn install
 script:
   - env
-  - test $MD_ONLY && echo "Skipped!" || docker-compose pull
+  - test $MD_ONLY && echo "Skipped!" || docker-compose -f docker-compose.0_11.yml pull
   - test $MD_ONLY && echo "Skipped!" || COMPOSE_FILE=docker-compose.0_11.yml KAFKA_VERSION=0.11 yarn test
 deploy:
   provider: npm
