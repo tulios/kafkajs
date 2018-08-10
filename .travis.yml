@@ -9,6 +9,8 @@ branches:
     - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
 env:
   - DOCKER_COMPOSE_VERSION=1.16.1
+  - COMPOSE_FILE=docker-compose.0_11.yml
+  - KAFKA_VERSION=0.11
 before_install:
   - bash ./scripts/isMarkdownOnly.sh && MD_ONLY=true && echo "Only .md files have changed!" || test true
   - test $MD_ONLY && echo "Skipped!" || sudo rm /usr/local/bin/docker-compose
@@ -24,27 +26,34 @@ jobs:
     - stage: test
       script:
         - env
-        - test $MD_ONLY && echo "Skipped!" || docker-compose -f docker-compose.0_11.yml pull
-        - test $MD_ONLY && echo "Skipped!" || COMPOSE_FILE=docker-compose.0_11.yml KAFKA_VERSION=0.11 yarn test:group:broker:ci
+        - test $MD_ONLY && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        - test $MD_ONLY && echo "Skipped!" || yarn test:group:broker:ci
+    - stage: test
       script:
         - env
-        - test $MD_ONLY && echo "Skipped!" || docker-compose -f docker-compose.0_11.yml pull
-        - test $MD_ONLY && echo "Skipped!" || COMPOSE_FILE=docker-compose.0_11.yml KAFKA_VERSION=0.11 yarn test:group:admin:ci
+        - test $MD_ONLY && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        - test $MD_ONLY && echo "Skipped!" || yarn test:group:admin:ci
+    - stage: test
       script:
         - env
-        - test $MD_ONLY && echo "Skipped!" || docker-compose -f docker-compose.0_11.yml pull
-        - test $MD_ONLY && echo "Skipped!" || COMPOSE_FILE=docker-compose.0_11.yml KAFKA_VERSION=0.11 yarn test:group:producer:ci
+        - test $MD_ONLY && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        - test $MD_ONLY && echo "Skipped!" || yarn test:group:producer:ci
+    - stage: test
       script:
         - env
-        - test $MD_ONLY && echo "Skipped!" || docker-compose -f docker-compose.0_11.yml pull
-        - test $MD_ONLY && echo "Skipped!" || COMPOSE_FILE=docker-compose.0_11.yml KAFKA_VERSION=0.11 yarn test:group:consumer:ci
+        - test $MD_ONLY && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        - test $MD_ONLY && echo "Skipped!" || yarn test:group:consumer:ci
+    - stage: test
       script:
         - env
-        - test $MD_ONLY && echo "Skipped!" || docker-compose -f docker-compose.0_11.yml pull
-        - test $MD_ONLY && echo "Skipped!" || COMPOSE_FILE=docker-compose.0_11.yml KAFKA_VERSION=0.11 yarn test:group:others:ci
+        - test $MD_ONLY && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        - test $MD_ONLY && echo "Skipped!" || yarn test:group:others:ci
     - stage: NPM release
+      sudo: false
       node_js: "8"
       script: skip
+      before_install: skip
+      install: skip
       deploy:
         provider: npm
         email: ornelas.tulio@gmail.com
