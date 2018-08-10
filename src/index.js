@@ -5,8 +5,10 @@ const createProducer = require('./producer')
 const createConsumer = require('./consumer')
 const createAdmin = require('./admin')
 
-const { assign } = Object
-const privateCreateCluster = Symbol('private:Kafka:createCluster')
+const PRIVATE = {
+  CREATE_CLUSTER: Symbol('private:Kafka:createCluster'),
+  LOGGER: Symbol('private:Kafka:logger'),
+}
 
 module.exports = class Client {
   constructor({
@@ -21,10 +23,10 @@ module.exports = class Client {
     logCreator = LoggerConsole,
     allowExperimentalV011 = false,
   }) {
-    this.logger = createLogger({ level: logLevel, logCreator })
-    this[privateCreateCluster] = (metadataMaxAge = 300000) =>
+    this[PRIVATE.LOGGER] = createLogger({ level: logLevel, logCreator })
+    this[PRIVATE.CREATE_CLUSTER] = (metadataMaxAge = 300000) =>
       new Cluster({
-        logger: this.logger,
+        logger: this[PRIVATE.LOGGER],
         brokers,
         ssl,
         sasl,
@@ -41,10 +43,10 @@ module.exports = class Client {
    * @public
    */
   producer({ createPartitioner, retry, metadataMaxAge } = {}) {
-    const cluster = this[privateCreateCluster](metadataMaxAge)
+    const cluster = this[PRIVATE.CREATE_CLUSTER](metadataMaxAge)
     return createProducer({
-      retry: assign({}, cluster.retry, retry),
-      logger: this.logger,
+      retry: { ...cluster.retry, ...retry },
+      logger: this[PRIVATE.LOGGER],
       cluster,
       createPartitioner,
     })
@@ -67,10 +69,10 @@ module.exports = class Client {
       retry,
     } = {}
   ) {
-    const cluster = this[privateCreateCluster](metadataMaxAge)
+    const cluster = this[PRIVATE.CREATE_CLUSTER](metadataMaxAge)
     return createConsumer({
-      retry: assign({}, cluster.retry, retry),
-      logger: this.logger,
+      retry: { ...cluster.retry, retry },
+      logger: this[PRIVATE.LOGGER],
       cluster,
       groupId,
       partitionAssigners,
@@ -87,10 +89,10 @@ module.exports = class Client {
    * @public
    */
   admin({ retry } = {}) {
-    const cluster = this[privateCreateCluster]()
+    const cluster = this[PRIVATE.CREATE_CLUSTER]()
     return createAdmin({
-      retry: assign({}, cluster.retry, retry),
-      logger: this.logger,
+      retry: { ...cluster.retry, retry },
+      logger: this[PRIVATE.LOGGER],
       cluster,
     })
   }
@@ -99,6 +101,6 @@ module.exports = class Client {
    * @public
    */
   logger() {
-    return this.logger
+    return this[PRIVATE.LOGGER]
   }
 }
