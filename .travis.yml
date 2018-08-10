@@ -8,9 +8,10 @@ branches:
     - master
     - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
 env:
-  - DOCKER_COMPOSE_VERSION=1.16.1
-  - COMPOSE_FILE=docker-compose.0_11.yml
-  - KAFKA_VERSION=0.11
+  global:
+    - DOCKER_COMPOSE_VERSION=1.16.1
+    - COMPOSE_FILE=docker-compose.0_11.yml
+    - KAFKA_VERSION=0.11
 before_install:
   - bash ./scripts/isMarkdownOnly.sh && MD_ONLY=true && echo "Only .md files have changed!" || test true
   - test $MD_ONLY && echo "Skipped!" || sudo rm /usr/local/bin/docker-compose
