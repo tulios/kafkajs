@@ -129,7 +129,7 @@ new Kafka({
 
 ### <a name="configuration-default-retry"></a> Default Retry
 
-The `retry` option can be used to set the configuration of the retry mechanism, which is be used to retry connections and API calls to Kafka (when using producers or consumers).
+The `retry` option can be used to set the configuration of the retry mechanism, which is used to retry connections and API calls to Kafka (when using producers or consumers).
 
 The retry mechanism uses a randomization function that grows exponentially.
 [Detailed example](#configuration-default-retry-detailed)
