@@ -4,6 +4,7 @@
   "description": "A modern Apache Kafka client for node.js",
   "author": "Tulio Ornelas <ornelas.tulio@gmail.com>",
   "main": "index.js",
+  "typings": "kafkajs.d.ts",
   "license": "MIT",
   "keywords": [
     "kafka",
