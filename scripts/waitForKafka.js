@@ -63,7 +63,9 @@ waitForNode(kafka3ContainerId)
 
 console.log('\nAll nodes up:')
 console.log(
-  execa.shellSync(`HOST_IP=${process.env.HOST_IP} docker-compose ps`).stdout.toString('utf-8')
+  execa
+    .shellSync(`HOST_IP=${process.env.HOST_IP} docker-compose -f ${process.env.COMPOSE_FILE} ps`)
+    .stdout.toString('utf-8')
 )
 
 console.log('\nCreating default topics...')

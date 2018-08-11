@@ -8,7 +8,10 @@ branches:
     - master
     - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
 env:
-  - DOCKER_COMPOSE_VERSION=1.16.1
+  global:
+    - DOCKER_COMPOSE_VERSION=1.16.1
+    - COMPOSE_FILE=docker-compose.0_11.yml
+    - KAFKA_VERSION=0.11
 before_install:
   - bash ./scripts/isMarkdownOnly.sh && MD_ONLY=true && echo "Only .md files have changed!" || test true
   - test $MD_ONLY && echo "Skipped!" || sudo rm /usr/local/bin/docker-compose
@@ -19,15 +22,49 @@ before_install:
   - test $MD_ONLY && echo "Skipped!" || export PATH=$HOME/.yarn/bin:$PATH
 install:
   - test $MD_ONLY && echo "Skipped!" || yarn install
-script:
-  - env
-  - test $MD_ONLY && echo "Skipped!" || docker-compose -f docker-compose.0_11.yml pull
-  - test $MD_ONLY && echo "Skipped!" || COMPOSE_FILE=docker-compose.0_11.yml KAFKA_VERSION=0.11 yarn test
-deploy:
-  provider: npm
-  email: ornelas.tulio@gmail.com
-  api_key:
-    secure: jCFJrd4NaE65EziOKK8CpeINNTBRXP5chJ80FfFFsp5Er2fWpKqIiyOJTZk1OzlDhwmMRM9mwE7zcm4uL4a6pkPCOUvjRw1qdCB6YM68IzBzLx8u2romurv6OsbrPdcBdvacNFht4lw5slqhyxZTE7vZFP4t98fjHdRnPoW0w08OZUt8I3kPOpleGUAzWFO6zmIgNql1HgyOo6YWzRDGPu1Utm20mdSrzmGplbk5i2gKH/EBR2zjWoB9SRy7+7KL0qT44/8yJeyppiFAbv3PFqbJEUMJENTeP1SkPatcck78wAhGMb60WuWcd2mRGClkt3SDUFiL2egEdEo4Ot4YspOE9R3P++10c1dAWnDrmcrUMrxKibWzxoJoynl/p4FO3VyWf8ibePRUWwmrVgFuFlykalMXdVZZo1UoTIzl7pYx8tiwHCxqHPKPcFOQMJWIZCo5xyKUhjvWPS6bwOIsBRs4O4y6DUMFlwVXl7kmQwa3Z9h2Jkfa4lOksbMTuc8LLM0xAU/+vmApuZquNJLsAlweDzaI7pn+RuUREUXCDSUFn0K5CPni1uSUCKu1rNnTqsMPRbmXPlpr+1rhqZOPmavo6Zma9hjNxWCIO/OA9RoKSsvE6AhUALJbsz/1I25+6mgNIYz6r107tZe/8AbIatVquJ6hB4hNrHI+21HTpv8=
-  on:
-    tags: true
-    repo: tulios/kafkajs
+jobs:
+  include:
+    - stage: test
+      name: 'Broker'
+      script:
+        - env
+        - test $MD_ONLY && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        - test $MD_ONLY && echo "Skipped!" || yarn test:group:broker:ci
+    - stage: test
+      name: 'Admin'
+      script:
+        - env
+        - test $MD_ONLY && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        - test $MD_ONLY && echo "Skipped!" || yarn test:group:admin:ci
+    - stage: test
+      name: 'Producer'
+      script:
+        - env
+        - test $MD_ONLY && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        - test $MD_ONLY && echo "Skipped!" || yarn test:group:producer:ci
+    - stage: test
+      name: 'Consumer'
+      script:
+        - env
+        - test $MD_ONLY && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        - test $MD_ONLY && echo "Skipped!" || yarn test:group:consumer:ci
+    - stage: test
+      name: 'Others (protocol, cluster, network, etc)'
+      script:
+        - env
+        - test $MD_ONLY && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        - test $MD_ONLY && echo "Skipped!" || yarn test:group:others:ci
+    - stage: NPM release
+      sudo: false
+      node_js: "8"
+      script: skip
+      before_install: skip
+      install: skip
+      deploy:
+        provider: npm
+        email: ornelas.tulio@gmail.com
+        api_key:
+          secure: jCFJrd4NaE65EziOKK8CpeINNTBRXP5chJ80FfFFsp5Er2fWpKqIiyOJTZk1OzlDhwmMRM9mwE7zcm4uL4a6pkPCOUvjRw1qdCB6YM68IzBzLx8u2romurv6OsbrPdcBdvacNFht4lw5slqhyxZTE7vZFP4t98fjHdRnPoW0w08OZUt8I3kPOpleGUAzWFO6zmIgNql1HgyOo6YWzRDGPu1Utm20mdSrzmGplbk5i2gKH/EBR2zjWoB9SRy7+7KL0qT44/8yJeyppiFAbv3PFqbJEUMJENTeP1SkPatcck78wAhGMb60WuWcd2mRGClkt3SDUFiL2egEdEo4Ot4YspOE9R3P++10c1dAWnDrmcrUMrxKibWzxoJoynl/p4FO3VyWf8ibePRUWwmrVgFuFlykalMXdVZZo1UoTIzl7pYx8tiwHCxqHPKPcFOQMJWIZCo5xyKUhjvWPS6bwOIsBRs4O4y6DUMFlwVXl7kmQwa3Z9h2Jkfa4lOksbMTuc8LLM0xAU/+vmApuZquNJLsAlweDzaI7pn+RuUREUXCDSUFn0K5CPni1uSUCKu1rNnTqsMPRbmXPlpr+1rhqZOPmavo6Zma9hjNxWCIO/OA9RoKSsvE6AhUALJbsz/1I25+6mgNIYz6r107tZe/8AbIatVquJ6hB4hNrHI+21HTpv8=
+        on:
+          tags: true
+          repo: tulios/kafkajs
