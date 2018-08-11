@@ -46,8 +46,7 @@ describe('Consumer > Instrumentation Events', () => {
 
   test('on throws an error when provided with an invalid event name', () => {
     expect(() => consumer.on('NON_EXISTENT_EVENT', () => {})).toThrow(
-      KafkaJSNonRetriableError,
-      /Event name should be one of/
+      /Event name should be one of consumer.events./
     )
   })
 
@@ -231,5 +230,23 @@ describe('Consumer > Instrumentation Events', () => {
         duration: expect.any(Number),
       },
     })
+  })
+
+  it('emits connection events', async () => {
+    const connectListener = jest.fn().mockName('connect')
+    const disconnectListener = jest.fn().mockName('disconnect')
+    const stopListener = jest.fn().mockName('stop')
+    consumer.on(consumer.events.CONNECT, connectListener)
+    consumer.on(consumer.events.DISCONNECT, disconnectListener)
+    consumer.on(consumer.events.STOP, stopListener)
+
+    await consumer.connect()
+    expect(connectListener).toHaveBeenCalled()
+
+    await consumer.run()
+
+    await consumer.disconnect()
+    expect(stopListener).toHaveBeenCalled()
+    expect(disconnectListener).toHaveBeenCalled()
   })
 })

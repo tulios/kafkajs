@@ -1,8 +1,17 @@
 const createRetry = require('../retry')
 const waitFor = require('../utils/waitFor')
 const createConsumer = require('../consumer')
+const InstrumentationEventEmitter = require('../instrumentation/emitter')
+const events = require('./instrumentationEvents')
+const { CONNECT, DISCONNECT } = require('./instrumentationEvents')
 const { LEVELS } = require('../loggers')
 const { KafkaJSNonRetriableError } = require('../errors')
+
+const { values, keys } = Object
+const eventNames = values(events)
+const eventKeys = keys(events)
+  .map(key => `admin.events.${key}`)
+  .join(', ')
 
 const retryOnLeaderNotAvailable = (fn, opts = {}) => {
   const callback = async () => {
@@ -32,16 +41,23 @@ const findTopicPartitions = async (cluster, topic) => {
 
 module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
   const logger = rootLogger.namespace('Admin')
+  const instrumentationEmitter = new InstrumentationEventEmitter()
 
   /**
    * @returns {Promise}
    */
-  const connect = async () => await cluster.connect()
+  const connect = async () => {
+    await cluster.connect()
+    instrumentationEmitter.emit(CONNECT)
+  }
 
   /**
    * @return {Promise}
    */
-  const disconnect = async () => await cluster.disconnect()
+  const disconnect = async () => {
+    await cluster.disconnect()
+    instrumentationEmitter.emit(DISCONNECT)
+  }
 
   /**
    * @param {array} topics
@@ -216,6 +232,26 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
   }
 
   /**
+   * @param {string} eventName
+   * @param {Function} listener
+   * @return {Function}
+   */
+  const on = (eventName, listener) => {
+    if (!eventNames.includes(eventName)) {
+      throw new KafkaJSNonRetriableError(`Event name should be one of ${eventKeys}`)
+    }
+
+    return instrumentationEmitter.addListener(eventName, event => {
+      Promise.resolve(listener(event)).catch(e => {
+        logger.error(`Failed to execute listener: ${e.message}`, {
+          eventName,
+          stack: e.stack,
+        })
+      })
+    })
+  }
+
+  /**
    * @return {Object} logger
    */
   const getLogger = () => logger
@@ -224,7 +260,9 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     connect,
     disconnect,
     createTopics,
+    events,
     fetchOffsets,
+    on,
     setOffsets,
     resetOffsets,
     logger: getLogger,
