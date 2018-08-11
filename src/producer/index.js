@@ -9,7 +9,7 @@ const { KafkaJSNonRetriableError } = require('../errors')
 const { values, keys } = Object
 const eventNames = values(events)
 const eventKeys = keys(events)
-  .map(key => `consumer.events.${key}`)
+  .map(key => `producer.events.${key}`)
   .join(', ')
 
 module.exports = ({

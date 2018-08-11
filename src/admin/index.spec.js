@@ -36,7 +36,6 @@ describe('Admin', () => {
     })
 
     expect(() => admin.on('NON_EXISTENT_EVENT', () => {})).toThrow(
-      KafkaJSNonRetriableError,
       /Event name should be one of admin.events./
     )
   })

@@ -281,7 +281,6 @@ describe('Producer', () => {
     producer = createProducer({ cluster: createCluster(), logger: newLogger() })
 
     expect(() => producer.on('NON_EXISTENT_EVENT', () => {})).toThrow(
-      KafkaJSNonRetriableError,
       /Event name should be one of producer.events./
     )
   })
