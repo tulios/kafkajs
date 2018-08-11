@@ -1,4 +1,5 @@
 const createProducer = require('./index')
+const { KafkaJSNonRetriableError } = require('../errors')
 const {
   secureRandom,
   connectionOpts,
@@ -274,6 +275,15 @@ describe('Producer', () => {
     producer = createProducer({ cluster: createCluster(), logger: newLogger() })
 
     expect(producer.logger()).toMatchSnapshot()
+  })
+
+  test('on throws an error when provided with an invalid event name', () => {
+    producer = createProducer({ cluster: createCluster(), logger: newLogger() })
+
+    expect(() => producer.on('NON_EXISTENT_EVENT', () => {})).toThrow(
+      KafkaJSNonRetriableError,
+      /Event name should be one of producer.events./
+    )
   })
 
   test('emits connection events', async () => {

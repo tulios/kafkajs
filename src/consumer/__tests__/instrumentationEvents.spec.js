@@ -47,7 +47,7 @@ describe('Consumer > Instrumentation Events', () => {
   test('on throws an error when provided with an invalid event name', () => {
     expect(() => consumer.on('NON_EXISTENT_EVENT', () => {})).toThrow(
       KafkaJSNonRetriableError,
-      /Event name should be one of/
+      /Event name should be one of consumer.events./
     )
   })
 
