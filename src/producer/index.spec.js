@@ -275,4 +275,18 @@ describe('Producer', () => {
 
     expect(producer.logger()).toMatchSnapshot()
   })
+
+  test('emits connection events', async () => {
+    producer = createProducer({ cluster: createCluster(), logger: newLogger() })
+    const connectListener = jest.fn().mockName('connect')
+    const disconnectListener = jest.fn().mockName('disconnect')
+    producer.on(producer.events.CONNECT, connectListener)
+    producer.on(producer.events.DISCONNECT, disconnectListener)
+
+    await producer.connect()
+    expect(connectListener).toHaveBeenCalled()
+
+    await producer.disconnect()
+    expect(disconnectListener).toHaveBeenCalled()
+  })
 })
