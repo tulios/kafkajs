@@ -28,6 +28,18 @@ export enum ELogLevel {
     INFO = 4,
     DEBUG = 5,
 }
+export interface LoggerPayload {
+    namespace: string;
+    level: ELogLevel;
+    label: string;
+    log: {
+        timestamp: string;
+        logger: string;
+        message: string;
+    };
+}
+export type Logger = (payload: LoggerPayload) => void
+export type LogCreator = (logLevel: ELogLevel) => Logger
 export interface ConstructorOptions {
     clientId: string;
     brokers: string[];
@@ -36,7 +48,8 @@ export interface ConstructorOptions {
     ssl?: SSLOptions;
     sasl?: SASLOptions;
     retry?: RetryOptions;
-    logLevel?: ELogLevel
+    logLevel?: ELogLevel;
+    logCreator?: LogCreator;
 }
 
 /**
@@ -249,11 +262,8 @@ export namespace CompressionCodecs {
 }
 export namespace Kafka {
     function admin(...args: any[]): void;
-
     function consumer(...args: any[]): void;
-
     function logger(...args: any[]): void;
-
     function producer(...args: any[]): void;
 }
 export namespace PartitionAssigners {
