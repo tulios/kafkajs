@@ -23,7 +23,7 @@ const partition = decoder => ({
 
 const decode = async rawData => {
   const decoder = new Decoder(rawData)
-  const responses = decoder.readArray(decoder => ({
+  const topics = decoder.readArray(decoder => ({
     topicName: decoder.readString(),
     partitions: decoder.readArray(partition),
   }))
@@ -31,13 +31,13 @@ const decode = async rawData => {
   const throttleTime = decoder.readInt32()
 
   return {
-    responses,
+    topics,
     throttleTime,
   }
 }
 
 const parse = async data => {
-  const partitionsWithError = data.responses.map(response => {
+  const partitionsWithError = data.topics.map(response => {
     return response.partitions.filter(partition => failure(partition.errorCode))
   })
 

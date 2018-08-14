@@ -158,7 +158,7 @@ describe('Broker > Produce', () => {
 
       const response1 = await broker2.produce({ topicData: createTopicData() })
       expect(response1).toEqual({
-        responses: [
+        topics: [
           {
             topicName,
             partitions: [{ baseOffset: '0', errorCode: 0, logAppendTime: '-1', partition: 0 }],
@@ -169,7 +169,7 @@ describe('Broker > Produce', () => {
 
       const response2 = await broker2.produce({ topicData: createTopicData() })
       expect(response2).toEqual({
-        responses: [
+        topics: [
           {
             topicName,
             partitions: [{ baseOffset: '3', errorCode: 0, logAppendTime: '-1', partition: 0 }],
@@ -195,7 +195,7 @@ describe('Broker > Produce', () => {
 
       const response1 = await broker2.produce({ topicData: createTopicData(true) })
       expect(response1).toEqual({
-        responses: [
+        topics: [
           {
             topicName,
             partitions: [{ baseOffset: '0', errorCode: 0, logAppendTime: '-1', partition: 0 }],
@@ -206,7 +206,7 @@ describe('Broker > Produce', () => {
 
       const response2 = await broker2.produce({ topicData: createTopicData() })
       expect(response2).toEqual({
-        responses: [
+        topics: [
           {
             topicName,
             partitions: [{ baseOffset: '3', errorCode: 0, logAppendTime: '-1', partition: 0 }],
@@ -236,7 +236,7 @@ describe('Broker > Produce', () => {
       })
 
       expect(response1).toEqual({
-        responses: [
+        topics: [
           {
             topicName,
             partitions: [{ baseOffset: '0', errorCode: 0, logAppendTime: '-1', partition: 0 }],
@@ -251,7 +251,7 @@ describe('Broker > Produce', () => {
       })
 
       expect(response2).toEqual({
-        responses: [
+        topics: [
           {
             topicName,
             partitions: [{ baseOffset: '3', errorCode: 0, logAppendTime: '-1', partition: 0 }],
