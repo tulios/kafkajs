@@ -1,5 +1,4 @@
 const createProducer = require('./index')
-const { KafkaJSNonRetriableError } = require('../errors')
 const {
   secureRandom,
   connectionOpts,
@@ -11,6 +10,7 @@ const {
   sslBrokers,
   saslBrokers,
   newLogger,
+  testIfKafka011,
 } = require('testHelpers')
 
 const { KafkaJSSASLAuthenticationError } = require('../errors')
@@ -199,6 +199,95 @@ describe('Producer', () => {
         offset: '10',
         partition: 0,
         timestamp: '-1',
+      },
+    ])
+  })
+
+  testIfKafka011('produce messages for Kafka 0.11', async () => {
+    const cluster = createCluster(
+      Object.assign(connectionOpts(), {
+        allowExperimentalV011: true,
+        createPartitioner: createModPartitioner,
+      })
+    )
+
+    producer = createProducer({ cluster, logger: newLogger() })
+    await producer.connect()
+
+    const sendMessages = async () =>
+      await producer.send({
+        acks: 1,
+        topic: topicName,
+        messages: new Array(10).fill().map((_, i) => ({
+          key: `key-${i}`,
+          value: `value-${i}`,
+        })),
+      })
+
+    expect(await sendMessages()).toEqual([
+      {
+        topicName,
+        baseOffset: '0',
+        errorCode: 0,
+        logAppendTime: '-1',
+        partition: 0,
+      },
+    ])
+
+    expect(await sendMessages()).toEqual([
+      {
+        topicName,
+        baseOffset: '10',
+        errorCode: 0,
+        logAppendTime: '-1',
+        partition: 0,
+      },
+    ])
+  })
+
+  testIfKafka011('produce messages for Kafka 0.11 with headers', async () => {
+    const cluster = createCluster(
+      Object.assign(connectionOpts(), {
+        allowExperimentalV011: true,
+        createPartitioner: createModPartitioner,
+      })
+    )
+
+    producer = createProducer({ cluster, logger: newLogger() })
+    await producer.connect()
+
+    const sendMessages = async () =>
+      await producer.send({
+        acks: 1,
+        topic: topicName,
+        messages: new Array(10).fill().map((_, i) => ({
+          key: `key-${i}`,
+          value: `value-${i}`,
+          headers: {
+            [`header-a${i}`]: `header-value-a${i}`,
+            [`header-b${i}`]: `header-value-b${i}`,
+            [`header-c${i}`]: `header-value-c${i}`,
+          },
+        })),
+      })
+
+    expect(await sendMessages()).toEqual([
+      {
+        topicName,
+        baseOffset: '0',
+        errorCode: 0,
+        logAppendTime: '-1',
+        partition: 0,
+      },
+    ])
+
+    expect(await sendMessages()).toEqual([
+      {
+        topicName,
+        baseOffset: '10',
+        errorCode: 0,
+        logAppendTime: '-1',
+        partition: 0,
       },
     ])
   })
