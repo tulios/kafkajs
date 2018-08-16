@@ -90,9 +90,7 @@ module.exports = class Decoder {
     return Buffer.byteLength(this.buffer) - this.offset >= length
   }
 
-  readBytes() {
-    const byteLength = this.readInt32()
-
+  readBytes(byteLength = this.readInt32()) {
     if (byteLength === -1) {
       return null
     }
