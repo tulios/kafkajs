@@ -320,7 +320,7 @@ module.exports = class Connection {
       this.buffer = decoder.readAll()
 
       if (this.authHandlers) {
-        return this.authHandlers.onSuccess(data.slice(0, this.offset + byteLength))
+        return this.authHandlers.onSuccess(data.slice(0, Decoder.int32Size() + expectedResponseSize))
       }
 
       const correlationId = response.readInt32()
