@@ -304,43 +304,43 @@ module.exports = class Connection {
 
     this.buffer = Buffer.concat([this.buffer, rawData])
 
-    // Not enough bytes to read the expected response size, keep buffering
-    if (Buffer.byteLength(this.buffer) <= Decoder.int32Size()) {
-      return
+    // Process data if there are enough bytes to read the expected response size,
+    // otherwise keep buffering
+    while (Buffer.byteLength(this.buffer) > Decoder.int32Size()) {
+      const data = Buffer.from(this.buffer)
+      const decoder = new Decoder(data)
+      const expectedResponseSize = decoder.readInt32()
+
+      if (!decoder.canReadBytes(expectedResponseSize)) {
+        return
+      }
+
+      const response = new Decoder(decoder.readBytes(expectedResponseSize))
+      // Reset the buffer as the rest of the bytes
+      this.buffer = decoder.readAll()
+
+      if (this.authHandlers) {
+        return this.authHandlers.onSuccess(data.slice(0, Decoder.int32Size() + expectedResponseSize))
+      }
+
+      const correlationId = response.readInt32()
+      const payload = response.readAll()
+
+      const entry = this.pendingQueue[correlationId]
+      delete this.pendingQueue[correlationId]
+
+      if (!entry) {
+        this.logDebug(`Response without match`, { correlationId })
+        return
+      }
+
+      entry.resolve({
+        size: expectedResponseSize,
+        correlationId,
+        entry,
+        payload,
+      })
     }
-
-    const data = Buffer.from(this.buffer)
-    const decoder = new Decoder(data)
-    const expectedResponseSize = decoder.readInt32()
-
-    if (!decoder.canReadBytes(expectedResponseSize)) {
-      return
-    }
-
-    // The full payload is loaded, erase the temporary buffer
-    this.buffer = Buffer.alloc(0)
-
-    if (this.authHandlers) {
-      return this.authHandlers.onSuccess(data)
-    }
-
-    const correlationId = decoder.readInt32()
-    const payload = decoder.readAll()
-
-    const entry = this.pendingQueue[correlationId]
-    delete this.pendingQueue[correlationId]
-
-    if (!entry) {
-      this.logDebug(`Response without match`, { correlationId })
-      return
-    }
-
-    entry.resolve({
-      size: expectedResponseSize,
-      correlationId,
-      entry,
-      payload,
-    })
   }
 
   /**
