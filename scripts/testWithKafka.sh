@@ -4,6 +4,7 @@ testCommand="$1"
 extraArgs="$2"
 
 export HOST_IP=$(ifconfig | grep -E "([0-9]{1,3}\.){3}[0-9]{1,3}" | grep -v 127.0.0.1 | awk '{ print $2 }' | cut -f2 -d: | head -n1)
+export COMPOSE_FILE=${COMPOSE_FILE:="docker-compose.0_10.yml"}
 
 find_container_id() {
   echo $(docker ps \
@@ -15,7 +16,7 @@ find_container_id() {
 }
 
 quit() {
-  docker-compose down --remove-orphans
+  docker-compose -f "${COMPOSE_FILE}" down --remove-orphans
   exit 1
 }
 
@@ -43,6 +44,6 @@ TEST_EXIT=$?
 echo
 
 if [ -z ${DO_NOT_STOP} ]; then
-  docker-compose down --remove-orphans
+  docker-compose -f "${COMPOSE_FILE}" down --remove-orphans
 fi
 exit ${TEST_EXIT}

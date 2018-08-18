@@ -129,7 +129,7 @@ new Kafka({
 
 ### <a name="configuration-default-retry"></a> Default Retry
 
-The `retry` option can be used to set the configuration of the retry mechanism, which is be used to retry connections and API calls to Kafka (when using producers or consumers).
+The `retry` option can be used to set the configuration of the retry mechanism, which is used to retry connections and API calls to Kafka (when using producers or consumers).
 
 The retry mechanism uses a randomization function that grows exponentially.
 [Detailed example](#configuration-default-retry-detailed)
@@ -826,7 +826,7 @@ await admin.setOffsets({
 
 > Experimental - This feature may be removed or changed in new versions of KafkaJS
 
-Some operations are instrumented using the `EventEmitter`. To receive the events use the method `consumer#on`, example:
+Some operations are instrumented using the `EventEmitter`. To receive the events use the method `consumer#on`, `producer#on` and `admin#on`, example:
 
 ```javascript
 const { HEARTBEAT } = consumer.events
@@ -836,7 +836,20 @@ const removeListener = consumer.on(HEARTBEAT, e => console.log(`heartbeat at ${e
 
 The listeners are always async, even when using regular functions. The consumer will never block when executing your listeners. Errors in the listeners won't affect the consumer.
 
+Instrumentation Event:
+
+```javascript
+{
+  id: <Number>,
+  type: <String>,
+  timestamp: <Number>,
+  payload: <Object>
+}
+```
+
 List of available events:
+
+### Consumer
 
 * consumer.events.HEARTBEAT  
   payload: {`groupId`, `memberId`, `groupGenerationId`}
@@ -856,16 +869,23 @@ List of available events:
 * consumer.events.END_BATCH_PROCESS  
   payload: {`topic`, `partition`, `highWatermark`, `offsetLag`, `batchSize`, `firstOffset`, `lastOffset`, `duration`}
 
-Instrumentation Event:
+* consumer.events.CONNECT
 
-```javascript
-{
-  id: <Number>,
-  type: <String>,
-  timestamp: <Number>,
-  payload: <Object>
-}
-```
+* consumer.events.DISCONNECT
+
+* consumer.events.STOP
+
+### Producer
+
+* producer.events.CONNECT
+
+* producer.events.DISCONNECT
+
+### Admin
+
+* admin.events.CONNECT
+
+* admin.events.DISCONNECT
 
 ## <a name="custom-logging"></a> Custom logging
 

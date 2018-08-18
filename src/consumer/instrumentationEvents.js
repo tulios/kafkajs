@@ -8,4 +8,7 @@ module.exports = {
   FETCH: consumerType('fetch'),
   START_BATCH_PROCESS: consumerType('start_batch_process'),
   END_BATCH_PROCESS: consumerType('end_batch_process'),
+  CONNECT: consumerType('connect'),
+  DISCONNECT: consumerType('disconnect'),
+  STOP: consumerType('stop'),
 }

@@ -26,10 +26,20 @@
     "test:local:watch": "NODE_ENV=test ./node_modules/.bin/jest --watch",
     "test:local": "NODE_ENV=test ./node_modules/.bin/jest --forceExit",
     "test:debug": "NODE_ENV=test  node --inspect-brk node_modules/.bin/jest --runInBand --watch",
-    "test": "NODE_ENV=test yarn lint && JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh './node_modules/.bin/jest --maxWorkers=4 --no-watchman --forceExit'",
+    "test": "NODE_ENV=test yarn lint && JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh './node_modules/.bin/jest --ci --maxWorkers=4 --no-watchman --forceExit'",
     "lint": "find . -path ./node_modules -prune -o -path ./coverage -prune -o -name '*.js' -print0 | xargs -0 ./node_modules/.bin/eslint",
     "format": "find . -path ./node_modules -prune -o -path ./coverage -prune -o -name '*.js' -print0 | xargs -0 ./node_modules/.bin/prettier --write",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "test:group:broker": "./node_modules/.bin/jest --forceExit --testPathPattern 'src/broker/.*'",
+    "test:group:admin": "NODE_ENV=test ./node_modules/.bin/jest --forceExit --testPathPattern 'src/admin/.*'",
+    "test:group:producer": "NODE_ENV=test ./node_modules/.bin/jest --forceExit --testPathPattern 'src/producer/.*'",
+    "test:group:consumer": "NODE_ENV=test ./node_modules/.bin/jest --forceExit --testPathPattern 'src/consumer/.*'",
+    "test:group:others": "NODE_ENV=test ./node_modules/.bin/jest --forceExit --testPathPattern 'src/(?!(broker|admin|producer|consumer)/).*'",
+    "test:group:broker:ci": "NODE_ENV=test JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:broker --ci --maxWorkers=4 --no-watchman\"",
+    "test:group:admin:ci": "NODE_ENV=test JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:admin --ci --maxWorkers=4 --no-watchman\"",
+    "test:group:producer:ci": "NODE_ENV=test JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:producer --ci --maxWorkers=4 --no-watchman\"",
+    "test:group:consumer:ci": "NODE_ENV=test JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:consumer --ci --maxWorkers=4 --no-watchman\"",
+    "test:group:others:ci": "NODE_ENV=test JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:others --ci --maxWorkers=4 --no-watchman\""
   },
   "devDependencies": {
     "eslint": "^4.7.0",

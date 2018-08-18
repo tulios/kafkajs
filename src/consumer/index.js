@@ -4,6 +4,7 @@ const ConsumerGroup = require('./consumerGroup')
 const Runner = require('./runner')
 const events = require('./instrumentationEvents')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
+const { CONNECT, DISCONNECT, STOP } = require('./instrumentationEvents')
 const { KafkaJSNonRetriableError } = require('../errors')
 const { roundRobin } = require('./assigners')
 const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
@@ -87,7 +88,10 @@ module.exports = ({
   /**
    * @returns {Promise}
    */
-  const connect = async () => await cluster.connect()
+  const connect = async () => {
+    await cluster.connect()
+    instrumentationEmitter.emit(CONNECT)
+  }
 
   /**
    * @return {Promise}
@@ -97,6 +101,7 @@ module.exports = ({
       await stop()
       logger.debug('consumer has stopped, disconnecting', { groupId })
       await cluster.disconnect()
+      instrumentationEmitter.emit(DISCONNECT)
     } catch (e) {}
   }
 
@@ -109,6 +114,7 @@ module.exports = ({
         await runner.stop()
         runner = null
         consumerGroup = null
+        instrumentationEmitter.emit(STOP)
       }
 
       logger.info('Stopped', { groupId })

@@ -1,7 +1,16 @@
 const createRetry = require('../retry')
 const createDefaultPartitioner = require('./partitioners/default')
 const createSendMessages = require('./sendMessages')
+const InstrumentationEventEmitter = require('../instrumentation/emitter')
+const events = require('./instrumentationEvents')
+const { CONNECT, DISCONNECT } = require('./instrumentationEvents')
 const { KafkaJSNonRetriableError } = require('../errors')
+
+const { values, keys } = Object
+const eventNames = values(events)
+const eventKeys = keys(events)
+  .map(key => `producer.events.${key}`)
+  .join(', ')
 
 module.exports = ({
   cluster,
@@ -11,6 +20,7 @@ module.exports = ({
 }) => {
   const partitioner = createPartitioner()
   const retrier = createRetry(Object.assign({}, cluster.retry, retry))
+  const instrumentationEmitter = new InstrumentationEventEmitter()
   const logger = rootLogger.namespace('Producer')
   const sendMessages = createSendMessages({ logger, cluster, partitioner })
 
@@ -108,6 +118,26 @@ module.exports = ({
   }
 
   /**
+   * @param {string} eventName
+   * @param {Function} listener
+   * @return {Function}
+   */
+  const on = (eventName, listener) => {
+    if (!eventNames.includes(eventName)) {
+      throw new KafkaJSNonRetriableError(`Event name should be one of ${eventKeys}`)
+    }
+
+    return instrumentationEmitter.addListener(eventName, event => {
+      Promise.resolve(listener(event)).catch(e => {
+        logger.error(`Failed to execute listener: ${e.message}`, {
+          eventName,
+          stack: e.stack,
+        })
+      })
+    })
+  }
+
+  /**
    * @returns {Object} logger
    */
   const getLogger = () => logger
@@ -116,12 +146,22 @@ module.exports = ({
     /**
      * @returns {Promise}
      */
-    connect: async () => await cluster.connect(),
+    connect: async () => {
+      await cluster.connect()
+      instrumentationEmitter.emit(CONNECT)
+    },
 
     /**
      * @return {Promise}
      */
-    disconnect: async () => await cluster.disconnect(),
+    disconnect: async () => {
+      await cluster.disconnect()
+      instrumentationEmitter.emit(DISCONNECT)
+    },
+
+    events,
+
+    on,
 
     send,
 
