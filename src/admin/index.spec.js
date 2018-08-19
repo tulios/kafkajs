@@ -1,6 +1,5 @@
 const createAdmin = require('./index')
 const { createCluster, newLogger } = require('testHelpers')
-const { KafkaJSNonRetriableError } = require('../errors')
 
 describe('Admin', () => {
   it('gives access to its logger', () => {
