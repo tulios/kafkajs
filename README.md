@@ -849,7 +849,7 @@ Instrumentation Event:
 
 List of available events:
 
-### Consumer
+### <a name="instrumentation-consumer"></a> Consumer
 
 * consumer.events.HEARTBEAT  
   payload: {`groupId`, `memberId`, `groupGenerationId`}
@@ -875,13 +875,13 @@ List of available events:
 
 * consumer.events.STOP
 
-### Producer
+### <a name="instrumentation-producer"></a> Producer
 
 * producer.events.CONNECT
 
 * producer.events.DISCONNECT
 
-### Admin
+### <a name="instrumentation-admin"></a> Admin
 
 * admin.events.CONNECT
 
