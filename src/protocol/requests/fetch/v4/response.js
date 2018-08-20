@@ -26,7 +26,13 @@ const MAGIC_OFFSET = 16
  */
 
 const decodeMessages = async decoder => {
-  const messagesBuffer = decoder.readBytes()
+  const messagesSize = decoder.readInt32()
+
+  if (messagesSize <= 0 || !decoder.canReadBytes(messagesSize)) {
+    return []
+  }
+
+  const messagesBuffer = decoder.readBytes(messagesSize)
   const magicByte = messagesBuffer.slice(MAGIC_OFFSET).readInt8()
 
   if (magicByte === MAGIC_BYTE) {

@@ -25,6 +25,11 @@ install:
 jobs:
   include:
     - stage: test
+      name: 'Lint'
+      script:
+        - env
+        - yarn lint
+    - stage: test
       name: 'Broker'
       script:
         - env

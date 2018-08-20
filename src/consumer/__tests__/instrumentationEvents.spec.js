@@ -1,6 +1,5 @@
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
-const { KafkaJSNonRetriableError } = require('../../errors')
 
 const {
   secureRandom,

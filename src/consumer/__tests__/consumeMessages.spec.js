@@ -10,6 +10,7 @@ const {
   newLogger,
   waitFor,
   waitForMessages,
+  testIfKafka011,
 } = require('testHelpers')
 
 describe('Consumer', () => {
@@ -175,6 +176,139 @@ describe('Consumer', () => {
       expect.any(Function),
       expect.any(Function),
     ])
+  })
+
+  testIfKafka011('consume messages with 0.11 format', async () => {
+    const topicName2 = `test-topic2-${secureRandom()}`
+    await createTopic({ topic: topicName2 })
+
+    cluster = createCluster({ allowExperimentalV011: true })
+    producer = createProducer({
+      cluster,
+      createPartitioner: createModPartitioner,
+      logger: newLogger(),
+    })
+
+    consumer = createConsumer({
+      cluster,
+      groupId,
+      maxWaitTimeInMs: 100,
+      logger: newLogger(),
+    })
+
+    jest.spyOn(cluster, 'refreshMetadataIfNecessary')
+
+    await consumer.connect()
+    await producer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topic: topicName2, fromBeginning: true })
+
+    const messagesConsumed = []
+    await consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+
+    const generateMessages = () =>
+      Array(103)
+        .fill()
+        .map(() => {
+          const value = secureRandom()
+          return {
+            key: `key-${value}`,
+            value: `value-${value}`,
+            headers: {
+              'header-keyA': `header-valueA-${value}`,
+              'header-keyB': `header-valueB-${value}`,
+              'header-keyC': `header-valueC-${value}`,
+            },
+          }
+        })
+
+    const messages1 = generateMessages()
+    const messages2 = generateMessages()
+
+    await producer.sendBatch({
+      acks: 1,
+      topicMessages: [
+        { topic: topicName, messages: messages1 },
+        { topic: topicName2, messages: messages2 },
+      ],
+    })
+
+    await waitForMessages(messagesConsumed, { number: messages1.length + messages2.length })
+
+    expect(cluster.refreshMetadataIfNecessary).toHaveBeenCalled()
+
+    const messagesFromTopic1 = messagesConsumed.filter(m => m.topic === topicName)
+    const messagesFromTopic2 = messagesConsumed.filter(m => m.topic === topicName2)
+
+    expect(messagesFromTopic1[0]).toEqual({
+      topic: topicName,
+      partition: 0,
+      message: expect.objectContaining({
+        key: Buffer.from(messages1[0].key),
+        value: Buffer.from(messages1[0].value),
+        headers: {
+          'header-keyA': Buffer.from(messages1[0].headers['header-keyA']),
+          'header-keyB': Buffer.from(messages1[0].headers['header-keyB']),
+          'header-keyC': Buffer.from(messages1[0].headers['header-keyC']),
+        },
+        magicByte: 2,
+        offset: '0',
+      }),
+    })
+
+    const lastMessage1 = messages1[messages1.length - 1]
+    expect(messagesFromTopic1[messagesFromTopic1.length - 1]).toEqual({
+      topic: topicName,
+      partition: 0,
+      message: expect.objectContaining({
+        key: Buffer.from(lastMessage1.key),
+        value: Buffer.from(lastMessage1.value),
+        headers: {
+          'header-keyA': Buffer.from(lastMessage1.headers['header-keyA']),
+          'header-keyB': Buffer.from(lastMessage1.headers['header-keyB']),
+          'header-keyC': Buffer.from(lastMessage1.headers['header-keyC']),
+        },
+        magicByte: 2,
+        offset: '102',
+      }),
+    })
+
+    expect(messagesFromTopic2[0]).toEqual({
+      topic: topicName2,
+      partition: 0,
+      message: expect.objectContaining({
+        key: Buffer.from(messages2[0].key),
+        value: Buffer.from(messages2[0].value),
+        headers: {
+          'header-keyA': Buffer.from(messages2[0].headers['header-keyA']),
+          'header-keyB': Buffer.from(messages2[0].headers['header-keyB']),
+          'header-keyC': Buffer.from(messages2[0].headers['header-keyC']),
+        },
+        magicByte: 2,
+        offset: '0',
+      }),
+    })
+
+    const lastMessage2 = messages2[messages2.length - 1]
+    expect(messagesFromTopic2[messagesFromTopic2.length - 1]).toEqual({
+      topic: topicName2,
+      partition: 0,
+      message: expect.objectContaining({
+        key: Buffer.from(lastMessage2.key),
+        value: Buffer.from(lastMessage2.value),
+        headers: {
+          'header-keyA': Buffer.from(lastMessage2.headers['header-keyA']),
+          'header-keyB': Buffer.from(lastMessage2.headers['header-keyB']),
+          'header-keyC': Buffer.from(lastMessage2.headers['header-keyC']),
+        },
+        magicByte: 2,
+        offset: '102',
+      }),
+    })
+
+    // check if all offsets are present
+    expect(messagesFromTopic1.map(m => m.message.offset)).toEqual(messages1.map((_, i) => `${i}`))
+    expect(messagesFromTopic2.map(m => m.message.offset)).toEqual(messages2.map((_, i) => `${i}`))
   })
 
   it('stops consuming messages when running = false', async () => {
