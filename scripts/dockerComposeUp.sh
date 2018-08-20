@@ -7,5 +7,5 @@ COMPOSE_FILE=${COMPOSE_FILE:="docker-compose.0_11.yml"}
 echo "Running compose file: ${COMPOSE_FILE}:"
 docker-compose -f "${COMPOSE_FILE}" up --force-recreate -d
 if [ -z ${NO_LOGS} ]; then
-  docker-compose logs -f
+  docker-compose -f "${COMPOSE_FILE}" logs -f
 fi
