@@ -45,7 +45,8 @@ KafkaJS is battle-tested and ready for production.
   - [Describe group](#consuming-messages-describe-group)
   - [Compression](#consuming-messages-compression)
 - [Admin](#admin)
-  - [Create Topics](#admin-create-topics)
+  - [Create topics](#admin-create-topics)
+  - [Delete topics](#admin-delete-topics)
   - [Fetch consumer group offsets](#admin-fetch-offsets)
   - [Reset consumer group offsets](#admin-reset-offsets)
   - [Set consumer group offsets](#admin-set-offsets)
@@ -763,6 +764,21 @@ await admin.createTopics({
 | validateOnly   | If this is `true`, the request will be validated, but the topic won't be created.                     | false   |
 | timeout        | The time in ms to wait for a topic to be completely created on the controller node                    | 5000    |
 | waitForLeaders | If this is `true` it will wait until metadata for the new topics doesn't throw `LEADER_NOT_AVAILABLE` | true    |
+
+### <a name="admin-delete-topics"></a> Delete topics
+
+```javascript
+await admin.deleteTopics({
+  topics: <String>,
+  timeout: <Number>,
+})
+```
+
+Topic deletion is disabled by default in Apache Kafka versions prior to `1.0.0`. To enable it set the server config.
+
+```yml
+delete.topic.enable=true
+```
 
 ### <a name="admin-fetch-offsets"></a> Fetch consumer group offsets
 
