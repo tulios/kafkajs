@@ -36,6 +36,7 @@ describe('Broker > Metadata', () => {
     )
 
     expect(response).toMatchObject({
+      throttleTime: 0,
       brokers: expect.arrayContaining([
         {
           host: expect.stringMatching(/\d+\.\d+\.\d+\.\d+/),
