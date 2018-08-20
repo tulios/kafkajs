@@ -378,7 +378,7 @@ module.exports = class Broker {
 
   /**
    * @public
-   * @param {Array<String>} topics An array of topics to be deleted
+   * @param {Array<string>} topics An array of topics to be deleted
    * @param {number} [timeout=5000] The time in ms to wait for a topic to be completely deleted on the *                                controller node. Values <= 0 will trigger topic deletion and return
    *                                immediately
    */
