@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2018-08-20
+### Fixed
+  - Client logger accessor #106
+  - Producer v3 decode format #114
+  - Parsing multiple responses #115
+  - Fetch v4 for partial messages on record batch #116
+
+### Added
+  - Connection instrumentation events #110
+
 ## [1.3.0] - 2018-08-06
 ### Fixed
   - Skip unsubscribed topic assignment #86
@@ -14,7 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
   - Add consumer auto commit policies #89
   - Notify user when setting heartbeat interval to same or higher than session timeout #91
-  - Constantly refresh metatada based on `metadataMaxAge` #94
+  - Constantly refresh metadata based on `metadataMaxAge` #94
   - New instrumentation events #95
   - Expose loggers #97 #102
   - Add offset management operations to the admin client #101
