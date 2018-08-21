@@ -57,7 +57,7 @@
     "jest-junit": "^5.1.0",
     "lint-staged": "^6.0.0",
     "mockdate": "^2.0.2",
-    "prettier": "^1.7.0"
+    "prettier": "^1.14.2"
   },
   "dependencies": {
     "long": "^4.0.0"
