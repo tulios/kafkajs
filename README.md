@@ -288,11 +288,12 @@ await producer.sendBatch({
 
 ### <a name="producing-messages-options"></a> Options
 
-| option            | description                                                                          | default |
-| ----------------- | ------------------------------------------------------------------------------------ | ------- |
-| createPartitioner | Take a look at [Custom](#producing-messages-custom-partitioner) for more information | `null`  |
-| retry             | Take a look at [Producer Retry](#producing-messages-retry) for more information      | `null`  |
-| metadataMaxAge    | The period of time in milliseconds after which we force a refresh of metadata even if we haven't seen any partition leadership changes to proactively discover any new brokers or partitions | `300000` - 5 minutes |
+| option                 | description                                                                          | default |
+| ---------------------- | ------------------------------------------------------------------------------------ | ------- |
+| createPartitioner      | Take a look at [Custom](#producing-messages-custom-partitioner) for more information | `null`  |
+| retry                  | Take a look at [Producer Retry](#producing-messages-retry) for more information      | `null`  |
+| metadataMaxAge         | The period of time in milliseconds after which we force a refresh of metadata even if we haven't seen any partition leadership changes to proactively discover any new brokers or partitions | `300000` - 5 minutes |
+| allowAutoTopicCreation | Allow topic creation when querying metadata for non-existent topics                  | `true`  |
 
 ### <a name="producing-messages-custom-partitioner"></a> Custom partitioner
 
@@ -552,6 +553,7 @@ kafka.consumer({
   sessionTimeout: <Number>,
   heartbeatInterval: <Number>,
   metadataMaxAge: <Number>,
+  allowAutoTopicCreation: <Boolean>,
   maxBytesPerPartition: <Number>,
   minBytes: <Number>,
   maxBytes: <Number>,
@@ -560,17 +562,18 @@ kafka.consumer({
 })
 ```
 
-| option               | description | default |
-| -------------------- | ----------- | ------- |
-| partitionAssigners   | List of partition assigners | `[PartitionAssigners.roundRobin]` |
-| sessionTimeout       | Timeout in milliseconds used to detect failures. The consumer sends periodic heartbeats to indicate its liveness to the broker. If no heartbeats are received by the broker before the expiration of this session timeout, then the broker will remove this consumer from the group and initiate a rebalance | `30000` |
-| heartbeatInterval    | The expected time in milliseconds between heartbeats to the consumer coordinator. Heartbeats are used to ensure that the consumer's session stays active. The value must be set lower than session timeout | `3000` |
-| metadataMaxAge       | The period of time in milliseconds after which we force a refresh of metadata even if we haven't seen any partition leadership changes to proactively discover any new brokers or partitions | `300000` (5 minutes) |
-| maxBytesPerPartition | The maximum amount of data per-partition the server will return. This size must be at least as large as the maximum message size the server allows or else it is possible for the producer to send messages larger than the consumer can fetch. If that happens, the consumer can get stuck trying to fetch a large message on a certain partition | `1048576` (1MB) |
+| option                 | description | default |
+| ---------------------- | ----------- | ------- |
+| partitionAssigners     | List of partition assigners | `[PartitionAssigners.roundRobin]` |
+| sessionTimeout         | Timeout in milliseconds used to detect failures. The consumer sends periodic heartbeats to indicate its liveness to the broker. If no heartbeats are received by the broker before the expiration of this session timeout, then the broker will remove this consumer from the group and initiate a rebalance | `30000` |
+| heartbeatInterval      | The expected time in milliseconds between heartbeats to the consumer coordinator. Heartbeats are used to ensure that the consumer's session stays active. The value must be set lower than session timeout | `3000` |
+| metadataMaxAge         | The period of time in milliseconds after which we force a refresh of metadata even if we haven't seen any partition leadership changes to proactively discover any new brokers or partitions | `300000` (5 minutes) |
+| allowAutoTopicCreation | Allow topic creation when querying metadata for non-existent topics | `true`  |
+| maxBytesPerPartition   | The maximum amount of data per-partition the server will return. This size must be at least as large as the maximum message size the server allows or else it is possible for the producer to send messages larger than the consumer can fetch. If that happens, the consumer can get stuck trying to fetch a large message on a certain partition | `1048576` (1MB) |
 | minBytes | Minimum amount of data the server should return for a fetch request, otherwise wait up to `maxWaitTimeInMs` for more data to accumulate. default: `1` |
-| maxBytes             | Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0` | `10485760` (10MB) |
-| maxWaitTimeInMs      | The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes` | `5000` |
-| retry                | See [retry](#configuration-default-retry) for more information | `{ retries: 10 }` |
+| maxBytes               | Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0` | `10485760` (10MB) |
+| maxWaitTimeInMs        | The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes` | `5000` |
+| retry                  | See [retry](#configuration-default-retry) for more information | `{ retries: 10 }` |
 
 ### <a name="consuming-messages-pause-resume"></a> Pause & Resume
 
