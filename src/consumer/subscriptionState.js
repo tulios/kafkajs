@@ -4,14 +4,14 @@ module.exports = class SubscriptionState {
   }
 
   /**
-   * @param {Array<string>} topics 
+   * @param {Array<string>} topics
    */
   pause(topics = []) {
     topics.forEach(topic => this.pausedTopics.add(topic))
   }
 
   /**
-   * @param {Array<string>} topics 
+   * @param {Array<string>} topics
    */
   resume(topics = []) {
     topics.forEach(topic => this.pausedTopics.delete(topic))

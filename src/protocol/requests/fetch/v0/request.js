@@ -2,17 +2,17 @@ const Encoder = require('../../../encoder')
 const { Fetch: apiKey } = require('../../apiKeys')
 
 /**
-* Fetch Request (Version: 0) => replica_id max_wait_time min_bytes [topics]
-*   replica_id => INT32
-*   max_wait_time => INT32
-*   min_bytes => INT32
-*   topics => topic [partitions]
-*     topic => STRING
-*     partitions => partition fetch_offset max_bytes
-*       partition => INT32
-*       fetch_offset => INT64
-*       max_bytes => INT32
-*/
+ * Fetch Request (Version: 0) => replica_id max_wait_time min_bytes [topics]
+ *   replica_id => INT32
+ *   max_wait_time => INT32
+ *   min_bytes => INT32
+ *   topics => topic [partitions]
+ *     topic => STRING
+ *     partitions => partition fetch_offset max_bytes
+ *       partition => INT32
+ *       fetch_offset => INT64
+ *       max_bytes => INT32
+ */
 
 /**
  * @param {number} replicaId Broker id of the follower
