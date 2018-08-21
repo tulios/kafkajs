@@ -65,4 +65,24 @@ describe('Broker > Metadata', () => {
       ],
     })
   })
+
+  describe('when allowAutoTopicCreation is disabled and the topic does not exist', () => {
+    beforeEach(() => {
+      topicName = `test-topic-${secureRandom()}`
+      broker = new Broker({
+        connection: createConnection(),
+        allowAutoTopicCreation: false,
+        logger: newLogger(),
+      })
+    })
+
+    it('returns UNKNOWN_TOPIC_OR_PARTITION', async () => {
+      await broker.connect()
+
+      await expect(broker.metadata([topicName])).rejects.toHaveProperty(
+        'type',
+        'UNKNOWN_TOPIC_OR_PARTITION'
+      )
+    })
+  })
 })
