@@ -144,15 +144,13 @@ module.exports = ({
    * @param {Function} [eachMessage=null]
    * @return {Promise}
    */
-  const run = async (
-    {
-      autoCommitInterval = null,
-      autoCommitThreshold = null,
-      eachBatchAutoResolve = true,
-      eachBatch = null,
-      eachMessage = null,
-    } = {}
-  ) => {
+  const run = async ({
+    autoCommitInterval = null,
+    autoCommitThreshold = null,
+    eachBatchAutoResolve = true,
+    eachBatch = null,
+    eachMessage = null,
+  } = {}) => {
     consumerGroup = createConsumerGroup({
       autoCommitInterval,
       autoCommitThreshold,

@@ -9,8 +9,8 @@ const nextId = () => {
 
 class InstrumentationEvent {
   /**
-   * @param {String} type 
-   * @param {Object} payload 
+   * @param {String} type
+   * @param {Object} payload
    */
   constructor(type, payload) {
     this.id = nextId()
