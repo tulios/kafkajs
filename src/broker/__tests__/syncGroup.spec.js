@@ -15,7 +15,9 @@ describe('Broker > SyncGroup', () => {
     })
     await seedBroker.connect()
 
-    const { coordinator: { host, port } } = await retryProtocol(
+    const {
+      coordinator: { host, port },
+    } = await retryProtocol(
       'GROUP_COORDINATOR_NOT_AVAILABLE',
       async () => await seedBroker.findGroupCoordinator({ groupId })
     )

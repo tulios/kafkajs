@@ -1,6 +1,8 @@
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
-const { LEVELS: { DEBUG } } = require('../../loggers')
+const {
+  LEVELS: { DEBUG },
+} = require('../../loggers')
 
 const {
   secureRandom,

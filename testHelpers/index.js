@@ -5,7 +5,12 @@ const Cluster = require('../src/cluster')
 const waitFor = require('../src/utils/waitFor')
 const connectionBuilder = require('../src/cluster/connectionBuilder')
 const Connection = require('../src/network/connection')
-const { createLogger, LEVELS: { NOTHING, INFO, DEBUG } } = require('../src/loggers')
+
+const {
+  createLogger,
+  LEVELS: { NOTHING, INFO, DEBUG },
+} = require('../src/loggers')
+
 const LoggerConsole = require('../src/loggers/console')
 const Kafka = require('../src/index')
 

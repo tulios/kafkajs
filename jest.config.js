@@ -4,9 +4,9 @@ module.exports = {
     testHelpers: '<rootDir>/testHelpers/index.js',
   },
   setupTestFrameworkScriptFile: '<rootDir>/testHelpers/setup.js',
-  testResultsProcessor: './node_modules/jest-junit',
   testPathIgnorePatterns: ['/node_modules/'],
   testEnvironment: 'node',
   testRegex: '(/__tests__/.*|(\\.|/)spec)\\.jsx?$',
+  reporters: ['default', 'jest-junit'],
   bail: true,
 }

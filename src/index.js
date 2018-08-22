@@ -1,4 +1,8 @@
-const { createLogger, LEVELS: { INFO } } = require('./loggers')
+const {
+  createLogger,
+  LEVELS: { INFO },
+} = require('./loggers')
+
 const LoggerConsole = require('./loggers/console')
 const Cluster = require('./cluster')
 const createProducer = require('./producer')
@@ -55,20 +59,18 @@ module.exports = class Client {
   /**
    * @public
    */
-  consumer(
-    {
-      groupId,
-      partitionAssigners,
-      metadataMaxAge,
-      sessionTimeout,
-      heartbeatInterval,
-      maxBytesPerPartition,
-      minBytes,
-      maxBytes,
-      maxWaitTimeInMs,
-      retry,
-    } = {}
-  ) {
+  consumer({
+    groupId,
+    partitionAssigners,
+    metadataMaxAge,
+    sessionTimeout,
+    heartbeatInterval,
+    maxBytesPerPartition,
+    minBytes,
+    maxBytes,
+    maxWaitTimeInMs,
+    retry,
+  } = {}) {
     const cluster = this[PRIVATE.CREATE_CLUSTER](metadataMaxAge)
     return createConsumer({
       retry: { ...cluster.retry, retry },
