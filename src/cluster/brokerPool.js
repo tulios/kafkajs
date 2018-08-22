@@ -18,6 +18,7 @@ module.exports = class BrokerPool {
     logger,
     retry,
     allowExperimentalV011,
+    allowAutoTopicCreation,
     authenticationTimeout,
     metadataMaxAge,
   }) {
@@ -28,7 +29,12 @@ module.exports = class BrokerPool {
     this.retrier = createRetry(assign({}, retry))
 
     this.createBroker = options =>
-      new Broker({ allowExperimentalV011, authenticationTimeout, ...options })
+      new Broker({
+        allowExperimentalV011,
+        allowAutoTopicCreation,
+        authenticationTimeout,
+        ...options,
+      })
 
     this.seedBroker = this.createBroker({
       connection: this.connectionBuilder.build(),

@@ -13,6 +13,9 @@ const SASLAuthenticator = require('./saslAuthenticator')
  * @param {Object} [versions=null] The object with all available versions and APIs
  *                                 supported by this cluster. The output of broker#apiVersions
  * @param {number} [authenticationTimeout=1000]
+ * @param {boolean} [allowAutoTopicCreation=true] If this and the broker config 'auto.create.topics.enable'
+ *                                                are true, topics that don't exist will be created when
+ *                                                fetching metadata.
  */
 module.exports = class Broker {
   constructor({
@@ -22,6 +25,7 @@ module.exports = class Broker {
     nodeId = null,
     versions = null,
     authenticationTimeout = 1000,
+    allowAutoTopicCreation = true,
   }) {
     this.connection = connection
     this.nodeId = nodeId
@@ -29,6 +33,7 @@ module.exports = class Broker {
     this.versions = versions
     this.allowExperimentalV011 = allowExperimentalV011
     this.authenticationTimeout = authenticationTimeout
+    this.allowAutoTopicCreation = allowAutoTopicCreation
     this.authenticated = false
     this.lock = new Lock()
     this.lookupRequest = () => {
@@ -111,7 +116,9 @@ module.exports = class Broker {
    */
   async metadata(topics = []) {
     const metadata = this.lookupRequest(apiKeys.Metadata, requests.Metadata)
-    return await this.connection.send(metadata(topics))
+    return await this.connection.send(
+      metadata({ topics, allowAutoTopicCreation: this.allowAutoTopicCreation })
+    )
   }
 
   /**

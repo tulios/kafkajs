@@ -5,4 +5,4 @@ const requestV0 = require('../v0/request')
  *   topics => STRING
  */
 
-module.exports = topics => Object.assign(requestV0(topics), { apiVersion: 1 })
+module.exports = ({ topics }) => Object.assign(requestV0({ topics }), { apiVersion: 1 })

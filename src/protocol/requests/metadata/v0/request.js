@@ -6,7 +6,7 @@ const { Metadata: apiKey } = require('../../apiKeys')
  *   topics => STRING
  */
 
-module.exports = topics => ({
+module.exports = ({ topics }) => ({
   apiKey,
   apiVersion: 0,
   apiName: 'Metadata',

@@ -2,7 +2,7 @@ const Encoder = require('../../../encoder')
 const apiKeys = require('../../apiKeys')
 const RequestProtocol = require('./request')
 
-describe('Protocol > Requests > Metadata > v0', async () => {
+describe('Protocol > Requests > Metadata > v3', () => {
   let topics
 
   beforeEach(() => {
@@ -13,7 +13,7 @@ describe('Protocol > Requests > Metadata > v0', async () => {
     test('metadata about the API', () => {
       const request = RequestProtocol({ topics })
       expect(request.apiKey).toEqual(apiKeys.Metadata)
-      expect(request.apiVersion).toEqual(0)
+      expect(request.apiVersion).toEqual(3)
       expect(request.apiName).toEqual('Metadata')
     })
 
