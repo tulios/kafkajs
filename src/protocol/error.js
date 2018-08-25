@@ -448,6 +448,13 @@ const errorCodes = [
     retriable: true,
     message: 'The fetch session epoch is invalid',
   },
+  {
+    type: 'LISTENER_NOT_FOUND',
+    code: 72,
+    retriable: true,
+    message:
+      'There is no listener on the leader broker that matches the listener on which metadata request was processed',
+  },
 ]
 
 const unknownErrorCode = errorCode => ({
