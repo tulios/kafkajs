@@ -769,7 +769,7 @@ await admin.createTopics({
 
 ```javascript
 await admin.deleteTopics({
-  topics: <String>,
+  topics: <String[]>,
   timeout: <Number>,
 })
 ```
