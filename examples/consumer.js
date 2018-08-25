@@ -33,9 +33,8 @@ const run = async () => {
     //   console.log(batch)
     // },
     eachMessage: async ({ topic, partition, message }) => {
-      console.log(
-        `- ${topic}[${partition} | ${message.offset}] / ${message.timestamp} ${message.key}#${message.value}`
-      )
+      const prefix = `${topic}[${partition} | ${message.offset}] / ${message.timestamp}`
+      console.log(`- ${prefix} ${message.key}#${message.value}`)
     },
   })
 }

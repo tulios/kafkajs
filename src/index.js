@@ -1,4 +1,8 @@
-const { createLogger, LEVELS: { INFO } } = require('./loggers')
+const {
+  createLogger,
+  LEVELS: { INFO },
+} = require('./loggers')
+
 const LoggerConsole = require('./loggers/console')
 const Cluster = require('./cluster')
 const createProducer = require('./producer')
@@ -24,7 +28,7 @@ module.exports = class Client {
     allowExperimentalV011 = false,
   }) {
     this[PRIVATE.LOGGER] = createLogger({ level: logLevel, logCreator })
-    this[PRIVATE.CREATE_CLUSTER] = (metadataMaxAge = 300000) =>
+    this[PRIVATE.CREATE_CLUSTER] = ({ metadataMaxAge = 300000, allowAutoTopicCreation = true }) =>
       new Cluster({
         logger: this[PRIVATE.LOGGER],
         brokers,
@@ -35,6 +39,7 @@ module.exports = class Client {
         authenticationTimeout,
         metadataMaxAge,
         retry,
+        allowAutoTopicCreation,
         allowExperimentalV011,
       })
   }
@@ -42,8 +47,12 @@ module.exports = class Client {
   /**
    * @public
    */
-  producer({ createPartitioner, retry, metadataMaxAge } = {}) {
-    const cluster = this[PRIVATE.CREATE_CLUSTER](metadataMaxAge)
+  producer({ createPartitioner, retry, metadataMaxAge, allowAutoTopicCreation } = {}) {
+    const cluster = this[PRIVATE.CREATE_CLUSTER]({
+      metadataMaxAge,
+      allowAutoTopicCreation,
+    })
+
     return createProducer({
       retry: { ...cluster.retry, ...retry },
       logger: this[PRIVATE.LOGGER],
@@ -55,21 +64,24 @@ module.exports = class Client {
   /**
    * @public
    */
-  consumer(
-    {
-      groupId,
-      partitionAssigners,
+  consumer({
+    groupId,
+    partitionAssigners,
+    metadataMaxAge,
+    sessionTimeout,
+    heartbeatInterval,
+    maxBytesPerPartition,
+    minBytes,
+    maxBytes,
+    maxWaitTimeInMs,
+    retry,
+    allowAutoTopicCreation,
+  } = {}) {
+    const cluster = this[PRIVATE.CREATE_CLUSTER]({
       metadataMaxAge,
-      sessionTimeout,
-      heartbeatInterval,
-      maxBytesPerPartition,
-      minBytes,
-      maxBytes,
-      maxWaitTimeInMs,
-      retry,
-    } = {}
-  ) {
-    const cluster = this[PRIVATE.CREATE_CLUSTER](metadataMaxAge)
+      allowAutoTopicCreation,
+    })
+
     return createConsumer({
       retry: { ...cluster.retry, retry },
       logger: this[PRIVATE.LOGGER],
@@ -89,7 +101,7 @@ module.exports = class Client {
    * @public
    */
   admin({ retry } = {}) {
-    const cluster = this[PRIVATE.CREATE_CLUSTER]()
+    const cluster = this[PRIVATE.CREATE_CLUSTER]({ allowAutoTopicCreation: false })
     return createAdmin({
       retry: { ...cluster.retry, retry },
       logger: this[PRIVATE.LOGGER],

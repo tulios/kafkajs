@@ -36,6 +36,7 @@ describe('Broker > Metadata', () => {
     )
 
     expect(response).toMatchObject({
+      throttleTime: 0,
       brokers: expect.arrayContaining([
         {
           host: expect.stringMatching(/\d+\.\d+\.\d+\.\d+/),
@@ -62,6 +63,26 @@ describe('Broker > Metadata', () => {
           topicErrorCode: 0,
         },
       ],
+    })
+  })
+
+  describe('when allowAutoTopicCreation is disabled and the topic does not exist', () => {
+    beforeEach(() => {
+      topicName = `test-topic-${secureRandom()}`
+      broker = new Broker({
+        connection: createConnection(),
+        allowAutoTopicCreation: false,
+        logger: newLogger(),
+      })
+    })
+
+    it('returns UNKNOWN_TOPIC_OR_PARTITION', async () => {
+      await broker.connect()
+
+      await expect(broker.metadata([topicName])).rejects.toHaveProperty(
+        'type',
+        'UNKNOWN_TOPIC_OR_PARTITION'
+      )
     })
   })
 })

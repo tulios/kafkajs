@@ -5,16 +5,16 @@ const flatten = require('../../../../utils/flatten')
 const MessageSetDecoder = require('../../../messageSet/decoder')
 
 /**
-* Fetch Response (Version: 0) => [responses]
-*   responses => topic [partition_responses]
-*     topic => STRING
-*     partition_responses => partition_header record_set
-*       partition_header => partition error_code high_watermark
-*         partition => INT32
-*         error_code => INT16
-*         high_watermark => INT64
-*       record_set => RECORDS
-*/
+ * Fetch Response (Version: 0) => [responses]
+ *   responses => topic [partition_responses]
+ *     topic => STRING
+ *     partition_responses => partition_header record_set
+ *       partition_header => partition error_code high_watermark
+ *         partition => INT32
+ *         error_code => INT16
+ *         high_watermark => INT64
+ *       record_set => RECORDS
+ */
 
 const decodePartition = async decoder => ({
   partition: decoder.readInt32(),

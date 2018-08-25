@@ -43,8 +43,8 @@ const partitionMetadata = decoder => ({
   isr: decoder.readArray(d => d.readInt32()),
 })
 
-const decode = async data => {
-  const decoder = new Decoder(data)
+const decode = async rawData => {
+  const decoder = new Decoder(rawData)
   return {
     brokers: decoder.readArray(broker),
     controllerId: decoder.readInt32(),

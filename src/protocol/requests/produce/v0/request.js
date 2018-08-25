@@ -15,12 +15,12 @@ const MessageSet = require('../../../messageSet')
  */
 
 /**
-* MessageV0:
-* {
-*   key: bytes,
-*   value: bytes
-* }
-*
+ * MessageV0:
+ * {
+ *   key: bytes,
+ *   value: bytes
+ * }
+ *
  * MessageSet:
  * [
  *   { key: "<value>", value: "<value>" },

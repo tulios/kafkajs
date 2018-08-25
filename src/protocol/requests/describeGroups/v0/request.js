@@ -7,8 +7,8 @@ const { DescribeGroups: apiKey } = require('../../apiKeys')
  */
 
 /**
-  * @param {Array} groupIds List of groupIds to request metadata for (an empty groupId array will return empty group metadata)
-  */
+ * @param {Array} groupIds List of groupIds to request metadata for (an empty groupId array will return empty group metadata)
+ */
 module.exports = ({ groupIds }) => ({
   apiKey,
   apiVersion: 0,
