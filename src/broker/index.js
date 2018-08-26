@@ -382,4 +382,16 @@ module.exports = class Broker {
     const createTopics = this.lookupRequest(apiKeys.CreateTopics, requests.CreateTopics)
     return await this.connection.send(createTopics({ topics, validateOnly, timeout }))
   }
+
+  /**
+   * @public
+   * @param {Array<string>} topics An array of topics to be deleted
+   * @param {number} [timeout=5000] The time in ms to wait for a topic to be completely deleted on the
+   *                                controller node. Values <= 0 will trigger topic deletion and return
+   *                                immediately
+   */
+  async deleteTopics({ topics, timeout = 5000 }) {
+    const deleteTopics = this.lookupRequest(apiKeys.DeleteTopics, requests.DeleteTopics)
+    return await this.connection.send(deleteTopics({ topics, timeout }))
+  }
 }
