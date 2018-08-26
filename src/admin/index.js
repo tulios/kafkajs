@@ -117,6 +117,49 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
   }
 
   /**
+   * @param {array<string>} topics
+   * @param {number} [timeout=5000]
+   * @return {Promise}
+   */
+  const deleteTopics = async ({ topics, timeout }) => {
+    if (!topics || !Array.isArray(topics)) {
+      throw new KafkaJSNonRetriableError(`Invalid topics array ${topics}`)
+    }
+
+    if (topics.filter(topic => typeof topic !== 'string').length > 0) {
+      throw new KafkaJSNonRetriableError('Invalid topics array, the names must be a valid string')
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata(topics)
+        const broker = await cluster.findControllerBroker()
+        await broker.deleteTopics({ topics, timeout })
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not delete topics', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        if (e.type === 'REQUEST_TIMED_OUT') {
+          logger.error(
+            'Could not delete topics, check if "delete.topic.enable" is set to "true" (the default value is "false") or increase the timeout',
+            {
+              error: e.message,
+              retryCount,
+              retryTime,
+            }
+          )
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
    * @param {string} groupId
    * @param {string} topic
    * @return {Promise}
@@ -260,6 +303,7 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     connect,
     disconnect,
     createTopics,
+    deleteTopics,
     events,
     fetchOffsets,
     on,
