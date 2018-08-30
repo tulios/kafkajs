@@ -293,10 +293,9 @@ module.exports = class OffsetManager {
     }
 
     offsets.forEach(({ topic, partitions }) => {
-      this.committedOffsets[topic] = partitions.reduce(
-        indexPartitions,
-        { ...this.committedOffsets[topic] },
-      )
+      this.committedOffsets[topic] = partitions.reduce(indexPartitions, {
+        ...this.committedOffsets[topic],
+      })
     })
   }
 
