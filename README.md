@@ -33,6 +33,7 @@ KafkaJS is battle-tested and ready for production.
   - [Retry](#producing-messages-retry)
   - [Compression](#producing-messages-compression)
     - [GZIP](#producing-messages-compression-gzip)
+    - [Snappy](#producing-messages-compression-snappy)
     - [Other](#producing-messages-compression-other)
 - [Consuming messages](#consuming-messages)
   - [eachMessage](#consuming-messages-each-message)
@@ -360,28 +361,38 @@ async () => {
 
 The consumers know how to decompress GZIP, so no further work is necessary.
 
+#### <a name="producing-messages-compression-snappy"></a> Snappy
+
+Snappy support is provided by the package `kafkajs-snappy`
+
+```sh
+npm install kafkajs-snappy
+# yarn add kafkajs-snappy
+```
+
+```javascript
+const {  CompressionTypes, CompressionCodecs } = require('kafkajs')
+const SnappyCodec = require('kafkajs-snappy')
+
+CompressionCodecs[CompressionTypes.Snappy] = SnappyCodec
+```
+
+Take a look at the official [readme](https://github.com/tulios/kafkajs-snappy) for more information
+
 #### <a name="producing-messages-compression-other"></a> Other
 
 Any other codec than GZIP can be easily implemented using existing libraries.
 
-This is an example of how one would go about in order to add the Snappy codec.
-
-First of all, a codec is an object with two `async` functions: `compress` and `decompress`. Import the libraries and define the codec object:
+A codec is an object with two `async` functions: `compress` and `decompress`. Import the libraries and define the codec object:
 
 ```javascript
-const { promisify } = require('util')
-const snappy = require('snappy')
-
-const snappyCompress = promisify(snappy.compress)
-const snappyDecompress = promisify(snappy.uncompress)
-
-const SnappyCodec = {
+const MyCustomSnappyCodec = {
   async compress(encoder) {
-    return snappyCompress(encoder.buffer)
+    return someCompressFunction(encoder.buffer)
   },
 
   async decompress(buffer) {
-    return snappyDecompress(buffer)
+    return someDecompressFunction(buffer)
   }
 }
 ```
@@ -390,7 +401,7 @@ Now we that have the codec object, we can add it to the implementation:
 
 ```javascript
 const { CompressionTypes, CompressionCodecs } = require('kafkajs')
-CompressionCodecs[CompressionTypes.Snappy] = SnappyCodec
+CompressionCodecs[CompressionTypes.Snappy] = MyCustomSnappyCodec
 ```
 
 The new codec can now be used with the `send` method, example:
