@@ -1,5 +1,5 @@
 const EventEmitter = require('events')
-const { KafkaJSError } = require('../errors')
+const { KafkaJSLockTimeout } = require('../errors')
 
 module.exports = class Lock {
   constructor({ timeout = 1000 } = {}) {
@@ -27,7 +27,7 @@ module.exports = class Lock {
 
       this.emitter.on('releaseLock', tryToAcquire)
       timeoutId = setTimeout(
-        () => reject(new KafkaJSError('Timeout while acquiring lock')),
+        () => reject(new KafkaJSLockTimeout('Timeout while acquiring lock')),
         this.timeout
       )
     })
