@@ -9,6 +9,9 @@ services:
     volumes:
       - ./testHelpers/kafka/server-jaas.conf:/etc/kafka/server-jaas.conf
   kafka1:
+    labels:
+      - "custom.project=kafkajs"
+      - "custom.service=kafka1"
     image: wurstmeister/kafka:0.10.2.1
     ports:
       - "9092:9092"
@@ -39,6 +42,9 @@ services:
       - ./testHelpers/kafka/server-jaas.conf:/opt/kafka/config/server-jaas.conf
       # - ./testHelpers/kafka/log4j.properties:/opt/kafka/config/log4j.properties
   kafka2:
+    labels:
+      - "custom.project=kafkajs"
+      - "custom.service=kafka2"
     image: wurstmeister/kafka:0.10.2.1
     ports:
       - "9095:9095"
@@ -69,6 +75,9 @@ services:
       - ./testHelpers/kafka/server-jaas.conf:/opt/kafka/config/server-jaas.conf
       # - ./testHelpers/kafka/log4j.properties:/opt/kafka/config/log4j.properties
   kafka3:
+    labels:
+      - "custom.project=kafkajs"
+      - "custom.service=kafka3"
     image: wurstmeister/kafka:0.10.2.1
     ports:
       - "9098:9098"
