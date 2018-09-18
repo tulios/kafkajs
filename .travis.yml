@@ -9,7 +9,7 @@ branches:
     - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
 env:
   global:
-    - DOCKER_COMPOSE_VERSION=1.16.1
+    - DOCKER_COMPOSE_VERSION=1.22.0
     - COMPOSE_FILE=docker-compose.0_11.yml
     - KAFKA_VERSION=0.11
 before_install:

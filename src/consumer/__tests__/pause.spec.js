@@ -88,7 +88,7 @@ describe('Consumer', () => {
       expect(consumedMessages.filter(({ topic }) => topic === pausedTopic)).toEqual([
         {
           topic: pausedTopic,
-          partition: 0,
+          partition: expect.any(Number),
           message: expect.objectContaining({ offset: '0' }),
         },
       ])

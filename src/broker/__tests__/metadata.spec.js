@@ -5,6 +5,7 @@ const {
   newLogger,
   createTopic,
   retryProtocol,
+  testIfKafka011,
 } = require('testHelpers')
 
 describe('Broker > Metadata', () => {
@@ -76,7 +77,7 @@ describe('Broker > Metadata', () => {
       })
     })
 
-    it('returns UNKNOWN_TOPIC_OR_PARTITION', async () => {
+    testIfKafka011('returns UNKNOWN_TOPIC_OR_PARTITION', async () => {
       await broker.connect()
 
       await expect(broker.metadata([topicName])).rejects.toHaveProperty(

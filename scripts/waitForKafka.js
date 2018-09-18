@@ -9,8 +9,8 @@ const findContainerId = node => {
   const cmd = `
     docker ps \
       --filter "status=running" \
-      --filter "label=com.docker.compose.project=kafkajs" \
-      --filter "label=com.docker.compose.service=${node}" \
+      --filter "label=custom.project=kafkajs" \
+      --filter "label=custom.service=${node}" \
       --no-trunc \
       -q
   `
