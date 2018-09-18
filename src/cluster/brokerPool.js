@@ -1,6 +1,7 @@
 const Broker = require('../broker')
 const createRetry = require('../retry')
 const shuffle = require('../utils/shuffle')
+const arrayDiff = require('../utils/arrayDiff')
 const { KafkaJSBrokerNotFound } = require('../errors')
 
 const { keys, assign, values } = Object
@@ -115,6 +116,7 @@ module.exports = class BrokerPool {
       try {
         this.metadata = await broker.metadata(topics)
         this.metadataExpireAt = Date.now() + this.metadataMaxAge
+
         this.brokers = this.metadata.brokers.reduce((result, { nodeId, host, port, rack }) => {
           if (result[nodeId]) {
             return result
@@ -136,6 +138,19 @@ module.exports = class BrokerPool {
             }),
           })
         }, this.brokers)
+
+        const freshBrokerIds = this.metadata.brokers.map(({ nodeId }) => `${nodeId}`).sort()
+        const currentBrokerIds = keys(this.brokers).sort()
+        const unusedBrokerIds = arrayDiff(currentBrokerIds, freshBrokerIds)
+
+        const brokerDisconnects = unusedBrokerIds.map(nodeId => {
+          const broker = this.brokers[nodeId]
+          return broker.disconnect().then(() => {
+            delete this.brokers[nodeId]
+          })
+        })
+
+        await Promise.all(brokerDisconnects)
       } catch (e) {
         if (e.type === 'LEADER_NOT_AVAILABLE') {
           throw e

@@ -61,6 +61,7 @@ class KafkaJSSASLAuthenticationError extends KafkaJSNonRetriableError {}
 class KafkaJSGroupCoordinatorNotFound extends KafkaJSNonRetriableError {}
 class KafkaJSNotImplemented extends KafkaJSNonRetriableError {}
 class KafkaJSTimeout extends KafkaJSNonRetriableError {}
+class KafkaJSLockTimeout extends KafkaJSTimeout {}
 
 module.exports = {
   KafkaJSError,
@@ -77,4 +78,5 @@ module.exports = {
   KafkaJSMetadataNotLoaded,
   KafkaJSTopicMetadataNotLoaded,
   KafkaJSTimeout,
+  KafkaJSLockTimeout,
 }

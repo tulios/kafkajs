@@ -126,7 +126,16 @@ module.exports = class Cluster {
    * @returns {Promise<Broker>}
    */
   async findBroker({ nodeId }) {
-    return await this.brokerPool.findBroker({ nodeId })
+    try {
+      return await this.brokerPool.findBroker({ nodeId })
+    } catch (e) {
+      // The client probably has stale metadata
+      if (e.name === 'KafkaJSLockTimeout') {
+        await this.refreshMetadata()
+      }
+
+      throw e
+    }
   }
 
   /**

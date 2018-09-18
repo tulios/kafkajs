@@ -194,6 +194,25 @@ describe('Cluster > BrokerPool', () => {
       expect(seedFromBrokerPool).toEqual(seed)
     })
 
+    it('cleans up unused brokers', async () => {
+      await brokerPool.refreshMetadata([topicName])
+
+      const nodeId = 'fakebroker'
+      const fakeBroker = new Broker({
+        connection: createConnection(),
+        logger: newLogger(),
+      })
+
+      jest.spyOn(fakeBroker, 'disconnect')
+      brokerPool.brokers[nodeId] = fakeBroker
+      expect(Object.keys(brokerPool.brokers)).toEqual(['0', '1', '2', 'fakebroker'])
+
+      await brokerPool.refreshMetadata([topicName])
+
+      expect(fakeBroker.disconnect).toHaveBeenCalled()
+      expect(Object.keys(brokerPool.brokers)).toEqual(['0', '1', '2'])
+    })
+
     it('retries on LEADER_NOT_AVAILABLE errors', async () => {
       const leaderNotAvailableError = new KafkaJSProtocolError({
         message: 'LEADER_NOT_AVAILABLE',
