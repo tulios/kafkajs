@@ -143,6 +143,8 @@ const testIfKafka011 = (description, callback) => {
     : test.skip(description, callback)
 }
 
+const unsupportedVersionResponse = () => Buffer.from({ type: 'Buffer', data: [0, 35, 0, 0, 0, 0] })
+
 module.exports = {
   secureRandom,
   connectionOpts,
@@ -163,4 +165,5 @@ module.exports = {
   waitFor: testWaitFor,
   waitForMessages,
   testIfKafka011,
+  unsupportedVersionResponse,
 }
