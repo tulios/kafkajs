@@ -106,6 +106,7 @@ module.exports = class Connection {
 
         const error = new KafkaJSConnectionError(`Connection error: ${e.message}`, {
           broker: `${this.host}:${this.port}`,
+          code: e.code,
         })
 
         this.logError(error.message, { stack: e.stack })
