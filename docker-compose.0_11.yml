@@ -12,7 +12,7 @@ services:
     labels:
       - "custom.project=kafkajs"
       - "custom.service=kafka1"
-    image: wurstmeister/kafka:2.11-0.11.0.2
+    image: wurstmeister/kafka:2.11-0.11.0.3
     ports:
       - "9092:9092"
       - "9093:9093"
@@ -46,7 +46,7 @@ services:
     labels:
       - "custom.project=kafkajs"
       - "custom.service=kafka2"
-    image: wurstmeister/kafka:2.11-0.11.0.2
+    image: wurstmeister/kafka:2.11-0.11.0.3
     ports:
       - "9095:9095"
       - "9096:9096"
@@ -79,8 +79,8 @@ services:
   kafka3:
     labels:
       - "custom.project=kafkajs"
-      - "custom.service=kafka3"    
-    image: wurstmeister/kafka:2.11-0.11.0.2
+      - "custom.service=kafka3"
+    image: wurstmeister/kafka:2.11-0.11.0.3
     ports:
       - "9098:9098"
       - "9099:9099"
