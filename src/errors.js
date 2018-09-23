@@ -54,6 +54,13 @@ class KafkaJSTopicMetadataNotLoaded extends KafkaJSMetadataNotLoaded {
     this.topic = topic
   }
 }
+class KafkaJSStaleTopicMetadataAssigment extends KafkaJSError {
+  constructor(e, { topic, unknownPartitions } = {}) {
+    super(e)
+    this.topic = topic
+    this.unknownPartitions = unknownPartitions
+  }
+}
 
 class KafkaJSBrokerNotFound extends KafkaJSError {}
 class KafkaJSPartialMessageError extends KafkaJSNonRetriableError {}
@@ -77,6 +84,7 @@ module.exports = {
   KafkaJSNotImplemented,
   KafkaJSMetadataNotLoaded,
   KafkaJSTopicMetadataNotLoaded,
+  KafkaJSStaleTopicMetadataAssigment,
   KafkaJSTimeout,
   KafkaJSLockTimeout,
 }

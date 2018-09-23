@@ -5,9 +5,13 @@ const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
 const SubscriptionState = require('./subscriptionState')
-const { KafkaJSError, KafkaJSNonRetriableError } = require('../errors')
 const { HEARTBEAT } = require('./instrumentationEvents')
 const { MemberAssignment } = require('./assignerProtocol')
+const {
+  KafkaJSError,
+  KafkaJSNonRetriableError,
+  KafkaJSStaleTopicMetadataAssigment,
+} = require('../errors')
 
 const { keys } = Object
 
@@ -57,6 +61,7 @@ module.exports = class ConsumerGroup {
     this.members = null
     this.groupProtocol = null
 
+    this.partitionsPerSubscribedTopic = null
     this.memberAssignment = null
     this.offsetManager = null
     this.subscriptionState = new SubscriptionState()
@@ -110,6 +115,7 @@ module.exports = class ConsumerGroup {
       }
 
       await this.cluster.refreshMetadataIfNecessary()
+
       assignment = await assigner.assign({ members, topics })
       this.logger.debug('Group assignment', {
         groupId,
@@ -120,6 +126,8 @@ module.exports = class ConsumerGroup {
       })
     }
 
+    // Keep track of the partitions for the subscribed topics
+    this.partitionsPerSubscribedTopic = this.generatePartitionsPerSubscribedTopic()
     const { memberAssignment } = await this.coordinator.syncGroup({
       groupId,
       generationId,
@@ -155,6 +163,33 @@ module.exports = class ConsumerGroup {
         (assignment, topic) => ({ ...assignment, [topic]: decodedAssignment[topic] }),
         {}
       )
+    }
+
+    // Check if the consumer is aware of all assigned partitions
+    for (let topic of assignedTopics) {
+      const assignedPartitions = currentMemberAssignment[topic]
+      const knownPartitions = this.partitionsPerSubscribedTopic.get(topic)
+      const isAwareOfAllAssignedPartitions = assignedPartitions.every(partition =>
+        knownPartitions.includes(partition)
+      )
+
+      if (!isAwareOfAllAssignedPartitions) {
+        this.logger.warn('Consumer is not aware of all assigned partitions, refreshing metadata', {
+          groupId,
+          generationId,
+          memberId,
+          topic,
+          knownPartitions,
+          assignedPartitions,
+        })
+
+        // If the consumer is not aware of all assigned partions, refresh metadata
+        // and update the list of partitions per subscribed topic. It's enough to perform
+        // this operation once since refresh metadata will update metadata for all topics
+        await this.cluster.refreshMetadata()
+        this.partitionsPerSubscribedTopic = this.generatePartitionsPerSubscribedTopic()
+        break
+      }
     }
 
     this.memberAssignment = currentMemberAssignment
@@ -242,6 +277,7 @@ module.exports = class ConsumerGroup {
       const requestsPerLeader = {}
 
       await this.cluster.refreshMetadataIfNecessary()
+      this.checkForStaleAssignment()
 
       while (this.seekOffset.size > 0) {
         const seekEntry = this.seekOffset.pop()
@@ -347,6 +383,18 @@ module.exports = class ConsumerGroup {
         throw new KafkaJSError(e.message)
       }
 
+      if (e.name === 'KafkaJSStaleTopicMetadataAssigment') {
+        this.logger.warn(`${e.message}, resync group`, {
+          groupId: this.groupId,
+          memberId: this.memberId,
+          topic: e.topic,
+          unknownPartitions: e.unknownPartitions,
+        })
+
+        await this.join()
+        await this.sync()
+      }
+
       if (e.name === 'KafkaJSOffsetOutOfRange') {
         await this.recoverFromOffsetOutOfRange(e)
       }
@@ -372,5 +420,39 @@ module.exports = class ConsumerGroup {
       topic: e.topic,
       partition: e.partition,
     })
+  }
+
+  generatePartitionsPerSubscribedTopic() {
+    const map = new Map()
+
+    for (let topic of this.topics) {
+      const partitions = this.cluster
+        .findTopicPartitionMetadata(topic)
+        .map(m => m.partitionId)
+        .sort()
+
+      map.set(topic, partitions)
+    }
+
+    return map
+  }
+
+  checkForStaleAssignment() {
+    if (!this.partitionsPerSubscribedTopic) {
+      return
+    }
+
+    const newPartitionsPerSubscribedTopic = this.generatePartitionsPerSubscribedTopic()
+
+    for (let [topic, partitions] of newPartitionsPerSubscribedTopic) {
+      const diff = arrayDiff(partitions, this.partitionsPerSubscribedTopic.get(topic))
+
+      if (diff.length > 0) {
+        throw new KafkaJSStaleTopicMetadataAssigment('Topic has been updated', {
+          topic,
+          unknownPartitions: diff,
+        })
+      }
+    }
   }
 }
