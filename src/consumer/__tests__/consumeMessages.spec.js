@@ -11,6 +11,7 @@ const {
   waitFor,
   waitForMessages,
   testIfKafka011,
+  waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
 describe('Consumer', () => {
@@ -50,7 +51,8 @@ describe('Consumer', () => {
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
     const messagesConsumed = []
-    await consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+    consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+    await waitForConsumerToJoinGroup(consumer)
 
     const messages = Array(100)
       .fill()
@@ -94,7 +96,8 @@ describe('Consumer', () => {
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
     const messagesConsumed = []
-    await consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+    consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+    await waitForConsumerToJoinGroup(consumer)
 
     const key1 = secureRandom()
     const message1 = { key: `key-${key1}`, value: `value-${key1}` }
@@ -137,12 +140,14 @@ describe('Consumer', () => {
 
     const batchesConsumed = []
     const functionsExposed = []
-    await consumer.run({
+    consumer.run({
       eachBatch: async ({ batch, resolveOffset, heartbeat, isRunning }) => {
         batchesConsumed.push(batch)
         functionsExposed.push(resolveOffset, heartbeat, isRunning)
       },
     })
+
+    await waitForConsumerToJoinGroup(consumer)
 
     const key1 = secureRandom()
     const message1 = { key: `key-${key1}`, value: `value-${key1}` }
@@ -204,7 +209,8 @@ describe('Consumer', () => {
     await consumer.subscribe({ topic: topicName2, fromBeginning: true })
 
     const messagesConsumed = []
-    await consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+    consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+    await waitForConsumerToJoinGroup(consumer)
 
     const generateMessages = () =>
       Array(103)
@@ -319,12 +325,14 @@ describe('Consumer', () => {
     const sleep = value => waitFor(delay => delay >= value)
     let calls = 0
 
-    await consumer.run({
+    consumer.run({
       eachMessage: async event => {
         calls++
         await sleep(100)
       },
     })
+
+    await waitForConsumerToJoinGroup(consumer)
 
     const key1 = secureRandom()
     const message1 = { key: `key-${key1}`, value: `value-${key1}` }
