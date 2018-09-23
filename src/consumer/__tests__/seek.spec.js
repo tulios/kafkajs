@@ -9,6 +9,7 @@ const {
   createModPartitioner,
   newLogger,
   waitForMessages,
+  waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
 describe('Consumer', () => {
@@ -35,8 +36,8 @@ describe('Consumer', () => {
   })
 
   afterEach(async () => {
-    await consumer.disconnect()
-    await producer.disconnect()
+    consumer && (await consumer.disconnect())
+    producer && (await producer.disconnect())
   })
 
   describe('when seek offset', () => {
@@ -94,6 +95,8 @@ describe('Consumer', () => {
       consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
       consumer.seek({ topic: topicName, partition: 0, offset: 1 })
 
+      waitForConsumerToJoinGroup(consumer)
+
       await expect(waitForMessages(messagesConsumed, { number: 2 })).resolves.toEqual([
         {
           topic: topicName,
@@ -128,6 +131,8 @@ describe('Consumer', () => {
       consumer.seek({ topic: topicName, partition: 0, offset: 1 })
       consumer.seek({ topic: topicName, partition: 0, offset: 2 })
 
+      waitForConsumerToJoinGroup(consumer)
+
       await expect(waitForMessages(messagesConsumed, { number: 1 })).resolves.toEqual([
         {
           topic: topicName,
@@ -150,6 +155,8 @@ describe('Consumer', () => {
       const messagesConsumed = []
       consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
       consumer.seek({ topic: topicName, partition: 0, offset: 100 })
+
+      waitForConsumerToJoinGroup(consumer)
 
       await expect(waitForMessages(messagesConsumed, { number: 1 })).resolves.toEqual([
         {

@@ -1,5 +1,6 @@
 const fs = require('fs')
 const ip = require('ip')
+const uuid = require('uuid/v4')
 const crypto = require('crypto')
 const Cluster = require('../src/cluster')
 const waitFor = require('../src/utils/waitFor')
@@ -23,7 +24,9 @@ const newLogger = (opts = {}) =>
   )
 
 const getHost = () => process.env.HOST_IP || ip.address()
-const secureRandom = (length = 10) => crypto.randomBytes(length).toString('hex')
+const secureRandom = (length = 10) =>
+  `${crypto.randomBytes(length).toString('hex')}-${process.pid}-${uuid()}`
+
 const plainTextBrokers = (host = getHost()) => [`${host}:9092`, `${host}:9095`, `${host}:9098`]
 const sslBrokers = (host = getHost()) => [`${host}:9093`, `${host}:9096`, `${host}:9099`]
 const saslBrokers = (host = getHost()) => [`${host}:9094`, `${host}:9097`, `${host}:9100`]
@@ -122,6 +125,15 @@ const retryProtocol = (errorType, fn) =>
 const waitForMessages = (buffer, { number = 1, delay = 50 } = {}) =>
   waitFor(() => (buffer.length >= number ? buffer : false), { delay, ignoreTimeout: true })
 
+const waitForConsumerToJoinGroup = (consumer, { maxWait = 10000 } = {}) =>
+  new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => reject(new Error('Timeout')), maxWait)
+    consumer.on(consumer.events.GROUP_JOIN, () => {
+      clearTimeout(timeoutId)
+      resolve()
+    })
+  })
+
 const createTopic = async ({ topic, partitions = 1 }) => {
   const kafka = new Kafka({ clientId: 'testHelpers', brokers: [`${getHost()}:9092`] })
   const admin = kafka.admin()
@@ -162,5 +174,6 @@ module.exports = {
   createTopic,
   waitFor: testWaitFor,
   waitForMessages,
+  waitForConsumerToJoinGroup,
   testIfKafka011,
 }

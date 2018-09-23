@@ -7,6 +7,7 @@ const {
   createTopic,
   createModPartitioner,
   newLogger,
+  waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
 describe('Consumer', () => {
@@ -35,15 +36,18 @@ describe('Consumer', () => {
   })
 
   afterEach(async () => {
-    await consumer.disconnect()
-    await producer.disconnect()
+    consumer && (await consumer.disconnect())
+    producer && (await producer.disconnect())
   })
 
   describe('describe group', () => {
     it('returns the group description', async () => {
       await consumer.connect()
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
-      await consumer.run({ eachMessage: jest.fn() })
+
+      consumer.run({ eachMessage: jest.fn() })
+      await waitForConsumerToJoinGroup(consumer)
+
       await expect(consumer.describeGroup()).resolves.toEqual({
         errorCode: 0,
         groupId,
