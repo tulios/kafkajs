@@ -17,7 +17,7 @@ module.exports = {
   DescribeGroups: 15,
   ListGroups: 16,
   SaslHandshake: 17,
-  ApiVersions: 18,
+  ApiVersions: 18, // ApiVersions v0 on Kafka 0.10
   CreateTopics: 19,
   DeleteTopics: 20,
   DeleteRecords: 21,
@@ -32,7 +32,7 @@ module.exports = {
   CreateAcls: 30,
   DeleteAcls: 31,
   DescribeConfigs: 32,
-  AlterConfigs: 33,
+  AlterConfigs: 33, // ApiVersions v0 and v1 on Kafka 0.11
   AlterReplicaLogDirs: 34,
   DescribeLogDirs: 35,
   SaslAuthenticate: 36,
@@ -41,5 +41,5 @@ module.exports = {
   RenewDelegationToken: 39,
   ExpireDelegationToken: 40,
   DescribeDelegationToken: 41,
-  DeleteGroups: 42,
+  DeleteGroups: 42, // ApiVersions v2 on Kafka 1.0
 }
