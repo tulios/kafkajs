@@ -241,6 +241,8 @@ module.exports = class ConsumerGroup {
       const { topics, maxBytesPerPartition, maxWaitTime, minBytes, maxBytes } = this
       const requestsPerLeader = {}
 
+      await this.cluster.refreshMetadataIfNecessary()
+
       while (this.seekOffset.size > 0) {
         const seekEntry = this.seekOffset.pop()
         this.logger.debug('Seek offset', {
@@ -272,8 +274,6 @@ module.exports = class ConsumerGroup {
         activeTopics,
         pausedTopics,
       })
-
-      await this.cluster.refreshMetadataIfNecessary()
 
       for (let topic of activeTopics) {
         const partitionsPerLeader = this.cluster.findLeaderForPartitions(
