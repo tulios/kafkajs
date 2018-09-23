@@ -11,6 +11,7 @@ const {
   saslBrokers,
   newLogger,
   testIfKafka011,
+  createTopic,
 } = require('testHelpers')
 
 const { KafkaJSSASLAuthenticationError } = require('../errors')
@@ -141,6 +142,8 @@ describe('Producer', () => {
       })
     )
 
+    await createTopic({ topic: topicName })
+
     producer = createProducer({ cluster, logger: newLogger() })
     await producer.connect()
     await producer.send({
@@ -168,6 +171,8 @@ describe('Producer', () => {
         createPartitioner: createModPartitioner,
       })
     )
+
+    await createTopic({ topic: topicName })
 
     producer = createProducer({ cluster, logger: newLogger() })
     await producer.connect()
@@ -211,6 +216,8 @@ describe('Producer', () => {
       })
     )
 
+    await createTopic({ topic: topicName })
+
     producer = createProducer({ cluster, logger: newLogger() })
     await producer.connect()
 
@@ -253,6 +260,8 @@ describe('Producer', () => {
       })
     )
 
+    await createTopic({ topic: topicName })
+
     producer = createProducer({ cluster, logger: newLogger() })
     await producer.connect()
 
@@ -294,6 +303,10 @@ describe('Producer', () => {
 
   test('produce messages to multiple topics', async () => {
     const topics = [`test-topic-${secureRandom()}`, `test-topic-${secureRandom()}`]
+
+    await createTopic({ topic: topics[0] })
+    await createTopic({ topic: topics[1] })
+
     const cluster = createCluster({
       ...connectionOpts(),
       createPartitioner: createModPartitioner,
@@ -362,7 +375,6 @@ describe('Producer', () => {
 
   test('gives access to its logger', () => {
     producer = createProducer({ cluster: createCluster(), logger: newLogger() })
-
     expect(producer.logger()).toMatchSnapshot()
   })
 

@@ -6,6 +6,7 @@ const {
   newLogger,
   createTopic,
   testIfKafka011,
+  retryProtocol,
 } = require('testHelpers')
 
 describe('Broker > Produce', () => {
@@ -74,7 +75,11 @@ describe('Broker > Produce', () => {
   })
 
   test('request', async () => {
-    const metadata = await broker.metadata([topicName])
+    const metadata = await retryProtocol(
+      'LEADER_NOT_AVAILABLE',
+      async () => await broker.metadata([topicName])
+    )
+
     // Find leader of partition
     const partitionBroker = metadata.topicMetadata[0].partitionMetadata[0].leader
     const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
@@ -86,7 +91,10 @@ describe('Broker > Produce', () => {
     })
     await broker2.connect()
 
-    const response1 = await broker2.produce({ topicData: createTopicData() })
+    const response1 = await retryProtocol(
+      'LEADER_NOT_AVAILABLE',
+      async () => await broker2.produce({ topicData: createTopicData() })
+    )
     expect(response1).toEqual({
       topics: [
         { topicName, partitions: [{ errorCode: 0, offset: '0', partition: 0, timestamp: '-1' }] },
@@ -104,7 +112,11 @@ describe('Broker > Produce', () => {
   })
 
   test('request with GZIP', async () => {
-    const metadata = await broker.metadata([topicName])
+    const metadata = await retryProtocol(
+      'LEADER_NOT_AVAILABLE',
+      async () => await broker.metadata([topicName])
+    )
+
     // Find leader of partition
     const partitionBroker = metadata.topicMetadata[0].partitionMetadata[0].leader
     const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
@@ -116,10 +128,14 @@ describe('Broker > Produce', () => {
     })
     await broker2.connect()
 
-    const response1 = await broker2.produce({
-      compression: Compression.GZIP,
-      topicData: createTopicData(),
-    })
+    const response1 = await retryProtocol(
+      'LEADER_NOT_AVAILABLE',
+      async () =>
+        await broker2.produce({
+          compression: Compression.GZIP,
+          topicData: createTopicData(),
+        })
+    )
 
     expect(response1).toEqual({
       topics: [
@@ -143,7 +159,11 @@ describe('Broker > Produce', () => {
 
   describe('Record batch', () => {
     testIfKafka011('request', async () => {
-      const metadata = await broker.metadata([topicName])
+      const metadata = await retryProtocol(
+        'LEADER_NOT_AVAILABLE',
+        async () => await broker.metadata([topicName])
+      )
+
       // Find leader of partition
       const partitionBroker = metadata.topicMetadata[0].partitionMetadata[0].leader
       const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
@@ -156,7 +176,11 @@ describe('Broker > Produce', () => {
       })
       await broker2.connect()
 
-      const response1 = await broker2.produce({ topicData: createTopicData() })
+      const response1 = await retryProtocol(
+        'LEADER_NOT_AVAILABLE',
+        async () => await broker2.produce({ topicData: createTopicData() })
+      )
+
       expect(response1).toEqual({
         topics: [
           {
@@ -180,7 +204,11 @@ describe('Broker > Produce', () => {
     })
 
     testIfKafka011('request with headers', async () => {
-      const metadata = await broker.metadata([topicName])
+      const metadata = await retryProtocol(
+        'LEADER_NOT_AVAILABLE',
+        async () => await broker.metadata([topicName])
+      )
+
       // Find leader of partition
       const partitionBroker = metadata.topicMetadata[0].partitionMetadata[0].leader
       const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
@@ -193,7 +221,11 @@ describe('Broker > Produce', () => {
       })
       await broker2.connect()
 
-      const response1 = await broker2.produce({ topicData: createTopicData(true) })
+      const response1 = await retryProtocol(
+        'LEADER_NOT_AVAILABLE',
+        async () => await broker2.produce({ topicData: createTopicData(true) })
+      )
+
       expect(response1).toEqual({
         topics: [
           {
@@ -217,7 +249,11 @@ describe('Broker > Produce', () => {
     })
 
     testIfKafka011('request with GZIP', async () => {
-      const metadata = await broker.metadata([topicName])
+      const metadata = await retryProtocol(
+        'LEADER_NOT_AVAILABLE',
+        async () => await broker.metadata([topicName])
+      )
+
       // Find leader of partition
       const partitionBroker = metadata.topicMetadata[0].partitionMetadata[0].leader
       const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
@@ -230,10 +266,14 @@ describe('Broker > Produce', () => {
       })
       await broker2.connect()
 
-      const response1 = await broker2.produce({
-        compression: Compression.GZIP,
-        topicData: createTopicData(),
-      })
+      const response1 = await retryProtocol(
+        'LEADER_NOT_AVAILABLE',
+        async () =>
+          await broker2.produce({
+            compression: Compression.GZIP,
+            topicData: createTopicData(),
+          })
+      )
 
       expect(response1).toEqual({
         topics: [

@@ -8,6 +8,7 @@ const {
   createTopic,
   newLogger,
   waitForMessages,
+  waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
 describe('Consumer', () => {
@@ -38,8 +39,8 @@ describe('Consumer', () => {
   })
 
   afterEach(async () => {
-    await consumer.disconnect()
-    await producer.disconnect()
+    consumer && (await consumer.disconnect())
+    producer && (await producer.disconnect())
   })
 
   describe('when pausing', () => {
@@ -74,6 +75,7 @@ describe('Consumer', () => {
       const messagesConsumed = []
       consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
 
+      await waitForConsumerToJoinGroup(consumer)
       await waitForMessages(messagesConsumed, { number: 2 })
 
       const [pausedTopic, activeTopic] = topics
@@ -130,7 +132,8 @@ describe('Consumer', () => {
       await consumer.subscribe({ topic: topic2, fromBeginning: true })
 
       const eachMessage = jest.fn()
-      await consumer.run({ eachMessage })
+      consumer.run({ eachMessage })
+      await waitForConsumerToJoinGroup(consumer)
 
       consumer.pause([{ topic: topic1 }, { topic: topic2 }])
 
@@ -175,6 +178,8 @@ describe('Consumer', () => {
 
       const [pausedTopic, activeTopic] = topics
       consumer.pause([{ topic: pausedTopic }])
+
+      waitForConsumerToJoinGroup(consumer)
 
       for (let topic of topics) {
         await producer.send({ acks: 1, topic, messages: [message] })

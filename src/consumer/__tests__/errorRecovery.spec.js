@@ -10,6 +10,7 @@ const {
   newLogger,
   waitFor,
   waitForMessages,
+  waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
 describe('Consumer', () => {
@@ -36,8 +37,8 @@ describe('Consumer', () => {
   })
 
   afterEach(async () => {
-    await consumer.disconnect()
-    await producer.disconnect()
+    consumer && (await consumer.disconnect())
+    producer && (await producer.disconnect())
   })
 
   it('recovers from offset out of range', async () => {
@@ -92,7 +93,8 @@ describe('Consumer', () => {
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
     const messagesConsumed = []
-    await consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+    consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+    await waitForConsumerToJoinGroup(consumer)
 
     await expect(waitForMessages(messagesConsumed)).resolves.toEqual([
       {
@@ -139,7 +141,8 @@ describe('Consumer', () => {
           succeeded = true
         })
 
-      await consumer.run({ eachMessage })
+      consumer.run({ eachMessage })
+      await waitForConsumerToJoinGroup(consumer)
       await expect(waitFor(() => succeeded)).resolves.toBeTruthy()
 
       // retry the same message
@@ -149,7 +152,7 @@ describe('Consumer', () => {
 
     it('commits the previous offsets', async () => {
       let raisedError = false
-      await consumer.run({
+      consumer.run({
         eachMessage: async event => {
           if (event.message.key.toString() === `key-${key3}`) {
             raisedError = true
@@ -158,6 +161,7 @@ describe('Consumer', () => {
         },
       })
 
+      await waitForConsumerToJoinGroup(consumer)
       await expect(waitFor(() => raisedError)).resolves.toBeTruthy()
       const coordinator = await cluster.findGroupCoordinator({ groupId })
       const offsets = await coordinator.offsetFetch({
@@ -214,7 +218,9 @@ describe('Consumer', () => {
           succeeded = true
         })
 
-      await consumer.run({ eachBatch })
+      consumer.run({ eachBatch })
+
+      await waitForConsumerToJoinGroup(consumer)
       await expect(waitFor(() => succeeded)).resolves.toBeTruthy()
 
       // retry the same batch
@@ -228,7 +234,7 @@ describe('Consumer', () => {
 
     it('commits the previous offsets', async () => {
       let raisedError = false
-      await consumer.run({
+      consumer.run({
         eachBatch: async ({ batch, resolveOffset }) => {
           for (let message of batch.messages) {
             if (message.key.toString() === `key-${key3}`) {
@@ -240,6 +246,7 @@ describe('Consumer', () => {
         },
       })
 
+      await waitForConsumerToJoinGroup(consumer)
       await expect(waitFor(() => raisedError)).resolves.toBeTruthy()
       const coordinator = await cluster.findGroupCoordinator({ groupId })
       const offsets = await coordinator.offsetFetch({
