@@ -95,8 +95,11 @@ module.exports = class Broker {
    * @returns {Promise}
    */
   async apiVersions() {
-    const availableVersions = requests.ApiVersions.versions.map(Number).reverse()
     let response
+    const availableVersions = requests.ApiVersions.versions
+      .map(Number)
+      .sort()
+      .reverse()
 
     // Find the best version implemented by the server
     for (let candidateVersion of availableVersions) {
