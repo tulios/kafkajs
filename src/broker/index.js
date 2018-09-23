@@ -1,6 +1,7 @@
 const Lock = require('../utils/lock')
 const { Types: Compression } = require('../protocol/message/compression')
 const { requests, lookup } = require('../protocol/requests')
+const { KafkaJSNonRetriableError } = require('../errors')
 const apiKeys = require('../protocol/requests/apiKeys')
 const SASLAuthenticator = require('./saslAuthenticator')
 
@@ -94,8 +95,25 @@ module.exports = class Broker {
    * @returns {Promise}
    */
   async apiVersions() {
-    const apiVersions = requests.ApiVersions.protocol({ version: 0 })
-    const response = await this.connection.send(apiVersions())
+    const availableVersions = requests.ApiVersions.versions.map(Number).reverse()
+    let response
+
+    // Find the best version implemented by the server
+    for (let candidateVersion of availableVersions) {
+      try {
+        const apiVersions = requests.ApiVersions.protocol({ version: candidateVersion })
+        response = await this.connection.send(apiVersions())
+      } catch (e) {
+        if (e.type !== 'UNSUPPORTED_VERSION') {
+          throw e
+        }
+      }
+    }
+
+    if (!response) {
+      throw new KafkaJSNonRetriableError('API Versions not supported')
+    }
+
     return response.apiVersions.reduce(
       (obj, version) =>
         Object.assign(obj, {
