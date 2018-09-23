@@ -16,6 +16,7 @@ const {
   sslBrokers,
   saslBrokers,
   waitFor,
+  waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
 describe('Consumer', () => {
@@ -115,11 +116,13 @@ describe('Consumer', () => {
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
     let messages = []
-    await consumer.run({
+    consumer.run({
       eachMessage: async ({ message }) => {
         messages.push(message)
       },
     })
+
+    await waitForConsumerToJoinGroup(consumer)
 
     expect(cluster.isConnected()).toEqual(true)
     await cluster.disconnect()

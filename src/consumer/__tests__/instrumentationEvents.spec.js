@@ -39,8 +39,8 @@ describe('Consumer > Instrumentation Events', () => {
   })
 
   afterEach(async () => {
-    await consumer.disconnect()
-    await producer.disconnect()
+    consumer && (await consumer.disconnect())
+    producer && (await producer.disconnect())
   })
 
   test('on throws an error when provided with an invalid event name', () => {
