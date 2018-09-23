@@ -1,5 +1,5 @@
 const Decoder = require('../../../decoder')
-const { failure, createErrorFromCode } = require('../../../error')
+const { failure, createErrorFromCode, failIfVersionNotSupported } = require('../../../error')
 
 /**
  * JoinGroup Response (Version: 0) => error_code generation_id group_protocol leader_id member_id [members]
@@ -15,8 +15,12 @@ const { failure, createErrorFromCode } = require('../../../error')
 
 const decode = async rawData => {
   const decoder = new Decoder(rawData)
+  const errorCode = decoder.readInt16()
+
+  failIfVersionNotSupported(errorCode)
+
   return {
-    errorCode: decoder.readInt16(),
+    errorCode,
     generationId: decoder.readInt32(),
     groupProtocol: decoder.readString(),
     leaderId: decoder.readString(),

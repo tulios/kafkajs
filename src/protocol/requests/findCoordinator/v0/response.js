@@ -1,5 +1,5 @@
 const Decoder = require('../../../decoder')
-const { failure, createErrorFromCode } = require('../../../error')
+const { failure, createErrorFromCode, failIfVersionNotSupported } = require('../../../error')
 
 /**
  * FindCoordinator Response (Version: 0) => error_code coordinator
@@ -13,6 +13,9 @@ const { failure, createErrorFromCode } = require('../../../error')
 const decode = async rawData => {
   const decoder = new Decoder(rawData)
   const errorCode = decoder.readInt16()
+
+  failIfVersionNotSupported(errorCode)
+
   const coordinator = {
     nodeId: decoder.readInt32(),
     host: decoder.readString(),
