@@ -33,7 +33,7 @@ const requests = {
   DescribeAcls: {},
   CreateAcls: {},
   DeleteAcls: {},
-  DescribeConfigs: {},
+  DescribeConfigs: require('./describeConfigs'),
   AlterConfigs: {},
   AlterReplicaLogDirs: {},
   DescribeLogDirs: {},
