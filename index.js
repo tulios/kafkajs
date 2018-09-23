@@ -2,6 +2,7 @@ const Kafka = require('./src')
 const PartitionAssigners = require('./src/consumer/assigners')
 const AssignerProtocol = require('./src/consumer/assignerProtocol')
 const Compression = require('./src/protocol/message/compression')
+const ResourceTypes = require('./src/protocol/resourceTypes')
 const { LEVELS } = require('./src/loggers')
 
 module.exports = {
@@ -11,4 +12,5 @@ module.exports = {
   logLevel: LEVELS,
   CompressionTypes: Compression.Types,
   CompressionCodecs: Compression.Codecs,
+  ResourceTypes,
 }
