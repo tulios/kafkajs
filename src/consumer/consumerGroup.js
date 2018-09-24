@@ -10,7 +10,7 @@ const { MemberAssignment } = require('./assignerProtocol')
 const {
   KafkaJSError,
   KafkaJSNonRetriableError,
-  KafkaJSStaleTopicMetadataAssigment,
+  KafkaJSStaleTopicMetadataAssignment,
 } = require('../errors')
 
 const { keys } = Object
@@ -383,7 +383,7 @@ module.exports = class ConsumerGroup {
         throw new KafkaJSError(e.message)
       }
 
-      if (e.name === 'KafkaJSStaleTopicMetadataAssigment') {
+      if (e.name === 'KafkaJSStaleTopicMetadataAssignment') {
         this.logger.warn(`${e.message}, resync group`, {
           groupId: this.groupId,
           memberId: this.memberId,
@@ -448,7 +448,7 @@ module.exports = class ConsumerGroup {
       const diff = arrayDiff(partitions, this.partitionsPerSubscribedTopic.get(topic))
 
       if (diff.length > 0) {
-        throw new KafkaJSStaleTopicMetadataAssigment('Topic has been updated', {
+        throw new KafkaJSStaleTopicMetadataAssignment('Topic has been updated', {
           topic,
           unknownPartitions: diff,
         })
