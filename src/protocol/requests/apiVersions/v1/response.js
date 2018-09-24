@@ -18,7 +18,6 @@ const apiVersion = decoder => ({
 })
 
 const decode = async rawData => {
-  console.log(JSON.stringify(rawData))
   const decoder = new Decoder(rawData)
   return {
     errorCode: decoder.readInt16(),
