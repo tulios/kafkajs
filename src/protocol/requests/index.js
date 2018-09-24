@@ -53,9 +53,10 @@ const BEGIN_EXPERIMENTAL_V011_REQUEST_VERSION = {
 
 const lookup = (versions, allowExperimentalV011) => (apiKey, definition) => {
   const version = versions[apiKey]
+  const availableVersions = definition.versions.map(Number)
   const allowedVersions = allowExperimentalV011
-    ? definition.versions
-    : definition.versions.filter(
+    ? availableVersions
+    : availableVersions.filter(
         version =>
           !BEGIN_EXPERIMENTAL_V011_REQUEST_VERSION[apiKey] ||
           version < BEGIN_EXPERIMENTAL_V011_REQUEST_VERSION[apiKey]

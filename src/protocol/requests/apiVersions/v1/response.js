@@ -1,4 +1,5 @@
 const Decoder = require('../../../decoder')
+const { failIfVersionNotSupported } = require('../../../error')
 const { parse: parseV0 } = require('../v0/response')
 
 /**
@@ -19,8 +20,12 @@ const apiVersion = decoder => ({
 
 const decode = async rawData => {
   const decoder = new Decoder(rawData)
+  const errorCode = decoder.readInt16()
+
+  failIfVersionNotSupported(errorCode)
+
   return {
-    errorCode: decoder.readInt16(),
+    errorCode,
     apiVersions: decoder.readArray(apiVersion),
     throttleTime: decoder.readInt32(),
   }

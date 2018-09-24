@@ -1,5 +1,5 @@
 const Decoder = require('../../../decoder')
-const { failure, createErrorFromCode } = require('../../../error')
+const { failure, createErrorFromCode, failIfVersionNotSupported } = require('../../../error')
 
 /**
  * ApiVersionResponse => ApiVersions
@@ -19,8 +19,12 @@ const apiVersion = decoder => ({
 
 const decode = async rawData => {
   const decoder = new Decoder(rawData)
+  const errorCode = decoder.readInt16()
+
+  failIfVersionNotSupported(errorCode)
+
   return {
-    errorCode: decoder.readInt16(),
+    errorCode,
     apiVersions: decoder.readArray(apiVersion),
   }
 }

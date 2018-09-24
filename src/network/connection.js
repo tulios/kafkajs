@@ -257,11 +257,13 @@ module.exports = class Connection {
 
       return data
     } catch (e) {
-      this.logError(`Response ${requestInfo(entry)}`, {
-        error: e.message,
-        correlationId,
-        size,
-      })
+      if (entry.apiName !== 'ApiVersions') {
+        this.logError(`Response ${requestInfo(entry)}`, {
+          error: e.message,
+          correlationId,
+          size,
+        })
+      }
 
       this.logDebug(`Response ${requestInfo(entry)}`, {
         error: e.message,
