@@ -473,7 +473,7 @@ const createErrorFromCode = code => {
 }
 const failIfVersionNotSupported = code => {
   if (code === UNSUPPORTED_VERSION_CODE) {
-    throw new KafkaJSProtocolError(errorCodes.find(e => e.code === code))
+    throw createErrorFromCode(UNSUPPORTED_VERSION_CODE)
   }
 }
 
