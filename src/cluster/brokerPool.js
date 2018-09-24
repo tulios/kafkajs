@@ -254,6 +254,13 @@ module.exports = class BrokerPool {
       } catch (e) {
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
           await broker.disconnect()
+
+          // Connection refused means this node is down, or the cluster is restarting,
+          // which requires metadata refresh to discover the new nodes
+          if (e.code === 'ECONNREFUSED') {
+            return bail(e)
+          }
+
           // Rebuild the connection since it can't recover from illegal SASL state
           broker.connection = this.connectionBuilder.build({
             host: broker.connection.host,

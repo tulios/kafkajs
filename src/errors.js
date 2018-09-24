@@ -41,9 +41,10 @@ class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
 }
 
 class KafkaJSConnectionError extends KafkaJSError {
-  constructor(e, { broker } = {}) {
+  constructor(e, { broker, code } = {}) {
     super(e)
     this.broker = broker
+    this.code = code
   }
 }
 
