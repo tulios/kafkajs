@@ -9,6 +9,11 @@ const versions = {
     const response = require('./v1/response')
     return { request: request(), response }
   },
+  2: () => {
+    const request = require('./v2/request')
+    const response = require('./v2/response')
+    return { request: request(), response }
+  },
 }
 
 module.exports = {

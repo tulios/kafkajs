@@ -1,5 +1,5 @@
 const Decoder = require('../../../decoder')
-const { failure, createErrorFromCode } = require('../../../error')
+const { failure, createErrorFromCode, failIfVersionNotSupported } = require('../../../error')
 
 /**
  * SyncGroup Response (Version: 0) => error_code member_assignment
@@ -9,8 +9,12 @@ const { failure, createErrorFromCode } = require('../../../error')
 
 const decode = async rawData => {
   const decoder = new Decoder(rawData)
+  const errorCode = decoder.readInt16()
+
+  failIfVersionNotSupported(errorCode)
+
   return {
-    errorCode: decoder.readInt16(),
+    errorCode,
     memberAssignment: decoder.readBytes(),
   }
 }
@@ -20,10 +24,7 @@ const parse = async data => {
     throw createErrorFromCode(data.errorCode)
   }
 
-  return {
-    errorCode: data.errorCode,
-    memberAssignment: data.memberAssignment,
-  }
+  return data
 }
 
 module.exports = {

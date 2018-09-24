@@ -1,3 +1,4 @@
+const { unsupportedVersionResponse } = require('testHelpers')
 const { decode, parse } = require('./response')
 
 describe('Protocol > Requests > SyncGroup > v0', () => {
@@ -13,5 +14,11 @@ describe('Protocol > Requests > SyncGroup > v0', () => {
     })
 
     await expect(parse(data)).resolves.toBeTruthy()
+  })
+
+  test('throws KafkaJSProtocolError if the api is not supported', async () => {
+    await expect(decode(unsupportedVersionResponse())).rejects.toThrow(
+      /The version of API is not supported/
+    )
   })
 })
