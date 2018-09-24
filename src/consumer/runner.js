@@ -53,6 +53,7 @@ module.exports = class Runner {
           memberId: this.consumerGroup.memberId,
           leaderId: this.consumerGroup.leaderId,
           isLeader: this.consumerGroup.isLeader(),
+          memberAssignment: this.consumerGroup.memberAssignment,
           duration: Date.now() - startJoin,
         }
 

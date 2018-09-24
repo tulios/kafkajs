@@ -888,7 +888,7 @@ List of available events:
   payload: {`groupId`, `memberId`, `groupGenerationId`, `topics`}
 
 * consumer.events.GROUP_JOIN  
-  payload: {`groupId`, `memberId`, `leaderId`, `isLeader`, `duration`}
+  payload: {`groupId`, `memberId`, `leaderId`, `isLeader`, `memberAssignment`, `duration`}
 
 * consumer.events.FETCH  
   payload: {`numberOfBatches`, `duration`}
