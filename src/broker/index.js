@@ -419,12 +419,12 @@ module.exports = class Broker {
 
   /**
    * @public
-   * @param {Array<Resource>} resources
-   *                            [{
-   *                              type: RESOURCE_TYPES.TOPIC,
-   *                              name: 'topic-name',
-   *                              configNames: ['compression.type', 'retention.ms']
-   *                            }]
+   * @param {Array<ResourceQuery>} resources
+   *                                 [{
+   *                                   type: RESOURCE_TYPES.TOPIC,
+   *                                   name: 'topic-name',
+   *                                   configNames: ['compression.type', 'retention.ms']
+   *                                 }]
    * @returns {Promise}
    */
   async describeConfigs({ resources }) {
@@ -434,22 +434,22 @@ module.exports = class Broker {
 
   /**
    * @public
-   * @param {Array<Resource>} resources
-   *                            [{
-   *                             type: RESOURCE_TYPES.TOPIC,
-   *                             name: 'topic-name',
-   *                             configEntries: [
-   *                               {
-   *                                 name: 'cleanup.policy',
-   *                                 value: 'compact'
-   *                               }
-   *                             ]
-   *                            }]
+   * @param {Array<ResourceConfig>} resources
+   *                                 [{
+   *                                  type: RESOURCE_TYPES.TOPIC,
+   *                                  name: 'topic-name',
+   *                                  configEntries: [
+   *                                    {
+   *                                      name: 'cleanup.policy',
+   *                                      value: 'compact'
+   *                                    }
+   *                                  ]
+   *                                 }]
    * @param {boolean} [validateOnly=false]
    * @returns {Promise}
    */
   async alterConfigs({ resources, validateOnly = false }) {
     const alterConfigs = this.lookupRequest(apiKeys.AlterConfigs, requests.AlterConfigs)
-    return await this.connection.send(alterConfigs({ resources }))
+    return await this.connection.send(alterConfigs({ resources, validateOnly }))
   }
 }

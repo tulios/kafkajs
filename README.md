@@ -52,6 +52,7 @@ KafkaJS is battle-tested and ready for production.
   - [Reset consumer group offsets](#admin-reset-offsets)
   - [Set consumer group offsets](#admin-set-offsets)
   - [Describe configs](#admin-describe-configs)
+  - [Alter configs](#admin-alter-configs)
 - [Instrumentation](#instrumentation)
 - [Custom logging](#custom-logging)
 - [Retry (detailed)](#configuration-default-retry-detailed)
@@ -855,15 +856,15 @@ await admin.setOffsets({
 
 ### <a name="admin-describe-configs"></a> Describe configs
 
-Get the configuration for the specified resources
+Get the configuration for the specified resources.
 
 ```javascript
 await admin.describeConfigs({
-  resources: <ResourceConfigEntry[]>,
+  resources: <ResourceConfigQuery[]>
 })
 ```
 
-`ResourceConfigEntry` structure:
+`ResourceConfigQuery` structure:
 
 ```javascript
 {
@@ -928,6 +929,70 @@ Example of response:
     }
   ],
   throttleTime: 0
+}
+```
+
+### <a name="admin-alter-configs"></a> Alter configs
+
+Update the configuration for the specified resources.
+
+```javascript
+await admin.alterConfigs({
+  validateOnly: false,
+  resources: <ResourceConfig[]>
+})
+```
+
+`ResourceConfig` structure:
+
+```javascript
+{
+  type: <ResourceType>,
+  name: <String>,
+  configEntries: <ResourceConfigEntry[]>
+}
+```
+
+`ResourceConfigEntry` structure:
+
+```javascript
+{
+  name: <String>,
+  value: <String>
+}
+```
+
+Example:
+
+```javascript
+const { RESOURCE_TYPES } = require('kafkajs')
+
+await admin.alterConfigs({
+  resources: [
+    {
+      type: RESOURCE_TYPES.TOPIC,
+      name: 'topic-name',
+      configEntries: [{ name: 'cleanup.policy', value: 'compact' }]
+    }
+  ]
+})
+```
+
+take a look at [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) for a complete list of resources.
+
+Example of response:
+
+```javascript
+{
+  resources: [
+    {
+      errorCode: 0,
+      errorMessage: null,
+      resourceName: 'topic-name',
+      resourceType: 2,
+    },
+  ],
+  throttleTime: 0,
 }
 ```
 
