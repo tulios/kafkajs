@@ -1,5 +1,5 @@
 const Decoder = require('../../../decoder')
-const { failure, createErrorFromCode } = require('../../../error')
+const { failure, createErrorFromCode, failIfVersionNotSupported } = require('../../../error')
 
 /**
  * Heartbeat Response (Version: 0) => error_code
@@ -8,9 +8,11 @@ const { failure, createErrorFromCode } = require('../../../error')
 
 const decode = async rawData => {
   const decoder = new Decoder(rawData)
-  return {
-    errorCode: decoder.readInt16(),
-  }
+  const errorCode = decoder.readInt16()
+
+  failIfVersionNotSupported(errorCode)
+
+  return { errorCode }
 }
 
 const parse = async data => {

@@ -1,5 +1,6 @@
 const fs = require('fs')
 const ip = require('ip')
+const execa = require('execa')
 const uuid = require('uuid/v4')
 const crypto = require('crypto')
 const Cluster = require('../src/cluster')
@@ -149,11 +150,29 @@ const createTopic = async ({ topic, partitions = 1 }) => {
   }
 }
 
+const addPartitions = async ({ topic, partitions }) => {
+  const cmd = `TOPIC=${topic} PARTITIONS=${partitions} ./scripts/addPartitions.sh`
+  const cluster = createCluster()
+
+  await cluster.connect()
+  await cluster.addTargetTopic(topic)
+
+  execa.shellSync(cmd)
+
+  waitFor(async () => {
+    await cluster.refreshMetadata()
+    const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
+    return partitionMetadata.length === partitions
+  })
+}
+
 const testIfKafka011 = (description, callback) => {
   return process.env.KAFKA_VERSION === '0.11'
     ? test(description, callback)
     : test.skip(description, callback)
 }
+
+const unsupportedVersionResponse = () => Buffer.from({ type: 'Buffer', data: [0, 35, 0, 0, 0, 0] })
 
 module.exports = {
   secureRandom,
@@ -176,4 +195,6 @@ module.exports = {
   waitForMessages,
   waitForConsumerToJoinGroup,
   testIfKafka011,
+  addPartitions,
+  unsupportedVersionResponse,
 }

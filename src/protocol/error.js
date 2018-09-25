@@ -465,13 +465,21 @@ const unknownErrorCode = errorCode => ({
 })
 
 const SUCCESS_CODE = 0
+const UNSUPPORTED_VERSION_CODE = 35
+
 const failure = code => code !== SUCCESS_CODE
 const createErrorFromCode = code => {
   return new KafkaJSProtocolError(errorCodes.find(e => e.code === code) || unknownErrorCode(code))
+}
+const failIfVersionNotSupported = code => {
+  if (code === UNSUPPORTED_VERSION_CODE) {
+    throw createErrorFromCode(UNSUPPORTED_VERSION_CODE)
+  }
 }
 
 module.exports = {
   failure,
   errorCodes,
   createErrorFromCode,
+  failIfVersionNotSupported,
 }

@@ -139,6 +139,7 @@ describe('Consumer > Instrumentation Events', () => {
         isLeader: true,
         leaderId: expect.any(String),
         memberId: expect.any(String),
+        memberAssignment: { [topicName]: [0] },
       },
     })
   })

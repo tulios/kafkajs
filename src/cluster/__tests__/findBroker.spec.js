@@ -7,7 +7,7 @@ const {
 } = require('testHelpers')
 
 const Broker = require('../../broker')
-const { KafkaJSLockTimeout } = require('../../errors')
+const { KafkaJSLockTimeout, KafkaJSConnectionError } = require('../../errors')
 
 describe('Cluster > findBroker', () => {
   let cluster, topic
@@ -49,6 +49,29 @@ describe('Cluster > findBroker', () => {
     await expect(cluster.findBroker({ nodeId })).rejects.toHaveProperty(
       'name',
       'KafkaJSLockTimeout'
+    )
+
+    await expect(cluster.findBroker({ nodeId })).resolves.toBeInstanceOf(Broker)
+    expect(cluster.refreshMetadata).toHaveBeenCalled()
+  })
+
+  test('refresh metadata on KafkaJSConnectionError ECONNREFUSED', async () => {
+    const nodeId = 0
+    const mockBroker = new Broker({
+      connection: createConnection(),
+      logger: newLogger(),
+    })
+
+    jest.spyOn(mockBroker, 'connect').mockImplementationOnce(() => {
+      throw new KafkaJSConnectionError('Connection error: ECONNREFUSED', { code: 'ECONNREFUSED' })
+    })
+
+    jest.spyOn(cluster, 'refreshMetadata')
+    cluster.brokerPool.brokers[nodeId] = mockBroker
+
+    await expect(cluster.findBroker({ nodeId })).rejects.toHaveProperty(
+      'name',
+      'KafkaJSConnectionError'
     )
 
     await expect(cluster.findBroker({ nodeId })).resolves.toBeInstanceOf(Broker)

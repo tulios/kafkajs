@@ -41,9 +41,10 @@ class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
 }
 
 class KafkaJSConnectionError extends KafkaJSError {
-  constructor(e, { broker } = {}) {
+  constructor(e, { broker, code } = {}) {
     super(e)
     this.broker = broker
+    this.code = code
   }
 }
 
@@ -52,6 +53,13 @@ class KafkaJSTopicMetadataNotLoaded extends KafkaJSMetadataNotLoaded {
   constructor(e, { topic } = {}) {
     super(e)
     this.topic = topic
+  }
+}
+class KafkaJSStaleTopicMetadataAssignment extends KafkaJSError {
+  constructor(e, { topic, unknownPartitions } = {}) {
+    super(e)
+    this.topic = topic
+    this.unknownPartitions = unknownPartitions
   }
 }
 
@@ -77,6 +85,7 @@ module.exports = {
   KafkaJSNotImplemented,
   KafkaJSMetadataNotLoaded,
   KafkaJSTopicMetadataNotLoaded,
+  KafkaJSStaleTopicMetadataAssignment,
   KafkaJSTimeout,
   KafkaJSLockTimeout,
 }

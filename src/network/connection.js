@@ -106,6 +106,7 @@ module.exports = class Connection {
 
         const error = new KafkaJSConnectionError(`Connection error: ${e.message}`, {
           broker: `${this.host}:${this.port}`,
+          code: e.code,
         })
 
         this.logError(error.message, { stack: e.stack })
@@ -256,11 +257,13 @@ module.exports = class Connection {
 
       return data
     } catch (e) {
-      this.logError(`Response ${requestInfo(entry)}`, {
-        error: e.message,
-        correlationId,
-        size,
-      })
+      if (entry.apiName !== 'ApiVersions') {
+        this.logError(`Response ${requestInfo(entry)}`, {
+          error: e.message,
+          correlationId,
+          size,
+        })
+      }
 
       this.logDebug(`Response ${requestInfo(entry)}`, {
         error: e.message,
