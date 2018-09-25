@@ -420,6 +420,11 @@ module.exports = class Broker {
   /**
    * @public
    * @param {Array<Resource>} resources
+   *                            [{
+   *                              type: RESOURCE_TYPES.TOPIC,
+   *                              name: 'topic-name',
+   *                              configNames: ['compression.type', 'retention.ms']
+   *                            }]
    * @returns {Promise}
    */
   async describeConfigs({ resources }) {
@@ -430,6 +435,16 @@ module.exports = class Broker {
   /**
    * @public
    * @param {Array<Resource>} resources
+   *                            [{
+   *                             type: RESOURCE_TYPES.TOPIC,
+   *                             name: 'topic-name',
+   *                             configEntries: [
+   *                               {
+   *                                 name: 'cleanup.policy',
+   *                                 value: 'compact'
+   *                               }
+   *                             ]
+   *                            }]
    * @param {boolean} [validateOnly=false]
    * @returns {Promise}
    */
