@@ -34,7 +34,7 @@ const requests = {
   CreateAcls: {},
   DeleteAcls: {},
   DescribeConfigs: require('./describeConfigs'),
-  AlterConfigs: {},
+  AlterConfigs: require('./alterConfigs'),
   AlterReplicaLogDirs: {},
   DescribeLogDirs: {},
   SaslAuthenticate: {},
