@@ -426,4 +426,15 @@ module.exports = class Broker {
     const describeConfigs = this.lookupRequest(apiKeys.DescribeConfigs, requests.DescribeConfigs)
     return await this.connection.send(describeConfigs({ resources }))
   }
+
+  /**
+   * @public
+   * @param {Array<Resource>} resources
+   * @param {boolean} [validateOnly=false]
+   * @returns {Promise}
+   */
+  async alterConfigs({ resources, validateOnly = false }) {
+    const alterConfigs = this.lookupRequest(apiKeys.AlterConfigs, requests.AlterConfigs)
+    return await this.connection.send(alterConfigs({ resources }))
+  }
 }
