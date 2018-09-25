@@ -25,5 +25,5 @@ const encodeResource = ({ type, name, configNames }) => {
   return new Encoder()
     .writeInt8(type)
     .writeString(name)
-    .writeArray(configNames)
+    .writeNullableArray(configNames)
 }
