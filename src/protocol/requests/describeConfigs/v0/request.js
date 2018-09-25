@@ -21,7 +21,7 @@ module.exports = ({ resources }) => ({
   },
 })
 
-const encodeResource = ({ type, name, configNames }) => {
+const encodeResource = ({ type, name, configNames = [] }) => {
   return new Encoder()
     .writeInt8(type)
     .writeString(name)

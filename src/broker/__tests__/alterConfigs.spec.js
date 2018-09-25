@@ -5,6 +5,12 @@ const Broker = require('../index')
 describe('Broker > alterConfigs', () => {
   let seedBroker, broker
 
+  const getConfigEntries = response =>
+    response.resources.find(r => r.resourceType === RESOURCE_TYPES.TOPIC).configEntries
+
+  const getConfigValue = (configEntries, name) =>
+    configEntries.find(c => c.configName === name).configValue
+
   beforeEach(async () => {
     seedBroker = new Broker({
       connection: createConnection(connectionOpts()),
@@ -46,12 +52,7 @@ describe('Broker > alterConfigs', () => {
       ],
     })
 
-    const getValue = response =>
-      describeResponse.resources
-        .find(r => r.resourceType === RESOURCE_TYPES.TOPIC)
-        .configEntries.find(c => c.configName === CONFIG_NAME).configValue
-
-    let cleanupPolicy = getValue(describeResponse)
+    let cleanupPolicy = getConfigValue(getConfigEntries(describeResponse), CONFIG_NAME)
 
     expect(cleanupPolicy).toEqual('delete')
 
@@ -92,7 +93,7 @@ describe('Broker > alterConfigs', () => {
       ],
     })
 
-    cleanupPolicy = getValue(describeResponse)
+    cleanupPolicy = getConfigValue(getConfigEntries(describeResponse), CONFIG_NAME)
     expect(cleanupPolicy).toEqual('compact')
   })
 })

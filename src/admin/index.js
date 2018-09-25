@@ -6,6 +6,7 @@ const events = require('./instrumentationEvents')
 const { CONNECT, DISCONNECT } = require('./instrumentationEvents')
 const { LEVELS } = require('../loggers')
 const { KafkaJSNonRetriableError } = require('../errors')
+const RESOURCE_TYPES = require('../protocol/resourceTypes')
 
 const { values, keys } = Object
 const eventNames = values(events)
@@ -275,6 +276,71 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
   }
 
   /**
+   * @param {Array<ResourceConfigEntry>} resources
+   * @return {Promise}
+   *
+   * @typedef {Object} ResourceConfigEntry
+   * @property {ResourceType} type
+   * @property {string} name
+   * @property {Array<String>} [configNames=[]]
+   */
+  const describeConfigs = async ({ resources }) => {
+    if (!resources || !Array.isArray(resources)) {
+      throw new KafkaJSNonRetriableError(`Invalid resources array ${resources}`)
+    }
+
+    if (resources.length === 0) {
+      throw new KafkaJSNonRetriableError('Resources array cannot be empty')
+    }
+
+    const validResourceTypes = Object.values(RESOURCE_TYPES)
+    const invalidType = resources.find(r => !validResourceTypes.includes(r.type))
+
+    if (invalidType) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource type ${invalidType.type}: ${JSON.stringify(invalidType)}`
+      )
+    }
+
+    const invalidName = resources.find(r => !r.name || typeof r.name !== 'string')
+
+    if (invalidName) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource name ${invalidName.name}: ${JSON.stringify(invalidName)}`
+      )
+    }
+
+    const invalidConfigs = resources.find(
+      r => !Array.isArray(r.configNames) && r.configNames != null
+    )
+
+    if (invalidConfigs) {
+      const { configNames } = invalidConfigs
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource configNames ${configNames}: ${JSON.stringify(invalidConfigs)}`
+      )
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        const response = await broker.describeConfigs({ resources })
+        return response
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could describe configs', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
    * @param {string} eventName
    * @param {Function} listener
    * @return {Function}
@@ -306,9 +372,10 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     deleteTopics,
     events,
     fetchOffsets,
-    on,
     setOffsets,
     resetOffsets,
+    describeConfigs,
+    on,
     logger: getLogger,
   }
 }

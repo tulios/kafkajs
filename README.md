@@ -51,6 +51,7 @@ KafkaJS is battle-tested and ready for production.
   - [Fetch consumer group offsets](#admin-fetch-offsets)
   - [Reset consumer group offsets](#admin-reset-offsets)
   - [Set consumer group offsets](#admin-set-offsets)
+  - [Describe configs](#admin-describe-configs)
 - [Instrumentation](#instrumentation)
 - [Custom logging](#custom-logging)
 - [Retry (detailed)](#configuration-default-retry-detailed)
@@ -850,6 +851,84 @@ await admin.setOffsets({
     { partition: 3, offset: '19' },
   ]
 })
+```
+
+### <a name="admin-describe-configs"></a> Describe configs
+
+Get the configuration for the specified resources
+
+```javascript
+await admin.describeConfigs({
+  resources: <ResourceConfigEntry[]>,
+})
+```
+
+`ResourceConfigEntry` structure:
+
+```javascript
+{
+  type: <ResourceType>,
+  name: <String>,
+  configNames: <String[]>
+}
+```
+
+Returning all configs for a given resource:
+
+```javascript
+const { RESOURCE_TYPES } = require('kafkajs')
+
+await admin.describeConfigs({
+  resources: [
+    {
+      type: RESOURCE_TYPES.TOPIC,
+      name: 'topic-name'
+    }
+  ]
+})
+```
+
+Returning specific configs for a given resource:
+
+```javascript
+const { RESOURCE_TYPES } = require('kafkajs')
+
+await admin.describeConfigs({
+  resources: [
+    {
+      type: RESOURCE_TYPES.TOPIC,
+      name: 'topic-name',
+      configNames: ['cleanup.policy']
+    }
+  ]
+})
+```
+
+take a look at [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) for a complete list of resources.
+
+Example of response:
+
+```javascript
+{
+  resources: [
+    {
+      configEntries: [
+        {
+          configName: 'cleanup.policy',
+          configValue: 'delete',
+          isDefault: true,
+          isSensitive: false,
+          readOnly: false
+        }
+      ],
+      errorCode: 0,
+      errorMessage: null,
+      resourceName: 'topic-name',
+      resourceType: 2
+    }
+  ],
+  throttleTime: 0
+}
 ```
 
 ## <a name="instrumentation"></a> Instrumentation
