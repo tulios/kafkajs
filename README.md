@@ -34,7 +34,7 @@ KafkaJS is battle-tested and ready for production.
   - [Compression](#producing-messages-compression)
     - [GZIP](#producing-messages-compression-gzip)
     - [Snappy](#producing-messages-compression-snappy)
-    - [Other](#producing-messages-compression-other)
+    - [LZ4](#producing-messages-compression-lz4)
 - [Consuming messages](#consuming-messages)
   - [eachMessage](#consuming-messages-each-message)
   - [eachBatch](#consuming-messages-each-batch)
@@ -379,9 +379,27 @@ CompressionCodecs[CompressionTypes.Snappy] = SnappyCodec
 
 Take a look at the official [readme](https://github.com/tulios/kafkajs-snappy) for more information
 
+#### <a name="producing-messages-compression-lz4"></a> LZ4
+
+LZ4 support is provided by the package `kafkajs-lz4`
+
+```sh
+npm install kafkajs-lz4
+# yarn add kafkajs-lz4
+```
+
+```javascript
+const {  CompressionTypes, CompressionCodecs } = require('kafkajs')
+const LZ4 = require('kafkajs-lz4')
+
+CompressionCodecs[CompressionTypes.LZ4] = () => new LZ4().codec
+```
+
+Take a look at the official [readme](https://github.com/indix/kafkajs-lz4) for more information.
+
 #### <a name="producing-messages-compression-other"></a> Other
 
-Any other codec than GZIP can be easily implemented using existing libraries.
+Any other codec than GZIP can be easily implemented using existing libraries. For example, s
 
 A codec is an object with two `async` functions: `compress` and `decompress`. Import the libraries and define the codec object:
 
