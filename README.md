@@ -399,7 +399,7 @@ The package also accepts options to granularly control LZ4 compression & decompr
 
 #### <a name="producing-messages-compression-other"></a> Other
 
-Any other codec than GZIP can be easily implemented using existing libraries. For example, s
+Any other codec than GZIP can be easily implemented using existing libraries.
 
 A codec is an object with two `async` functions: `compress` and `decompress`. Import the libraries and define the codec object:
 
