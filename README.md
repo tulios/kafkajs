@@ -389,13 +389,13 @@ npm install kafkajs-lz4
 ```
 
 ```javascript
-const {  CompressionTypes, CompressionCodecs } = require('kafkajs')
+const { CompressionTypes, CompressionCodecs } = require('kafkajs')
 const LZ4 = require('kafkajs-lz4')
 
-CompressionCodecs[CompressionTypes.LZ4] = () => new LZ4().codec
+CompressionCodecs[CompressionTypes.LZ4] = new LZ4().codec
 ```
 
-Take a look at the official [readme](https://github.com/indix/kafkajs-lz4) for more information.
+The package also accepts options to granularly control LZ4 compression & decompression. Take a look at the official [readme](https://github.com/indix/kafkajs-lz4) for more information.
 
 #### <a name="producing-messages-compression-other"></a> Other
 
