@@ -34,6 +34,7 @@ KafkaJS is battle-tested and ready for production.
   - [Compression](#producing-messages-compression)
     - [GZIP](#producing-messages-compression-gzip)
     - [Snappy](#producing-messages-compression-snappy)
+    - [LZ4](#producing-messages-compression-lz4)
     - [Other](#producing-messages-compression-other)
 - [Consuming messages](#consuming-messages)
   - [eachMessage](#consuming-messages-each-message)
@@ -378,6 +379,24 @@ CompressionCodecs[CompressionTypes.Snappy] = SnappyCodec
 ```
 
 Take a look at the official [readme](https://github.com/tulios/kafkajs-snappy) for more information
+
+#### <a name="producing-messages-compression-lz4"></a> LZ4
+
+LZ4 support is provided by the package `kafkajs-lz4`
+
+```sh
+npm install kafkajs-lz4
+# yarn add kafkajs-lz4
+```
+
+```javascript
+const { CompressionTypes, CompressionCodecs } = require('kafkajs')
+const LZ4 = require('kafkajs-lz4')
+
+CompressionCodecs[CompressionTypes.LZ4] = new LZ4().codec
+```
+
+The package also accepts options to granularly control LZ4 compression & decompression. Take a look at the official [readme](https://github.com/indix/kafkajs-lz4) for more information.
 
 #### <a name="producing-messages-compression-other"></a> Other
 
