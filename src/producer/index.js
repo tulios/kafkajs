@@ -53,6 +53,15 @@ module.exports = ({
           `Invalid messages array [${messages}] for topic "${topic}"`
         )
       }
+
+      const messageWithoutValue = messages.find(message => !message.value)
+      if (messageWithoutValue) {
+        throw new KafkaJSNonRetriableError(
+          `Invalid message without value for topic "${topic}": ${JSON.stringify(
+            messageWithoutValue
+          )}`
+        )
+      }
     }
 
     return retrier(async (bail, retryCount, retryTime) => {
