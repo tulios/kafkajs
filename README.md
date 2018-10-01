@@ -35,6 +35,7 @@ KafkaJS is battle-tested and ready for production.
     - [GZIP](#producing-messages-compression-gzip)
     - [Snappy](#producing-messages-compression-snappy)
     - [LZ4](#producing-messages-compression-lz4)
+    - [Other](#producing-messages-compression-other)
 - [Consuming messages](#consuming-messages)
   - [eachMessage](#consuming-messages-each-message)
   - [eachBatch](#consuming-messages-each-batch)
