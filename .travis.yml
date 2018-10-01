@@ -28,7 +28,7 @@ jobs:
       name: 'Lint'
       script:
         - env
-        - yarn lint
+        - test $MD_ONLY && echo "Skipped!" || yarn lint
     - stage: test
       name: 'Broker'
       script:
