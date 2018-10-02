@@ -33,14 +33,15 @@ const decodeMessages = async decoder => {
   }
 
   const messagesBuffer = decoder.readBytes(messagesSize)
+  const messagesDecoder = new Decoder(messagesBuffer)
   const magicByte = messagesBuffer.slice(MAGIC_OFFSET).readInt8()
 
   if (magicByte === MAGIC_BYTE) {
-    const recordBatch = await RecordBatchDecoder(new Decoder(messagesBuffer))
+    const recordBatch = await RecordBatchDecoder(messagesDecoder)
     return recordBatch.records
   }
 
-  return MessageSetDecoder(decoder)
+  return MessageSetDecoder(messagesDecoder, messagesSize)
 }
 
 const decodeAbortedTransactions = decoder => ({

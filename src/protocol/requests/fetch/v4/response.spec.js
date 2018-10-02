@@ -104,4 +104,43 @@ describe('Protocol > Requests > Fetch > v4', () => {
 
     await expect(parse(data)).resolves.toBeTruthy()
   })
+
+  test('response with 0.10 format', async () => {
+    const data = await decode(Buffer.from(require('../fixtures/v4_response_010_format.json')))
+    expect(data).toEqual({
+      throttleTime: 0,
+      responses: [
+        {
+          topicName: 'test-topic2-08a2f12dddd8c924460f-78767-02073a3e-0622-4d0d-9ee9-b5d6a5a326f1',
+          partitions: [
+            {
+              partition: 1,
+              errorCode: 0,
+              highWatermark: '1',
+              lastStableOffset: '1',
+              abortedTransactions: [],
+              messages: [
+                {
+                  offset: '0',
+                  size: 158,
+                  crc: 2036710961,
+                  magicByte: 1,
+                  attributes: 0,
+                  timestamp: '1538502423117',
+                  key: Buffer.from(
+                    'key-9bf6284dc11345082649-78767-f79b4780-f2aa-4bbb-979f-9a4815652b5c'
+                  ),
+                  value: Buffer.from(
+                    'value-9bf6284dc11345082649-78767-f79b4780-f2aa-4bbb-979f-9a4815652b5c'
+                  ),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+
+    await expect(parse(data)).resolves.toBeTruthy()
+  })
 })
