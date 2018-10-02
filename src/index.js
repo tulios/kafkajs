@@ -25,7 +25,7 @@ module.exports = class Client {
     retry,
     logLevel = INFO,
     logCreator = LoggerConsole,
-    allowExperimentalV011 = false,
+    allowExperimentalV011 = true,
   }) {
     this[PRIVATE.LOGGER] = createLogger({ level: logLevel, logCreator })
     this[PRIVATE.CREATE_CLUSTER] = ({ metadataMaxAge = 300000, allowAutoTopicCreation = true }) =>
