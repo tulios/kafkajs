@@ -42,6 +42,16 @@ describe('Producer', () => {
     ).rejects.toHaveProperty('message', `Invalid messages array [null] for topic "${topicName}"`)
   })
 
+  test('throws and error for messages without value', async () => {
+    producer = createProducer({ cluster: createCluster(), logger: newLogger() })
+    await expect(
+      producer.send({ acks: 1, topic: topicName, messages: [{ foo: 'bar' }] })
+    ).rejects.toHaveProperty(
+      'message',
+      `Invalid message without value for topic "${topicName}": {"foo":"bar"}`
+    )
+  })
+
   test('support SSL connections', async () => {
     const cluster = createCluster(sslConnectionOpts(), sslBrokers())
     producer = createProducer({ cluster, logger: newLogger() })
