@@ -6,6 +6,7 @@ const events = require('./instrumentationEvents')
 const { CONNECT, DISCONNECT } = require('./instrumentationEvents')
 const { LEVELS } = require('../loggers')
 const { KafkaJSNonRetriableError } = require('../errors')
+const RESOURCE_TYPES = require('../protocol/resourceTypes')
 
 const { values, keys } = Object
 const eventNames = values(events)
@@ -275,6 +276,149 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
   }
 
   /**
+   * @param {Array<ResourceConfigQuery>} resources
+   * @return {Promise}
+   *
+   * @typedef {Object} ResourceConfigQuery
+   * @property {ResourceType} type
+   * @property {string} name
+   * @property {Array<String>} [configNames=[]]
+   */
+  const describeConfigs = async ({ resources }) => {
+    if (!resources || !Array.isArray(resources)) {
+      throw new KafkaJSNonRetriableError(`Invalid resources array ${resources}`)
+    }
+
+    if (resources.length === 0) {
+      throw new KafkaJSNonRetriableError('Resources array cannot be empty')
+    }
+
+    const validResourceTypes = Object.values(RESOURCE_TYPES)
+    const invalidType = resources.find(r => !validResourceTypes.includes(r.type))
+
+    if (invalidType) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource type ${invalidType.type}: ${JSON.stringify(invalidType)}`
+      )
+    }
+
+    const invalidName = resources.find(r => !r.name || typeof r.name !== 'string')
+
+    if (invalidName) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource name ${invalidName.name}: ${JSON.stringify(invalidName)}`
+      )
+    }
+
+    const invalidConfigs = resources.find(
+      r => !Array.isArray(r.configNames) && r.configNames != null
+    )
+
+    if (invalidConfigs) {
+      const { configNames } = invalidConfigs
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource configNames ${configNames}: ${JSON.stringify(invalidConfigs)}`
+      )
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        const response = await broker.describeConfigs({ resources })
+        return response
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not describe configs', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
+   * @param {Array<ResourceConfig>} resources
+   * @param {boolean} [validateOnly=false]
+   * @return {Promise}
+   *
+   * @typedef {Object} ResourceConfig
+   * @property {ResourceType} type
+   * @property {string} name
+   * @property {Array<ResourceConfigEntry>} configEntries
+   *
+   * @typedef {Object} ResourceConfigEntry
+   * @property {string} name
+   * @property {string} value
+   */
+  const alterConfigs = async ({ resources, validateOnly }) => {
+    if (!resources || !Array.isArray(resources)) {
+      throw new KafkaJSNonRetriableError(`Invalid resources array ${resources}`)
+    }
+
+    if (resources.length === 0) {
+      throw new KafkaJSNonRetriableError('Resources array cannot be empty')
+    }
+
+    const validResourceTypes = Object.values(RESOURCE_TYPES)
+    const invalidType = resources.find(r => !validResourceTypes.includes(r.type))
+
+    if (invalidType) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource type ${invalidType.type}: ${JSON.stringify(invalidType)}`
+      )
+    }
+
+    const invalidName = resources.find(r => !r.name || typeof r.name !== 'string')
+
+    if (invalidName) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource name ${invalidName.name}: ${JSON.stringify(invalidName)}`
+      )
+    }
+
+    const invalidConfigs = resources.find(r => !Array.isArray(r.configEntries))
+
+    if (invalidConfigs) {
+      const { configEntries } = invalidConfigs
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource configEntries ${configEntries}: ${JSON.stringify(invalidConfigs)}`
+      )
+    }
+
+    const invalidConfigValue = resources.find(r =>
+      r.configEntries.some(e => typeof e.name !== 'string' || typeof e.value !== 'string')
+    )
+
+    if (invalidConfigValue) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource config value: ${JSON.stringify(invalidConfigValue)}`
+      )
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        const response = await broker.alterConfigs({ resources, validateOnly: !!validateOnly })
+        return response
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not alter configs', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
    * @param {string} eventName
    * @param {Function} listener
    * @return {Function}
@@ -306,9 +450,11 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     deleteTopics,
     events,
     fetchOffsets,
-    on,
     setOffsets,
     resetOffsets,
+    describeConfigs,
+    alterConfigs,
+    on,
     logger: getLogger,
   }
 }

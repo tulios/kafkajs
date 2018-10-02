@@ -410,9 +410,46 @@ module.exports = class Broker {
    * @param {number} [timeout=5000] The time in ms to wait for a topic to be completely deleted on the
    *                                controller node. Values <= 0 will trigger topic deletion and return
    *                                immediately
+   * @returns {Promise}
    */
   async deleteTopics({ topics, timeout = 5000 }) {
     const deleteTopics = this.lookupRequest(apiKeys.DeleteTopics, requests.DeleteTopics)
     return await this.connection.send(deleteTopics({ topics, timeout }))
+  }
+
+  /**
+   * @public
+   * @param {Array<ResourceQuery>} resources
+   *                                 [{
+   *                                   type: RESOURCE_TYPES.TOPIC,
+   *                                   name: 'topic-name',
+   *                                   configNames: ['compression.type', 'retention.ms']
+   *                                 }]
+   * @returns {Promise}
+   */
+  async describeConfigs({ resources }) {
+    const describeConfigs = this.lookupRequest(apiKeys.DescribeConfigs, requests.DescribeConfigs)
+    return await this.connection.send(describeConfigs({ resources }))
+  }
+
+  /**
+   * @public
+   * @param {Array<ResourceConfig>} resources
+   *                                 [{
+   *                                  type: RESOURCE_TYPES.TOPIC,
+   *                                  name: 'topic-name',
+   *                                  configEntries: [
+   *                                    {
+   *                                      name: 'cleanup.policy',
+   *                                      value: 'compact'
+   *                                    }
+   *                                  ]
+   *                                 }]
+   * @param {boolean} [validateOnly=false]
+   * @returns {Promise}
+   */
+  async alterConfigs({ resources, validateOnly = false }) {
+    const alterConfigs = this.lookupRequest(apiKeys.AlterConfigs, requests.AlterConfigs)
+    return await this.connection.send(alterConfigs({ resources, validateOnly }))
   }
 }

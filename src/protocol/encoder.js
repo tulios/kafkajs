@@ -190,8 +190,16 @@ module.exports = class Encoder {
     return this
   }
 
-  writeArray(array, type) {
-    this.writeInt32(array.length)
+  writeNullableArray(array, type) {
+    // A null value is encoded with length of -1 and there are no following bytes
+    // On the context of this library, empty array and null are the same thing
+    const length = array.length !== 0 ? array.length : -1
+    return this.writeArray(array, type, length)
+  }
+
+  writeArray(array, type, length) {
+    const arrayLength = length == null ? array.length : length
+    this.writeInt32(arrayLength)
     array.forEach(value => {
       switch (type || typeof value) {
         case 'int32':
