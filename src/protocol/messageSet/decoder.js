@@ -11,9 +11,9 @@ const { KafkaJSPartialMessageError } = require('../../errors')
  *  Message => Bytes
  */
 
-module.exports = async primaryDecoder => {
+module.exports = async (primaryDecoder, size = null) => {
   const messages = []
-  const messageSetSize = primaryDecoder.readInt32()
+  const messageSetSize = size || primaryDecoder.readInt32()
   const messageSetDecoder = primaryDecoder.slice(messageSetSize)
 
   while (messageSetDecoder.offset < messageSetSize) {

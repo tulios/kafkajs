@@ -135,7 +135,7 @@ const waitForConsumerToJoinGroup = (consumer, { maxWait = 10000 } = {}) =>
     })
   })
 
-const createTopic = async ({ topic, partitions = 1 }) => {
+const createTopic = async ({ topic, partitions = 1, config = [] }) => {
   const kafka = new Kafka({ clientId: 'testHelpers', brokers: [`${getHost()}:9092`] })
   const admin = kafka.admin()
 
@@ -143,7 +143,7 @@ const createTopic = async ({ topic, partitions = 1 }) => {
     await admin.connect()
     await admin.createTopics({
       waitForLeaders: true,
-      topics: [{ topic, numPartitions: partitions }],
+      topics: [{ topic, numPartitions: partitions, configEntries: config }],
     })
   } finally {
     admin && (await admin.disconnect())
