@@ -6,6 +6,7 @@
 [![npm version](https://badge.fury.io/js/kafkajs.svg)](https://badge.fury.io/js/kafkajs)
 
 A modern Apache Kafka client for node.js. This library is compatible with Kafka `0.10+`.
+Native support for Kafka `0.11` features.
 
 KafkaJS is battle-tested and ready for production.
 
@@ -14,8 +15,10 @@ KafkaJS is battle-tested and ready for production.
 - Producer
 - Consumer groups with pause, resume, and seek
 - GZIP compression
+- Snappy and LZ4 compression through plugins
 - Plain, SSL and SASL_SSL implementations
 - Support for SCRAM-SHA-256 and SCRAM-SHA-512
+- Admin client
 
 ## Table of Contents
 
@@ -26,7 +29,8 @@ KafkaJS is battle-tested and ready for production.
   - [Connection timeout](#configuration-connection-timeout)
   - [Default retry](#configuration-default-retry)
   - [Logging](#configuration-logging)
-- [Producing Messages](#producing-messages)
+- [Producing messages](#producing-messages)
+  - [Message headers](#producer-message-headers)
   - [Producing to multiple topics](#producing-messages-to-multiple-topics)
   - [Options](#producing-messages-options)
   - [Custom partitioner](#producing-messages-custom-partitioner)
@@ -258,6 +262,28 @@ By default, the producer is configured to distribute the messages with the follo
 - If no partition is specified but a key is present choose a partition based on a hash (murmur2) of the key
 - If no partition or key is present choose a partition in a round-robin fashion
 
+### <a name="producer-message-headers"></a> Message headers
+
+Kafka v0.11 introduces record headers, which allows your messages to carry extra metadata. To send headers with your message, include the key `headers` with the values. Example:
+
+```javascript
+async () => {
+  await producer.send({
+    topic: 'topic-name',
+    messages: [
+      {
+        key: 'key1',
+        value: 'hello world',
+        headers: {
+          'correlation-id': '2bfb68bb-893a-423b-a7fa-7b568cad5b67',
+          'system-id': 'my-system'
+        }
+      },
+    ]
+  })
+}
+```
+
 ### <a name="producing-messages-to-multiple-topics"></a> Producing to multiple topics
 
 To produce to multiple topics at the same time, use `sendBatch`. This can be useful, for example, when migrating between two topics.
@@ -271,6 +297,13 @@ const topicMessages = [
   {
     topic: 'topic-b',
     messages: [{ key: 'key', value: 'hello topic-b' }],
+  },
+  {
+    topic: 'topic-c',
+    messages: [{ key: 'key', value: 'hello topic-c' }],
+    headers: {
+      'correlation-id': '2bfb68bb-893a-423b-a7fa-7b568cad5b67',
+    }
   }
 ]
 await producer.sendBatch({ topicMessages })
@@ -418,7 +451,7 @@ const MyCustomSnappyCodec = {
 }
 ```
 
-Now we that have the codec object, we can add it to the implementation:
+Now that we have the codec object, we can add it to the implementation:
 
 ```javascript
 const { CompressionTypes, CompressionCodecs } = require('kafkajs')
@@ -485,7 +518,8 @@ async () => {
     eachMessage: async ({ topic, partition, message }) => {
       console.log({
         key: message.key.toString(),
-        value: message.value.toString()
+        value: message.value.toString(),
+        headers: message.headers,
       })
     },
   })
@@ -514,7 +548,8 @@ await consumer.run({
         message: {
           offset: message.offset,
           key: message.key.toString(),
-          value: message.value.toString()
+          value: message.value.toString(),
+          headers: message.headers,
         }
       })
 
