@@ -106,6 +106,7 @@ module.exports = class Broker {
       try {
         const apiVersions = requests.ApiVersions.protocol({ version: candidateVersion })
         response = await this.connection.send(apiVersions())
+        break
       } catch (e) {
         if (e.type !== 'UNSUPPORTED_VERSION') {
           throw e

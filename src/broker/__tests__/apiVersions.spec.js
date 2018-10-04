@@ -33,6 +33,7 @@ describe('Broker > ApiVersions', () => {
     await expect(broker.apiVersions()).resolves.toBeTruthy()
     expect(requests.ApiVersions.protocol).toHaveBeenCalledWith({ version: 2 })
     expect(requests.ApiVersions.protocol).toHaveBeenCalledWith({ version: 1 })
+    expect(requests.ApiVersions.protocol).not.toHaveBeenCalledWith({ version: 0 })
   })
 
   test('throws if API versions cannot be used', async () => {
