@@ -6,7 +6,7 @@
 [![npm version](https://badge.fury.io/js/kafkajs.svg)](https://badge.fury.io/js/kafkajs)
 
 A modern Apache Kafka client for node.js. This library is compatible with Kafka `0.10+`.
-Native support to Kafka `0.11` features.
+Native support for Kafka `0.11` features.
 
 KafkaJS is battle-tested and ready for production.
 
