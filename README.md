@@ -70,7 +70,7 @@ npm install kafkajs
 # yarn add kafkajs
 ```
 
-## <a name="setup-client"></a> Configuration
+## <a name="configuration"></a> Configuration
 
 The client must be configured with at least one broker. The brokers on the list are considered seed brokers and are only used to bootstrap the client and load initial metadata.
 
