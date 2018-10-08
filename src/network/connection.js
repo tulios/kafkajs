@@ -265,10 +265,11 @@ module.exports = class Connection {
         })
       }
 
+      const isBuffer = Buffer.isBuffer(payload)
       this.logDebug(`Response ${requestInfo(entry)}`, {
         error: e.message,
         correlationId,
-        payload,
+        payload: isBuffer ? '[filtered]' : payload,
       })
 
       throw e
