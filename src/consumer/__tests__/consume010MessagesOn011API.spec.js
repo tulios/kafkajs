@@ -1,5 +1,6 @@
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
+const { Types } = require('../../protocol/message/compression')
 
 const {
   secureRandom,
@@ -69,6 +70,25 @@ describe('Consumer', () => {
     await producer.send({
       acks: 1,
       topic: topicName,
+      messages,
+    })
+
+    const messagesConsumed = []
+    consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+    await waitForConsumerToJoinGroup(consumer)
+    await waitForMessages(messagesConsumed, { number: messages.length })
+  })
+
+  testIfKafka011('consume 0.10 GZIP messages with 0.11 API', async () => {
+    await consumer.connect()
+    await producer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    const messages = generateMessages()
+    await producer.send({
+      acks: 1,
+      topic: topicName,
+      compression: Types.GZIP,
       messages,
     })
 

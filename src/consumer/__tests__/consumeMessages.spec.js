@@ -317,6 +317,79 @@ describe('Consumer', () => {
     expect(messagesFromTopic2.map(m => m.message.offset)).toEqual(messages2.map((_, i) => `${i}`))
   })
 
+  testIfKafka011('consume GZIP messages with 0.11 format', async () => {
+    cluster = createCluster({ allowExperimentalV011: true })
+    producer = createProducer({
+      cluster,
+      createPartitioner: createModPartitioner,
+      logger: newLogger(),
+    })
+
+    consumer = createConsumer({
+      cluster,
+      groupId,
+      maxWaitTimeInMs: 100,
+      logger: newLogger(),
+    })
+
+    await consumer.connect()
+    await producer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    const messagesConsumed = []
+    consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+    await waitForConsumerToJoinGroup(consumer)
+
+    const key1 = secureRandom()
+    const message1 = {
+      key: `key-${key1}`,
+      value: `value-${key1}`,
+      headers: { [`header-${key1}`]: `header-value-${key1}` },
+    }
+    const key2 = secureRandom()
+    const message2 = {
+      key: `key-${key2}`,
+      value: `value-${key2}`,
+      headers: { [`header-${key2}`]: `header-value-${key2}` },
+    }
+
+    await producer.send({
+      acks: 1,
+      topic: topicName,
+      compression: Types.GZIP,
+      messages: [message1, message2],
+    })
+
+    await expect(waitForMessages(messagesConsumed, { number: 2 })).resolves.toEqual([
+      {
+        topic: topicName,
+        partition: 0,
+        message: expect.objectContaining({
+          key: Buffer.from(message1.key),
+          value: Buffer.from(message1.value),
+          headers: {
+            [`header-${key1}`]: Buffer.from(message1.headers[`header-${key1}`]),
+          },
+          magicByte: 2,
+          offset: '0',
+        }),
+      },
+      {
+        topic: topicName,
+        partition: 0,
+        message: expect.objectContaining({
+          key: Buffer.from(message2.key),
+          value: Buffer.from(message2.value),
+          headers: {
+            [`header-${key2}`]: Buffer.from(message2.headers[`header-${key2}`]),
+          },
+          magicByte: 2,
+          offset: '1',
+        }),
+      },
+    ])
+  })
+
   it('stops consuming messages when running = false', async () => {
     await consumer.connect()
     await producer.connect()
