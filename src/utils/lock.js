@@ -1,40 +1,46 @@
-const EventEmitter = require('events')
 const { KafkaJSLockTimeout } = require('../errors')
+
+const PRIVATE = {
+  LOCKED: Symbol('private:Lock:locked'),
+  TIMEOUT: Symbol('private:Lock:timeout'),
+  WAITING: Symbol('private:Lock:waiting'),
+}
 
 module.exports = class Lock {
   constructor({ timeout = 1000 } = {}) {
-    this.locked = false
-    this.timeout = timeout
-    this.emitter = new EventEmitter()
+    this[PRIVATE.LOCKED] = false
+    this[PRIVATE.TIMEOUT] = timeout
+    this[PRIVATE.WAITING] = new Set()
   }
 
   async acquire() {
     return new Promise((resolve, reject) => {
-      if (!this.locked) {
-        this.locked = true
+      if (!this[PRIVATE.LOCKED]) {
+        this[PRIVATE.LOCKED] = true
         return resolve()
       }
 
       let timeoutId
-      const tryToAcquire = () => {
-        if (!this.locked) {
-          this.locked = true
+      const tryToAcquire = async () => {
+        if (!this[PRIVATE.LOCKED]) {
+          this[PRIVATE.LOCKED] = true
           clearTimeout(timeoutId)
-          this.emitter.removeListener('releaseLock', tryToAcquire)
+          this[PRIVATE.WAITING].delete(tryToAcquire)
           return resolve()
         }
       }
 
-      this.emitter.on('releaseLock', tryToAcquire)
+      this[PRIVATE.WAITING].add(tryToAcquire)
       timeoutId = setTimeout(
         () => reject(new KafkaJSLockTimeout('Timeout while acquiring lock')),
-        this.timeout
+        this[PRIVATE.TIMEOUT]
       )
     })
   }
 
   async release() {
-    this.locked = false
-    setImmediate(() => this.emitter.emit('releaseLock'))
+    this[PRIVATE.LOCKED] = false
+    const waitingForLock = Array.from(this[PRIVATE.WAITING])
+    return Promise.all(waitingForLock.map(acquireLock => acquireLock()))
   }
 }

@@ -11,9 +11,8 @@ const kafka = new Kafka({
   clientId: 'example-consumer',
   ssl: {
     servername: 'localhost',
-    cert: fs.readFileSync('./testHelpers/certs/client_cert.pem', 'utf-8'),
-    key: fs.readFileSync('./testHelpers/certs/client_key.pem', 'utf-8'),
-    ca: [fs.readFileSync('./testHelpers/certs/ca_cert.pem', 'utf-8')],
+    rejectUnauthorized: false,
+    ca: [fs.readFileSync('./testHelpers/certs/cert-signed', 'utf-8')],
   },
   sasl: {
     mechanism: 'plain',
