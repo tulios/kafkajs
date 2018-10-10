@@ -8,6 +8,7 @@ const Types = {
   GZIP: 1,
   Snappy: 2,
   LZ4: 3,
+  ZSTD: 4,
 }
 
 const Codecs = {
@@ -17,6 +18,9 @@ const Codecs = {
   },
   [Types.LZ4]: () => {
     throw new KafkaJSNotImplemented('LZ4 compression not implemented')
+  },
+  [Types.ZSTD]: () => {
+    throw new KafkaJSNotImplemented('ZSTD compression not implemented')
   },
 }
 
