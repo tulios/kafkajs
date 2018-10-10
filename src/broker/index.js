@@ -36,7 +36,10 @@ module.exports = class Broker {
     this.authenticationTimeout = authenticationTimeout
     this.allowAutoTopicCreation = allowAutoTopicCreation
     this.authenticated = false
-    this.lock = new Lock()
+
+    const lockTimeout = this.connection.connectionTimeout + this.authenticationTimeout
+    this.lock = new Lock({ timeout: lockTimeout })
+
     this.lookupRequest = () => {
       throw new Error('Broker not connected')
     }
@@ -57,7 +60,7 @@ module.exports = class Broker {
    */
   async connect() {
     try {
-      await this.lock.acquire({ timeout: this.authenticationTimeout })
+      await this.lock.acquire()
 
       if (this.isConnected()) {
         return

@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2018-10-09
+
+### Fixed
+  - Potential offset loss when updating offsets for resolved partitions #124
+  - Refresh metadata on lock timeout #131
+  - Cleans up stale brokers on metadata refresh #131
+  - Force metadata refresh on `ECONNREFUSED` #134
+  - Handle API version not supported #135
+  - Handle v0.10 messages on v0.11 Fetch API #143
+
+### Added
+  - Admin delete topics #117
+  - Update metadata api and allow to disable auto topic creation #118
+  - Use highest available API version #135 #146
+  - Admin describe and alter configs #138
+  - Validate message format in producer #142
+  - Consumers can detect that a topic was updated and force a rebalance #136
+
+### Changed
+  - Improved stack trace for `KafkaJSNumberOfRetriesExceeded` #123
+  - Enable Kafka v0.11 API by default #141 (Can still be disabled with `allowExperimentalV011=false`)
+  - Replace event emitter Lock #154
+  - Add member assignment to `GROUP_JOIN` instrumentation event #136
+
 ## [1.3.1] - 2018-08-20
 ### Fixed
   - Client logger accessor #106
@@ -50,7 +74,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Prevent crash when re-producing after metadata refresh #62
 
 ## [1.0.0] - 2018-05-14
-## Changed
+### Changed
   - Updated readme
 
 ## [0.8.1] - 2018-04-10
