@@ -419,6 +419,39 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
   }
 
   /**
+   * Retrieve metadata for a topic.
+   *
+   * @param {string} topic
+   * @return {Promise<TopicMetadata>}
+   *
+   * @typedef {Object} TopicMetadata
+   * @property {String} name
+   * @property {Array<PartitionMetadata>} partitions
+   *
+   * @typedef {Object} PartitionMetadata
+   * @property {number} partitionErrorCode Response error code
+   * @property {number} partitionId Topic partition id
+   * @property {number} leader  The id of the broker acting as leader for this partition.
+   * @property {Array<number>} replicas The set of all nodes that host this partition.
+   * @property {Array<number>} isr The set of nodes that are in sync with the leader for this partition.
+   *
+   * @see https://kafka.apache.org/protocol#The_Messages_Metadata
+   */
+  const getTopicMetadata = async topic => {
+    if (!topic) {
+      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    }
+
+    await cluster.addTargetTopic(topic)
+    await cluster.refreshMetadataIfNecessary()
+
+    return {
+      name: topic,
+      partitions: await cluster.findTopicPartitionMetadata(topic),
+    }
+  }
+
+  /**
    * @param {string} eventName
    * @param {Function} listener
    * @return {Function}
@@ -448,6 +481,7 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     disconnect,
     createTopics,
     deleteTopics,
+    getTopicMetadata,
     events,
     fetchOffsets,
     setOffsets,
