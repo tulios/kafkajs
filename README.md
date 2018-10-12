@@ -300,10 +300,15 @@ const topicMessages = [
   },
   {
     topic: 'topic-c',
-    messages: [{ key: 'key', value: 'hello topic-c' }],
-    headers: {
-      'correlation-id': '2bfb68bb-893a-423b-a7fa-7b568cad5b67',
-    }
+    messages: [
+      {
+        key: 'key',
+        value: 'hello topic-c',
+        headers: {
+          'correlation-id': '2bfb68bb-893a-423b-a7fa-7b568cad5b67',
+        },
+      }
+    ],
   }
 ]
 await producer.sendBatch({ topicMessages })
