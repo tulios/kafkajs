@@ -858,8 +858,15 @@ delete.topic.enable=true
 ### <a name="admin-get-topic-metadata"></a> Get topic metadata
 
 ```javascript
-await admin.getTopicMetadata(<String>)
+await admin.getTopicMetadata({ topics: <Array<String> })
 ```
+
+`TopicsMetadata` structure:
+
+```javascript
+{
+  topics: <Array<TopicMetadata>>,
+}
 
 `TopicMetadata` structure:
 
@@ -882,7 +889,14 @@ await admin.getTopicMetadata(<String>)
 }
 ```
 
-By default the admin client will throw an exception if the topic does not already exist.
+The admin client will throw an exception if any of the provided topics do not already exist.
+
+If you omit the `topics` argument the admin client will fetch metadata for all topics
+of which it is already aware (all the cluster's target topics):
+
+```
+await admin.getTopicMetadata();
+```
 
 ### <a name="admin-fetch-offsets"></a> Fetch consumer group offsets
 
