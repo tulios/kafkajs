@@ -20,7 +20,7 @@ describe('Admin', () => {
   describe('getTopicMetadata', () => {
     test('throws an error if the topic name is not a valid string', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
-      await expect(admin.getTopicMetadata(null)).rejects.toHaveProperty(
+      await expect(admin.getTopicMetadata({ topics: [null] })).rejects.toHaveProperty(
         'message',
         'Invalid topic null'
       )
@@ -31,8 +31,12 @@ describe('Admin', () => {
       admin = createAdmin({ cluster, logger: newLogger() })
 
       await admin.connect()
-      const topicMetadata = await admin.getTopicMetadata(existingTopicName)
+      const { topics: topicsMetadata } = await admin.getTopicMetadata({
+        topics: [existingTopicName],
+      })
 
+      expect(topicsMetadata).toHaveLength(1)
+      const topicMetadata = topicsMetadata[0]
       expect(topicMetadata).toHaveProperty('name', existingTopicName)
       expect(topicMetadata.partitions).toHaveLength(numPartitions)
 
@@ -45,6 +49,21 @@ describe('Admin', () => {
       })
     })
 
+    test('by default retrieves metadata for all topics of which the cluster is aware', async () => {
+      const cluster = createCluster()
+      admin = createAdmin({ cluster, logger: newLogger() })
+
+      await admin.connect()
+      const { topics: topicsMetadataBeforeAware } = await admin.getTopicMetadata()
+      expect(topicsMetadataBeforeAware).toHaveLength(0)
+
+      await cluster.addTargetTopic(existingTopicName)
+
+      const { topics: topicsMetadataAfterAware } = await admin.getTopicMetadata()
+      expect(topicsMetadataAfterAware).toHaveLength(1)
+      expect(topicsMetadataAfterAware[0]).toHaveProperty('name', existingTopicName)
+    })
+
     test('creates a new topic if the topic does not exist and "allowAutoTopicCreation" is true', async () => {
       admin = createAdmin({
         cluster: createCluster({ allowAutoTopicCreation: true }),
@@ -53,10 +72,13 @@ describe('Admin', () => {
       const newTopicName = `test-topic-${secureRandom()}`
 
       await admin.connect()
-      const topicMetadata = await admin.getTopicMetadata(newTopicName)
+      const { topics: topicsMetadata } = await admin.getTopicMetadata({
+        topics: [existingTopicName, newTopicName],
+      })
 
-      expect(topicMetadata).toHaveProperty('name', newTopicName)
-      expect(topicMetadata.partitions).toHaveLength(1)
+      expect(topicsMetadata[0]).toHaveProperty('name', existingTopicName)
+      expect(topicsMetadata[1]).toHaveProperty('name', newTopicName)
+      expect(topicsMetadata[1].partitions).toHaveLength(1)
     })
 
     test('throws an error if the topic does not exist and "allowAutoTopicCreation" is false', async () => {
@@ -67,9 +89,13 @@ describe('Admin', () => {
       const newTopicName = `test-topic-${secureRandom()}`
 
       await admin.connect()
-      await expect(admin.getTopicMetadata(newTopicName)).rejects.toHaveProperty(
+      await expect(
+        admin.getTopicMetadata({
+          topics: [existingTopicName, newTopicName],
+        })
+      ).rejects.toHaveProperty(
         'message',
-        'This server does not host this topic-partition'
+        `Failed to add target topic ${newTopicName}: This server does not host this topic-partition`
       )
     })
   })
