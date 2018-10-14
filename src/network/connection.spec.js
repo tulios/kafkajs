@@ -95,23 +95,15 @@ describe('Network > Connection', () => {
     })
 
     test('rejects the Promise in case of a non-retriable error', async () => {
-      const debugStub = jest.fn()
-      connection.logger.debug = debugStub
       const protocol = apiVersions()
       protocol.response.parse = () => {
         throw new Error('non-retriable')
       }
       await connection.connect()
       await expect(connection.send(protocol)).rejects.toEqual(new Error('non-retriable'))
-
-      const lastCall = debugStub.mock.calls[debugStub.mock.calls.length - 1]
-      expect(lastCall[1].payload).toEqual({
-        data: '[filtered]',
-        type: 'Buffer',
-      })
     })
 
-    describe.only('Debug logging', () => {
+    describe('Debug logging', () => {
       let initialValue
 
       beforeAll(() => {
