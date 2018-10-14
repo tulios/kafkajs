@@ -22,8 +22,8 @@
   },
   "homepage": "https://github.com/tulios/kafkajs",
   "scripts": {
-    "test:local": "export KAFKA_VERSION=${KAFKA_VERSION:='0.11'} && NODE_ENV=test echo \"KAFKA_VERSION: ${KAFKA_VERSION}\" && ./node_modules/.bin/jest --forceExit --detectOpenHandles",
-    "test:debug": "NODE_ENV=test node --inspect-brk node_modules/.bin/jest --detectOpenHandles --runInBand --watch",
+    "test:local": "export KAFKA_VERSION=${KAFKA_VERSION:='0.11'} && NODE_ENV=test echo \"KAFKA_VERSION: ${KAFKA_VERSION}\" && DEBUG_LOG_BUFFERS=1 ./node_modules/.bin/jest --forceExit --detectOpenHandles",
+    "test:debug": "NODE_ENV=test node DEBUG_LOG_BUFFERS=1 --inspect-brk node_modules/.bin/jest --detectOpenHandles --runInBand --watch",
     "test:local:watch": "yarn test:local --watch",
     "test": "yarn lint && JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh 'yarn test:local --ci --maxWorkers=4 --no-watchman'",
     "lint": "find . -path ./node_modules -prune -o -path ./coverage -prune -o -name '*.js' -print0 | xargs -0 ./node_modules/.bin/eslint",

@@ -59,6 +59,7 @@ module.exports = class Connection {
 
     this.logDebug = log('debug')
     this.logError = log('error')
+    this.shouldLogBuffers = process.env['DEBUG_LOG_BUFFERS'] === '1'
   }
 
   /**
@@ -265,10 +266,12 @@ module.exports = class Connection {
         })
       }
 
+      const isBuffer = Buffer.isBuffer(payload)
       this.logDebug(`Response ${requestInfo(entry)}`, {
         error: e.message,
         correlationId,
-        payload,
+        payload:
+          isBuffer && !this.shouldLogBuffers ? { type: 'Buffer', data: '[filtered]' } : payload,
       })
 
       throw e

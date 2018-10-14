@@ -95,12 +95,67 @@ describe('Network > Connection', () => {
     })
 
     test('rejects the Promise in case of a non-retriable error', async () => {
+      const debugStub = jest.fn()
+      connection.logger.debug = debugStub
       const protocol = apiVersions()
       protocol.response.parse = () => {
         throw new Error('non-retriable')
       }
       await connection.connect()
       await expect(connection.send(protocol)).rejects.toEqual(new Error('non-retriable'))
+
+      const lastCall = debugStub.mock.calls[debugStub.mock.calls.length - 1]
+      expect(lastCall[1].payload).toEqual({
+        data: '[filtered]',
+        type: 'Buffer',
+      })
+    })
+
+    describe.only('Debug logging', () => {
+      let initialValue
+
+      beforeAll(() => {
+        initialValue = process.env.DEBUG_LOG_BUFFERS
+      })
+
+      afterAll(() => {
+        process.env['DEBUG_LOG_BUFFERS'] = initialValue
+      })
+
+      test('logs the full payload in case of non-retriable error when "DEBUG_LOG_BUFFERS" runtime flag is set', async () => {
+        process.env['DEBUG_LOG_BUFFERS'] = '1'
+        const connection = new Connection(connectionOpts())
+        const debugStub = jest.fn()
+        connection.logger.debug = debugStub
+        const protocol = apiVersions()
+        protocol.response.parse = () => {
+          throw new Error('non-retriable')
+        }
+        await connection.connect()
+        await expect(connection.send(protocol)).rejects.toBeTruthy()
+
+        const lastCall = debugStub.mock.calls[debugStub.mock.calls.length - 1]
+        expect(lastCall[1].payload).toEqual(expect.any(Buffer))
+      })
+
+      test('filters payload in case of non-retriable error when "DEBUG_LOG_BUFFERS" runtime flag is not set', async () => {
+        delete process.env['DEBUG_LOG_BUFFERS']
+        const connection = new Connection(connectionOpts())
+        const debugStub = jest.fn()
+        connection.logger.debug = debugStub
+        const protocol = apiVersions()
+        protocol.response.parse = () => {
+          throw new Error('non-retriable')
+        }
+        await connection.connect()
+        await expect(connection.send(protocol)).rejects.toBeTruthy()
+
+        const lastCall = debugStub.mock.calls[debugStub.mock.calls.length - 1]
+        expect(lastCall[1].payload).toEqual({
+          type: 'Buffer',
+          data: '[filtered]',
+        })
+      })
     })
   })
 
