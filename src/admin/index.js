@@ -419,6 +419,63 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
   }
 
   /**
+   * Fetch metadata for provided topics.
+   *
+   * If no topics are provided fetch metadata for all topics of which we are aware.
+   * @see https://kafka.apache.org/protocol#The_Messages_Metadata
+   *
+   * @param {Object} [options]
+   * @param {Array<string>} [options.topics]
+   * @return {Promise<TopicsMetadata>}
+   *
+   * @typedef {Object} TopicsMetadata
+   * @property {Array<TopicMetadata>} topics
+   *
+   * @typedef {Object} TopicMetadata
+   * @property {String} name
+   * @property {Array<PartitionMetadata>} partitions
+   *
+   * @typedef {Object} PartitionMetadata
+   * @property {number} partitionErrorCode Response error code
+   * @property {number} partitionId Topic partition id
+   * @property {number} leader  The id of the broker acting as leader for this partition.
+   * @property {Array<number>} replicas The set of all nodes that host this partition.
+   * @property {Array<number>} isr The set of nodes that are in sync with the leader for this partition.
+   */
+  const getTopicMetadata = async options => {
+    const { topics } = options || {}
+
+    if (topics) {
+      await Promise.all(
+        topics.map(async topic => {
+          if (!topic) {
+            throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+          }
+
+          try {
+            await cluster.addTargetTopic(topic)
+          } catch (e) {
+            e.message = `Failed to add target topic ${topic}: ${e.message}`
+            throw e
+          }
+        })
+      )
+    }
+
+    await cluster.refreshMetadataIfNecessary()
+    const targetTopics = topics || [...cluster.targetTopics]
+
+    return {
+      topics: await Promise.all(
+        targetTopics.map(async topic => ({
+          name: topic,
+          partitions: await cluster.findTopicPartitionMetadata(topic),
+        }))
+      ),
+    }
+  }
+
+  /**
    * @param {string} eventName
    * @param {Function} listener
    * @return {Function}
@@ -448,6 +505,7 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
     disconnect,
     createTopics,
     deleteTopics,
+    getTopicMetadata,
     events,
     fetchOffsets,
     setOffsets,
