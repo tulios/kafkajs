@@ -855,6 +855,49 @@ Topic deletion is disabled by default in Apache Kafka versions prior to `1.0.0`.
 delete.topic.enable=true
 ```
 
+### <a name="admin-get-topic-metadata"></a> Get topic metadata
+
+```javascript
+await admin.getTopicMetadata({ topics: <Array<String> })
+```
+
+`TopicsMetadata` structure:
+
+```javascript
+{
+  topics: <Array<TopicMetadata>>,
+}
+
+`TopicMetadata` structure:
+
+```javascript
+{
+  topic: <String>,
+  partitions: <Array<PartitionMetadata>>     // default: 1
+}
+```
+
+`PartitionMetadata` structure:
+
+```javascript
+{
+  partitionErrorCode: <Number>,              // default: 0
+  partitionId: <Number>,
+  leader: <Number>,
+  replicas: <Array<Number>>,
+  isr: <Array<Number>>,
+}
+```
+
+The admin client will throw an exception if any of the provided topics do not already exist.
+
+If you omit the `topics` argument the admin client will fetch metadata for all topics
+of which it is already aware (all the cluster's target topics):
+
+```
+await admin.getTopicMetadata();
+```
+
 ### <a name="admin-fetch-offsets"></a> Fetch consumer group offsets
 
 `fetchOffsets` returns the consumer group offset for a topic.
