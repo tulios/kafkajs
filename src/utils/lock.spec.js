@@ -37,7 +37,7 @@ describe('Utils > Lock', () => {
 
     await expect(
       Promise.all([callResource(), callResource(), callResource()])
-    ).rejects.toHaveProperty('message', 'Timeout while acquiring lock')
+    ).rejects.toHaveProperty('message', 'Timeout while acquiring lock (2 waiting locks)')
   })
 
   describe('with a description', () => {
@@ -53,7 +53,10 @@ describe('Utils > Lock', () => {
 
       await expect(
         Promise.all([callResource(), callResource(), callResource()])
-      ).rejects.toHaveProperty('message', 'Timeout while acquiring lock: "My test mock"')
+      ).rejects.toHaveProperty(
+        'message',
+        'Timeout while acquiring lock (2 waiting locks): "My test mock"'
+      )
     })
   })
 })
