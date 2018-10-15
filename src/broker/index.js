@@ -38,7 +38,12 @@ module.exports = class Broker {
     this.authenticated = false
 
     const lockTimeout = this.connection.connectionTimeout + this.authenticationTimeout
-    this.lock = new Lock({ timeout: lockTimeout })
+    const brokerAddress = `${this.connection.host}:${this.connection.port}`
+
+    this.lock = new Lock({
+      timeout: lockTimeout,
+      description: `connect to broker ${brokerAddress}`,
+    })
 
     this.lookupRequest = () => {
       throw new Error('Broker not connected')
