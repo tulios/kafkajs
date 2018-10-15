@@ -53,6 +53,7 @@ KafkaJS is battle-tested and ready for production.
 - [Admin](#admin)
   - [Create topics](#admin-create-topics)
   - [Delete topics](#admin-delete-topics)
+  - [Get topic metadata](#admin-get-topic-metadata)
   - [Fetch consumer group offsets](#admin-fetch-offsets)
   - [Reset consumer group offsets](#admin-reset-offsets)
   - [Set consumer group offsets](#admin-set-offsets)
@@ -868,6 +869,7 @@ await admin.getTopicMetadata({ topics: <Array<String> })
 {
   topics: <Array<TopicMetadata>>,
 }
+```
 
 `TopicMetadata` structure:
 
@@ -896,7 +898,7 @@ If you omit the `topics` argument the admin client will fetch metadata for all t
 of which it is already aware (all the cluster's target topics):
 
 ```
-await admin.getTopicMetadata();
+await admin.getTopicMetadata()
 ```
 
 ### <a name="admin-fetch-offsets"></a> Fetch consumer group offsets
