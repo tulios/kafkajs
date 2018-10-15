@@ -3,6 +3,7 @@ const createSocket = require('./socket')
 const createRequest = require('../protocol/request')
 const Decoder = require('../protocol/decoder')
 const { KafkaJSConnectionError } = require('../errors')
+const getEnv = require('../env')
 
 /**
  * @param {string} host
@@ -59,7 +60,7 @@ module.exports = class Connection {
 
     this.logDebug = log('debug')
     this.logError = log('error')
-    this.shouldLogBuffers = process.env['DEBUG_LOG_BUFFERS'] === '1'
+    this.shouldLogBuffers = getEnv().KAFKAJS_DEBUG_PROTOCOL_BUFFERS === '1'
   }
 
   /**
