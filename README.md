@@ -53,6 +53,7 @@ KafkaJS is battle-tested and ready for production.
 - [Admin](#admin)
   - [Create topics](#admin-create-topics)
   - [Delete topics](#admin-delete-topics)
+  - [Get topic metadata](#admin-get-topic-metadata)
   - [Fetch consumer group offsets](#admin-fetch-offsets)
   - [Reset consumer group offsets](#admin-reset-offsets)
   - [Set consumer group offsets](#admin-set-offsets)
