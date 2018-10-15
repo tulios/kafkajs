@@ -170,4 +170,85 @@ describe('Protocol > Requests > Fetch > v4', () => {
 
     await expect(parse(data)).resolves.toBeTruthy()
   })
+
+  test('response with several RecordBatch (from Scala producer)', async () => {
+    const data = await decode(
+      Buffer.from(require('../fixtures/v4_from_scala_producer_response.json'))
+    )
+    expect(data).toEqual({
+      throttleTime: 0,
+      responses: [
+        {
+          topicName: 'test-topic-bec28e95-0c2f-49d3-a230-2418dceac885',
+          partitions: [
+            {
+              partition: 0,
+              errorCode: 0,
+              highWatermark: '6',
+              lastStableOffset: '6',
+              abortedTransactions: [],
+              messages: [
+                {
+                  magicByte: 2,
+                  attributes: 0,
+                  timestamp: '1539644731680',
+                  offset: '0',
+                  key: Buffer.from('KEY-1'),
+                  value: Buffer.from('VALUE-Lorem ipsum dolor sit amet-1'),
+                  headers: {},
+                },
+                {
+                  magicByte: 2,
+                  attributes: 0,
+                  timestamp: '1539644732194',
+                  offset: '1',
+                  key: Buffer.from('KEY-2'),
+                  value: Buffer.from('VALUE-Lorem ipsum dolor sit amet-2'),
+                  headers: {},
+                },
+                {
+                  magicByte: 2,
+                  attributes: 0,
+                  timestamp: '1539644732699',
+                  offset: '2',
+                  key: Buffer.from('KEY-3'),
+                  value: Buffer.from('VALUE-Lorem ipsum dolor sit amet-3'),
+                  headers: {},
+                },
+                {
+                  magicByte: 2,
+                  attributes: 0,
+                  timestamp: '1539644733203',
+                  offset: '3',
+                  key: Buffer.from('KEY-4'),
+                  value: Buffer.from('VALUE-Lorem ipsum dolor sit amet-4'),
+                  headers: {},
+                },
+                {
+                  magicByte: 2,
+                  attributes: 0,
+                  timestamp: '1539644733708',
+                  offset: '4',
+                  key: Buffer.from('KEY-5'),
+                  value: Buffer.from('VALUE-Lorem ipsum dolor sit amet-5'),
+                  headers: {},
+                },
+                {
+                  magicByte: 2,
+                  attributes: 0,
+                  timestamp: '1539644734213',
+                  offset: '5',
+                  key: Buffer.from('KEY-6'),
+                  value: Buffer.from('VALUE-Lorem ipsum dolor sit amet-6'),
+                  headers: {},
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+
+    await expect(parse(data)).resolves.toBeTruthy()
+  })
 })
