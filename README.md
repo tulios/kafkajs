@@ -897,7 +897,7 @@ If you omit the `topics` argument the admin client will fetch metadata for all t
 of which it is already aware (all the cluster's target topics):
 
 ```
-await admin.getTopicMetadata();
+await admin.getTopicMetadata()
 ```
 
 ### <a name="admin-fetch-offsets"></a> Fetch consumer group offsets
