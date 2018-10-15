@@ -63,6 +63,7 @@ KafkaJS is battle-tested and ready for production.
 - [Custom logging](#custom-logging)
 - [Retry (detailed)](#configuration-default-retry-detailed)
 - [Development](#development)
+  - [Environment variables](#environment-variables)
 
 ## <a name="installation"></a> Installation
 
@@ -1312,6 +1313,12 @@ yarn test:local
 
 Password for test keystore and certificates: `testtest`
 Password for SASL `test:testtest`
+
+### <a name="environment-variables"></a> Environment variables
+
+| variable                       | description                              | default |
+| ------------------------------ | ---------------------------------------- | ------- |
+| KAFKAJS_DEBUG_PROTOCOL_BUFFERS | Output raw protocol buffers in debug log | 0       |
 
 ## Acknowledgements
 

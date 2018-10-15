@@ -102,6 +102,53 @@ describe('Network > Connection', () => {
       await connection.connect()
       await expect(connection.send(protocol)).rejects.toEqual(new Error('non-retriable'))
     })
+
+    describe('Debug logging', () => {
+      let initialValue
+
+      beforeAll(() => {
+        initialValue = process.env.KAFKAJS_DEBUG_PROTOCOL_BUFFERS
+      })
+
+      afterAll(() => {
+        process.env['KAFKAJS_DEBUG_PROTOCOL_BUFFERS'] = initialValue
+      })
+
+      test('logs the full payload in case of non-retriable error when "KAFKAJS_DEBUG_PROTOCOL_BUFFERS" runtime flag is set', async () => {
+        process.env['KAFKAJS_DEBUG_PROTOCOL_BUFFERS'] = '1'
+        const connection = new Connection(connectionOpts())
+        const debugStub = jest.fn()
+        connection.logger.debug = debugStub
+        const protocol = apiVersions()
+        protocol.response.parse = () => {
+          throw new Error('non-retriable')
+        }
+        await connection.connect()
+        await expect(connection.send(protocol)).rejects.toBeTruthy()
+
+        const lastCall = debugStub.mock.calls[debugStub.mock.calls.length - 1]
+        expect(lastCall[1].payload).toEqual(expect.any(Buffer))
+      })
+
+      test('filters payload in case of non-retriable error when "KAFKAJS_DEBUG_PROTOCOL_BUFFERS" runtime flag is not set', async () => {
+        delete process.env['KAFKAJS_DEBUG_PROTOCOL_BUFFERS']
+        const connection = new Connection(connectionOpts())
+        const debugStub = jest.fn()
+        connection.logger.debug = debugStub
+        const protocol = apiVersions()
+        protocol.response.parse = () => {
+          throw new Error('non-retriable')
+        }
+        await connection.connect()
+        await expect(connection.send(protocol)).rejects.toBeTruthy()
+
+        const lastCall = debugStub.mock.calls[debugStub.mock.calls.length - 1]
+        expect(lastCall[1].payload).toEqual({
+          type: 'Buffer',
+          data: '[filtered]',
+        })
+      })
+    })
   })
 
   describe('#nextCorrelationId', () => {

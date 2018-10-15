@@ -3,6 +3,7 @@ const createSocket = require('./socket')
 const createRequest = require('../protocol/request')
 const Decoder = require('../protocol/decoder')
 const { KafkaJSConnectionError } = require('../errors')
+const getEnv = require('../env')
 
 /**
  * @param {string} host
@@ -59,6 +60,7 @@ module.exports = class Connection {
 
     this.logDebug = log('debug')
     this.logError = log('error')
+    this.shouldLogBuffers = getEnv().KAFKAJS_DEBUG_PROTOCOL_BUFFERS === '1'
   }
 
   /**
@@ -265,10 +267,12 @@ module.exports = class Connection {
         })
       }
 
+      const isBuffer = Buffer.isBuffer(payload)
       this.logDebug(`Response ${requestInfo(entry)}`, {
         error: e.message,
         correlationId,
-        payload,
+        payload:
+          isBuffer && !this.shouldLogBuffers ? { type: 'Buffer', data: '[filtered]' } : payload,
       })
 
       throw e

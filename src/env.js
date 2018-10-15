@@ -1,0 +1,3 @@
+module.exports = () => ({
+  KAFKAJS_DEBUG_PROTOCOL_BUFFERS: process.env.KAFKAJS_DEBUG_PROTOCOL_BUFFERS,
+})
