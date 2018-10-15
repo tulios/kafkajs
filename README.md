@@ -868,6 +868,7 @@ await admin.getTopicMetadata({ topics: <Array<String> })
 {
   topics: <Array<TopicMetadata>>,
 }
+```
 
 `TopicMetadata` structure:
 
