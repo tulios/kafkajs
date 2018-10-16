@@ -41,8 +41,16 @@ const decodeMessages = async decoder => {
     let records = []
 
     while (messagesDecoder.canReadBytes(RECORD_BATCH_OVERHEAD)) {
-      const recordBatch = await RecordBatchDecoder(messagesDecoder)
-      records = [...records, ...recordBatch.records]
+      try {
+        const recordBatch = await RecordBatchDecoder(messagesDecoder)
+        records = [...records, ...recordBatch.records]
+      } catch (e) {
+        // The tail of the record batches can have incomplete records
+        // due to how maxBytes works
+        if (e.name === 'KafkaJSPartialMessageError') {
+          break
+        }
+      }
     }
 
     return records
