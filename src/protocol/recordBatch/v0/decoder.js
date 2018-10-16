@@ -1,6 +1,5 @@
 const Decoder = require('../../decoder')
 const { lookupCodecByRecordBatchAttributes } = require('../../message/compression')
-const { KafkaJSPartialMessageError } = require('../../../errors')
 const RecordDecoder = require('../record/v0/decoder')
 
 const TRANSACTIONAL_FLAG_MASK = 0x10
@@ -24,18 +23,9 @@ const CONTROL_FLAG_MASK = 0x20
  *  Records => [Record]
  */
 
-module.exports = async decoder => {
-  const firstOffset = decoder.readInt64().toString()
-  const length = decoder.readInt32()
-
-  const remainingBytes = Buffer.byteLength(decoder.slice(length).buffer)
-
-  if (remainingBytes < length) {
-    throw new KafkaJSPartialMessageError(
-      `Tried to decode a partial record batch: remainingBytes(${remainingBytes}) < recordBatchLength(${length})`
-    )
-  }
-
+module.exports = async fetchDecoder => {
+  const firstOffset = fetchDecoder.readInt64().toString()
+  const decoder = new Decoder(fetchDecoder.readBytes())
   const partitionLeaderEpoch = decoder.readInt32()
 
   // The magic byte was read by the Fetch protocol to distinguish between
@@ -58,10 +48,8 @@ module.exports = async decoder => {
   const isControlBatch = (attributes & CONTROL_FLAG_MASK) > 0
   const codec = lookupCodecByRecordBatchAttributes(attributes)
 
-  const recordsSize = Buffer.byteLength(decoder.buffer)
-  const recordsDecoder = decoder.slice(recordsSize)
   const recordContext = { firstOffset, firstTimestamp, magicByte }
-  const records = await decodeRecords(codec, recordsDecoder, recordContext)
+  const records = await decodeRecords(codec, decoder, recordContext)
 
   return {
     firstOffset,
@@ -85,7 +73,7 @@ const decodeRecords = async (codec, recordsDecoder, recordContext) => {
 
   const length = recordsDecoder.readInt32()
 
-  if (length === -1) {
+  if (length <= 0) {
     return []
   }
 
