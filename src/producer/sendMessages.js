@@ -77,7 +77,8 @@ module.exports = ({ logger, cluster, partitioner }) => {
 
         try {
           const response = await broker.produce({ acks, timeout, compression, topicData })
-          responsePerBroker.set(broker, responseSerializer(response))
+          const expectResponse = acks !== 0
+          responsePerBroker.set(broker, expectResponse ? responseSerializer(response) : [])
         } catch (e) {
           responsePerBroker.delete(broker)
           throw e
