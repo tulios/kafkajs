@@ -30,6 +30,14 @@ describe('Protocol > Requests > Produce > v0', () => {
       expect(request.apiKey).toEqual(apiKeys.Produce)
       expect(request.apiVersion).toEqual(0)
       expect(request.apiName).toEqual('Produce')
+      expect(request.expectResponse()).toEqual(true)
+    })
+
+    describe('when acks=0', () => {
+      test('expectResponse returns false', () => {
+        const request = RequestProtocol({ ...args, acks: 0 })
+        expect(request.expectResponse()).toEqual(false)
+      })
     })
 
     test('encode', async () => {

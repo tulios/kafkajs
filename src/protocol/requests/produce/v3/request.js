@@ -33,6 +33,7 @@ module.exports = ({
   apiKey,
   apiVersion: 3,
   apiName: 'Produce',
+  expectResponse: () => acks !== 0,
   encode: async () => {
     const encodeTopic = topicEncoder(compression)
     const encodedTopicData = []

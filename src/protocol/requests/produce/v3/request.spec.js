@@ -1,6 +1,51 @@
+const apiKeys = require('../../apiKeys')
 const RequestV3Protocol = require('./request')
 
 describe('Protocol > Requests > Produce > v3', () => {
+  let args
+
+  beforeEach(() => {
+    args = {
+      transactionalId: null,
+      acks: -1,
+      timeout: 30000,
+      compression: 0,
+      topicData: [
+        {
+          topic: 'test-topic-ebba68879c6f5081d8c2',
+          partitions: [
+            {
+              partition: 0,
+              messages: [
+                {
+                  key: 'key-9d0f348cb2e730e1edc4',
+                  value: 'some-value-a17b4c81f9ecd1e896e3',
+                  timestamp: 1509928155660,
+                  headers: { a: 'b' },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+  })
+
+  test('metadata about the API', () => {
+    const request = RequestV3Protocol(args)
+    expect(request.apiKey).toEqual(apiKeys.Produce)
+    expect(request.apiVersion).toEqual(3)
+    expect(request.apiName).toEqual('Produce')
+    expect(request.expectResponse()).toEqual(true)
+  })
+
+  describe('when acks=0', () => {
+    test('expectResponse returns false', () => {
+      const request = RequestV3Protocol({ ...args, acks: 0 })
+      expect(request.expectResponse()).toEqual(false)
+    })
+  })
+
   test('request', async () => {
     const { buffer } = await RequestV3Protocol({
       transactionalId: null,
