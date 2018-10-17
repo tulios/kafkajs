@@ -46,7 +46,7 @@ const decodeMessages = async decoder => {
         records = [...records, ...recordBatch.records]
       } catch (e) {
         // The tail of the record batches can have incomplete records
-        // due to how maxBytes works
+        // due to how maxBytes works. See https://cwiki.apache.org/confluence/display/KAFKA/A+Guide+To+The+Kafka+Protocol#AGuideToTheKafkaProtocol-FetchAPI
         if (e.name === 'KafkaJSPartialMessageError') {
           break
         }
