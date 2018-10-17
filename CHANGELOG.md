@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2018-10-17
+
+### Fixed
+  - Decode multiple RecordBatch on protocol Fetch v4 #179
+  - Skip incomplete record batches #182
+  - Producer with `acks=0` never resolve #181
+
+### Added
+  - Runtime flag for displaying buffers in debug output #176
+  - Add ZSTD to compression codecs and types #157
+  - Admin get topic metadata #174
+
+### Changed
+  - Add description to lock instances #178
+
 ## [1.4.0] - 2018-10-09
 
 ### Fixed

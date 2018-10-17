@@ -14,6 +14,7 @@ KafkaJS is battle-tested and ready for production.
 
 - Producer
 - Consumer groups with pause, resume, and seek
+- Message headers
 - GZIP compression
 - Snappy and LZ4 compression through plugins
 - Plain, SSL and SASL_SSL implementations
