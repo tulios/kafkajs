@@ -220,6 +220,8 @@ module.exports = class Connection {
    */
   async send({ request, response }) {
     this.failIfNotConnected()
+
+    const expectResponse = !request.expectResponse || request.expectResponse()
     const requestInfo = ({ apiName, apiKey, apiVersion }) =>
       `${apiName}(key: ${apiKey}, version: ${apiVersion})`
 
@@ -231,14 +233,28 @@ module.exports = class Connection {
       const { apiKey, apiName, apiVersion } = request
       this.logDebug(`Request ${requestInfo(request)}`, {
         correlationId,
+        expectResponse,
         size: Buffer.byteLength(requestPayload.buffer),
       })
 
       return new Promise((resolve, reject) => {
         try {
           this.failIfNotConnected()
-          this.pendingQueue[correlationId] = { apiKey, apiName, apiVersion, resolve, reject }
-          this.socket.write(requestPayload.buffer, 'binary')
+          let entry = { apiKey, apiName, apiVersion }
+
+          if (expectResponse) {
+            entry = { ...entry, resolve, reject }
+            this.pendingQueue[correlationId] = entry
+            this.socket.write(requestPayload.buffer, 'binary')
+          } else {
+            this.socket.write(requestPayload.buffer, 'binary')
+            resolve({
+              size: 0,
+              payload: null,
+              correlationId,
+              entry,
+            })
+          }
         } catch (e) {
           reject(e)
         }
@@ -246,6 +262,10 @@ module.exports = class Connection {
     }
 
     const { correlationId, size, entry, payload } = await sendRequest()
+
+    if (!expectResponse) {
+      return
+    }
 
     try {
       const payloadDecoded = await response.decode(payload)

@@ -64,6 +64,7 @@ module.exports = ({ acks, timeout, topicData }) => ({
   apiKey,
   apiVersion: 0,
   apiName: 'Produce',
+  expectResponse: () => acks !== 0,
   encode: async () => {
     return new Encoder()
       .writeInt16(acks)

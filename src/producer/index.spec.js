@@ -24,7 +24,7 @@ describe('Producer', () => {
   })
 
   afterEach(async () => {
-    await producer.disconnect()
+    producer && (await producer.disconnect())
   })
 
   test('throws an error if the topic is invalid', async () => {
@@ -408,5 +408,31 @@ describe('Producer', () => {
 
     await producer.disconnect()
     expect(disconnectListener).toHaveBeenCalled()
+  })
+
+  describe('when acks=0', () => {
+    it('returns immediately', async () => {
+      const cluster = createCluster({
+        ...connectionOpts(),
+        createPartitioner: createModPartitioner,
+      })
+
+      await createTopic({ topic: topicName })
+
+      producer = createProducer({ cluster, logger: newLogger() })
+      await producer.connect()
+
+      const sendMessages = async () =>
+        await producer.send({
+          acks: 0,
+          topic: topicName,
+          messages: new Array(10).fill().map((_, i) => ({
+            key: `key-${i}`,
+            value: `value-${i}`,
+          })),
+        })
+
+      expect(await sendMessages()).toEqual([])
+    })
   })
 })

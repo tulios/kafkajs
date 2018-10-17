@@ -1,10 +1,53 @@
 const os = require('os')
+const apiKeys = require('../../apiKeys')
 const RequestV2Protocol = require('./request')
 const { Types } = require('../../../message/compression')
 
 const osType = os.type().toLowerCase()
 
 describe('Protocol > Requests > Produce > v2', () => {
+  let args
+
+  beforeEach(() => {
+    args = {
+      acks: -1,
+      timeout: 30000,
+      compression: 0,
+      topicData: [
+        {
+          topic: 'test-topic-9f825c3f60bb0b4db583',
+          partitions: [
+            {
+              partition: 0,
+              messages: [
+                {
+                  key: 'key-bb252ae5801883c12bbd',
+                  value: 'some-value-10340c6329f8bbf5b4a2',
+                  timestamp: 1509819296569,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+  })
+
+  test('metadata about the API', () => {
+    const request = RequestV2Protocol(args)
+    expect(request.apiKey).toEqual(apiKeys.Produce)
+    expect(request.apiVersion).toEqual(2)
+    expect(request.apiName).toEqual('Produce')
+    expect(request.expectResponse()).toEqual(true)
+  })
+
+  describe('when acks=0', () => {
+    test('expectResponse returns false', () => {
+      const request = RequestV2Protocol({ ...args, acks: 0 })
+      expect(request.expectResponse()).toEqual(false)
+    })
+  })
+
   test('request', async () => {
     const { buffer } = await RequestV2Protocol({
       acks: -1,

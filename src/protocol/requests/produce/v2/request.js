@@ -10,6 +10,7 @@ module.exports = ({ acks, timeout, compression = Types.None, topicData }) => ({
   apiKey,
   apiVersion: 2,
   apiName: 'Produce',
+  expectResponse: () => acks !== 0,
   encode: async () => {
     const encodeTopic = topicEncoder(compression)
     const encodedTopicData = []
