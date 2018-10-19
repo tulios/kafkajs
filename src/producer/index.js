@@ -54,7 +54,7 @@ module.exports = ({
         )
       }
 
-      const messageWithoutValue = messages.find(message => !message.value)
+      const messageWithoutValue = messages.find(message => message.value === undefined)
       if (messageWithoutValue) {
         throw new KafkaJSNonRetriableError(
           `Invalid message without value for topic "${topic}": ${JSON.stringify(
