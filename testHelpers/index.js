@@ -165,10 +165,14 @@ const addPartitions = async ({ topic, partitions }) => {
   })
 }
 
-const testIfKafka011 = (description, callback) => {
+const testIfKafka011 = (description, callback, testFn = test) => {
   return process.env.KAFKA_VERSION === '0.11'
-    ? test(description, callback)
+    ? testFn(description, callback)
     : test.skip(description, callback)
+}
+
+testIfKafka011.only = (description, callback) => {
+  return testIfKafka011(description, callback, test.only)
 }
 
 const unsupportedVersionResponse = () => Buffer.from({ type: 'Buffer', data: [0, 35, 0, 0, 0, 0] })

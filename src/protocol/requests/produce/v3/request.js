@@ -63,11 +63,15 @@ const topicEncoder = compression => async ({ topic, partitions }) => {
 
 const partitionsEncoder = compression => async ({ partition, messages }) => {
   const dateNow = Date.now()
-  let timestamps = messages.map(m => m.timestamp)
-  timestamps = timestamps.length === 0 ? [dateNow] : timestamps
+  const messageTimestamps = messages
+    .map(m => m.timestamp)
+    .filter(timestamp => timestamp != null)
+    .sort()
 
-  const firstTimestamp = Math.min(...timestamps)
-  const maxTimestamp = Math.max(...timestamps)
+  const timestamps = messageTimestamps.length === 0 ? [dateNow] : messageTimestamps
+  const firstTimestamp = timestamps[0]
+  const maxTimestamp = timestamps[timestamps.length - 1]
+
   const records = messages.map((message, i) =>
     Record({
       ...message,

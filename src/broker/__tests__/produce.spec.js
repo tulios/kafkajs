@@ -300,5 +300,61 @@ describe('Broker > Produce', () => {
         throttleTime: 0,
       })
     })
+
+    testIfKafka011('request to a topic with max timestamp difference configured', async () => {
+      topicName = `test-max-timestamp-difference-${secureRandom()}`
+
+      await createTopic({
+        topic: topicName,
+        config: [
+          {
+            name: 'message.timestamp.difference.max.ms',
+            value: '604800000', // 7 days
+          },
+        ],
+      })
+
+      const metadata = await retryProtocol(
+        'LEADER_NOT_AVAILABLE',
+        async () => await broker.metadata([topicName])
+      )
+
+      // Find leader of partition
+      const partitionBroker = metadata.topicMetadata[0].partitionMetadata[0].leader
+      const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
+
+      // Connect to the correct broker to produce message
+      broker2 = new Broker({
+        connection: createConnection(newBrokerData),
+        logger: newLogger(),
+        allowExperimentalV011: true,
+      })
+      await broker2.connect()
+
+      const partitionData = {
+        topic: topicName,
+        partitions: [
+          {
+            partition: 0,
+            messages: [{ key: `key-${secureRandom()}`, value: `some-value-${secureRandom()}` }],
+          },
+        ],
+      }
+
+      const response1 = await retryProtocol(
+        'LEADER_NOT_AVAILABLE',
+        async () => await broker2.produce({ topicData: [partitionData] })
+      )
+
+      expect(response1).toEqual({
+        topics: [
+          {
+            topicName,
+            partitions: [{ baseOffset: '0', errorCode: 0, logAppendTime: '-1', partition: 0 }],
+          },
+        ],
+        throttleTime: 0,
+      })
+    })
   })
 })
