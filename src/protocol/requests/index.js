@@ -23,7 +23,7 @@ const requests = {
   CreateTopics: require('./createTopics'),
   DeleteTopics: require('./deleteTopics'),
   DeleteRecords: {},
-  InitProducerId: {},
+  InitProducerId: require('./initProducerId'),
   OffsetForLeaderEpoch: {},
   AddPartitionsToTxn: {},
   AddOffsetsToTxn: {},

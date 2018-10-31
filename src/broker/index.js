@@ -462,4 +462,15 @@ module.exports = class Broker {
     const alterConfigs = this.lookupRequest(apiKeys.AlterConfigs, requests.AlterConfigs)
     return await this.connection.send(alterConfigs({ resources, validateOnly }))
   }
+
+  /**
+   * @public
+   * @param {number} transactionTimeout The time in ms to wait for before aborting idle transactions
+   * @param {number} [transactionalId] The transactional id or null if the producer is not transactional
+   * @returns {Promise}
+   */
+  async initProducerId({ transactionalId, transactionTimeout }) {
+    const initProducerId = this.lookupRequest(apiKeys.InitProducerId, requests.InitProducerId)
+    return await this.connection.send(initProducerId({ transactionalId, transactionTimeout }))
+  }
 }
