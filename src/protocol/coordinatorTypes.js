@@ -3,7 +3,7 @@
 /**
  * @typedef {number} CoordinatorType
  *
- * Enum for tri-state values.
+ * Enum for the types of coordinator to find.
  * @enum {CoordinatorType}
  */
 module.exports = {
