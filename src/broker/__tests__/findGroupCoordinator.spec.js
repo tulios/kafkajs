@@ -25,6 +25,8 @@ describe('Broker > FindGroupCoordinator', () => {
 
     expect(response).toEqual({
       errorCode: 0,
+      errorMessage: null,
+      throttleTime: 0,
       coordinator: {
         nodeId: expect.any(Number),
         host: expect.stringMatching(/\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b/),
