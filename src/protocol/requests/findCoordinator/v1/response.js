@@ -16,10 +16,10 @@ const decode = async rawData => {
   const decoder = new Decoder(rawData)
   const throttleTime = decoder.readInt32()
   const errorCode = decoder.readInt16()
-  const errorMessage = decoder.readString()
 
   failIfVersionNotSupported(errorCode)
 
+  const errorMessage = decoder.readString()
   const coordinator = {
     nodeId: decoder.readInt32(),
     host: decoder.readString(),
