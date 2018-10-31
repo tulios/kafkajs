@@ -243,12 +243,13 @@ module.exports = class Broker {
   /**
    * @public
    * @param {string} groupId The unique group id
+   * @param {CoordinatorType} coordinatorType The type of coordinator to find
    * @returns {Promise}
    */
-  async findGroupCoordinator({ groupId }) {
+  async findGroupCoordinator({ groupId, coordinatorType }) {
     // TODO: validate groupId, mandatory
     const findCoordinator = this.lookupRequest(apiKeys.GroupCoordinator, requests.GroupCoordinator)
-    return await this.connection.send(findCoordinator({ groupId }))
+    return await this.connection.send(findCoordinator({ groupId, coordinatorType }))
   }
 
   /**
