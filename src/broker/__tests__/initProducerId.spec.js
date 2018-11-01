@@ -48,7 +48,7 @@ describe('Broker > InitProducerId', () => {
     expect(response).toEqual({
       errorCode: 0,
       throttleTime: 0,
-      producerId: expect.any(Long),
+      producerId: expect.stringMatching(/\d+/),
       producerEpoch: expect.any(Number),
     })
   })
@@ -70,7 +70,7 @@ describe('Broker > InitProducerId', () => {
     expect(response).toEqual({
       errorCode: 0,
       throttleTime: 0,
-      producerId: expect.any(Long),
+      producerId: expect.stringMatching(/\d+/),
       producerEpoch: expect.any(Number),
     })
   })

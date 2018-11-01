@@ -18,7 +18,7 @@ const decode = async rawData => {
   return {
     throttleTime,
     errorCode,
-    producerId: decoder.readInt64(),
+    producerId: decoder.readInt64().toString(),
     producerEpoch: decoder.readInt16(),
   }
 }

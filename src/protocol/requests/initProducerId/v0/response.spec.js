@@ -10,7 +10,7 @@ describe('Protocol > Requests > InitProducerId > v0', () => {
     expect(data).toEqual({
       throttleTime: 0,
       errorCode: 0,
-      producerId: new Long(1006, 0, false),
+      producerId: '1006',
       producerEpoch: 0,
     })
 
