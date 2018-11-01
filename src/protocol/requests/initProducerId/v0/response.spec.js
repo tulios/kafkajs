@@ -1,5 +1,4 @@
 const { decode, parse } = require('./response')
-const Long = require('long')
 
 const unsupportedVersionResponseWithTimeout = () =>
   Buffer.from({ type: 'Buffer', data: [0, 0, 0, 0, 0, 35] })

@@ -1,5 +1,5 @@
 const versions = {
-  0: ({ transactionalId, transactionTimeout }) => {
+  0: ({ transactionalId, transactionTimeout = 5000 }) => {
     const request = require('./v0/request')
     const response = require('./v0/response')
     return { request: request({ transactionalId, transactionTimeout }), response }
