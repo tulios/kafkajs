@@ -53,7 +53,7 @@ describe('Broker > InitProducerId', () => {
   })
 
   test('rejects transactional id different from coordinator', async () => {
-    expect(
+    await expect(
       broker.initProducerId({
         transactionalId: transactionalId + 'a',
         transactionTimeout: 30000,

@@ -1,14 +1,12 @@
 const { decode, parse } = require('./response')
 const { unsupportedVersionResponseWithTimeout } = require('testHelpers')
 
-describe('Protocol > Requests > InitProducerId > v0', () => {
+describe('Protocol > Requests > AddPartitionsToTxn > v0', () => {
   test('response', async () => {
     const data = await decode(Buffer.from(require('../fixtures/v0_response.json')))
     expect(data).toEqual({
       throttleTime: 0,
       errorCode: 0,
-      producerId: '1006',
-      producerEpoch: 0,
     })
 
     await expect(parse(data)).resolves.toBeTruthy()
