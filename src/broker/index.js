@@ -503,7 +503,7 @@ module.exports = class Broker {
    * @param {string} transactionalId The transactional id corresponding to the transaction.
    * @param {number} producerId Current producer id in use by the transactional id.
    * @param {number} producerEpoch Current epoch associated with the producer id.
-   * @param {string} groupId The unique group identifier
+   * @param {string} groupId The unique group identifier (consumer group)
    * @returns {Promise}
    */
   async addOffsetsToTxn({ transactionalId, producerId, producerEpoch, groupId }) {

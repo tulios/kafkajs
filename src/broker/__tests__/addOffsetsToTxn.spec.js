@@ -10,11 +10,11 @@ const {
 const { KafkaJSProtocolError } = require('../../errors')
 
 describe('Broker > AddOffsetsToTxn', () => {
-  let broker, seedBroker, transactionalId, producerId, producerEpoch, topicName, groupId
+  let broker, seedBroker, transactionalId, producerId, producerEpoch, topicName, consumerGroupId
 
   beforeEach(async () => {
     transactionalId = `transactional-id-${secureRandom()}`
-    groupId = `group-id-${secureRandom()}`
+    consumerGroupId = `group-id-${secureRandom()}`
     topicName = `test-topic-${secureRandom()}`
 
     seedBroker = new Broker({
@@ -61,7 +61,7 @@ describe('Broker > AddOffsetsToTxn', () => {
       transactionalId,
       producerId,
       producerEpoch,
-      groupId,
+      groupId: consumerGroupId,
     })
 
     expect(result).toEqual({
@@ -76,7 +76,7 @@ describe('Broker > AddOffsetsToTxn', () => {
         transactionalId,
         producerId: 12345,
         producerEpoch,
-        groupId,
+        groupId: consumerGroupId,
       })
     ).rejects.toEqual(
       new KafkaJSProtocolError(
@@ -91,7 +91,7 @@ describe('Broker > AddOffsetsToTxn', () => {
         transactionalId,
         producerId,
         producerEpoch: producerEpoch + 1,
-        groupId,
+        groupId: consumerGroupId,
       })
     ).rejects.toEqual(
       new KafkaJSProtocolError(
