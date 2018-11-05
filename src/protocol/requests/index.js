@@ -25,7 +25,7 @@ const requests = {
   DeleteRecords: {},
   InitProducerId: require('./initProducerId'),
   OffsetForLeaderEpoch: {},
-  AddPartitionsToTxn: {},
+  AddPartitionsToTxn: require('./addPartitionsToTxn'),
   AddOffsetsToTxn: {},
   EndTxn: {},
   WriteTxnMarkers: {},

@@ -473,4 +473,28 @@ module.exports = class Broker {
     const initProducerId = this.lookupRequest(apiKeys.InitProducerId, requests.InitProducerId)
     return await this.connection.send(initProducerId({ transactionalId, transactionTimeout }))
   }
+
+  /**
+   * @public
+   * @param {string} transactionalId The transactional id corresponding to the transaction.
+   * @param {number} producerId Current producer id in use by the transactional id.
+   * @param {number} producerEpoch Current epoch associated with the producer id.
+   * @param {object[]} topics e.g:
+   *                  [
+   *                    {
+   *                      topic: 'topic-name',
+   *                      partitions: [ 0, 1]
+   *                    }
+   *                  ]
+   * @returns {Promise}
+   */
+  async addPartitionsToTxn({ transactionalId, producerId, producerEpoch, topics }) {
+    const addPartitionsToTxn = this.lookupRequest(
+      apiKeys.AddPartitionsToTxn,
+      requests.AddPartitionsToTxn
+    )
+    return await this.connection.send(
+      addPartitionsToTxn({ transactionalId, producerId, producerEpoch, topics })
+    )
+  }
 }
