@@ -26,7 +26,7 @@ const requests = {
   InitProducerId: require('./initProducerId'),
   OffsetForLeaderEpoch: {},
   AddPartitionsToTxn: require('./addPartitionsToTxn'),
-  AddOffsetsToTxn: {},
+  AddOffsetsToTxn: require('./addOffsetsToTxn'),
   EndTxn: {},
   WriteTxnMarkers: {},
   TxnOffsetCommit: {},

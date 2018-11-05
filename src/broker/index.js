@@ -497,4 +497,19 @@ module.exports = class Broker {
       addPartitionsToTxn({ transactionalId, producerId, producerEpoch, topics })
     )
   }
+
+  /**
+   * @public
+   * @param {string} transactionalId The transactional id corresponding to the transaction.
+   * @param {number} producerId Current producer id in use by the transactional id.
+   * @param {number} producerEpoch Current epoch associated with the producer id.
+   * @param {string} groupId The unique group identifier
+   * @returns {Promise}
+   */
+  async addOffsetsToTxn({ transactionalId, producerId, producerEpoch, groupId }) {
+    const addOffsetsToTxn = this.lookupRequest(apiKeys.AddOffsetsToTxn, requests.AddOffsetsToTxn)
+    return await this.connection.send(
+      addOffsetsToTxn({ transactionalId, producerId, producerEpoch, groupId })
+    )
+  }
 }
