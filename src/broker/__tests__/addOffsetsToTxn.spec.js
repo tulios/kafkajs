@@ -1,21 +1,14 @@
 const Broker = require('../index')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
-const {
-  secureRandom,
-  createTopic,
-  createConnection,
-  newLogger,
-  retryProtocol,
-} = require('testHelpers')
+const { secureRandom, createConnection, newLogger, retryProtocol } = require('testHelpers')
 const { KafkaJSProtocolError } = require('../../errors')
 
 describe('Broker > AddOffsetsToTxn', () => {
-  let broker, seedBroker, transactionalId, producerId, producerEpoch, topicName, consumerGroupId
+  let broker, seedBroker, transactionalId, producerId, producerEpoch, consumerGroupId
 
   beforeEach(async () => {
     transactionalId = `transactional-id-${secureRandom()}`
     consumerGroupId = `group-id-${secureRandom()}`
-    topicName = `test-topic-${secureRandom()}`
 
     seedBroker = new Broker({
       connection: createConnection(),
@@ -23,7 +16,6 @@ describe('Broker > AddOffsetsToTxn', () => {
     })
 
     await seedBroker.connect()
-    await createTopic({ topic: topicName, partitions: 4 })
 
     const {
       coordinator: { host, port },
