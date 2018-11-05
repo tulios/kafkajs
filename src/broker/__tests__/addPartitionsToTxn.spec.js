@@ -19,6 +19,7 @@ describe('Broker > AddPartitionsToTxn', () => {
       connection: createConnection(),
       logger: newLogger(),
     })
+
     await seedBroker.connect()
     await createTopic({ topic: topicName, partitions: 4 })
 
@@ -37,11 +38,15 @@ describe('Broker > AddPartitionsToTxn', () => {
       connection: createConnection({ host, port }),
       logger: newLogger(),
     })
+
     await broker.connect()
-    ;({ producerId, producerEpoch } = await broker.initProducerId({
+    const result = await broker.initProducerId({
       transactionalId,
       transactionTimeout: 30000,
-    }))
+    })
+
+    producerId = result.producerId
+    producerEpoch = result.producerEpoch
   })
 
   afterEach(async () => {
