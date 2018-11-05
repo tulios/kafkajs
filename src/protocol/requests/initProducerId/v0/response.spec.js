@@ -1,7 +1,5 @@
 const { decode, parse } = require('./response')
-
-const unsupportedVersionResponseWithTimeout = () =>
-  Buffer.from({ type: 'Buffer', data: [0, 0, 0, 0, 0, 35] })
+const { unsupportedVersionResponseWithTimeout } = require('testHelpers')
 
 describe('Protocol > Requests > InitProducerId > v0', () => {
   test('response', async () => {

@@ -176,6 +176,8 @@ testIfKafka011.only = (description, callback) => {
 }
 
 const unsupportedVersionResponse = () => Buffer.from({ type: 'Buffer', data: [0, 35, 0, 0, 0, 0] })
+const unsupportedVersionResponseWithTimeout = () =>
+  Buffer.from({ type: 'Buffer', data: [0, 0, 0, 0, 0, 35] })
 
 module.exports = {
   secureRandom,
@@ -200,4 +202,5 @@ module.exports = {
   testIfKafka011,
   addPartitions,
   unsupportedVersionResponse,
+  unsupportedVersionResponseWithTimeout,
 }
