@@ -29,7 +29,7 @@ const requests = {
   AddOffsetsToTxn: require('./addOffsetsToTxn'),
   EndTxn: {},
   WriteTxnMarkers: {},
-  TxnOffsetCommit: {},
+  TxnOffsetCommit: require('./txnOffsetCommit'),
   DescribeAcls: {},
   CreateAcls: {},
   DeleteAcls: {},
