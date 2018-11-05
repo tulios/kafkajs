@@ -1,5 +1,6 @@
 const Broker = require('../index')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
+const { KafkaJSProtocolError } = require('../../errors')
 const {
   secureRandom,
   createTopic,
@@ -79,7 +80,7 @@ describe('Broker > AddPartitionsToTxn', () => {
   })
 
   test('throws for invalid producer id', async () => {
-    expect(
+    await expect(
       broker.addPartitionsToTxn({
         transactionalId,
         producerId: 'foo',
@@ -91,9 +92,10 @@ describe('Broker > AddPartitionsToTxn', () => {
           },
         ],
       })
-    ).rejects.toEqual({
-      error:
-        'The producer attempted to use a producer id which is not currently assigned to its transactional id',
-    })
+    ).rejects.toEqual(
+      new KafkaJSProtocolError(
+        'The producer attempted to use a producer id which is not currently assigned to its transactional id'
+      )
+    )
   })
 })
