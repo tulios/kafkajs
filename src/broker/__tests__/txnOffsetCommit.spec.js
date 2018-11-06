@@ -18,7 +18,7 @@ describe('Broker > TxnOffsetCommit', () => {
     producerId,
     producerEpoch
 
-  async function findBrokerForGroupId(groupId) {
+  async function findBrokerForGroupId(groupId, coordinatorType) {
     const {
       coordinator: { host, port },
     } = await retryProtocol(
@@ -26,7 +26,7 @@ describe('Broker > TxnOffsetCommit', () => {
       async () =>
         await seedBroker.findGroupCoordinator({
           groupId,
-          coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+          coordinatorType,
         })
     )
 
@@ -49,7 +49,7 @@ describe('Broker > TxnOffsetCommit', () => {
     await seedBroker.connect()
     await createTopic({ topic: topicName, partitions: 4 })
 
-    transactionBroker = await findBrokerForGroupId(transactionalId)
+    transactionBroker = await findBrokerForGroupId(transactionalId, COORDINATOR_TYPES.TRANSACTION)
     await transactionBroker.connect()
     const result = await transactionBroker.initProducerId({
       transactionalId,
@@ -73,7 +73,7 @@ describe('Broker > TxnOffsetCommit', () => {
       groupId: consumerGroupId,
     })
 
-    consumerBroker = await findBrokerForGroupId(consumerGroupId)
+    consumerBroker = await findBrokerForGroupId(consumerGroupId, COORDINATOR_TYPES.GROUP)
     await consumerBroker.connect()
   })
 
