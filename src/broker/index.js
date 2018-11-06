@@ -527,16 +527,22 @@ module.exports = class Broker {
    *
    * Request should be made to the consumer coordinator.
    * @public
+   * @param {OffsetCommitTopic[]} topics
    * @param {string} transactionalId The transactional id corresponding to the transaction.
    * @param {string} groupId The unique group identifier (for the consumer group)
    * @param {number} producerId Current producer id in use by the transactional id.
    * @param {number} producerEpoch Current epoch associated with the producer id.
-   * @param {object[]} topics
-   * @param {string} topics[].topic Name of topic
-   * @param {object[]} topics[].partitions
-   * @param {number} topics[].partitions[].partition Topic partition id
-   * @param {number} topics[].partitions[].offset
-   * @param {string} [topics[].partitions[].metadata]
+   * @param {OffsetCommitTopic[]} topics
+   *
+   * @typedef {Object} OffsetCommitTopic
+   * @property {string} topic
+   * @property {OffsetCommitTopicPartition[]} partitions
+   *
+   * @typedef {Object} OffsetCommitTopicPartition
+   * @property {number} partition
+   * @property {number} offset
+   * @property {string} [metadata]
+   *
    * @returns {Promise}
    */
   async txnOffsetCommit({ transactionalId, groupId, producerId, producerEpoch, topics }) {
