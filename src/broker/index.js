@@ -464,6 +464,9 @@ module.exports = class Broker {
   }
 
   /**
+   * Send an `InitProducerId` request to fetch a PID and bump the producer epoch.
+   *
+   * Request should be made to the transaction coordinator.
    * @public
    * @param {number} transactionTimeout The time in ms to wait for before aborting idle transactions
    * @param {number} [transactionalId] The transactional id or null if the producer is not transactional
@@ -475,6 +478,9 @@ module.exports = class Broker {
   }
 
   /**
+   * Send an `AddPartitionsToTxn` request to mark a TopicPartition as participating in the transaction.
+   *
+   * Request should be made to the transaction coordinator.
    * @public
    * @param {string} transactionalId The transactional id corresponding to the transaction.
    * @param {number} producerId Current producer id in use by the transactional id.
@@ -499,17 +505,50 @@ module.exports = class Broker {
   }
 
   /**
+   * Send an `AddOffsetsToTxn` request.
+   *
+   * Request should be made to the transaction coordinator.
    * @public
    * @param {string} transactionalId The transactional id corresponding to the transaction.
    * @param {number} producerId Current producer id in use by the transactional id.
    * @param {number} producerEpoch Current epoch associated with the producer id.
-   * @param {string} groupId The unique group identifier (consumer group)
+   * @param {string} groupId The unique group identifier (for the consumer group)
    * @returns {Promise}
    */
   async addOffsetsToTxn({ transactionalId, producerId, producerEpoch, groupId }) {
     const addOffsetsToTxn = this.lookupRequest(apiKeys.AddOffsetsToTxn, requests.AddOffsetsToTxn)
     return await this.connection.send(
       addOffsetsToTxn({ transactionalId, producerId, producerEpoch, groupId })
+    )
+  }
+
+  /**
+   * Send a `TxnOffsetCommit` request to persist the offsets in the `__consumer_offsets` topics.
+   *
+   * Request should be made to the consumer coordinator.
+   * @public
+   * @param {OffsetCommitTopic[]} topics
+   * @param {string} transactionalId The transactional id corresponding to the transaction.
+   * @param {string} groupId The unique group identifier (for the consumer group)
+   * @param {number} producerId Current producer id in use by the transactional id.
+   * @param {number} producerEpoch Current epoch associated with the producer id.
+   * @param {OffsetCommitTopic[]} topics
+   *
+   * @typedef {Object} OffsetCommitTopic
+   * @property {string} topic
+   * @property {OffsetCommitTopicPartition[]} partitions
+   *
+   * @typedef {Object} OffsetCommitTopicPartition
+   * @property {number} partition
+   * @property {number} offset
+   * @property {string} [metadata]
+   *
+   * @returns {Promise}
+   */
+  async txnOffsetCommit({ transactionalId, groupId, producerId, producerEpoch, topics }) {
+    const txnOffsetCommit = this.lookupRequest(apiKeys.TxnOffsetCommit, requests.TxnOffsetCommit)
+    return await this.connection.send(
+      txnOffsetCommit({ transactionalId, groupId, producerId, producerEpoch, topics })
     )
   }
 }

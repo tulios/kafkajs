@@ -1,7 +1,6 @@
 const Broker = require('../index')
 const { createConnection, newLogger, retryProtocol, secureRandom } = require('testHelpers')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
-const { KafkaJSProtocolError } = require('../../errors')
 
 describe('Broker > InitProducerId', () => {
   let broker, seedBroker, transactionalId
@@ -50,17 +49,6 @@ describe('Broker > InitProducerId', () => {
       producerId: expect.stringMatching(/\d+/),
       producerEpoch: expect.any(Number),
     })
-  })
-
-  test('rejects transactional id different from coordinator', async () => {
-    await expect(
-      broker.initProducerId({
-        transactionalId: transactionalId + 'a',
-        transactionTimeout: 30000,
-      })
-    ).rejects.toEqual(
-      new KafkaJSProtocolError('This is not the correct coordinator for this group')
-    )
   })
 
   test('request without transaction id', async () => {
