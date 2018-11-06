@@ -1,7 +1,6 @@
 const Broker = require('../index')
 const { createConnection, newLogger, retryProtocol, secureRandom } = require('testHelpers')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
-const { KafkaJSProtocolError } = require('../../errors')
 
 describe('Broker > InitProducerId', () => {
   let broker, seedBroker, transactionalId
