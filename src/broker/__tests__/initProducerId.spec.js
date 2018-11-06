@@ -52,17 +52,6 @@ describe('Broker > InitProducerId', () => {
     })
   })
 
-  test('rejects transactional id different from coordinator', async () => {
-    await expect(
-      broker.initProducerId({
-        transactionalId: transactionalId + 'a',
-        transactionTimeout: 30000,
-      })
-    ).rejects.toEqual(
-      new KafkaJSProtocolError('This is not the correct coordinator for this group')
-    )
-  })
-
   test('request without transaction id', async () => {
     const response = await broker.initProducerId({ transactionTimeout: 30000 })
 
