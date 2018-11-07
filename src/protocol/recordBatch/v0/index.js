@@ -39,8 +39,9 @@ const RecordBatch = async ({
   firstSequence = 0, // for idempotent messages
   records = [],
 }) => {
-  const attributes =
-    (compression & COMPRESSION_MASK) | TIMESTAMP_MASK | transactional ? TRANSACTIONAL_MASK : 0
+  const COMPRESSION_CODEC = compression & COMPRESSION_MASK
+  const IN_TRANSACTION = transactional ? TRANSACTIONAL_MASK : 0
+  const attributes = COMPRESSION_CODEC | TIMESTAMP_MASK | IN_TRANSACTION
 
   const batchBody = new Encoder()
     .writeInt16(attributes)
