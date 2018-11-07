@@ -4,6 +4,9 @@ const crc32C = require('../crc32C')
 const { Types: Compression, lookupCodec } = require('../../message/compression')
 
 const MAGIC_BYTE = 2
+const COMPRESSION_MASK = 11 // The lowest 3 bits
+const TIMESTAMP_MASK = 0 // The fourth lowest bit, always set this bit to 0 (since 0.10.0)
+const TRANSACTIONAL_MASK = 16 // The fifth lowest bit
 
 /**
  * v0
@@ -30,13 +33,17 @@ const RecordBatch = async ({
   maxTimestamp = Date.now(),
   partitionLeaderEpoch = 0,
   lastOffsetDelta = 0,
+  transactional = false,
   producerId = Long.fromValue(-1), // for idempotent messages
   producerEpoch = 0, // for idempotent messages
   firstSequence = 0, // for idempotent messages
   records = [],
 }) => {
+  const attributes =
+    (compression & COMPRESSION_MASK) | TIMESTAMP_MASK | transactional ? TRANSACTIONAL_MASK : 0
+
   const batchBody = new Encoder()
-    .writeInt16(compression & 0x3)
+    .writeInt16(attributes)
     .writeInt32(lastOffsetDelta)
     .writeInt64(firstTimestamp)
     .writeInt64(maxTimestamp)
