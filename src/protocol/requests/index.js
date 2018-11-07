@@ -27,7 +27,7 @@ const requests = {
   OffsetForLeaderEpoch: {},
   AddPartitionsToTxn: require('./addPartitionsToTxn'),
   AddOffsetsToTxn: require('./addOffsetsToTxn'),
-  EndTxn: {},
+  EndTxn: require('./endTxn'),
   WriteTxnMarkers: {},
   TxnOffsetCommit: require('./txnOffsetCommit'),
   DescribeAcls: {},
