@@ -551,4 +551,22 @@ module.exports = class Broker {
       txnOffsetCommit({ transactionalId, groupId, producerId, producerEpoch, topics })
     )
   }
+
+  /**
+   * Send an `EndTxn` request to indicate transaction should be committed or aborted.
+   *
+   * Request should be made to the transaction coordinator.
+   * @public
+   * @param {string} transactionalId The transactional id corresponding to the transaction.
+   * @param {number} producerId Current producer id in use by the transactional id.
+   * @param {number} producerEpoch Current epoch associated with the producer id.
+   * @param {boolean} transactionResult The result of the transaction (false = ABORT, true = COMMIT)
+   * @returns {Promise}
+   */
+  async endTxn({ transactionalId, producerId, producerEpoch, transactionResult }) {
+    const endTxn = this.lookupRequest(apiKeys.EndTxn, requests.EndTxn)
+    return await this.connection.send(
+      endTxn({ transactionalId, producerId, producerEpoch, transactionResult })
+    )
+  }
 }
