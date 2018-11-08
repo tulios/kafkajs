@@ -12,7 +12,7 @@ const staleMetadata = e =>
     e.type
   )
 
-module.exports = ({ logger, cluster, partitioner }) => {
+module.exports = ({ logger, cluster, partitioner, transactionManager }) => {
   const retrier = createRetry({ retries: TOTAL_INDIVIDUAL_ATTEMPTS })
 
   return async ({ acks, timeout, compression, topicMessages }) => {
@@ -47,10 +47,18 @@ module.exports = ({ logger, cluster, partitioner }) => {
         })
 
         const partitions = keys(messagesPerPartition)
+        const sequencePerPartition = partitions.reduce((result, partition) => {
+          result[partition] = transactionManager.getSequence(topic, partition)
+          return result
+        }, {})
         const partitionsPerLeader = cluster.findLeaderForPartitions(topic, partitions)
         const leaders = keys(partitionsPerLeader)
 
-        topicMetadata.set(topic, { partitionsPerLeader, messagesPerPartition })
+        topicMetadata.set(topic, {
+          partitionsPerLeader,
+          messagesPerPartition,
+          sequencePerPartition,
+        })
 
         for (let nodeId of leaders) {
           const broker = await cluster.findBroker({ nodeId })
@@ -67,18 +75,33 @@ module.exports = ({ logger, cluster, partitioner }) => {
         const entries = Array.from(topicMetadata.entries())
         const topicDataForBroker = entries
           .filter(([_, { partitionsPerLeader }]) => !!partitionsPerLeader[broker.nodeId])
-          .map(([topic, { partitionsPerLeader, messagesPerPartition }]) => ({
+          .map(([topic, { partitionsPerLeader, messagesPerPartition, sequencePerPartition }]) => ({
             topic,
             partitions: partitionsPerLeader[broker.nodeId],
+            sequencePerPartition,
             messagesPerPartition,
           }))
 
         const topicData = createTopicData(topicDataForBroker)
 
         try {
-          const response = await broker.produce({ acks, timeout, compression, topicData })
+          const response = await broker.produce({
+            producerId: transactionManager.getProducerId(),
+            producerEpoch: transactionManager.getProducerEpoch(),
+            acks,
+            timeout,
+            compression,
+            topicData,
+          })
           const expectResponse = acks !== 0
-          responsePerBroker.set(broker, expectResponse ? responseSerializer(response) : [])
+          const formattedResponse = expectResponse ? responseSerializer(response) : []
+          formattedResponse.forEach(({ topicName, partition }) => {
+            const size = topicMetadata.get(topicName).messagesPerPartition[partition].length
+            const previous = topicMetadata.get(topicName).sequencePerPartition[partition]
+
+            transactionManager.updateSequence(topicName, partition, previous + size)
+          })
+          responsePerBroker.set(broker, formattedResponse)
         } catch (e) {
           responsePerBroker.delete(broker)
           throw e

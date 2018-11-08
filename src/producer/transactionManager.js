@@ -4,6 +4,14 @@ module.exports = ({ logger, cluster }) => {
   let sequences = {}
 
   return {
+    getProducerId() {
+      return producerId
+    },
+
+    getProducerEpoch() {
+      return producerEpoch
+    },
+
     getSequence(topic, partition) {
       sequences[topic] = sequences[topic] || {}
       sequences[topic][partition] = sequences[topic][partition] || 0
