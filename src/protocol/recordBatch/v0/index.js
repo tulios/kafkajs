@@ -4,7 +4,7 @@ const crc32C = require('../crc32C')
 const { Types: Compression, lookupCodec } = require('../../message/compression')
 
 const MAGIC_BYTE = 2
-const COMPRESSION_MASK = 11 // The lowest 3 bits
+const COMPRESSION_MASK = 3 // The lowest 3 bits
 const TIMESTAMP_MASK = 0 // The fourth lowest bit, always set this bit to 0 (since 0.10.0)
 const TRANSACTIONAL_MASK = 16 // The fifth lowest bit
 
