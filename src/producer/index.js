@@ -3,6 +3,7 @@ const createDefaultPartitioner = require('./partitioners/default')
 const createSendMessages = require('./sendMessages')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const events = require('./instrumentationEvents')
+const createTransactionManager = require('./transactionManager')
 const { CONNECT, DISCONNECT } = require('./instrumentationEvents')
 const { KafkaJSNonRetriableError } = require('../errors')
 
@@ -16,13 +17,20 @@ module.exports = ({
   cluster,
   logger: rootLogger,
   createPartitioner = createDefaultPartitioner,
-  retry = { retries: 5 },
+  retry,
+  idempotent = false,
 }) => {
   const partitioner = createPartitioner()
   const retrier = createRetry(Object.assign({}, cluster.retry, retry))
   const instrumentationEmitter = new InstrumentationEventEmitter()
   const logger = rootLogger.namespace('Producer')
-  const sendMessages = createSendMessages({ logger, cluster, partitioner })
+  const transactionManager = createTransactionManager({ logger, cluster })
+  const sendMessages = createSendMessages({ logger, cluster, partitioner, transactionManager })
+  retry = retry || idempotent ? { retries: Number.MAX_SAFE_INTEGER } : { retries: 5 }
+
+  if (idempotent && retry.retries < Number.MAX_SAFE_INTEGER) {
+    logger.warn('Limiting retries for the idempotent producer may invalidate EoS guarantees')
+  }
 
   /**
    * @typedef {Object} TopicMessages
@@ -45,6 +53,12 @@ module.exports = ({
   const sendBatch = async ({ acks, timeout, compression, topicMessages = [] }) => {
     if (topicMessages.length === 0 || topicMessages.some(({ topic }) => !topic)) {
       throw new KafkaJSNonRetriableError(`Invalid topic`)
+    }
+
+    if (idempotent && acks !== -1) {
+      throw new KafkaJSNonRetriableError(
+        `Not requiring ack for all messages invalidates the idempotent producer's EoS guarantees`
+      )
     }
 
     for (let { topic, messages } of topicMessages) {
@@ -158,6 +172,10 @@ module.exports = ({
     connect: async () => {
       await cluster.connect()
       instrumentationEmitter.emit(CONNECT)
+
+      if (idempotent) {
+        await transactionManager.initProducerId()
+      }
     },
 
     /**

@@ -441,4 +441,18 @@ describe('Producer', () => {
       expect(await sendMessages()).toEqual([])
     })
   })
+
+  describe('when idempotent=true', () => {
+    test('it fetches a producer id', async () => {
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          allowExperimentalV011: true,
+          createPartitioner: createModPartitioner,
+        })
+      )
+
+      producer = createProducer({ cluster, logger: newLogger(), idempotent: true })
+      await producer.connect()
+    })
+  })
 })
