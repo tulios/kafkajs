@@ -14,11 +14,19 @@ const versions = {
     const response = require('./v2/response')
     return { request: request({ acks, timeout, compression, topicData }), response }
   },
-  3: ({ transactionalId = null, acks, timeout, compression, topicData }) => {
+  3: ({ acks, timeout, compression, topicData, transactionalId, producerId, producerEpoch }) => {
     const request = require('./v3/request')
     const response = require('./v3/response')
     return {
-      request: request({ transactionalId, acks, timeout, compression, topicData }),
+      request: request({
+        acks,
+        timeout,
+        compression,
+        topicData,
+        transactionalId,
+        producerId,
+        producerEpoch,
+      }),
       response,
     }
   },

@@ -1,3 +1,4 @@
+const Long = require('long')
 const Encoder = require('../../../encoder')
 const { Produce: apiKey } = require('../../apiKeys')
 const { Types } = require('../../../message/compression')
@@ -24,9 +25,11 @@ const { RecordBatch } = require('../../../recordBatch/v0')
  * @param topicData {Array}
  */
 module.exports = ({
-  transactionalId = null,
   acks,
   timeout,
+  transactionalId = null,
+  producerId = Long.fromInt(-1),
+  producerEpoch = 0,
   compression = Types.None,
   topicData,
 }) => ({
@@ -39,7 +42,9 @@ module.exports = ({
     const encodedTopicData = []
 
     for (let data of topicData) {
-      encodedTopicData.push(await encodeTopic(data))
+      encodedTopicData.push(
+        await encodeTopic({ ...data, transactionalId, producerId, producerEpoch })
+      )
     }
 
     return new Encoder()
@@ -50,18 +55,32 @@ module.exports = ({
   },
 })
 
-const topicEncoder = compression => async ({ topic, partitions }) => {
+const topicEncoder = compression => async ({
+  topic,
+  partitions,
+  transactionalId,
+  producerId,
+  producerEpoch,
+}) => {
   const encodePartitions = partitionsEncoder(compression)
   const encodedPartitions = []
 
   for (let data of partitions) {
-    encodedPartitions.push(await encodePartitions(data))
+    encodedPartitions.push(
+      await encodePartitions({ ...data, transactionalId, producerId, producerEpoch })
+    )
   }
 
   return new Encoder().writeString(topic).writeArray(encodedPartitions)
 }
 
-const partitionsEncoder = compression => async ({ partition, messages }) => {
+const partitionsEncoder = compression => async ({
+  partition,
+  messages,
+  transactionalId,
+  producerId,
+  producerEpoch,
+}) => {
   const dateNow = Date.now()
   const messageTimestamps = messages
     .map(m => m.timestamp)
@@ -85,6 +104,9 @@ const partitionsEncoder = compression => async ({ partition, messages }) => {
     records,
     firstTimestamp,
     maxTimestamp,
+    producerId,
+    producerEpoch,
+    transactional: !!transactionalId,
     lastOffsetDelta: records.length - 1,
   })
 

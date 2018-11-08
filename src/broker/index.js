@@ -190,12 +190,33 @@ module.exports = class Broker {
    *                            0 = no acknowledgments
    *                            1 = only waits for the leader to acknowledge
    * @param {number} [timeout=30000] The time to await a response in ms
+   * @param {string} [transactionalId=null]
+   * @param {number} [producerId=-1] Broker assigned producerId
+   * @param {number} [producerEpoch=0] Broker assigned producerEpoch
    * @param {Compression.Types} [compression=Compression.Types.None] Compression codec
    * @returns {Promise}
    */
-  async produce({ topicData, acks = -1, timeout = 30000, compression = Compression.None }) {
+  async produce({
+    topicData,
+    transactionalId,
+    producerId,
+    producerEpoch,
+    acks = -1,
+    timeout = 30000,
+    compression = Compression.None,
+  }) {
     const produce = this.lookupRequest(apiKeys.Produce, requests.Produce)
-    return await this.connection.send(produce({ acks, timeout, compression, topicData }))
+    return await this.connection.send(
+      produce({
+        acks,
+        timeout,
+        compression,
+        topicData,
+        transactionalId,
+        producerId,
+        producerEpoch,
+      })
+    )
   }
 
   /**
