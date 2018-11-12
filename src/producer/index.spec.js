@@ -443,16 +443,38 @@ describe('Producer', () => {
   })
 
   describe('when idempotent=true', () => {
-    test('it fetches a producer id', async () => {
-      const cluster = createCluster(
-        Object.assign(connectionOpts(), {
-          allowExperimentalV011: true,
-          createPartitioner: createModPartitioner,
-        })
-      )
+    test('sends messages', async () => {
+      const topics = [`test-topic-${secureRandom()}`, `test-topic-${secureRandom()}`]
+
+      await createTopic({ topic: topics[0] })
+      await createTopic({ topic: topics[1] })
+
+      const cluster = createCluster({
+        ...connectionOpts(),
+        createPartitioner: createModPartitioner,
+      })
 
       producer = createProducer({ cluster, logger: newLogger(), idempotent: true })
       await producer.connect()
+
+      const sendBatch = async topics => {
+        const topicMessages = topics.map(topic => ({
+          acks: -1,
+          topic,
+          messages: new Array(10).fill().map((_, i) => ({
+            key: `key-${i}`,
+            value: `value-${i}`,
+          })),
+        }))
+
+        return producer.sendBatch({
+          acks: -1,
+          topicMessages,
+        })
+      }
+
+      await sendBatch(topics)
+      await sendBatch(topics)
     })
   })
 })

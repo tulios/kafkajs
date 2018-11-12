@@ -174,7 +174,6 @@ module.exports = ({
       instrumentationEmitter.emit(CONNECT)
 
       if (idempotent) {
-        // Do we want to init if we already have a producer id?
         await transactionManager.initProducerId()
       }
     },
