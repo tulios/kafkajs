@@ -1,5 +1,7 @@
 const Broker = require('../index')
+const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 const { Types: Compression } = require('../../protocol/message/compression')
+const { KafkaJSProtocolError } = require('../../errors')
 const {
   secureRandom,
   createConnection,
@@ -17,12 +19,13 @@ describe('Broker > Produce', () => {
     headers: { [`hkey-${secureRandom()}`]: `hvalue-${secureRandom()}` },
   })
 
-  const createTopicData = (headers = false) => [
+  const createTopicData = ({ headers, firstSequence } = { headers: false, firstSequence: 0 }) => [
     {
       topic: topicName,
       partitions: [
         {
           partition: 0,
+          firstSequence,
           messages: [
             {
               key: `key-${secureRandom()}`,
@@ -200,6 +203,97 @@ describe('Broker > Produce', () => {
           },
         ],
         throttleTime: 0,
+      })
+    })
+
+    testIfKafka011('request with idempotent producer', async () => {
+      // Get producer id & epoch
+      const {
+        coordinator: { host, port },
+      } = await retryProtocol(
+        'GROUP_COORDINATOR_NOT_AVAILABLE',
+        async () =>
+          await broker.findGroupCoordinator({
+            groupId: `group-${secureRandom()}`,
+            coordinatorType: COORDINATOR_TYPES.GROUP,
+          })
+      )
+
+      const producerBroker = new Broker({
+        connection: createConnection({ host, port }),
+        logger: newLogger(),
+      })
+
+      await producerBroker.connect()
+      const result = await producerBroker.initProducerId({
+        transactionTimeout: 30000,
+      })
+
+      const producerId = result.producerId
+      const producerEpoch = result.producerEpoch
+
+      const metadata = await retryProtocol(
+        'LEADER_NOT_AVAILABLE',
+        async () => await broker.metadata([topicName])
+      )
+
+      // Find leader of partition
+      const partitionBroker = metadata.topicMetadata[0].partitionMetadata[0].leader
+      const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
+
+      // Connect to the correct broker to produce message
+      broker2 = new Broker({
+        connection: createConnection(newBrokerData),
+        logger: newLogger(),
+        allowExperimentalV011: true,
+      })
+      await broker2.connect()
+
+      const response1 = await retryProtocol(
+        'LEADER_NOT_AVAILABLE',
+        async () =>
+          await broker2.produce({
+            producerId,
+            producerEpoch,
+            topicData: createTopicData({ headers: false }),
+          })
+      )
+
+      expect(response1).toEqual({
+        topics: [
+          {
+            topicName,
+            partitions: [{ baseOffset: '0', errorCode: 0, logAppendTime: '-1', partition: 0 }],
+          },
+        ],
+        throttleTime: 0,
+      })
+
+      // We have to syncronise the sequence number between the producer and the broker
+      await expect(
+        broker2.produce({
+          producerId,
+          producerEpoch,
+          topicData: createTopicData({ headers: false, firstSequence: 1 }), // Too small
+        })
+      ).rejects.toEqual(
+        new KafkaJSProtocolError('The broker received an out of order sequence number')
+      )
+
+      await expect(
+        broker2.produce({
+          producerId,
+          producerEpoch,
+          topicData: createTopicData({ headers: false, firstSequence: 5 }), // Too big
+        })
+      ).rejects.toEqual(
+        new KafkaJSProtocolError('The broker received an out of order sequence number')
+      )
+
+      await broker2.produce({
+        producerId,
+        producerEpoch,
+        topicData: createTopicData({ headers: false, firstSequence: 3 }), // Just right
       })
     })
 
