@@ -29,7 +29,7 @@ module.exports = ({ logger, cluster }) => {
      * Overwrites any existing state in this transaction manager
      */
     initProducerId: async () => {
-      await cluster.refreshMetadata()
+      await cluster.refreshMetadataIfNecessary()
       // If non-transactional we can request the PID from any broker
       const broker = await cluster.findControllerBroker()
       const result = await broker.initProducerId({
