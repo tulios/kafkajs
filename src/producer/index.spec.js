@@ -492,5 +492,26 @@ describe('Producer', () => {
         )
       )
     })
+
+    test('sets the default retry value to MAX_SAFE_INTEGER', async () => {
+      jest.resetModules()
+      jest.mock('../retry')
+      const createRetryMock = require('../retry')
+      const createProducerMockedRetry = require('./index')
+
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          allowExperimentalV011: true,
+          createPartitioner: createModPartitioner,
+        })
+      )
+
+      producer = createProducerMockedRetry({ cluster, logger: newLogger(), idempotent: true })
+      expect(createRetryMock).toHaveBeenCalledWith({ retries: Number.MAX_SAFE_INTEGER })
+
+      try {
+        await producer.connect()
+      } catch (e) {} // Jest will complain about "open handles" if we don't connect. Ignore result.
+    })
   })
 })
