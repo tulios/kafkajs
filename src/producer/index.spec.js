@@ -513,5 +513,20 @@ describe('Producer', () => {
         await producer.connect()
       } catch (e) {} // Jest will complain about "open handles" if we don't connect. Ignore result.
     })
+
+    test('throws an error if retries < 1', async () => {
+      expect(() =>
+        createProducer({
+          cluster: {},
+          logger: newLogger(),
+          idempotent: true,
+          retry: { retries: 0 },
+        })
+      ).toThrowError(
+        new KafkaJSNonRetriableError(
+          'Idempotent producer must allow retries to protect against transient errors'
+        )
+      )
+    })
   })
 })
