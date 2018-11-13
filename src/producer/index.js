@@ -20,13 +20,14 @@ module.exports = ({
   retry,
   idempotent = false,
 }) => {
+  retry = retry || idempotent ? { retries: Number.MAX_SAFE_INTEGER } : { retries: 5 }
+
   const partitioner = createPartitioner()
   const retrier = createRetry(Object.assign({}, cluster.retry, retry))
   const instrumentationEmitter = new InstrumentationEventEmitter()
   const logger = rootLogger.namespace('Producer')
   const transactionManager = createTransactionManager({ logger, cluster })
   const sendMessages = createSendMessages({ logger, cluster, partitioner, transactionManager })
-  retry = retry || idempotent ? { retries: Number.MAX_SAFE_INTEGER } : { retries: 5 }
 
   if (idempotent && retry.retries < Number.MAX_SAFE_INTEGER) {
     logger.warn('Limiting retries for the idempotent producer may invalidate EoS guarantees')

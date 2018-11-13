@@ -14,7 +14,7 @@ const {
   createTopic,
 } = require('testHelpers')
 
-const { KafkaJSSASLAuthenticationError } = require('../errors')
+const { KafkaJSSASLAuthenticationError, KafkaJSNonRetriableError } = require('../errors')
 
 describe('Producer', () => {
   let topicName, producer
@@ -181,214 +181,6 @@ describe('Producer', () => {
     expect(cluster.isConnected()).toEqual(true)
   })
 
-  test('produce messages', async () => {
-    const cluster = createCluster(
-      Object.assign(connectionOpts(), {
-        createPartitioner: createModPartitioner,
-      })
-    )
-
-    await createTopic({ topic: topicName })
-
-    producer = createProducer({ cluster, logger: newLogger() })
-    await producer.connect()
-
-    const sendMessages = async () =>
-      await producer.send({
-        acks: 1,
-        topic: topicName,
-        messages: new Array(10).fill().map((_, i) => ({
-          key: `key-${i}`,
-          value: `value-${i}`,
-        })),
-      })
-
-    expect(await sendMessages()).toEqual([
-      {
-        topicName,
-        errorCode: 0,
-        offset: '0',
-        partition: 0,
-        timestamp: '-1',
-      },
-    ])
-
-    expect(await sendMessages()).toEqual([
-      {
-        topicName,
-        errorCode: 0,
-        offset: '10',
-        partition: 0,
-        timestamp: '-1',
-      },
-    ])
-  })
-
-  testIfKafka011('produce messages for Kafka 0.11', async () => {
-    const cluster = createCluster(
-      Object.assign(connectionOpts(), {
-        allowExperimentalV011: true,
-        createPartitioner: createModPartitioner,
-      })
-    )
-
-    await createTopic({ topic: topicName })
-
-    producer = createProducer({ cluster, logger: newLogger() })
-    await producer.connect()
-
-    const sendMessages = async () =>
-      await producer.send({
-        acks: 1,
-        topic: topicName,
-        messages: new Array(10).fill().map((_, i) => ({
-          key: `key-${i}`,
-          value: `value-${i}`,
-        })),
-      })
-
-    expect(await sendMessages()).toEqual([
-      {
-        topicName,
-        baseOffset: '0',
-        errorCode: 0,
-        logAppendTime: '-1',
-        partition: 0,
-      },
-    ])
-
-    expect(await sendMessages()).toEqual([
-      {
-        topicName,
-        baseOffset: '10',
-        errorCode: 0,
-        logAppendTime: '-1',
-        partition: 0,
-      },
-    ])
-  })
-
-  testIfKafka011('produce messages for Kafka 0.11 with headers', async () => {
-    const cluster = createCluster(
-      Object.assign(connectionOpts(), {
-        allowExperimentalV011: true,
-        createPartitioner: createModPartitioner,
-      })
-    )
-
-    await createTopic({ topic: topicName })
-
-    producer = createProducer({ cluster, logger: newLogger() })
-    await producer.connect()
-
-    const sendMessages = async () =>
-      await producer.send({
-        acks: 1,
-        topic: topicName,
-        messages: new Array(10).fill().map((_, i) => ({
-          key: `key-${i}`,
-          value: `value-${i}`,
-          headers: {
-            [`header-a${i}`]: `header-value-a${i}`,
-            [`header-b${i}`]: `header-value-b${i}`,
-            [`header-c${i}`]: `header-value-c${i}`,
-          },
-        })),
-      })
-
-    expect(await sendMessages()).toEqual([
-      {
-        topicName,
-        baseOffset: '0',
-        errorCode: 0,
-        logAppendTime: '-1',
-        partition: 0,
-      },
-    ])
-
-    expect(await sendMessages()).toEqual([
-      {
-        topicName,
-        baseOffset: '10',
-        errorCode: 0,
-        logAppendTime: '-1',
-        partition: 0,
-      },
-    ])
-  })
-
-  test('produce messages to multiple topics', async () => {
-    const topics = [`test-topic-${secureRandom()}`, `test-topic-${secureRandom()}`]
-
-    await createTopic({ topic: topics[0] })
-    await createTopic({ topic: topics[1] })
-
-    const cluster = createCluster({
-      ...connectionOpts(),
-      createPartitioner: createModPartitioner,
-    })
-    const byTopicName = (a, b) => a.topicName.localeCompare(b.topicName)
-
-    producer = createProducer({ cluster, logger: newLogger() })
-    await producer.connect()
-
-    const sendBatch = async topics => {
-      const topicMessages = topics.map(topic => ({
-        acks: 1,
-        topic,
-        messages: new Array(10).fill().map((_, i) => ({
-          key: `key-${i}`,
-          value: `value-${i}`,
-        })),
-      }))
-
-      return producer.sendBatch({
-        acks: 1,
-        topicMessages,
-      })
-    }
-
-    let result = await sendBatch(topics)
-    expect(result.sort(byTopicName)).toEqual(
-      [
-        {
-          topicName: topics[0],
-          errorCode: 0,
-          offset: '0',
-          partition: 0,
-          timestamp: '-1',
-        },
-        {
-          topicName: topics[1],
-          errorCode: 0,
-          offset: '0',
-          partition: 0,
-          timestamp: '-1',
-        },
-      ].sort(byTopicName)
-    )
-
-    result = await sendBatch(topics)
-    expect(result.sort(byTopicName)).toEqual(
-      [
-        {
-          topicName: topics[0],
-          errorCode: 0,
-          offset: '10',
-          partition: 0,
-          timestamp: '-1',
-        },
-        {
-          topicName: topics[1],
-          errorCode: 0,
-          offset: '10',
-          partition: 0,
-          timestamp: '-1',
-        },
-      ].sort(byTopicName)
-    )
-  })
-
   test('gives access to its logger', () => {
     producer = createProducer({ cluster: createCluster(), logger: newLogger() })
     expect(producer.logger()).toMatchSnapshot()
@@ -442,8 +234,53 @@ describe('Producer', () => {
     })
   })
 
-  describe('when idempotent=true', () => {
-    test('sends messages', async () => {
+  function testProduceMessages(idempotent = false) {
+    const acks = idempotent ? -1 : 1
+
+    test('produce messages', async () => {
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          createPartitioner: createModPartitioner,
+        })
+      )
+
+      await createTopic({ topic: topicName })
+
+      producer = createProducer({ cluster, logger: newLogger(), idempotent })
+      await producer.connect()
+
+      const sendMessages = async () =>
+        await producer.send({
+          acks,
+          topic: topicName,
+          messages: new Array(10).fill().map((_, i) => ({
+            key: `key-${i}`,
+            value: `value-${i}`,
+          })),
+        })
+
+      expect(await sendMessages()).toEqual([
+        {
+          topicName,
+          errorCode: 0,
+          offset: '0',
+          partition: 0,
+          timestamp: '-1',
+        },
+      ])
+
+      expect(await sendMessages()).toEqual([
+        {
+          topicName,
+          errorCode: 0,
+          offset: '10',
+          partition: 0,
+          timestamp: '-1',
+        },
+      ])
+    })
+
+    test('produce messages to multiple topics', async () => {
       const topics = [`test-topic-${secureRandom()}`, `test-topic-${secureRandom()}`]
 
       await createTopic({ topic: topics[0] })
@@ -453,13 +290,14 @@ describe('Producer', () => {
         ...connectionOpts(),
         createPartitioner: createModPartitioner,
       })
+      const byTopicName = (a, b) => a.topicName.localeCompare(b.topicName)
 
-      producer = createProducer({ cluster, logger: newLogger(), idempotent: true })
+      producer = createProducer({ cluster, logger: newLogger(), idempotent })
       await producer.connect()
 
       const sendBatch = async topics => {
         const topicMessages = topics.map(topic => ({
-          acks: -1,
+          acks,
           topic,
           messages: new Array(10).fill().map((_, i) => ({
             key: `key-${i}`,
@@ -468,13 +306,191 @@ describe('Producer', () => {
         }))
 
         return producer.sendBatch({
-          acks: -1,
+          acks,
           topicMessages,
         })
       }
 
-      await sendBatch(topics)
-      await sendBatch(topics)
+      let result = await sendBatch(topics)
+      expect(result.sort(byTopicName)).toEqual(
+        [
+          {
+            topicName: topics[0],
+            errorCode: 0,
+            offset: '0',
+            partition: 0,
+            timestamp: '-1',
+          },
+          {
+            topicName: topics[1],
+            errorCode: 0,
+            offset: '0',
+            partition: 0,
+            timestamp: '-1',
+          },
+        ].sort(byTopicName)
+      )
+
+      result = await sendBatch(topics)
+      expect(result.sort(byTopicName)).toEqual(
+        [
+          {
+            topicName: topics[0],
+            errorCode: 0,
+            offset: '10',
+            partition: 0,
+            timestamp: '-1',
+          },
+          {
+            topicName: topics[1],
+            errorCode: 0,
+            offset: '10',
+            partition: 0,
+            timestamp: '-1',
+          },
+        ].sort(byTopicName)
+      )
+    })
+
+    testIfKafka011('produce messages for Kafka 0.11', async () => {
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          allowExperimentalV011: true,
+          createPartitioner: createModPartitioner,
+        })
+      )
+
+      await createTopic({ topic: topicName })
+
+      producer = createProducer({ cluster, logger: newLogger(), idempotent })
+      await producer.connect()
+
+      const sendMessages = async () =>
+        await producer.send({
+          acks,
+          topic: topicName,
+          messages: new Array(10).fill().map((_, i) => ({
+            key: `key-${i}`,
+            value: `value-${i}`,
+          })),
+        })
+
+      expect(await sendMessages()).toEqual([
+        {
+          topicName,
+          baseOffset: '0',
+          errorCode: 0,
+          logAppendTime: '-1',
+          partition: 0,
+        },
+      ])
+
+      expect(await sendMessages()).toEqual([
+        {
+          topicName,
+          baseOffset: '10',
+          errorCode: 0,
+          logAppendTime: '-1',
+          partition: 0,
+        },
+      ])
+    })
+
+    testIfKafka011('produce messages for Kafka 0.11 with headers', async () => {
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          allowExperimentalV011: true,
+          createPartitioner: createModPartitioner,
+        })
+      )
+
+      await createTopic({ topic: topicName })
+
+      producer = createProducer({ cluster, logger: newLogger(), idempotent })
+      await producer.connect()
+
+      const sendMessages = async () =>
+        await producer.send({
+          acks,
+          topic: topicName,
+          messages: new Array(10).fill().map((_, i) => ({
+            key: `key-${i}`,
+            value: `value-${i}`,
+            headers: {
+              [`header-a${i}`]: `header-value-a${i}`,
+              [`header-b${i}`]: `header-value-b${i}`,
+              [`header-c${i}`]: `header-value-c${i}`,
+            },
+          })),
+        })
+
+      expect(await sendMessages()).toEqual([
+        {
+          topicName,
+          baseOffset: '0',
+          errorCode: 0,
+          logAppendTime: '-1',
+          partition: 0,
+        },
+      ])
+
+      expect(await sendMessages()).toEqual([
+        {
+          topicName,
+          baseOffset: '10',
+          errorCode: 0,
+          logAppendTime: '-1',
+          partition: 0,
+        },
+      ])
+    })
+  }
+
+  testProduceMessages(false)
+
+  describe('when idempotent=true', () => {
+    testProduceMessages(true)
+
+    test('throws an error if acks != -1', async () => {
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          allowExperimentalV011: true,
+          createPartitioner: createModPartitioner,
+        })
+      )
+
+      producer = createProducer({ cluster, logger: newLogger(), idempotent: true })
+      await producer.connect()
+
+      await expect(
+        producer.send({
+          acks: 1,
+          topic: topicName,
+          messages: new Array(10).fill().map((_, i) => ({
+            key: `key-${i}`,
+            value: `value-${i}`,
+          })),
+        })
+      ).rejects.toEqual(
+        new KafkaJSNonRetriableError(
+          "Not requiring ack for all messages invalidates the idempotent producer's EoS guarantees"
+        )
+      )
+
+      await expect(
+        producer.send({
+          acks: 0,
+          topic: topicName,
+          messages: new Array(10).fill().map((_, i) => ({
+            key: `key-${i}`,
+            value: `value-${i}`,
+          })),
+        })
+      ).rejects.toEqual(
+        new KafkaJSNonRetriableError(
+          "Not requiring ack for all messages invalidates the idempotent producer's EoS guarantees"
+        )
+      )
     })
   })
 })
