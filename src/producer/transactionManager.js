@@ -1,3 +1,6 @@
+const { KafkaJSNonRetriableError } = require('../errors')
+const COORDINATOR_TYPES = require('../protocol/coordinatorTypes')
+
 const NO_PRODUCER_ID = -1
 const SEQUENCE_START = 0
 const INT_32_MAX_VALUE = Math.pow(2, 32)
@@ -5,7 +8,17 @@ const INT_32_MAX_VALUE = Math.pow(2, 32)
 /**
  * Manage behavior for an idempotent producer and transactions.
  */
-module.exports = ({ logger, cluster, transactionTimeout = 60000 }) => {
+module.exports = ({
+  logger,
+  cluster,
+  transactionTimeout = 60000,
+  transactional,
+  transactionalId,
+}) => {
+  if (transactional && !transactionalId) {
+    throw new KafkaJSNonRetriableError('Cannot manage transactions without a transactionalId')
+  }
+
   /**
    * Current producer ID
    */
@@ -22,6 +35,7 @@ module.exports = ({ logger, cluster, transactionTimeout = 60000 }) => {
    * Sequences are sent with every Record Batch and tracked per Topic-Partition
    */
   let producerSequence = {}
+  let inTransaction = false
 
   const transactionManager = {
     isInitialized() {
@@ -36,8 +50,17 @@ module.exports = ({ logger, cluster, transactionTimeout = 60000 }) => {
       await cluster.refreshMetadataIfNecessary()
 
       // If non-transactional we can request the PID from any broker
-      const broker = await cluster.findControllerBroker()
-      const result = await broker.initProducerId({ transactionTimeout })
+      const broker = transactional
+        ? await cluster.findGroupCoordinator({
+            groupId: transactionalId,
+            coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+          })
+        : await cluster.findControllerBroker()
+
+      const result = await broker.initProducerId({
+        groupId: transactional ? transactionalId : undefined,
+        transactionTimeout,
+      })
 
       producerId = result.producerId
       producerEpoch = result.producerEpoch
@@ -106,6 +129,64 @@ module.exports = ({ logger, cluster, transactionTimeout = 60000 }) => {
      */
     getProducerEpoch() {
       return producerEpoch
+    },
+
+    getTransactionalId() {
+      return transactionalId
+    },
+
+    /**
+     * Begin a transaction
+     */
+    beginTransaction() {
+      if (!isInitialized()) {
+        throw new KafkaJSNonRetriableError(
+          'Cannot begin transaction prior to initializing producer id'
+        )
+      }
+
+      if (inTransaction) {
+        throw new KafkaJSNonRetriableError('Complete transaction before beginning another')
+      }
+
+      inTransaction = true
+    },
+
+    /**
+     * Commit the ongoing transaction
+     */
+    async commit() {
+      if (!inTransaction) {
+        throw new KafkaJSNonRetriableError('Cannot commit outside transaction')
+      }
+
+      const broker = await cluster.findGroupCoordinator({ groupId: transactionalId })
+      await broker.endTxn({ producerId, producerEpoch, transactionalId, transactionalResult: true })
+
+      inTransaction = false
+    },
+
+    /**
+     * Abort the ongoing transaction
+     */
+    async abort() {
+      if (!inTransaction) {
+        throw new KafkaJSNonRetriableError('Cannot commit outside transaction')
+      }
+
+      const broker = await cluster.findGroupCoordinator({ groupId: transactionalId })
+      await broker.endTxn({
+        producerId,
+        producerEpoch,
+        transactionalId,
+        transactionalResult: false,
+      })
+
+      inTransaction = false
+    },
+
+    isInTransaction() {
+      return !!inTransaction
     },
   }
 
