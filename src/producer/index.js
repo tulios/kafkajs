@@ -20,6 +20,8 @@ module.exports = ({
   retry,
   idempotent = false,
   transactionTimeout,
+  transactional = false,
+  transactionalId,
 }) => {
   retry = retry || { retries: idempotent ? Number.MAX_SAFE_INTEGER : 5 }
 
@@ -38,7 +40,13 @@ module.exports = ({
   const partitioner = createPartitioner()
   const retrier = createRetry(Object.assign({}, cluster.retry, retry))
   const instrumentationEmitter = new InstrumentationEventEmitter()
-  const transactionManager = createTransactionManager({ logger, cluster, transactionTimeout })
+  const transactionManager = createTransactionManager({
+    logger,
+    cluster,
+    transactionTimeout,
+    transactional,
+    transactionalId,
+  })
   const sendMessages = createSendMessages({ logger, cluster, partitioner, transactionManager })
 
   /**
@@ -68,6 +76,12 @@ module.exports = ({
     if (idempotent && acks !== -1) {
       throw new KafkaJSNonRetriableError(
         `Not requiring ack for all messages invalidates the idempotent producer's EoS guarantees`
+      )
+    }
+
+    if (transactional && !transactionManager.isInTransaction()) {
+      throw new KafkaJSNonRetriableError(
+        'Transactional producer cannot send messages outside a transaction'
       )
     }
 
@@ -170,6 +184,18 @@ module.exports = ({
     })
   }
 
+  const begintransaction = () => {
+    return transactionManager.beginTransaction()
+  }
+
+  const commitTransaction = () => {
+    return transactionManager.commit()
+  }
+
+  const abortTransaction = () => {
+    return transactionManager.abort()
+  }
+
   /**
    * @returns {Object} logger
    */
@@ -203,6 +229,10 @@ module.exports = ({
     send,
 
     sendBatch,
+
+    begintransaction,
+    commitTransaction,
+    abortTransaction,
 
     logger: getLogger,
   }
