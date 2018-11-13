@@ -258,6 +258,8 @@ await producer.send({
 | acks        | Control the number of required acks. <br> __-1__ = all replicas must acknowledge _(default)_ <br> __0__ = no acknowledgments <br> __1__ = only waits for the leader to acknowledge | `-1` all replicas must acknowledge |
 | timeout     | The time to await a response in ms                                                                | `30000` |
 | compression | Compression codec                                                                                 | `CompressionTypes.None` |
+| ----------- |-------------------------------------------------------------------------------------------------- | ------- |
+| idempotent     | _Experimental._ If enabled producer will ensure each message is written exactly once. Acks _must_ be set to -1 ("all"). Retries will default to MAX_SAFE_INTEGER.                                                                | `false` |
 
 By default, the producer is configured to distribute the messages with the following logic:
 
