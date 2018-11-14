@@ -23,9 +23,11 @@ module.exports = ({ logger, cluster, transactionTimeout = 60000 }) => {
    */
   let producerSequence = {}
 
-  const isInitialized = () => producerId !== NO_PRODUCER_ID
-
   const transactionManager = {
+    isInitialized() {
+      return producerId !== NO_PRODUCER_ID
+    },
+
     /**
      * Initialize the idempotent producer by making an `InitProducerId` request.
      * Overwrites any existing state in this transaction manager
@@ -52,7 +54,7 @@ module.exports = ({ logger, cluster, transactionTimeout = 60000 }) => {
      * @returns {number}
      */
     getSequence(topic, partition) {
-      if (!isInitialized()) {
+      if (!transactionManager.isInitialized()) {
         return SEQUENCE_START
       }
 
@@ -71,7 +73,7 @@ module.exports = ({ logger, cluster, transactionTimeout = 60000 }) => {
      * @param {number} increment
      */
     updateSequence(topic, partition, increment) {
-      if (!isInitialized()) {
+      if (!transactionManager.isInitialized()) {
         return
       }
 

@@ -183,7 +183,7 @@ module.exports = ({
       await cluster.connect()
       instrumentationEmitter.emit(CONNECT)
 
-      if (idempotent) {
+      if (idempotent && !transactionManager.isInitialized()) {
         await transactionManager.initProducerId()
       }
     },

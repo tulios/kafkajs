@@ -30,6 +30,7 @@ describe('Producer > transactionManager', () => {
     expect(transactionManager.getProducerId()).toEqual(-1)
     expect(transactionManager.getProducerEpoch()).toEqual(0)
     expect(transactionManager.getSequence(topic, 1)).toEqual(0)
+    expect(transactionManager.isInitialized()).toEqual(false)
 
     await transactionManager.initProducerId()
 
@@ -38,6 +39,7 @@ describe('Producer > transactionManager', () => {
 
     expect(transactionManager.getProducerId()).toEqual(mockInitProducerIdResponse.producerId)
     expect(transactionManager.getProducerEpoch()).toEqual(mockInitProducerIdResponse.producerEpoch)
+    expect(transactionManager.isInitialized()).toEqual(true)
   })
 
   test('getting & updating the sequence per topic-partition', async () => {

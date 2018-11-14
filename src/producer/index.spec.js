@@ -1,3 +1,22 @@
+let initProducerIdSpy
+let retrySpy
+
+jest.mock('./transactionManager', () => {
+  return (...args) => {
+    const transactionManager = jest.requireActual('./transactionManager')(...args)
+
+    initProducerIdSpy = jest.spyOn(transactionManager, 'initProducerId')
+
+    return transactionManager
+  }
+})
+
+jest.mock('../retry', () => {
+  let spy = jest.fn().mockImplementation(jest.requireActual('../retry'))
+  retrySpy = spy
+  return spy
+})
+
 const createProducer = require('./index')
 const {
   secureRandom,
@@ -494,11 +513,6 @@ describe('Producer', () => {
     })
 
     test('sets the default retry value to MAX_SAFE_INTEGER', async () => {
-      jest.resetModules()
-      jest.mock('../retry')
-      const createRetryMock = require('../retry')
-      const createProducerMockedRetry = require('./index')
-
       const cluster = createCluster(
         Object.assign(connectionOpts(), {
           allowExperimentalV011: true,
@@ -506,12 +520,8 @@ describe('Producer', () => {
         })
       )
 
-      producer = createProducerMockedRetry({ cluster, logger: newLogger(), idempotent: true })
-      expect(createRetryMock).toHaveBeenCalledWith({ retries: Number.MAX_SAFE_INTEGER })
-
-      try {
-        await producer.connect()
-      } catch (e) {} // Jest will complain about "open handles" if we don't connect. Ignore result.
+      producer = createProducer({ cluster, logger: newLogger(), idempotent: true })
+      expect(retrySpy).toHaveBeenCalledWith({ retries: Number.MAX_SAFE_INTEGER })
     })
 
     test('throws an error if retries < 1', async () => {
@@ -527,6 +537,24 @@ describe('Producer', () => {
           'Idempotent producer must allow retries to protect against transient errors'
         )
       )
+    })
+
+    test('only calls initProducerId if unitialized', async () => {
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          allowExperimentalV011: true,
+          createPartitioner: createModPartitioner,
+        })
+      )
+
+      producer = createProducer({ cluster, logger: newLogger(), idempotent: true })
+
+      await producer.connect()
+      expect(initProducerIdSpy).toHaveBeenCalledTimes(1)
+
+      initProducerIdSpy.mockClear()
+      await producer.connect()
+      expect(initProducerIdSpy).toHaveBeenCalledTimes(0)
     })
   })
 })
