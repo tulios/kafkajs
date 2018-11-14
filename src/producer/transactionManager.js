@@ -4,7 +4,7 @@ const SEQUENCE_START = 0
 /**
  * Manage behavior for an idempotent producer and transactions.
  */
-module.exports = ({ logger, cluster, transactionTimeout = 30000 }) => {
+module.exports = ({ logger, cluster, transactionTimeout = 60000 }) => {
   /**
    * Current producer ID
    */

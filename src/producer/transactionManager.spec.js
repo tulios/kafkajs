@@ -21,7 +21,11 @@ describe('Producer > transactionManager', () => {
   })
 
   test('initializing the producer id and epoch', async () => {
-    const transactionManager = createTransactionManager({ logger: newLogger(), cluster })
+    const transactionManager = createTransactionManager({
+      logger: newLogger(),
+      cluster,
+      transactionTimeout: 30000,
+    })
 
     expect(transactionManager.getProducerId()).toEqual(-1)
     expect(transactionManager.getProducerEpoch()).toEqual(0)
