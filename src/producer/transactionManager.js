@@ -140,7 +140,7 @@ module.exports = ({
      * Begin a transaction
      */
     beginTransaction() {
-      if (!isInitialized()) {
+      if (!transactionManager.isInitialized()) {
         throw new KafkaJSNonRetriableError(
           'Cannot begin transaction prior to initializing producer id'
         )
