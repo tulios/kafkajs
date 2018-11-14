@@ -99,10 +99,9 @@ module.exports = ({ logger, cluster, partitioner, transactionManager }) => {
           const formattedResponse = expectResponse ? responseSerializer(response) : []
 
           formattedResponse.forEach(({ topicName, partition }) => {
-            const size = topicMetadata.get(topicName).messagesPerPartition[partition].length
-            const previous = topicMetadata.get(topicName).sequencePerPartition[partition]
+            const increment = topicMetadata.get(topicName).messagesPerPartition[partition].length
 
-            transactionManager.updateSequence(topicName, partition, previous + size)
+            transactionManager.updateSequence(topicName, partition, increment)
           })
 
           responsePerBroker.set(broker, formattedResponse)

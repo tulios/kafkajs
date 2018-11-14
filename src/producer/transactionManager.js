@@ -1,5 +1,6 @@
 const NO_PRODUCER_ID = -1
 const SEQUENCE_START = 0
+const INT_32_MAX_VALUE = Math.pow(2, 32)
 
 /**
  * Manage behavior for an idempotent producer and transactions.
@@ -24,7 +25,7 @@ module.exports = ({ logger, cluster, transactionTimeout = 60000 }) => {
 
   const isInitialized = () => producerId !== NO_PRODUCER_ID
 
-  return {
+  const transactionManager = {
     /**
      * Initialize the idempotent producer by making an `InitProducerId` request.
      * Overwrites any existing state in this transaction manager
@@ -67,14 +68,25 @@ module.exports = ({ logger, cluster, transactionTimeout = 60000 }) => {
      * Do nothing if not yet initialized (not idempotent)
      * @param {string} topic
      * @param {string} partition
-     * @param {number} sequence
+     * @param {number} increment
      */
-    updateSequence(topic, partition, sequence) {
+    updateSequence(topic, partition, increment) {
       if (!isInitialized()) {
         return
       }
 
-      producerSequence[topic] = producerSequence[topic] || {}
+      const previous = transactionManager.getSequence(topic, partition)
+      let sequence = previous + increment
+
+      // Sequence is defined as Int32 in the Record Batch,
+      // so theoretically should need to rotate here
+      if (sequence >= INT_32_MAX_VALUE) {
+        logger.debug(
+          `Sequence for ${topic} ${partition} exceeds max value (${sequence}). Rotating to 0.`
+        )
+        sequence = 0
+      }
+
       producerSequence[topic][partition] = sequence
     },
 
@@ -94,4 +106,6 @@ module.exports = ({ logger, cluster, transactionTimeout = 60000 }) => {
       return producerEpoch
     },
   }
+
+  return transactionManager
 }

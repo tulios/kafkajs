@@ -51,11 +51,16 @@ describe('Producer > transactionManager', () => {
 
     expect(transactionManager.getSequence(topic, 1)).toEqual(0)
     transactionManager.updateSequence(topic, 1, 5)
-    transactionManager.updateSequence(topic, 1, 10) // Updates, not increments
-    expect(transactionManager.getSequence(topic, 1)).toEqual(10)
+    transactionManager.updateSequence(topic, 1, 10)
+    expect(transactionManager.getSequence(topic, 1)).toEqual(15)
 
     expect(transactionManager.getSequence(topic, 2)).toEqual(0) // Different partition
     expect(transactionManager.getSequence('foobar', 1)).toEqual(0) // Different topic
+
+    transactionManager.updateSequence(topic, 3, Math.pow(2, 32) - 100)
+    expect(transactionManager.getSequence(topic, 3)).toEqual(Math.pow(2, 32) - 100) // Rotates once we reach 2 ^ 32 (max Int32)
+    transactionManager.updateSequence(topic, 3, 100)
+    expect(transactionManager.getSequence(topic, 3)).toEqual(0) // Rotates once we reach 2 ^ 32 (max Int32)
 
     await transactionManager.initProducerId()
     expect(transactionManager.getSequence(topic, 1)).toEqual(0) // Sequences reset by initProducerId

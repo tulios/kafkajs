@@ -230,17 +230,17 @@ describe('Producer > sendMessages', () => {
     expect(transactionManager.updateSequence).toHaveBeenCalledWith(
       'topic-name',
       0,
-      5 + messagesPerPartition[0].length
+      messagesPerPartition[0].length
     )
     expect(transactionManager.updateSequence).toHaveBeenCalledWith(
       'topic-name',
       1,
-      5 + messagesPerPartition[1].length
+      messagesPerPartition[1].length
     )
     expect(transactionManager.updateSequence).toHaveBeenCalledWith(
       'topic-name',
       2,
-      5 + messagesPerPartition[2].length
+      messagesPerPartition[2].length
     )
   })
 })
