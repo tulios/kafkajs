@@ -19,7 +19,7 @@ describe('Broker > Produce', () => {
     headers: { [`hkey-${secureRandom()}`]: `hvalue-${secureRandom()}` },
   })
 
-  const createTopicData = ({ headers = false, firstSequence = 0 }) => [
+  const createTopicData = ({ headers = false, firstSequence = 0 } = {}) => [
     {
       topic: topicName,
       partitions: [
