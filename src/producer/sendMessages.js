@@ -86,7 +86,12 @@ module.exports = ({ logger, cluster, partitioner, transactionManager }) => {
         const topicData = createTopicData(topicDataForBroker)
 
         try {
+          if (transactionManager.isTransactional()) {
+            await transactionManager.addPartitionsToTransaction(topicData)
+          }
+
           const response = await broker.produce({
+            transactionalId: transactionManager.getTransactionalId(),
             producerId: transactionManager.getProducerId(),
             producerEpoch: transactionManager.getProducerEpoch(),
             acks,
