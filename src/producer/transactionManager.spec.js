@@ -1,11 +1,14 @@
 const { newLogger } = require('testHelpers')
 const createTransactionManager = require('./transactionManager')
+const COORDINATOR_TYPES = require('../protocol/coordinatorTypes')
 
 describe('Producer > transactionManager', () => {
   const topic = 'topic-name'
+  const producerId = 1000
+  const producerEpoch = 1
   const mockInitProducerIdResponse = {
-    producerId: 1000,
-    producerEpoch: 1,
+    producerId,
+    producerEpoch,
   }
 
   let cluster, broker
@@ -13,9 +16,11 @@ describe('Producer > transactionManager', () => {
   beforeEach(() => {
     broker = {
       initProducerId: jest.fn().mockReturnValue(mockInitProducerIdResponse),
+      addPartitionsToTxn: jest.fn(),
     }
     cluster = {
       refreshMetadataIfNecessary: jest.fn(),
+      findGroupCoordinator: jest.fn().mockReturnValue(broker),
       findControllerBroker: jest.fn().mockReturnValue(broker),
     }
   })
@@ -66,5 +71,86 @@ describe('Producer > transactionManager', () => {
 
     await transactionManager.initProducerId()
     expect(transactionManager.getSequence(topic, 1)).toEqual(0) // Sequences reset by initProducerId
+  })
+
+  describe('if transactional=true', () => {
+    let transactionalId
+
+    beforeEach(() => {
+      transactionalId = 'transactional-id'
+    })
+
+    test('adding partitions to transaction', async () => {
+      const transactionManager = createTransactionManager({
+        logger: newLogger(),
+        cluster,
+        transactionalId,
+        transactional: true,
+      })
+      await transactionManager.initProducerId()
+      transactionManager.beginTransaction()
+
+      const topicData = [
+        {
+          topic: 'test-1',
+          partitions: [{ partition: 1 }, { partition: 2 }],
+        },
+        {
+          topic: 'test-2',
+          partitions: [{ partition: 1 }],
+        },
+      ]
+
+      cluster.findGroupCoordinator.mockClear()
+      await transactionManager.addPartitionsToTransaction(topicData)
+
+      expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
+        groupId: transactionalId,
+        coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+      })
+      expect(broker.addPartitionsToTxn).toHaveBeenCalledTimes(1)
+      expect(broker.addPartitionsToTxn).toHaveBeenCalledWith({
+        transactionalId,
+        producerId,
+        producerEpoch,
+        topics: [
+          {
+            topic: 'test-1',
+            partitions: [1, 2],
+          },
+          {
+            topic: 'test-2',
+            partitions: [1],
+          },
+        ],
+      })
+
+      broker.addPartitionsToTxn.mockClear()
+      await transactionManager.addPartitionsToTransaction(topicData)
+      expect(broker.addPartitionsToTxn).toHaveBeenCalledTimes(0) // No call if nothing new
+
+      broker.addPartitionsToTxn.mockClear()
+      await transactionManager.addPartitionsToTransaction([
+        ...topicData,
+        { topic: 'test-2', partitions: [{ partition: 2 }] },
+        { topic: 'test-3', partitions: [{ partition: 1 }] },
+      ])
+      expect(broker.addPartitionsToTxn).toHaveBeenCalledTimes(1) // Called if some new
+      expect(broker.addPartitionsToTxn).toHaveBeenCalledWith({
+        transactionalId,
+        producerId,
+        producerEpoch,
+        topics: [
+          {
+            topic: 'test-2',
+            partitions: [2],
+          },
+          {
+            topic: 'test-3',
+            partitions: [1],
+          },
+        ],
+      })
+    })
   })
 })

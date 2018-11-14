@@ -35,6 +35,7 @@ module.exports = ({
    * Sequences are sent with every Record Batch and tracked per Topic-Partition
    */
   let producerSequence = {}
+  let transactionTopicPartitions = {}
   let inTransaction = false
 
   const transactionManager = {
@@ -153,6 +154,55 @@ module.exports = ({
     },
 
     /**
+     * Add partitions to a transaction if they are not already marked as participating.
+     *
+     * Should be called prior to sending any messages during a transaction
+     * @param {TopicData[]} topicData
+     *
+     * @typedef {Object} TopicData
+     * @property {string} topic
+     * @property {object[]} partitions
+     * @property {number} partitions[].partition
+     */
+    async addPartitionsToTransaction(topicData) {
+      if (!inTransaction) {
+        throw new KafkaJSNonRetriableError('Cannot add partitions outside transaction')
+      }
+
+      const newTopicPartitions = {}
+
+      topicData.forEach(({ topic, partitions }) => {
+        transactionTopicPartitions[topic] = transactionTopicPartitions[topic] || {}
+
+        partitions.forEach(({ partition }) => {
+          if (!transactionTopicPartitions[topic][partition]) {
+            newTopicPartitions[topic] = newTopicPartitions[topic] || []
+            newTopicPartitions[topic].push(partition)
+          }
+        })
+      })
+
+      const topics = Object.keys(newTopicPartitions).map(topic => ({
+        topic,
+        partitions: newTopicPartitions[topic],
+      }))
+
+      if (topics.length) {
+        const broker = await cluster.findGroupCoordinator({
+          groupId: transactionalId,
+          coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+        })
+        await broker.addPartitionsToTxn({ transactionalId, producerId, producerEpoch, topics })
+      }
+
+      topics.forEach(({ topic, partitions }) => {
+        partitions.forEach(partition => {
+          transactionTopicPartitions[topic][partition] = true
+        })
+      })
+    },
+
+    /**
      * Commit the ongoing transaction
      */
     async commit() {
@@ -164,6 +214,7 @@ module.exports = ({
       await broker.endTxn({ producerId, producerEpoch, transactionalId, transactionalResult: true })
 
       inTransaction = false
+      transactionTopicPartitions = {}
     },
 
     /**
@@ -183,6 +234,11 @@ module.exports = ({
       })
 
       inTransaction = false
+      transactionTopicPartitions = {}
+    },
+
+    isTransactional() {
+      return transactional
     },
 
     isInTransaction() {
