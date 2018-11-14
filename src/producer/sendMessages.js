@@ -51,6 +51,7 @@ module.exports = ({ logger, cluster, partitioner, transactionManager }) => {
           result[partition] = transactionManager.getSequence(topic, partition)
           return result
         }, {})
+
         const partitionsPerLeader = cluster.findLeaderForPartitions(topic, partitions)
         const leaders = keys(partitionsPerLeader)
 
@@ -93,14 +94,17 @@ module.exports = ({ logger, cluster, partitioner, transactionManager }) => {
             compression,
             topicData,
           })
+
           const expectResponse = acks !== 0
           const formattedResponse = expectResponse ? responseSerializer(response) : []
+
           formattedResponse.forEach(({ topicName, partition }) => {
             const size = topicMetadata.get(topicName).messagesPerPartition[partition].length
             const previous = topicMetadata.get(topicName).sequencePerPartition[partition]
 
             transactionManager.updateSequence(topicName, partition, previous + size)
           })
+
           responsePerBroker.set(broker, formattedResponse)
         } catch (e) {
           responsePerBroker.delete(broker)

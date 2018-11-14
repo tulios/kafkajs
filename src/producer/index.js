@@ -19,8 +19,9 @@ module.exports = ({
   createPartitioner = createDefaultPartitioner,
   retry,
   idempotent = false,
+  transactionTimeout,
 }) => {
-  retry = retry || (idempotent ? { retries: Number.MAX_SAFE_INTEGER } : { retries: 5 })
+  retry = retry || { retries: idempotent ? Number.MAX_SAFE_INTEGER : 5 }
 
   if (idempotent && retry.retries < 1) {
     throw new KafkaJSNonRetriableError(
@@ -37,7 +38,7 @@ module.exports = ({
   const partitioner = createPartitioner()
   const retrier = createRetry(Object.assign({}, cluster.retry, retry))
   const instrumentationEmitter = new InstrumentationEventEmitter()
-  const transactionManager = createTransactionManager({ logger, cluster })
+  const transactionManager = createTransactionManager({ logger, cluster, transactionTimeout })
   const sendMessages = createSendMessages({ logger, cluster, partitioner, transactionManager })
 
   /**
@@ -52,6 +53,7 @@ module.exports = ({
    *                           -1 = all replicas must acknowledge
    *                            0 = no acknowledgments
    *                            1 = only waits for the leader to acknowledge
+   *
    * @property {number} [timeout=30000] The time to await a response in ms
    * @property {Compression.Types} [compression=Compression.Types.None] Compression codec
    *

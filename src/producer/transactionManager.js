@@ -4,15 +4,17 @@ const SEQUENCE_START = 0
 /**
  * Manage behavior for an idempotent producer and transactions.
  */
-module.exports = ({ logger, cluster }) => {
+module.exports = ({ logger, cluster, transactionTimeout = 30000 }) => {
   /**
    * Current producer ID
    */
   let producerId = NO_PRODUCER_ID
+
   /**
    * Current producer epoch
    */
   let producerEpoch = 0
+
   /**
    * Idempotent production requires that the producer track the sequence number of messages.
    *
@@ -25,16 +27,14 @@ module.exports = ({ logger, cluster }) => {
   return {
     /**
      * Initialize the idempotent producer by making an `InitProducerId` request.
-     *
      * Overwrites any existing state in this transaction manager
      */
     initProducerId: async () => {
       await cluster.refreshMetadataIfNecessary()
+
       // If non-transactional we can request the PID from any broker
       const broker = await cluster.findControllerBroker()
-      const result = await broker.initProducerId({
-        transactionTimeout: 30000,
-      })
+      const result = await broker.initProducerId({ transactionTimeout })
 
       producerId = result.producerId
       producerEpoch = result.producerEpoch
@@ -45,12 +45,15 @@ module.exports = ({ logger, cluster }) => {
 
     /**
      * Get the current sequence for a given Topic-Partition. Defaults to 0.
+     *
      * @param {string} topic
      * @param {string} partition
      * @returns {number}
      */
     getSequence(topic, partition) {
-      if (!isInitialized()) return SEQUENCE_START
+      if (!isInitialized()) {
+        return SEQUENCE_START
+      }
 
       producerSequence[topic] = producerSequence[topic] || {}
       producerSequence[topic][partition] = producerSequence[topic][partition] || SEQUENCE_START
@@ -67,7 +70,9 @@ module.exports = ({ logger, cluster }) => {
      * @param {number} sequence
      */
     updateSequence(topic, partition, sequence) {
-      if (!isInitialized()) return
+      if (!isInitialized()) {
+        return
+      }
 
       producerSequence[topic] = producerSequence[topic] || {}
       producerSequence[topic][partition] = sequence
