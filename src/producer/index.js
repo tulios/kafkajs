@@ -3,6 +3,7 @@ const createDefaultPartitioner = require('./partitioners/default')
 const createSendMessages = require('./sendMessages')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const events = require('./instrumentationEvents')
+const createTransactionManager = require('./transactionManager')
 const { CONNECT, DISCONNECT } = require('./instrumentationEvents')
 const { KafkaJSNonRetriableError } = require('../errors')
 
@@ -16,13 +17,29 @@ module.exports = ({
   cluster,
   logger: rootLogger,
   createPartitioner = createDefaultPartitioner,
-  retry = { retries: 5 },
+  retry,
+  idempotent = false,
+  transactionTimeout,
 }) => {
+  retry = retry || { retries: idempotent ? Number.MAX_SAFE_INTEGER : 5 }
+
+  if (idempotent && retry.retries < 1) {
+    throw new KafkaJSNonRetriableError(
+      'Idempotent producer must allow retries to protect against transient errors'
+    )
+  }
+
+  const logger = rootLogger.namespace('Producer')
+
+  if (idempotent && retry.retries < Number.MAX_SAFE_INTEGER) {
+    logger.warn('Limiting retries for the idempotent producer may invalidate EoS guarantees')
+  }
+
   const partitioner = createPartitioner()
   const retrier = createRetry(Object.assign({}, cluster.retry, retry))
   const instrumentationEmitter = new InstrumentationEventEmitter()
-  const logger = rootLogger.namespace('Producer')
-  const sendMessages = createSendMessages({ logger, cluster, partitioner })
+  const transactionManager = createTransactionManager({ logger, cluster, transactionTimeout })
+  const sendMessages = createSendMessages({ logger, cluster, partitioner, transactionManager })
 
   /**
    * @typedef {Object} TopicMessages
@@ -36,6 +53,7 @@ module.exports = ({
    *                           -1 = all replicas must acknowledge
    *                            0 = no acknowledgments
    *                            1 = only waits for the leader to acknowledge
+   *
    * @property {number} [timeout=30000] The time to await a response in ms
    * @property {Compression.Types} [compression=Compression.Types.None] Compression codec
    *
@@ -45,6 +63,12 @@ module.exports = ({
   const sendBatch = async ({ acks, timeout, compression, topicMessages = [] }) => {
     if (topicMessages.length === 0 || topicMessages.some(({ topic }) => !topic)) {
       throw new KafkaJSNonRetriableError(`Invalid topic`)
+    }
+
+    if (idempotent && acks !== -1) {
+      throw new KafkaJSNonRetriableError(
+        `Not requiring ack for all messages invalidates the idempotent producer's EoS guarantees`
+      )
     }
 
     for (let { topic, messages } of topicMessages) {
@@ -158,6 +182,10 @@ module.exports = ({
     connect: async () => {
       await cluster.connect()
       instrumentationEmitter.emit(CONNECT)
+
+      if (idempotent && !transactionManager.isInitialized()) {
+        await transactionManager.initProducerId()
+      }
     },
 
     /**

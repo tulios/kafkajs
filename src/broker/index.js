@@ -160,6 +160,7 @@ module.exports = class Broker {
    *                              partitions: [
    *                                {
    *                                  partition: 0,
+   *                                  firstSequence: 0,
    *                                  messages: [
    *                                    { key: '1', value: 'A' },
    *                                    { key: '2', value: 'B' },
@@ -167,6 +168,7 @@ module.exports = class Broker {
    *                                },
    *                                {
    *                                  partition: 1,
+   *                                  firstSequence: 0,
    *                                  messages: [
    *                                    { key: '3', value: 'C' },
    *                                  ]
@@ -178,6 +180,7 @@ module.exports = class Broker {
    *                              partitions: [
    *                                {
    *                                  partition: 4,
+   *                                  firstSequence: 0,
    *                                  messages: [
    *                                    { key: '32', value: 'E' },
    *                                  ]

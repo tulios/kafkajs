@@ -26,7 +26,13 @@ describe('Producer > sendMessages', () => {
     3: [2],
   }
 
-  let messages, partitioner, brokers, cluster, messagesPerPartition, topicPartitionMetadata
+  let messages,
+    partitioner,
+    brokers,
+    cluster,
+    messagesPerPartition,
+    topicPartitionMetadata,
+    transactionManager
 
   beforeEach(() => {
     messages = []
@@ -61,11 +67,23 @@ describe('Producer > sendMessages', () => {
       '2': [{ key: '2' }, { key: '5' }, { key: '8' }],
     }
 
+    transactionManager = {
+      getProducerId: jest.fn(() => -1),
+      getProducerEpoch: jest.fn(() => 0),
+      getSequence: jest.fn(() => 0),
+      updateSequence: jest.fn(),
+    }
+
     require('./groupMessagesPerPartition').mockImplementation(() => messagesPerPartition)
   })
 
   test('only retry failed brokers', async () => {
-    const sendMessages = createSendMessages({ logger: newLogger(), cluster, partitioner })
+    const sendMessages = createSendMessages({
+      logger: newLogger(),
+      cluster,
+      partitioner,
+      transactionManager,
+    })
 
     brokers[1].produce
       .mockImplementationOnce(() => {
@@ -111,7 +129,12 @@ describe('Producer > sendMessages', () => {
         }
       }
 
-      const sendMessages = createSendMessages({ logger: newLogger(), cluster, partitioner })
+      const sendMessages = createSendMessages({
+        logger: newLogger(),
+        cluster,
+        partitioner,
+        transactionManager,
+      })
       brokers[1].produce
         .mockImplementationOnce(() => {
           throw new FakeError()
@@ -125,7 +148,12 @@ describe('Producer > sendMessages', () => {
   }
 
   test('does not re-produce messages to brokers that are no longer leaders after metadata refresh', async () => {
-    const sendMessages = createSendMessages({ logger: newLogger(), cluster, partitioner })
+    const sendMessages = createSendMessages({
+      logger: newLogger(),
+      cluster,
+      partitioner,
+      transactionManager,
+    })
 
     brokers[2].produce
       .mockImplementationOnce(() => {
@@ -152,7 +180,12 @@ describe('Producer > sendMessages', () => {
   })
 
   test('refreshes metadata if partition metadata is empty', async () => {
-    const sendMessages = createSendMessages({ logger: newLogger(), cluster, partitioner })
+    const sendMessages = createSendMessages({
+      logger: newLogger(),
+      cluster,
+      partitioner,
+      transactionManager,
+    })
 
     cluster.findTopicPartitionMetadata
       .mockImplementationOnce(() => ({}))
@@ -161,5 +194,53 @@ describe('Producer > sendMessages', () => {
     await sendMessages({ topicMessages: [{ topic, messages }] })
 
     expect(cluster.refreshMetadata).toHaveBeenCalled()
+  })
+
+  test('retrieves sequence information from the transaction manager and updates', async () => {
+    const sendMessages = createSendMessages({
+      logger: newLogger(),
+      cluster,
+      partitioner,
+      transactionManager,
+    })
+
+    transactionManager.getSequence.mockReturnValue(5)
+
+    cluster.findTopicPartitionMetadata
+      .mockImplementationOnce(() => ({}))
+      .mockImplementationOnce(() => partitionsPerLeader)
+
+    await sendMessages({
+      topicMessages: [{ topic, messages }],
+    })
+
+    expect(brokers[1].produce.mock.calls[0][0].topicData[0].partitions[0]).toHaveProperty(
+      'firstSequence',
+      5
+    )
+    expect(brokers[2].produce.mock.calls[0][0].topicData[0].partitions[0]).toHaveProperty(
+      'firstSequence',
+      5
+    )
+    expect(brokers[3].produce.mock.calls[0][0].topicData[0].partitions[0]).toHaveProperty(
+      'firstSequence',
+      5
+    )
+
+    expect(transactionManager.updateSequence).toHaveBeenCalledWith(
+      'topic-name',
+      0,
+      messagesPerPartition[0].length
+    )
+    expect(transactionManager.updateSequence).toHaveBeenCalledWith(
+      'topic-name',
+      1,
+      messagesPerPartition[1].length
+    )
+    expect(transactionManager.updateSequence).toHaveBeenCalledWith(
+      'topic-name',
+      2,
+      messagesPerPartition[2].length
+    )
   })
 })

@@ -16,6 +16,7 @@ describe('Protocol > Requests > Produce > v3', () => {
           partitions: [
             {
               partition: 0,
+              firstSequence: 0,
               messages: [
                 {
                   key: 'key-9d0f348cb2e730e1edc4',
@@ -58,6 +59,7 @@ describe('Protocol > Requests > Produce > v3', () => {
           partitions: [
             {
               partition: 0,
+              firstSequence: 10,
               messages: [
                 {
                   key: 'key-9d0f348cb2e730e1edc4',

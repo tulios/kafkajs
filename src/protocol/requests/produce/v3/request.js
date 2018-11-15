@@ -78,6 +78,7 @@ const partitionsEncoder = compression => async ({
   partition,
   messages,
   transactionalId,
+  firstSequence,
   producerId,
   producerEpoch,
 }) => {
@@ -106,6 +107,7 @@ const partitionsEncoder = compression => async ({
     maxTimestamp,
     producerId,
     producerEpoch,
+    firstSequence,
     transactional: !!transactionalId,
     lastOffsetDelta: records.length - 1,
   })
