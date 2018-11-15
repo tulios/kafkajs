@@ -1,9 +1,26 @@
 const { KafkaJSNonRetriableError } = require('../errors')
 const COORDINATOR_TYPES = require('../protocol/coordinatorTypes')
+const { EventEmitter } = require('events')
 
 const NO_PRODUCER_ID = -1
 const SEQUENCE_START = 0
 const INT_32_MAX_VALUE = Math.pow(2, 32)
+
+const STATES = {
+  UNINITIALIZED: 'UNINITIALIZED',
+  READY: 'READY',
+  TRANSACTING: 'TRANSACTING',
+  COMMITTING: 'COMMITTING',
+  ABORTING: 'COMMITTING',
+}
+
+const VALID_TRANSITIONS = {
+  [STATES.UNINITIALIZED]: [STATES.READY],
+  [STATES.READY]: [STATES.READY, STATES.TRANSACTING],
+  [STATES.TRANSACTING]: [STATES.COMMITTING, STATES.ABORTING],
+  [STATES.COMMITTING]: [STATES.READY],
+  [STATES.ABORTING]: [STATES.READY],
+}
 
 /**
  * Manage behavior for an idempotent producer and transactions.
@@ -35,12 +52,76 @@ module.exports = ({
    * Sequences are sent with every Record Batch and tracked per Topic-Partition
    */
   let producerSequence = {}
+
+  /**
+   * Topic partitions already participating in the transaction
+   */
   let transactionTopicPartitions = {}
-  let inTransaction = false
+
+  /**
+   * Current state in the transactional producer lifecycle
+   */
+  let currentState = STATES.UNINITIALIZED
+
+  const stateMachine = Object.assign(new EventEmitter(), {
+    /**
+     * Ensure state machine is in the correct state before calling method
+     */
+    guard(object, method, eligibleStates) {
+      const fn = object.method
+
+      object.method = (...args) => {
+        if (!eligibleStates.includes(currentState)) {
+          throw new KafkaJSNonRetriableError(
+            `Transaction state exception: Cannot call "${method}" in state "${currentState}"`
+          )
+        }
+
+        return fn.apply(object, args)
+      }
+    },
+    /**
+     * Transition safely to a new state
+     */
+    transitionTo(state) {
+      logger.debug(`Transaction state transition ${currentState} --> ${state}`)
+
+      if (!VALID_TRANSITIONS[currentState].includes(state)) {
+        throw new KafkaJSNonRetriableError(
+          `Transaction state exception: Invalid transition ${currentState} --> ${state}`
+        )
+      }
+
+      stateMachine.emit('transition', { to: state, from: currentState })
+      currentState = state
+    },
+  })
+
+  stateMachine.on('transition', ({ to }) => {
+    if (to === STATES.READY) {
+      transactionTopicPartitions = {}
+    }
+  })
 
   const transactionManager = {
-    isInitialized() {
-      return producerId !== NO_PRODUCER_ID
+    /**
+     * Get the current producer id
+     * @returns {number}
+     */
+    getProducerId() {
+      return producerId
+    },
+
+    /**
+     * Get the current producer epoch
+     * @returns {number}
+     */
+    getProducerEpoch() {
+      return producerEpoch
+    },
+
+    getTransactionalId() {
+      return transactionalId
     },
 
     /**
@@ -63,6 +144,7 @@ module.exports = ({
         transactionTimeout,
       })
 
+      stateMachine.transitionTo(STATES.READY)
       producerId = result.producerId
       producerEpoch = result.producerEpoch
       producerSequence = {}
@@ -117,40 +199,10 @@ module.exports = ({
     },
 
     /**
-     * Get the current producer id
-     * @returns {number}
-     */
-    getProducerId() {
-      return producerId
-    },
-
-    /**
-     * Get the current producer epoch
-     * @returns {number}
-     */
-    getProducerEpoch() {
-      return producerEpoch
-    },
-
-    getTransactionalId() {
-      return transactionalId
-    },
-
-    /**
      * Begin a transaction
      */
     beginTransaction() {
-      if (!transactionManager.isInitialized()) {
-        throw new KafkaJSNonRetriableError(
-          'Cannot begin transaction prior to initializing producer id'
-        )
-      }
-
-      if (inTransaction) {
-        throw new KafkaJSNonRetriableError('Complete transaction before beginning another')
-      }
-
-      inTransaction = true
+      stateMachine.transitionTo(STATES.TRANSACTING)
     },
 
     /**
@@ -165,10 +217,6 @@ module.exports = ({
      * @property {number} partitions[].partition
      */
     async addPartitionsToTransaction(topicData) {
-      if (!inTransaction) {
-        throw new KafkaJSNonRetriableError('Cannot add partitions outside transaction')
-      }
-
       const newTopicPartitions = {}
 
       topicData.forEach(({ topic, partitions }) => {
@@ -206,24 +254,19 @@ module.exports = ({
      * Commit the ongoing transaction
      */
     async commit() {
-      if (!inTransaction) {
-        throw new KafkaJSNonRetriableError('Cannot commit outside transaction')
-      }
+      stateMachine.transitionTo(STATES.COMMITTING)
 
       const broker = await cluster.findGroupCoordinator({ groupId: transactionalId })
       await broker.endTxn({ producerId, producerEpoch, transactionalId, transactionalResult: true })
 
-      inTransaction = false
-      transactionTopicPartitions = {}
+      stateMachine.transitionTo(STATES.READY)
     },
 
     /**
      * Abort the ongoing transaction
      */
     async abort() {
-      if (!inTransaction) {
-        throw new KafkaJSNonRetriableError('Cannot commit outside transaction')
-      }
+      stateMachine.transitionTo(STATES.ABORTING)
 
       const broker = await cluster.findGroupCoordinator({ groupId: transactionalId })
       await broker.endTxn({
@@ -233,8 +276,14 @@ module.exports = ({
         transactionalResult: false,
       })
 
-      inTransaction = false
-      transactionTopicPartitions = {}
+      stateMachine.transitionTo(STATES.READY)
+    },
+
+    /**
+     * Whether the producer id has already been initialized
+     */
+    isInitialized() {
+      return producerId !== NO_PRODUCER_ID
     },
 
     isTransactional() {
@@ -242,9 +291,18 @@ module.exports = ({
     },
 
     isInTransaction() {
-      return !!inTransaction
+      return currentState === STATES.TRANSACTING
     },
   }
+
+  // Enforce the state machine
+  stateMachine.guard(transactionManager, 'initProducerId', [STATES.UNINITIALIZED, STATES.READY])
+  stateMachine.guard(transactionManager, 'beginTransaction', [STATES.READY])
+  stateMachine.guard(transactionManager, 'getSequence', [STATES.TRANSACTING])
+  stateMachine.guard(transactionManager, 'updateSequence', [STATES.TRANSACTING])
+  stateMachine.guard(transactionManager, 'addPartitionsToTransaction', [STATES.TRANSACTING])
+  stateMachine.guard(transactionManager, 'commit', [STATES.TRANSACTING])
+  stateMachine.guard(transactionManager, 'abort', [STATES.TRANSACTING])
 
   return transactionManager
 }
