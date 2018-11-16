@@ -584,7 +584,7 @@ describe('Producer', () => {
 
       await producer.connect()
       expect(producer.isInTransaction()).toEqual(false)
-      producer.begintransaction()
+      producer.beginTransaction()
       expect(producer.isInTransaction()).toEqual(true)
 
       await producer.send({
@@ -615,7 +615,7 @@ describe('Producer', () => {
 
       await producer.connect()
       expect(producer.isInTransaction()).toEqual(false)
-      producer.begintransaction()
+      producer.beginTransaction()
       expect(producer.isInTransaction()).toEqual(true)
 
       await producer.send({

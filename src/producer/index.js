@@ -194,7 +194,7 @@ module.exports = ({
    *
    * @throws {KafkaJSNonRetriableError} If non-transactional
    */
-  const begintransaction = () => {
+  const beginTransaction = () => {
     return transactionManager.beginTransaction()
   }
 
@@ -258,7 +258,7 @@ module.exports = ({
 
     sendBatch,
 
-    begintransaction,
+    beginTransaction,
     commitTransaction,
     abortTransaction,
 
