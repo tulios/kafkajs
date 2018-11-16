@@ -626,5 +626,60 @@ describe('Producer', () => {
       await producer.abortTransaction()
       expect(producer.isInTransaction()).toEqual(false)
     })
+
+    test('throws an error when attempting to send messages outside a transaction', async () => {
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          allowExperimentalV011: true,
+          createPartitioner: createModPartitioner,
+        })
+      )
+
+      await createTopic({ topic: topicName })
+
+      producer = createProducer({
+        cluster,
+        logger: newLogger(),
+        transactional: true,
+        transactionalId,
+      })
+
+      await producer.connect()
+
+      await expect(
+        producer.send({
+          topic: topicName,
+          messages: [
+            {
+              key: 'key',
+              value: 'value',
+            },
+          ],
+        })
+      ).rejects.toEqual(
+        new KafkaJSNonRetriableError(
+          'Transactional producer cannot send messages outside a transaction'
+        )
+      )
+      await expect(
+        producer.sendBatch({
+          topicMessages: [
+            {
+              topic: topicName,
+              messages: [
+                {
+                  key: 'key',
+                  value: 'value',
+                },
+              ],
+            },
+          ],
+        })
+      ).rejects.toEqual(
+        new KafkaJSNonRetriableError(
+          'Transactional producer cannot send messages outside a transaction'
+        )
+      )
+    })
   })
 })
