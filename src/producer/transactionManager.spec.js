@@ -1,5 +1,6 @@
 const { newLogger } = require('testHelpers')
 const createTransactionManager = require('./transactionManager')
+const { KafkaJSNonRetriableError } = require('../errors')
 const COORDINATOR_TYPES = require('../protocol/coordinatorTypes')
 
 describe('Producer > transactionManager', () => {
@@ -17,6 +18,7 @@ describe('Producer > transactionManager', () => {
     broker = {
       initProducerId: jest.fn().mockReturnValue(mockInitProducerIdResponse),
       addPartitionsToTxn: jest.fn(),
+      endTxn: jest.fn(),
     }
     cluster = {
       refreshMetadataIfNecessary: jest.fn(),
@@ -77,7 +79,40 @@ describe('Producer > transactionManager', () => {
     let transactionalId
 
     beforeEach(() => {
-      transactionalId = 'transactional-id'
+      transactionalId = `transactional-id`
+    })
+
+    test('initializing the producer id and epoch with the transactional id', async () => {
+      const transactionManager = createTransactionManager({
+        logger: newLogger(),
+        cluster,
+        transactionTimeout: 30000,
+        transactional: true,
+        transactionalId,
+      })
+
+      expect(transactionManager.getProducerId()).toEqual(-1)
+      expect(transactionManager.getProducerEpoch()).toEqual(0)
+      expect(transactionManager.getSequence(topic, 1)).toEqual(0)
+      expect(transactionManager.isInitialized()).toEqual(false)
+
+      await transactionManager.initProducerId()
+
+      expect(cluster.refreshMetadataIfNecessary).toHaveBeenCalled()
+      expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
+        groupId: transactionalId,
+        coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+      })
+      expect(broker.initProducerId).toHaveBeenCalledWith({
+        transactionalId,
+        transactionTimeout: 30000,
+      })
+
+      expect(transactionManager.getProducerId()).toEqual(mockInitProducerIdResponse.producerId)
+      expect(transactionManager.getProducerEpoch()).toEqual(
+        mockInitProducerIdResponse.producerEpoch
+      )
+      expect(transactionManager.isInitialized()).toEqual(true)
     })
 
     test('adding partitions to transaction', async () => {
@@ -152,5 +187,103 @@ describe('Producer > transactionManager', () => {
         ],
       })
     })
+
+    test('committing a transaction', async () => {
+      const transactionManager = createTransactionManager({
+        logger: newLogger(),
+        cluster,
+        transactionTimeout: 30000,
+        transactional: true,
+        transactionalId,
+      })
+
+      await expect(transactionManager.commit()).rejects.toEqual(
+        new KafkaJSNonRetriableError(
+          'Transaction state exception: Invalid transition UNINITIALIZED --> COMMITTING'
+        )
+      )
+      await transactionManager.initProducerId()
+      await expect(transactionManager.commit()).rejects.toEqual(
+        new KafkaJSNonRetriableError(
+          'Transaction state exception: Invalid transition READY --> COMMITTING'
+        )
+      )
+      await transactionManager.beginTransaction()
+
+      cluster.findGroupCoordinator.mockClear()
+      await transactionManager.commit()
+
+      expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
+        groupId: transactionalId,
+        coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+      })
+      expect(broker.endTxn).toHaveBeenCalledWith({
+        producerId,
+        producerEpoch,
+        transactionalId,
+        transactionalResult: true,
+      })
+    })
+
+    test('aborting a transaction', async () => {
+      const transactionManager = createTransactionManager({
+        logger: newLogger(),
+        cluster,
+        transactionTimeout: 30000,
+        transactional: true,
+        transactionalId,
+      })
+
+      await expect(transactionManager.commit()).rejects.toEqual(
+        new KafkaJSNonRetriableError(
+          'Transaction state exception: Invalid transition UNINITIALIZED --> COMMITTING'
+        )
+      )
+      await transactionManager.initProducerId()
+      await expect(transactionManager.commit()).rejects.toEqual(
+        new KafkaJSNonRetriableError(
+          'Transaction state exception: Invalid transition READY --> COMMITTING'
+        )
+      )
+      await transactionManager.beginTransaction()
+
+      cluster.findGroupCoordinator.mockClear()
+      await transactionManager.abort()
+
+      expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
+        groupId: transactionalId,
+        coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+      })
+      expect(broker.endTxn).toHaveBeenCalledWith({
+        producerId,
+        producerEpoch,
+        transactionalId,
+        transactionalResult: false,
+      })
+    })
+  })
+
+  describe('if transactional=false', () => {
+    function testTransactionalGuardAsync(method) {
+      test(`${method} throws`, async () => {
+        const transactionManager = createTransactionManager({ logger: newLogger(), cluster })
+
+        await expect(transactionManager[method]()).rejects.toEqual(
+          new KafkaJSNonRetriableError('Method unavailable if non-transactional')
+        )
+      })
+    }
+
+    test(`beginTransaction throws`, async () => {
+      const transactionManager = createTransactionManager({ logger: newLogger(), cluster })
+
+      expect(() => transactionManager.beginTransaction()).toThrow(
+        new KafkaJSNonRetriableError('Method unavailable if non-transactional')
+      )
+    })
+
+    testTransactionalGuardAsync('addPartitionsToTransaction')
+    testTransactionalGuardAsync('commit')
+    testTransactionalGuardAsync('abort')
   })
 })

@@ -470,7 +470,7 @@ describe('Producer', () => {
   describe('when idempotent=true', () => {
     testProduceMessages(true)
 
-    test('throws an error if acks != -1', async () => {
+    test('throws an error if sending a message with acks != -1', async () => {
       const cluster = createCluster(
         Object.assign(connectionOpts(), {
           allowExperimentalV011: true,
@@ -555,6 +555,76 @@ describe('Producer', () => {
       initProducerIdSpy.mockClear()
       await producer.connect()
       expect(initProducerIdSpy).toHaveBeenCalledTimes(0)
+    })
+  })
+
+  describe('when transactional=true', () => {
+    let transactionalId
+
+    beforeEach(() => {
+      transactionalId = `transactional-id-${secureRandom()}`
+    })
+
+    test('transaction flow commit', async () => {
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          allowExperimentalV011: true,
+          createPartitioner: createModPartitioner,
+        })
+      )
+
+      await createTopic({ topic: topicName })
+
+      producer = createProducer({
+        cluster,
+        logger: newLogger(),
+        transactional: true,
+        transactionalId,
+      })
+
+      await producer.connect()
+      expect(producer.isInTransaction()).toEqual(false)
+      producer.begintransaction()
+      expect(producer.isInTransaction()).toEqual(true)
+
+      await producer.send({
+        topic: topicName,
+        messages: [{ key: '2', value: '2' }],
+      })
+
+      await producer.commitTransaction()
+      expect(producer.isInTransaction()).toEqual(false)
+    })
+
+    test('transaction abort', async () => {
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          allowExperimentalV011: true,
+          createPartitioner: createModPartitioner,
+        })
+      )
+
+      await createTopic({ topic: topicName })
+
+      producer = createProducer({
+        cluster,
+        logger: newLogger(),
+        transactional: true,
+        transactionalId,
+      })
+
+      await producer.connect()
+      expect(producer.isInTransaction()).toEqual(false)
+      producer.begintransaction()
+      expect(producer.isInTransaction()).toEqual(true)
+
+      await producer.send({
+        topic: topicName,
+        messages: [{ key: '2', value: '2' }],
+      })
+
+      await producer.abortTransaction()
+      expect(producer.isInTransaction()).toEqual(false)
     })
   })
 })

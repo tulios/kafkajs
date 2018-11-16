@@ -103,6 +103,12 @@ module.exports = ({
     }
   })
 
+  const transactionalGuard = () => {
+    if (!transactional) {
+      throw new KafkaJSNonRetriableError('Method unavailable if non-transactional')
+    }
+  }
+
   const transactionManager = {
     /**
      * Get the current producer id
@@ -140,7 +146,7 @@ module.exports = ({
         : await cluster.findControllerBroker()
 
       const result = await broker.initProducerId({
-        groupId: transactional ? transactionalId : undefined,
+        transactionalId: transactional ? transactionalId : undefined,
         transactionTimeout,
       })
 
@@ -202,6 +208,7 @@ module.exports = ({
      * Begin a transaction
      */
     beginTransaction() {
+      transactionalGuard()
       stateMachine.transitionTo(STATES.TRANSACTING)
     },
 
@@ -217,6 +224,7 @@ module.exports = ({
      * @property {number} partitions[].partition
      */
     async addPartitionsToTransaction(topicData) {
+      transactionalGuard()
       const newTopicPartitions = {}
 
       topicData.forEach(({ topic, partitions }) => {
@@ -254,9 +262,13 @@ module.exports = ({
      * Commit the ongoing transaction
      */
     async commit() {
+      transactionalGuard()
       stateMachine.transitionTo(STATES.COMMITTING)
 
-      const broker = await cluster.findGroupCoordinator({ groupId: transactionalId })
+      const broker = await cluster.findGroupCoordinator({
+        groupId: transactionalId,
+        coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+      })
       await broker.endTxn({ producerId, producerEpoch, transactionalId, transactionalResult: true })
 
       stateMachine.transitionTo(STATES.READY)
@@ -266,9 +278,13 @@ module.exports = ({
      * Abort the ongoing transaction
      */
     async abort() {
+      transactionalGuard()
       stateMachine.transitionTo(STATES.ABORTING)
 
-      const broker = await cluster.findGroupCoordinator({ groupId: transactionalId })
+      const broker = await cluster.findGroupCoordinator({
+        groupId: transactionalId,
+        coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+      })
       await broker.endTxn({
         producerId,
         producerEpoch,

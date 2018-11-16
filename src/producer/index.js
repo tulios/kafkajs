@@ -18,17 +18,22 @@ module.exports = ({
   logger: rootLogger,
   createPartitioner = createDefaultPartitioner,
   retry,
-  idempotent = false,
+  idempotent,
   transactionTimeout,
   transactional = false,
   transactionalId,
 }) => {
   retry = retry || { retries: idempotent ? Number.MAX_SAFE_INTEGER : 5 }
+  idempotent = undefined === idempotent && transactional ? true : idempotent || false
 
   if (idempotent && retry.retries < 1) {
     throw new KafkaJSNonRetriableError(
       'Idempotent producer must allow retries to protect against transient errors'
     )
+  }
+
+  if (transactional && !transactionalId) {
+    throw new KafkaJSNonRetriableError('Must provide transactional id for transactional producer')
   }
 
   const logger = rootLogger.namespace('Producer')
@@ -68,7 +73,7 @@ module.exports = ({
    * @param {SendBatchRequest}
    * @returns {Promise}
    */
-  const sendBatch = async ({ acks, timeout, compression, topicMessages = [] }) => {
+  const sendBatch = async ({ acks = -1, timeout, compression, topicMessages = [] }) => {
     if (topicMessages.length === 0 || topicMessages.some(({ topic }) => !topic)) {
       throw new KafkaJSNonRetriableError(`Invalid topic`)
     }
@@ -184,14 +189,29 @@ module.exports = ({
     })
   }
 
+  /**
+   * Begin a transaction. Each producer can only have one ongoing transaction
+   *
+   * @throws {KafkaJSNonRetriableError} If non-transactional
+   */
   const begintransaction = () => {
     return transactionManager.beginTransaction()
   }
 
+  /**
+   * Commit the ongoing transaction.
+   *
+   * @throws {KafkaJSNonRetriableError} If non-transactional
+   */
   const commitTransaction = () => {
     return transactionManager.commit()
   }
 
+  /**
+   * Abort the ongoing transaction.
+   *
+   * @throws {KafkaJSNonRetriableError} If non-transactional
+   */
   const abortTransaction = () => {
     return transactionManager.abort()
   }
@@ -220,6 +240,14 @@ module.exports = ({
     disconnect: async () => {
       await cluster.disconnect()
       instrumentationEmitter.emit(DISCONNECT)
+    },
+
+    isInTransaction: () => {
+      return transactionManager.isInTransaction()
+    },
+
+    isIdempotent: () => {
+      return idempotent
     },
 
     events,
