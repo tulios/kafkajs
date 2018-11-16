@@ -103,6 +103,13 @@ module.exports = ({
     }
   })
 
+  function findTransactionCoordinator() {
+    return cluster.findGroupCoordinator({
+      groupId: transactionalId,
+      coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+    })
+  }
+
   const transactionalGuard = () => {
     if (!transactional) {
       throw new KafkaJSNonRetriableError('Method unavailable if non-transactional')
@@ -138,12 +145,9 @@ module.exports = ({
       await cluster.refreshMetadataIfNecessary()
 
       // If non-transactional we can request the PID from any broker
-      const broker = transactional
-        ? await cluster.findGroupCoordinator({
-            groupId: transactionalId,
-            coordinatorType: COORDINATOR_TYPES.TRANSACTION,
-          })
-        : await cluster.findControllerBroker()
+      const broker = await (transactional
+        ? findTransactionCoordinator()
+        : cluster.findControllerBroker())
 
       const result = await broker.initProducerId({
         transactionalId: transactional ? transactionalId : undefined,
@@ -244,10 +248,7 @@ module.exports = ({
       }))
 
       if (topics.length) {
-        const broker = await cluster.findGroupCoordinator({
-          groupId: transactionalId,
-          coordinatorType: COORDINATOR_TYPES.TRANSACTION,
-        })
+        const broker = await findTransactionCoordinator()
         await broker.addPartitionsToTxn({ transactionalId, producerId, producerEpoch, topics })
       }
 
@@ -265,10 +266,7 @@ module.exports = ({
       transactionalGuard()
       stateMachine.transitionTo(STATES.COMMITTING)
 
-      const broker = await cluster.findGroupCoordinator({
-        groupId: transactionalId,
-        coordinatorType: COORDINATOR_TYPES.TRANSACTION,
-      })
+      const broker = await findTransactionCoordinator()
       await broker.endTxn({ producerId, producerEpoch, transactionalId, transactionalResult: true })
 
       stateMachine.transitionTo(STATES.READY)
@@ -281,10 +279,7 @@ module.exports = ({
       transactionalGuard()
       stateMachine.transitionTo(STATES.ABORTING)
 
-      const broker = await cluster.findGroupCoordinator({
-        groupId: transactionalId,
-        coordinatorType: COORDINATOR_TYPES.TRANSACTION,
-      })
+      const broker = await findTransactionCoordinator()
       await broker.endTxn({
         producerId,
         producerEpoch,
