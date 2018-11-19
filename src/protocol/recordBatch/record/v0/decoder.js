@@ -15,7 +15,7 @@ const HeaderDecoder = require('../../header/v0/decoder')
  *     HeaderValue => VarInt|Bytes
  */
 
-module.exports = (decoder, { firstOffset, firstTimestamp, magicByte }) => {
+module.exports = (decoder, { firstOffset, firstTimestamp, magicByte, isControlBatch = false }) => {
   const attributes = decoder.readInt8()
 
   const timestampDelta = decoder.readVarLong()
@@ -42,5 +42,6 @@ module.exports = (decoder, { firstOffset, firstTimestamp, magicByte }) => {
     key,
     value,
     headers,
+    isControlRecord: isControlBatch,
   }
 }
