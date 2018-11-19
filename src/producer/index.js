@@ -19,9 +19,9 @@ module.exports = ({
   createPartitioner = createDefaultPartitioner,
   retry,
   idempotent,
-  transactionTimeout,
   transactional = false,
   transactionalId,
+  transactionTimeout,
 }) => {
   retry = retry || { retries: idempotent ? Number.MAX_SAFE_INTEGER : 5 }
   idempotent = undefined === idempotent && transactional ? true : idempotent || false

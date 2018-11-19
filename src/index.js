@@ -47,7 +47,16 @@ module.exports = class Client {
   /**
    * @public
    */
-  producer({ createPartitioner, retry, metadataMaxAge, allowAutoTopicCreation } = {}) {
+  producer({
+    createPartitioner,
+    retry,
+    metadataMaxAge,
+    allowAutoTopicCreation,
+    idempotent,
+    transactional,
+    transactionalId,
+    transactionTimeout,
+  } = {}) {
     const cluster = this[PRIVATE.CREATE_CLUSTER]({
       metadataMaxAge,
       allowAutoTopicCreation,
@@ -58,6 +67,10 @@ module.exports = class Client {
       logger: this[PRIVATE.LOGGER],
       cluster,
       createPartitioner,
+      idempotent,
+      transactional,
+      transactionalId,
+      transactionTimeout,
     })
   }
 
