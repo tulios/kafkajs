@@ -3,7 +3,12 @@ const createSocket = require('./socket')
 const createRequest = require('../protocol/request')
 const Decoder = require('../protocol/decoder')
 const { KafkaJSConnectionError } = require('../errors')
+const { INT_32_MAX_VALUE } = require('../constants')
 const getEnv = require('../env')
+const InFlightRequest = require('./inFlightRequest')
+
+const requestInfo = ({ apiName, apiKey, apiVersion }) =>
+  `${apiName}(key: ${apiKey}, version: ${apiVersion})`
 
 /**
  * @param {string} host
@@ -18,8 +23,12 @@ const getEnv = require('../env')
  *                             key "mechanism". Connection is not actively using the SASL attributes
  *                             but acting as a data object for this information
  * @param {number} [connectionTimeout=1000] The connection timeout, in milliseconds
+ * @param {number} [requestTimeout=30000] The maximum amount of time the client will wait for the response of a request,
+ *                                        in milliseconds
  * @param {Object} [retry=null] Configurations for the built-in retry mechanism. More information at the
  *                              retry module inside network
+ * @param {number} [maxInFlightRequests=null] The maximum number of unacknowledged requests on a connection before
+ *                                            enqueuing
  */
 module.exports = class Connection {
   constructor({
@@ -31,31 +40,37 @@ module.exports = class Connection {
     sasl = null,
     clientId = 'kafkajs',
     connectionTimeout = 1000,
+    requestTimeout = 30000,
+    maxInFlightRequests = null,
     retry = {},
   }) {
     this.host = host
     this.port = port
     this.rack = rack
     this.clientId = clientId
+    this.broker = `${this.host}:${this.port}`
     this.logger = logger.namespace('Connection')
 
     this.ssl = ssl
     this.sasl = sasl
 
     this.retry = retry
-    this.retrier = createRetry(Object.assign({}, this.retry))
+    this.retrier = createRetry({ ...this.retry })
+    this.requestTimeout = requestTimeout
     this.connectionTimeout = connectionTimeout
+    this.maxInFlightRequests = maxInFlightRequests
 
     this.buffer = Buffer.alloc(0)
     this.connected = false
     this.correlationId = 0
-    this.pendingQueue = {}
+    this.inFlightRequests = new Map()
+    this.pendingRequests = []
     this.authHandlers = null
     this.authExpectResponse = false
 
     const log = level => (message, extra = {}) => {
       const logFn = this.logger[level]
-      logFn(message, Object.assign({ broker: `${this.host}:${this.port}`, clientId }, extra))
+      logFn(message, { broker: this.broker, clientId, ...extra })
     }
 
     this.logDebug = log('debug')
@@ -222,9 +237,6 @@ module.exports = class Connection {
     this.failIfNotConnected()
 
     const expectResponse = !request.expectResponse || request.expectResponse()
-    const requestInfo = ({ apiName, apiKey, apiVersion }) =>
-      `${apiName}(key: ${apiKey}, version: ${apiVersion})`
-
     const sendRequest = async () => {
       const { clientId } = this
       const correlationId = this.nextCorrelationId()
@@ -240,20 +252,36 @@ module.exports = class Connection {
       return new Promise((resolve, reject) => {
         try {
           this.failIfNotConnected()
-          let entry = { apiKey, apiName, apiVersion }
+          const entry = { apiKey, apiName, apiVersion, correlationId, resolve, reject }
+          const inFlightRequest = new InFlightRequest({
+            entry,
+            broker: this.broker,
+            requestTimeout: this.requestTimeout,
+            send: () => {
+              this.inFlightRequests.set(correlationId, inFlightRequest)
+              this.socket.write(requestPayload.buffer, 'binary')
+            },
+            onTimeout: () => {
+              this.inFlightRequests.delete(correlationId)
+            },
+          })
 
-          if (expectResponse) {
-            entry = { ...entry, resolve, reject }
-            this.pendingQueue[correlationId] = entry
-            this.socket.write(requestPayload.buffer, 'binary')
-          } else {
-            this.socket.write(requestPayload.buffer, 'binary')
-            resolve({
-              size: 0,
-              payload: null,
-              correlationId,
-              entry,
-            })
+          // TODO: Remove the "null" check once this is validated in production and
+          // can receive a default value
+          const shouldEnqueue =
+            this.maxInFlightRequests != null &&
+            this.inFlightRequests.size >= this.maxInFlightRequests
+
+          if (shouldEnqueue) {
+            this.pendingRequests.push(inFlightRequest)
+            return
+          }
+
+          inFlightRequest.send()
+
+          if (!expectResponse) {
+            this.inFlightRequests.delete(correlationId)
+            inFlightRequest.completed({ size: 0, payload: null })
           }
         } catch (e) {
           reject(e)
@@ -354,21 +382,20 @@ module.exports = class Connection {
 
       const correlationId = response.readInt32()
       const payload = response.readAll()
+      const inFlightRequest = this.inFlightRequests.get(correlationId)
 
-      const entry = this.pendingQueue[correlationId]
-      delete this.pendingQueue[correlationId]
+      if (this.pendingRequests.length > 0) {
+        this.pendingRequests.pop().send()
+      }
 
-      if (!entry) {
+      this.inFlightRequests.delete(correlationId)
+
+      if (!inFlightRequest) {
         this.logDebug(`Response without match`, { correlationId })
         return
       }
 
-      entry.resolve({
-        size: expectedResponseSize,
-        correlationId,
-        entry,
-        payload,
-      })
+      inFlightRequest.completed({ size: expectedResponseSize, payload })
     }
   }
 
@@ -376,8 +403,9 @@ module.exports = class Connection {
    * @private
    */
   rejectRequests(error) {
-    Object.keys(this.pendingQueue).forEach(request => {
-      this.pendingQueue[request].reject(error)
-    })
+    for (let inFlightRequest of this.inFlightRequests.values()) {
+      inFlightRequest.rejected(error)
+      this.inFlightRequests.delete(inFlightRequest.correlationId)
+    }
   }
 }

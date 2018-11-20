@@ -1,7 +1,10 @@
 const { connectionOpts, sslConnectionOpts } = require('../../testHelpers')
+const sleep = require('../utils/sleep')
 const { requests } = require('../protocol/requests')
-const Connection = require('./connection')
 const Decoder = require('../protocol/decoder')
+const { KafkaJSRequestTimeoutError } = require('../errors')
+const Connection = require('./connection')
+const InFlightRequest = require('./inFlightRequest')
 
 describe('Network > Connection', () => {
   // According to RFC 5737:
@@ -95,12 +98,61 @@ describe('Network > Connection', () => {
     })
 
     test('rejects the Promise in case of a non-retriable error', async () => {
-      const protocol = apiVersions()
-      protocol.response.parse = () => {
-        throw new Error('non-retriable')
+      let protocol = {
+        ...apiVersions(),
+        response: {
+          ...apiVersions().response,
+          parse: () => {
+            throw new Error('non-retriable')
+          },
+        },
       }
+
       await connection.connect()
       await expect(connection.send(protocol)).rejects.toEqual(new Error('non-retriable'))
+    })
+
+    test('respect the maxInFlightRequests', async () => {
+      const protocol = apiVersions()
+      connection = new Connection(connectionOpts({ maxInFlightRequests: 2 }))
+      const originalProcessData = connection.processData
+
+      connection.processData = async data => {
+        await sleep(100)
+        originalProcessData.apply(connection, [data])
+      }
+
+      await connection.connect()
+
+      const requests = [
+        connection.send(protocol),
+        connection.send(protocol),
+        connection.send(protocol),
+      ]
+
+      await sleep(50)
+
+      const inFlightRequestsSize = connection.inFlightRequests.size
+      const pendingRequestsSize = connection.pendingRequests.length
+
+      await Promise.all(requests)
+
+      expect(inFlightRequestsSize).toEqual(2)
+      expect(pendingRequestsSize).toEqual(1)
+    })
+
+    test('respect the requestTimeout', async () => {
+      const protocol = apiVersions()
+      connection = new Connection(connectionOpts({ requestTimeout: 50 }))
+      const originalProcessData = connection.processData
+
+      connection.processData = async data => {
+        await sleep(100)
+        originalProcessData.apply(connection, [data])
+      }
+
+      await connection.connect()
+      await expect(connection.send(protocol)).rejects.toThrowError(KafkaJSRequestTimeoutError)
     })
 
     describe('Debug logging', () => {
@@ -186,8 +238,10 @@ describe('Network > Connection', () => {
     test('buffer data while it is not complete', () => {
       const correlationId = 1
       const resolve = jest.fn()
-      const entry = { resolve }
-      connection.pendingQueue[correlationId] = entry
+      const entry = { correlationId, resolve }
+      const inFlightRequest = new InFlightRequest({ entry })
+
+      connection.inFlightRequests.set(correlationId, inFlightRequest)
 
       const payload = Buffer.from('ab')
       const size = Buffer.byteLength(payload) + Decoder.int32Size()
