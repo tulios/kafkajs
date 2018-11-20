@@ -50,7 +50,7 @@ module.exports = ({
     }
   })
 
-  function findTransactionCoordinator() {
+  const findTransactionCoordinator = () => {
     return cluster.findGroupCoordinator({
       groupId: transactionalId,
       coordinatorType: COORDINATOR_TYPES.TRANSACTION,
