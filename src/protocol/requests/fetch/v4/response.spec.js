@@ -24,6 +24,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   headers: { 'header-key-0': Buffer.from('header-value-0') },
                   key: Buffer.from('key-0'),
                   value: Buffer.from('some-value-0'),
+                  isControlRecord: false,
                 },
                 {
                   offset: '1',
@@ -33,6 +34,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   headers: { 'header-key-1': Buffer.from('header-value-1') },
                   key: Buffer.from('key-1'),
                   value: Buffer.from('some-value-1'),
+                  isControlRecord: false,
                 },
                 {
                   offset: '2',
@@ -42,6 +44,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   headers: { 'header-key-2': Buffer.from('header-value-2') },
                   key: Buffer.from('key-2'),
                   value: Buffer.from('some-value-2'),
+                  isControlRecord: false,
                 },
               ],
             },
@@ -76,6 +79,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   headers: {},
                   key: Buffer.from('key-0'),
                   value: Buffer.from('some-value-0'),
+                  isControlRecord: false,
                 },
                 {
                   magicByte: 2,
@@ -85,6 +89,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   headers: {},
                   key: Buffer.from('key-1'),
                   value: Buffer.from('some-value-1'),
+                  isControlRecord: false,
                 },
                 {
                   magicByte: 2,
@@ -94,6 +99,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   headers: {},
                   key: Buffer.from('key-2'),
                   value: Buffer.from('some-value-2'),
+                  isControlRecord: false,
                 },
                 {
                   magicByte: 2,
@@ -103,6 +109,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   headers: {},
                   key: Buffer.from('key-1'),
                   value: Buffer.from('some-value-1'),
+                  isControlRecord: false,
                 },
                 {
                   magicByte: 2,
@@ -112,6 +119,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   headers: {},
                   key: Buffer.from('key-2'),
                   value: Buffer.from('some-value-2'),
+                  isControlRecord: false,
                 },
                 {
                   magicByte: 2,
@@ -121,6 +129,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   headers: {},
                   key: Buffer.from('key-3'),
                   value: Buffer.from('some-value-3'),
+                  isControlRecord: false,
                 },
               ],
             },
@@ -195,6 +204,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   offset: '0',
                   key: Buffer.from('KEY-1'),
                   value: Buffer.from('VALUE-Lorem ipsum dolor sit amet-1'),
+                  isControlRecord: false,
                   headers: {},
                 },
                 {
@@ -204,6 +214,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   offset: '1',
                   key: Buffer.from('KEY-2'),
                   value: Buffer.from('VALUE-Lorem ipsum dolor sit amet-2'),
+                  isControlRecord: false,
                   headers: {},
                 },
                 {
@@ -213,6 +224,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   offset: '2',
                   key: Buffer.from('KEY-3'),
                   value: Buffer.from('VALUE-Lorem ipsum dolor sit amet-3'),
+                  isControlRecord: false,
                   headers: {},
                 },
                 {
@@ -222,6 +234,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   offset: '3',
                   key: Buffer.from('KEY-4'),
                   value: Buffer.from('VALUE-Lorem ipsum dolor sit amet-4'),
+                  isControlRecord: false,
                   headers: {},
                 },
                 {
@@ -231,6 +244,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   offset: '4',
                   key: Buffer.from('KEY-5'),
                   value: Buffer.from('VALUE-Lorem ipsum dolor sit amet-5'),
+                  isControlRecord: false,
                   headers: {},
                 },
                 {
@@ -240,6 +254,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   offset: '5',
                   key: Buffer.from('KEY-6'),
                   value: Buffer.from('VALUE-Lorem ipsum dolor sit amet-6'),
+                  isControlRecord: false,
                   headers: {},
                 },
               ],
