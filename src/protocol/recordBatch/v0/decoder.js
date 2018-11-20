@@ -60,7 +60,7 @@ module.exports = async fetchDecoder => {
   const isControlBatch = (attributes & CONTROL_FLAG_MASK) > 0
   const codec = lookupCodecByRecordBatchAttributes(attributes)
 
-  const recordContext = { firstOffset, firstTimestamp, magicByte }
+  const recordContext = { firstOffset, firstTimestamp, magicByte, isControlBatch }
   const records = await decodeRecords(codec, decoder, recordContext)
 
   return {
