@@ -1,4 +1,5 @@
 const Broker = require('../index')
+const apiKeys = require('../../protocol/requests/apiKeys')
 const {
   secureRandom,
   createConnection,
@@ -74,12 +75,14 @@ describe('Broker > ListOffsets', () => {
           partitions: expect.arrayContaining([
             {
               errorCode: 0,
-              offsets: expect.arrayContaining([expect.stringMatching(/\d+/)]),
+              offset: expect.stringMatching(/\d+/),
               partition: 0,
+              timestamp: '-1',
             },
           ]),
         },
       ],
+      throttleTime: 0,
     })
   })
 
@@ -117,12 +120,14 @@ describe('Broker > ListOffsets', () => {
           partitions: expect.arrayContaining([
             {
               errorCode: 0,
-              offsets: expect.arrayContaining(['4']),
+              offset: '4',
               partition: 0,
+              timestamp: '-1',
             },
           ]),
         },
       ],
+      throttleTime: 0,
     })
 
     topics = [
@@ -140,12 +145,58 @@ describe('Broker > ListOffsets', () => {
           partitions: expect.arrayContaining([
             {
               errorCode: 0,
-              offsets: expect.arrayContaining(['0']),
+              offset: '0',
               partition: 0,
+              timestamp: '-1',
             },
           ]),
         },
       ],
+      throttleTime: 0,
+    })
+  })
+
+  describe('v0', () => {
+    test('request', async () => {
+      broker.versions[apiKeys.ListOffsets].minVersion = 0
+      broker.versions[apiKeys.ListOffsets].maxVersion = 0
+
+      const produceData = [
+        {
+          topic: topicName,
+          partitions: [
+            {
+              partition: 0,
+              messages: [{ key: `key-0`, value: `some-value-0` }],
+            },
+          ],
+        },
+      ]
+
+      await broker.produce({ topicData: produceData })
+
+      const topics = [
+        {
+          topic: topicName,
+          partitions: [{ partition: 0 }],
+        },
+      ]
+
+      const response = await broker.listOffsets({ topics })
+      expect(response).toEqual({
+        responses: [
+          {
+            topic: topicName,
+            partitions: expect.arrayContaining([
+              {
+                errorCode: 0,
+                offsets: expect.arrayContaining([expect.stringMatching(/\d+/)]),
+                partition: 0,
+              },
+            ]),
+          },
+        ],
+      })
     })
   })
 })
