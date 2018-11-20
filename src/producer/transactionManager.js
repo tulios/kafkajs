@@ -1,26 +1,11 @@
 const { KafkaJSNonRetriableError } = require('../errors')
 const COORDINATOR_TYPES = require('../protocol/coordinatorTypes')
-const { EventEmitter } = require('events')
+const STATES = require('./transactionStates')
+const createStateMachine = require('./transactionStateMachine')
 
 const NO_PRODUCER_ID = -1
 const SEQUENCE_START = 0
 const INT_32_MAX_VALUE = Math.pow(2, 32)
-
-const STATES = {
-  UNINITIALIZED: 'UNINITIALIZED',
-  READY: 'READY',
-  TRANSACTING: 'TRANSACTING',
-  COMMITTING: 'COMMITTING',
-  ABORTING: 'COMMITTING',
-}
-
-const VALID_TRANSITIONS = {
-  [STATES.UNINITIALIZED]: [STATES.READY],
-  [STATES.READY]: [STATES.READY, STATES.TRANSACTING],
-  [STATES.TRANSACTING]: [STATES.COMMITTING, STATES.ABORTING],
-  [STATES.COMMITTING]: [STATES.READY],
-  [STATES.ABORTING]: [STATES.READY],
-}
 
 /**
  * Manage behavior for an idempotent producer and transactions.
@@ -58,45 +43,7 @@ module.exports = ({
    */
   let transactionTopicPartitions = {}
 
-  /**
-   * Current state in the transactional producer lifecycle
-   */
-  let currentState = STATES.UNINITIALIZED
-
-  const stateMachine = Object.assign(new EventEmitter(), {
-    /**
-     * Ensure state machine is in the correct state before calling method
-     */
-    guard(object, method, eligibleStates) {
-      const fn = object.method
-
-      object.method = (...args) => {
-        if (!eligibleStates.includes(currentState)) {
-          throw new KafkaJSNonRetriableError(
-            `Transaction state exception: Cannot call "${method}" in state "${currentState}"`
-          )
-        }
-
-        return fn.apply(object, args)
-      }
-    },
-    /**
-     * Transition safely to a new state
-     */
-    transitionTo(state) {
-      logger.debug(`Transaction state transition ${currentState} --> ${state}`)
-
-      if (!VALID_TRANSITIONS[currentState].includes(state)) {
-        throw new KafkaJSNonRetriableError(
-          `Transaction state exception: Invalid transition ${currentState} --> ${state}`
-        )
-      }
-
-      stateMachine.emit('transition', { to: state, from: currentState })
-      currentState = state
-    },
-  })
-
+  const stateMachine = createStateMachine({ logger })
   stateMachine.on('transition', ({ to }) => {
     if (to === STATES.READY) {
       transactionTopicPartitions = {}
@@ -302,7 +249,7 @@ module.exports = ({
     },
 
     isInTransaction() {
-      return currentState === STATES.TRANSACTING
+      return stateMachine.state() === STATES.TRANSACTING
     },
   }
 
