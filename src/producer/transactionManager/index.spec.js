@@ -199,13 +199,13 @@ describe('Producer > transactionManager', () => {
 
       await expect(transactionManager.commit()).rejects.toEqual(
         new KafkaJSNonRetriableError(
-          'Transaction state exception: Invalid transition UNINITIALIZED --> COMMITTING'
+          'Transaction state exception: Cannot call "commit" in state "UNINITIALIZED"'
         )
       )
       await transactionManager.initProducerId()
       await expect(transactionManager.commit()).rejects.toEqual(
         new KafkaJSNonRetriableError(
-          'Transaction state exception: Invalid transition READY --> COMMITTING'
+          'Transaction state exception: Cannot call "commit" in state "READY"'
         )
       )
       await transactionManager.beginTransaction()
@@ -234,15 +234,15 @@ describe('Producer > transactionManager', () => {
         transactionalId,
       })
 
-      await expect(transactionManager.commit()).rejects.toEqual(
+      await expect(transactionManager.abort()).rejects.toEqual(
         new KafkaJSNonRetriableError(
-          'Transaction state exception: Invalid transition UNINITIALIZED --> COMMITTING'
+          'Transaction state exception: Cannot call "abort" in state "UNINITIALIZED"'
         )
       )
       await transactionManager.initProducerId()
-      await expect(transactionManager.commit()).rejects.toEqual(
+      await expect(transactionManager.abort()).rejects.toEqual(
         new KafkaJSNonRetriableError(
-          'Transaction state exception: Invalid transition READY --> COMMITTING'
+          'Transaction state exception: Cannot call "abort" in state "READY"'
         )
       )
       await transactionManager.beginTransaction()
@@ -264,19 +264,26 @@ describe('Producer > transactionManager', () => {
   })
 
   describe('if transactional=false', () => {
+    let transactionManager
+
+    beforeEach(async () => {
+      transactionManager = createTransactionManager({ logger: newLogger(), cluster })
+      await transactionManager.initProducerId()
+    })
+
     function testTransactionalGuardAsync(method) {
       test(`${method} throws`, async () => {
         const transactionManager = createTransactionManager({ logger: newLogger(), cluster })
 
         await expect(transactionManager[method]()).rejects.toEqual(
-          new KafkaJSNonRetriableError('Method unavailable if non-transactional')
+          new KafkaJSNonRetriableError(
+            `Transaction state exception: Cannot call "${method}" in state "UNINITIALIZED"`
+          )
         )
       })
     }
 
     test(`beginTransaction throws`, async () => {
-      const transactionManager = createTransactionManager({ logger: newLogger(), cluster })
-
       expect(() => transactionManager.beginTransaction()).toThrow(
         new KafkaJSNonRetriableError('Method unavailable if non-transactional')
       )
