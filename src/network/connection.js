@@ -314,7 +314,7 @@ module.exports = class Connection {
    * @private
    */
   nextCorrelationId() {
-    if (this.correlationId === Number.MAX_VALUE) {
+    if (this.correlationId >= INT_32_MAX_VALUE) {
       this.correlationId = 0
     }
 
