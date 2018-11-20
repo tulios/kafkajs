@@ -1,7 +1,7 @@
 const { newLogger } = require('testHelpers')
-const createTransactionManager = require('./transactionManager')
-const { KafkaJSNonRetriableError } = require('../errors')
-const COORDINATOR_TYPES = require('../protocol/coordinatorTypes')
+const createTransactionManager = require('.')
+const { KafkaJSNonRetriableError } = require('../../errors')
+const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 
 describe('Producer > transactionManager', () => {
   const topic = 'topic-name'

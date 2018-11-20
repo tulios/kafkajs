@@ -1,8 +1,8 @@
-const { KafkaJSNonRetriableError } = require('../errors')
-const COORDINATOR_TYPES = require('../protocol/coordinatorTypes')
-const STATES = require('./transactionStates')
+const { KafkaJSNonRetriableError } = require('../../errors')
+const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 const createStateMachine = require('./transactionStateMachine')
 
+const STATES = require('./transactionStates')
 const NO_PRODUCER_ID = -1
 const SEQUENCE_START = 0
 const INT_32_MAX_VALUE = Math.pow(2, 32)

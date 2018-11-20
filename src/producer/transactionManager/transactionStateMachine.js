@@ -1,5 +1,5 @@
 const { EventEmitter } = require('events')
-const { KafkaJSNonRetriableError } = require('../errors')
+const { KafkaJSNonRetriableError } = require('../../errors')
 const STATES = require('./transactionStates')
 
 const VALID_STATE_TRANSITIONS = {
