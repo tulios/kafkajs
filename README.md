@@ -45,6 +45,7 @@ KafkaJS is battle-tested and ready for production.
   - [eachMessage](#consuming-messages-each-message)
   - [eachBatch](#consuming-messages-each-batch)
   - [autoCommit](#consuming-messages-auto-commit)
+  - [fromBeginning](#consuming-messages-from-beginning)
   - [Options](#consuming-messages-options)
   - [Pause & Resume](#consuming-messages-pause-resume)
   - [Seek](#consuming-messages-seek)
@@ -622,6 +623,12 @@ consumer.run({
 ```
 
 Having both flavors at the same time is also possible, the consumer will commit the offsets if any of the use cases (interval or number of messages) happens.
+
+### <a name="consuming-messages-from-beginning"></a> fromBeginning
+
+The `fromBeginning` option controls the offset from where the consumer group starts consuming messages from.
+
+When `fromBeginning` is set to `true`, the consumer groups consumes from the latest committed offset; when no committed offset is found, the group consumes from offset 0.
 
 ### <a name="consuming-messages-options"></a> Options
 
