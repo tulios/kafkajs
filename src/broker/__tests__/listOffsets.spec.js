@@ -190,7 +190,7 @@ describe('Broker > ListOffsets', () => {
             partitions: expect.arrayContaining([
               {
                 errorCode: 0,
-                offsets: expect.arrayContaining([expect.stringMatching(/\d+/)]),
+                offset: expect.stringMatching(/\d+/),
                 partition: 0,
               },
             ]),

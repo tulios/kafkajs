@@ -362,11 +362,9 @@ module.exports = class Cluster {
 
     return keys(partitionsPerTopic).map(topic => ({
       topic,
-      // Kafka >= 0.11 will return a single `offset` (ListOffsets V2),
-      // rather than an array of `offsets` (ListOffsets V0)
-      partitions: partitionsPerTopic[topic].map(({ partition, offsets, offset }) => ({
+      partitions: partitionsPerTopic[topic].map(({ partition, offset }) => ({
         partition,
-        offset: offsets ? offsets.pop() : offset,
+        offset,
       })),
     }))
   }
