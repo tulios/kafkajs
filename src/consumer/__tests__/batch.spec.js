@@ -21,6 +21,17 @@ describe('Consumer > Batch', () => {
     expect(batch.messages).toEqual([{ offset: '3' }, { offset: '4' }, { offset: '5' }])
   })
 
+  it('discards control records', () => {
+    const fetchedOffset = 0
+    const batch = new Batch(topic, fetchedOffset, {
+      partition: 0,
+      highWatermark: '100',
+      messages: [{ offset: '3', isControlRecord: true }, { offset: '4' }, { offset: '5' }],
+    })
+
+    expect(batch.messages).toEqual([{ offset: '4' }, { offset: '5' }])
+  })
+
   describe('#isEmpty', () => {
     it('returns true when empty', () => {
       const batch = new Batch(topic, 0, {

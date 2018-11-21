@@ -294,6 +294,7 @@ describe('Broker > Fetch', () => {
                     headers: {},
                     key: Buffer.from(messages[0].key),
                     value: Buffer.from(messages[0].value),
+                    isControlRecord: false,
                   },
                   {
                     magicByte: 2,
@@ -303,6 +304,7 @@ describe('Broker > Fetch', () => {
                     headers: {},
                     key: Buffer.from(messages[1].key),
                     value: Buffer.from(messages[1].value),
+                    isControlRecord: false,
                   },
                   {
                     magicByte: 2,
@@ -312,6 +314,7 @@ describe('Broker > Fetch', () => {
                     headers: {},
                     key: Buffer.from(messages[2].key),
                     value: Buffer.from(messages[2].value),
+                    isControlRecord: false,
                   },
                 ],
               },
@@ -367,6 +370,7 @@ describe('Broker > Fetch', () => {
                     headers: headerFor(messages[0]),
                     key: Buffer.from(messages[0].key),
                     value: Buffer.from(messages[0].value),
+                    isControlRecord: false,
                   },
                   {
                     magicByte: 2,
@@ -376,6 +380,7 @@ describe('Broker > Fetch', () => {
                     headers: headerFor(messages[1]),
                     key: Buffer.from(messages[1].key),
                     value: Buffer.from(messages[1].value),
+                    isControlRecord: false,
                   },
                   {
                     magicByte: 2,
@@ -385,6 +390,7 @@ describe('Broker > Fetch', () => {
                     headers: headerFor(messages[2]),
                     key: Buffer.from(messages[2].key),
                     value: Buffer.from(messages[2].value),
+                    isControlRecord: false,
                   },
                 ],
               },
@@ -440,6 +446,7 @@ describe('Broker > Fetch', () => {
                     headers: {},
                     key: Buffer.from(messages[0].key),
                     value: Buffer.from(messages[0].value),
+                    isControlRecord: false,
                   },
                   {
                     magicByte: 2,
@@ -449,6 +456,7 @@ describe('Broker > Fetch', () => {
                     headers: {},
                     key: Buffer.from(messages[1].key),
                     value: Buffer.from(messages[1].value),
+                    isControlRecord: false,
                   },
                   {
                     magicByte: 2,
@@ -458,6 +466,7 @@ describe('Broker > Fetch', () => {
                     headers: {},
                     key: Buffer.from(messages[2].key),
                     value: Buffer.from(messages[2].value),
+                    isControlRecord: false,
                   },
                 ],
               },
