@@ -626,9 +626,9 @@ Having both flavors at the same time is also possible, the consumer will commit 
 
 ### <a name="consuming-messages-from-beginning"></a> fromBeginning
 
-The `fromBeginning` option controls the offset from where the consumer group starts consuming messages from.
+The consumer group will use the latest committed offset when fetching messages. If the offset is invalid or not defined, `fromBeginning` defines the behavior of the consumer group.
 
-When `fromBeginning` is set to `true`, the consumer groups consumes from the latest committed offset; when no committed offset is found, the group consumes from offset 0.
+When `fromBeginning` is `true`, the group will use the earliest offset. If set to `false`, it will use the latest offset. The default is `false`.
 
 ### <a name="consuming-messages-options"></a> Options
 
