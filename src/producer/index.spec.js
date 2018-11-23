@@ -578,22 +578,21 @@ describe('Producer', () => {
       producer = createProducer({
         cluster,
         logger: newLogger(),
-        transactional: true,
         transactionalId,
       })
 
       await producer.connect()
-      expect(producer.isInTransaction()).toEqual(false)
-      producer.beginTransaction()
-      expect(producer.isInTransaction()).toEqual(true)
+      // expect(producer.isInTransaction()).toEqual(false)
+      const txn = await producer.transaction()
+      // expect(producer.isInTransaction()).toEqual(true)
 
-      await producer.send({
+      await txn.sendTxn({
         topic: topicName,
         messages: [{ key: '2', value: '2' }],
       })
 
-      await producer.commitTransaction()
-      expect(producer.isInTransaction()).toEqual(false)
+      await txn.commit()
+      // expect(producer.isInTransaction()).toEqual(false)
     })
 
     test('transaction abort', async () => {
@@ -609,25 +608,24 @@ describe('Producer', () => {
       producer = createProducer({
         cluster,
         logger: newLogger(),
-        transactional: true,
         transactionalId,
       })
 
       await producer.connect()
-      expect(producer.isInTransaction()).toEqual(false)
-      producer.beginTransaction()
-      expect(producer.isInTransaction()).toEqual(true)
+      // expect(producer.isInTransaction()).toEqual(false)
+      const txn = await producer.transaction()
+      // expect(producer.isInTransaction()).toEqual(true)
 
-      await producer.send({
+      await txn.sendTxn({
         topic: topicName,
         messages: [{ key: '2', value: '2' }],
       })
 
-      await producer.abortTransaction()
-      expect(producer.isInTransaction()).toEqual(false)
+      await txn.abort()
+      // expect(producer.isInTransaction()).toEqual(false)
     })
 
-    test('throws an error when attempting to send messages outside a transaction', async () => {
+    test('allows sending messages outside a transaction', async () => {
       const cluster = createCluster(
         Object.assign(connectionOpts(), {
           allowExperimentalV011: true,
@@ -640,46 +638,34 @@ describe('Producer', () => {
       producer = createProducer({
         cluster,
         logger: newLogger(),
-        transactional: true,
         transactionalId,
       })
 
       await producer.connect()
+      await producer.transaction()
 
-      await expect(
-        producer.send({
-          topic: topicName,
-          messages: [
-            {
-              key: 'key',
-              value: 'value',
-            },
-          ],
-        })
-      ).rejects.toEqual(
-        new KafkaJSNonRetriableError(
-          'Transactional producer cannot send messages outside a transaction'
-        )
-      )
-      await expect(
-        producer.sendBatch({
-          topicMessages: [
-            {
-              topic: topicName,
-              messages: [
-                {
-                  key: 'key',
-                  value: 'value',
-                },
-              ],
-            },
-          ],
-        })
-      ).rejects.toEqual(
-        new KafkaJSNonRetriableError(
-          'Transactional producer cannot send messages outside a transaction'
-        )
-      )
+      await producer.send({
+        topic: topicName,
+        messages: [
+          {
+            key: 'key',
+            value: 'value',
+          },
+        ],
+      })
+      await producer.sendBatch({
+        topicMessages: [
+          {
+            topic: topicName,
+            messages: [
+              {
+                key: 'key',
+                value: 'value',
+              },
+            ],
+          },
+        ],
+      })
     })
   })
 })
