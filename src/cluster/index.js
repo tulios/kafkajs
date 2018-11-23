@@ -368,9 +368,9 @@ module.exports = class Cluster {
 
     return keys(partitionsPerTopic).map(topic => ({
       topic,
-      partitions: partitionsPerTopic[topic].map(({ partition, offsets }) => ({
+      partitions: partitionsPerTopic[topic].map(({ partition, offset }) => ({
         partition,
-        offset: offsets.pop(),
+        offset,
       })),
     }))
   }
