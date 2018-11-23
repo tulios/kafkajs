@@ -39,20 +39,20 @@ module.exports = ({
   const partitioner = createPartitioner()
   const retrier = createRetry(Object.assign({}, cluster.retry, retry))
   const instrumentationEmitter = new InstrumentationEventEmitter()
-  const nontransactionalEosManager = createEosManager({
+  const idempotentEosManager = createEosManager({
     logger,
     cluster,
     transactionTimeout,
     transactional: false,
     transactionalId,
   })
-  let transactionManager
+  let transactionalEosManager
 
   const { send, sendBatch } = createMessageProducer({
     logger,
     cluster,
     partitioner,
-    eosManager: nontransactionalEosManager,
+    eosManager: idempotentEosManager,
     idempotent,
     retrier,
   })
@@ -77,14 +77,31 @@ module.exports = ({
     })
   }
 
+  /**
+   * Begin a transaction. The returned object contains methods to send messages
+   * to the transaction and end the transaction by comitting or aborting.
+   *
+   * Only messages sent on the transaction object will participate in the transaction.
+   *
+   * Calling any of the transactional methods after the transaction has ended
+   * will raise an exception (use `isActive` to ascertain if ended).
+   * @returns {Promise<Transaction>}
+   *
+   * @typedef {Object} Transaction
+   * @property {Function} send  Identical to the producer "send" method
+   * @property {Function} sendBatch Identical to the producer "sendBatch" method
+   * @property {Function} abort Abort the transaction
+   * @property {Function} commit  Commit the transaction
+   * @property {Function} isActive  Whether the transaction is active
+   */
   const transaction = async () => {
     if (!transactionalId) {
       throw new KafkaJSNonRetriableError('Must provide transactional id for transactional producer')
     }
 
-    // We want to only initialize the (transactional) transaction manager once
-    transactionManager =
-      transactionManager ||
+    let transactionDidEnd = false
+    transactionalEosManager =
+      transactionalEosManager ||
       createEosManager({
         logger,
         cluster,
@@ -93,40 +110,55 @@ module.exports = ({
         transactionalId,
       })
 
-    if (!transactionManager.isInitialized()) {
-      await transactionManager.initProducerId()
+    // We only initialize the producer id once
+    if (!transactionalEosManager.isInitialized()) {
+      await transactionalEosManager.initProducerId()
     }
-    transactionManager.beginTransaction()
+    transactionalEosManager.beginTransaction()
 
     const { send: sendTxn, sendBatch: sendBatchTxn } = createMessageProducer({
       logger,
       cluster,
       partitioner,
       retrier,
-      eosManager: transactionManager,
+      eosManager: transactionalEosManager,
       idempotent: true,
     })
 
-    // Should we throw an error when calling this methods after transaction has ended?
+    const isActive = () => transactionalEosManager.isInTransaction() && !transactionDidEnd
+
+    const transactionGuard = fn => (...args) => {
+      if (!isActive()) {
+        return Promise.reject(
+          new KafkaJSNonRetriableError('Cannot continue to use transaction once ended')
+        )
+      }
+
+      return fn(...args)
+    }
+
     return {
-      sendBatchTxn,
-      sendTxn,
+      sendBatch: transactionGuard(sendBatchTxn),
+      send: transactionGuard(sendTxn),
       /**
        * Abort the ongoing transaction.
        *
        * @throws {KafkaJSNonRetriableError} If non-transactional
        */
-      abort: () => {
-        return transactionManager.abort()
-      },
+      abort: transactionGuard(async () => {
+        await transactionalEosManager.abort()
+        transactionDidEnd = true
+      }),
       /**
        * Commit the ongoing transaction.
        *
        * @throws {KafkaJSNonRetriableError} If non-transactional
        */
-      commit: () => {
-        return transactionManager.commit()
-      },
+      commit: transactionGuard(async () => {
+        await transactionalEosManager.commit()
+        transactionDidEnd = true
+      }),
+      isActive,
     }
   }
 
@@ -143,8 +175,8 @@ module.exports = ({
       await cluster.connect()
       instrumentationEmitter.emit(CONNECT)
 
-      if (idempotent && !nontransactionalEosManager.isInitialized()) {
-        await nontransactionalEosManager.initProducerId()
+      if (idempotent && !idempotentEosManager.isInitialized()) {
+        await idempotentEosManager.initProducerId()
       }
     },
     /**

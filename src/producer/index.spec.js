@@ -565,65 +565,58 @@ describe('Producer', () => {
       transactionalId = `transactional-id-${secureRandom()}`
     })
 
-    test('transaction flow commit', async () => {
-      const cluster = createCluster(
-        Object.assign(connectionOpts(), {
-          allowExperimentalV011: true,
-          createPartitioner: createModPartitioner,
+    const testTransactionEnd = (shouldCommit = true) => {
+      const endFn = shouldCommit ? 'commit' : 'abort'
+      test(`transaction flow ${endFn}`, async () => {
+        const cluster = createCluster(
+          Object.assign(connectionOpts(), {
+            allowExperimentalV011: true,
+            createPartitioner: createModPartitioner,
+          })
+        )
+
+        await createTopic({ topic: topicName })
+
+        producer = createProducer({
+          cluster,
+          logger: newLogger(),
+          transactionalId,
         })
-      )
 
-      await createTopic({ topic: topicName })
+        await producer.connect()
+        const txn = await producer.transaction()
 
-      producer = createProducer({
-        cluster,
-        logger: newLogger(),
-        transactionalId,
-      })
-
-      await producer.connect()
-      // expect(producer.isInTransaction()).toEqual(false)
-      const txn = await producer.transaction()
-      // expect(producer.isInTransaction()).toEqual(true)
-
-      await txn.sendTxn({
-        topic: topicName,
-        messages: [{ key: '2', value: '2' }],
-      })
-
-      await txn.commit()
-      // expect(producer.isInTransaction()).toEqual(false)
-    })
-
-    test('transaction abort', async () => {
-      const cluster = createCluster(
-        Object.assign(connectionOpts(), {
-          allowExperimentalV011: true,
-          createPartitioner: createModPartitioner,
+        await txn.send({
+          topic: topicName,
+          messages: [{ key: '2', value: '2' }],
         })
-      )
+        await txn.sendBatch({
+          topicMessages: [
+            {
+              topic: topicName,
+              messages: [{ key: '2', value: '2' }],
+            },
+          ],
+        })
 
-      await createTopic({ topic: topicName })
-
-      producer = createProducer({
-        cluster,
-        logger: newLogger(),
-        transactionalId,
+        await txn[endFn]() // Dynamic
+        await expect(txn.send()).rejects.toEqual(
+          new KafkaJSNonRetriableError('Cannot continue to use transaction once ended')
+        )
+        await expect(txn.sendBatch()).rejects.toEqual(
+          new KafkaJSNonRetriableError('Cannot continue to use transaction once ended')
+        )
+        await expect(txn.commit()).rejects.toEqual(
+          new KafkaJSNonRetriableError('Cannot continue to use transaction once ended')
+        )
+        await expect(txn.abort()).rejects.toEqual(
+          new KafkaJSNonRetriableError('Cannot continue to use transaction once ended')
+        )
       })
+    }
 
-      await producer.connect()
-      // expect(producer.isInTransaction()).toEqual(false)
-      const txn = await producer.transaction()
-      // expect(producer.isInTransaction()).toEqual(true)
-
-      await txn.sendTxn({
-        topic: topicName,
-        messages: [{ key: '2', value: '2' }],
-      })
-
-      await txn.abort()
-      // expect(producer.isInTransaction()).toEqual(false)
-    })
+    testTransactionEnd(true)
+    testTransactionEnd(false)
 
     test('allows sending messages outside a transaction', async () => {
       const cluster = createCluster(
