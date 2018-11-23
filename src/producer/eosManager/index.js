@@ -63,7 +63,7 @@ module.exports = ({
     }
   }
 
-  const transactionManager = stateMachine.createGuarded(
+  const eosManager = stateMachine.createGuarded(
     {
       /**
        * Get the current producer id
@@ -118,7 +118,7 @@ module.exports = ({
        * @returns {number}
        */
       getSequence(topic, partition) {
-        if (!transactionManager.isInitialized()) {
+        if (!eosManager.isInitialized()) {
           return SEQUENCE_START
         }
 
@@ -137,11 +137,11 @@ module.exports = ({
        * @param {number} increment
        */
       updateSequence(topic, partition, increment) {
-        if (!transactionManager.isInitialized()) {
+        if (!eosManager.isInitialized()) {
           return
         }
 
-        const previous = transactionManager.getSequence(topic, partition)
+        const previous = eosManager.getSequence(topic, partition)
         let sequence = previous + increment
 
         // Sequence is defined as Int32 in the Record Batch,
@@ -270,5 +270,5 @@ module.exports = ({
     }
   )
 
-  return transactionManager
+  return eosManager
 }

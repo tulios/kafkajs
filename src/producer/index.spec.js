@@ -1,13 +1,13 @@
 let initProducerIdSpy
 let retrySpy
 
-jest.mock('./transactionManager', () => {
+jest.mock('./eosManager', () => {
   return (...args) => {
-    const transactionManager = jest.requireActual('./transactionManager')(...args)
+    const eosManager = jest.requireActual('./eosManager')(...args)
 
-    initProducerIdSpy = jest.spyOn(transactionManager, 'initProducerId')
+    initProducerIdSpy = jest.spyOn(eosManager, 'initProducerId')
 
-    return transactionManager
+    return eosManager
   }
 })
 

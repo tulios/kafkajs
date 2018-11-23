@@ -17,7 +17,6 @@ describe('Client', () => {
       createPartitioner: () => 0,
       retry: { retries: 10 },
       idempotent: true,
-      transactional: true,
       transactionalId: 'transactional-id',
       transactionTimeout: 1,
     }

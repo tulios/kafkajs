@@ -1,12 +1,12 @@
 const createSendMessages = require('./sendMessages')
 const { KafkaJSNonRetriableError } = require('../errors')
 
-module.exports = ({ logger, cluster, partitioner, transactionManager, idempotent, retrier }) => {
+module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrier }) => {
   const sendMessages = createSendMessages({
     logger,
     cluster,
     partitioner,
-    transactionManager,
+    eosManager,
   })
 
   /**

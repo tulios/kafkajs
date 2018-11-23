@@ -33,7 +33,7 @@ describe('Producer > sendMessages', () => {
     cluster,
     messagesPerPartition,
     topicPartitionMetadata,
-    transactionManager
+    eosManager
 
   beforeEach(() => {
     messages = []
@@ -72,7 +72,7 @@ describe('Producer > sendMessages', () => {
     mockProducerEpoch = -1
     mockTransactionalId = undefined
 
-    transactionManager = {
+    eosManager = {
       getProducerId: jest.fn(() => mockProducerId),
       getProducerEpoch: jest.fn(() => mockProducerEpoch),
       getSequence: jest.fn(() => 0),
@@ -90,7 +90,7 @@ describe('Producer > sendMessages', () => {
       logger: newLogger(),
       cluster,
       partitioner,
-      transactionManager,
+      eosManager,
     })
 
     brokers[1].produce
@@ -111,7 +111,7 @@ describe('Producer > sendMessages', () => {
     const response = await sendMessages({ topicMessages: [{ topic, messages }] })
 
     expect(cluster.refreshMetadataIfNecessary).toHaveBeenCalled()
-    expect(transactionManager.addPartitionsToTransaction).not.toHaveBeenCalled()
+    expect(eosManager.addPartitionsToTransaction).not.toHaveBeenCalled()
 
     expect(brokers[1].produce).toHaveBeenCalledTimes(2)
     expect(brokers[2].produce).toHaveBeenCalledTimes(1)
@@ -142,7 +142,7 @@ describe('Producer > sendMessages', () => {
         logger: newLogger(),
         cluster,
         partitioner,
-        transactionManager,
+        eosManager,
       })
       brokers[1].produce
         .mockImplementationOnce(() => {
@@ -161,7 +161,7 @@ describe('Producer > sendMessages', () => {
       logger: newLogger(),
       cluster,
       partitioner,
-      transactionManager,
+      eosManager,
     })
 
     brokers[2].produce
@@ -193,7 +193,7 @@ describe('Producer > sendMessages', () => {
       logger: newLogger(),
       cluster,
       partitioner,
-      transactionManager,
+      eosManager,
     })
 
     cluster.findTopicPartitionMetadata
@@ -210,10 +210,10 @@ describe('Producer > sendMessages', () => {
       logger: newLogger(),
       cluster,
       partitioner,
-      transactionManager,
+      eosManager,
     })
 
-    transactionManager.getSequence.mockReturnValue(5)
+    eosManager.getSequence.mockReturnValue(5)
 
     cluster.findTopicPartitionMetadata
       .mockImplementationOnce(() => ({}))
@@ -236,17 +236,17 @@ describe('Producer > sendMessages', () => {
       5
     )
 
-    expect(transactionManager.updateSequence).toHaveBeenCalledWith(
+    expect(eosManager.updateSequence).toHaveBeenCalledWith(
       'topic-name',
       0,
       messagesPerPartition[0].length
     )
-    expect(transactionManager.updateSequence).toHaveBeenCalledWith(
+    expect(eosManager.updateSequence).toHaveBeenCalledWith(
       'topic-name',
       1,
       messagesPerPartition[1].length
     )
-    expect(transactionManager.updateSequence).toHaveBeenCalledWith(
+    expect(eosManager.updateSequence).toHaveBeenCalledWith(
       'topic-name',
       2,
       messagesPerPartition[2].length
@@ -258,34 +258,34 @@ describe('Producer > sendMessages', () => {
       logger: newLogger(),
       cluster,
       partitioner,
-      transactionManager,
+      eosManager,
     })
 
     cluster.findTopicPartitionMetadata
       .mockImplementationOnce(() => ({}))
       .mockImplementationOnce(() => partitionsPerLeader)
 
-    transactionManager.isTransactional.mockReturnValue(true)
+    eosManager.isTransactional.mockReturnValue(true)
 
     await sendMessages({
       topicMessages: [{ topic, messages }],
     })
 
     const numTargetBrokers = 3
-    expect(transactionManager.addPartitionsToTransaction).toHaveBeenCalledTimes(numTargetBrokers)
-    expect(transactionManager.addPartitionsToTransaction).toHaveBeenCalledWith([
+    expect(eosManager.addPartitionsToTransaction).toHaveBeenCalledTimes(numTargetBrokers)
+    expect(eosManager.addPartitionsToTransaction).toHaveBeenCalledWith([
       {
         topic: 'topic-name',
         partitions: [expect.objectContaining({ partition: 0 })],
       },
     ])
-    expect(transactionManager.addPartitionsToTransaction).toHaveBeenCalledWith([
+    expect(eosManager.addPartitionsToTransaction).toHaveBeenCalledWith([
       {
         topic: 'topic-name',
         partitions: [expect.objectContaining({ partition: 1 })],
       },
     ])
-    expect(transactionManager.addPartitionsToTransaction).toHaveBeenCalledWith([
+    expect(eosManager.addPartitionsToTransaction).toHaveBeenCalledWith([
       {
         topic: 'topic-name',
         partitions: [expect.objectContaining({ partition: 2 })],
@@ -298,14 +298,14 @@ describe('Producer > sendMessages', () => {
       logger: newLogger(),
       cluster,
       partitioner,
-      transactionManager,
+      eosManager,
     })
 
     cluster.findTopicPartitionMetadata
       .mockImplementationOnce(() => ({}))
       .mockImplementationOnce(() => partitionsPerLeader)
 
-    transactionManager.isTransactional.mockReturnValue(true)
+    eosManager.isTransactional.mockReturnValue(true)
 
     mockProducerId = 1000
     mockProducerEpoch = 1

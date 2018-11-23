@@ -1,9 +1,9 @@
 const { newLogger } = require('testHelpers')
-const createTransactionManager = require('.')
+const createEosManager = require('.')
 const { KafkaJSNonRetriableError } = require('../../errors')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 
-describe('Producer > transactionManager', () => {
+describe('Producer > eosManager', () => {
   const topic = 'topic-name'
   const producerId = 1000
   const producerEpoch = 1
@@ -28,51 +28,51 @@ describe('Producer > transactionManager', () => {
   })
 
   test('initializing the producer id and epoch', async () => {
-    const transactionManager = createTransactionManager({
+    const eosManager = createEosManager({
       logger: newLogger(),
       cluster,
       transactionTimeout: 30000,
     })
 
-    expect(transactionManager.getProducerId()).toEqual(-1)
-    expect(transactionManager.getProducerEpoch()).toEqual(0)
-    expect(transactionManager.getSequence(topic, 1)).toEqual(0)
-    expect(transactionManager.isInitialized()).toEqual(false)
+    expect(eosManager.getProducerId()).toEqual(-1)
+    expect(eosManager.getProducerEpoch()).toEqual(0)
+    expect(eosManager.getSequence(topic, 1)).toEqual(0)
+    expect(eosManager.isInitialized()).toEqual(false)
 
-    await transactionManager.initProducerId()
+    await eosManager.initProducerId()
 
     expect(cluster.refreshMetadataIfNecessary).toHaveBeenCalled()
     expect(broker.initProducerId).toHaveBeenCalledWith({ transactionTimeout: 30000 })
 
-    expect(transactionManager.getProducerId()).toEqual(mockInitProducerIdResponse.producerId)
-    expect(transactionManager.getProducerEpoch()).toEqual(mockInitProducerIdResponse.producerEpoch)
-    expect(transactionManager.isInitialized()).toEqual(true)
+    expect(eosManager.getProducerId()).toEqual(mockInitProducerIdResponse.producerId)
+    expect(eosManager.getProducerEpoch()).toEqual(mockInitProducerIdResponse.producerEpoch)
+    expect(eosManager.isInitialized()).toEqual(true)
   })
 
   test('getting & updating the sequence per topic-partition', async () => {
-    const transactionManager = createTransactionManager({ logger: newLogger(), cluster })
+    const eosManager = createEosManager({ logger: newLogger(), cluster })
 
-    expect(transactionManager.getSequence(topic, 1)).toEqual(0)
-    transactionManager.updateSequence(topic, 1, 10) // No effect if we haven't initialized
-    expect(transactionManager.getSequence(topic, 1)).toEqual(0)
+    expect(eosManager.getSequence(topic, 1)).toEqual(0)
+    eosManager.updateSequence(topic, 1, 10) // No effect if we haven't initialized
+    expect(eosManager.getSequence(topic, 1)).toEqual(0)
 
-    await transactionManager.initProducerId()
+    await eosManager.initProducerId()
 
-    expect(transactionManager.getSequence(topic, 1)).toEqual(0)
-    transactionManager.updateSequence(topic, 1, 5)
-    transactionManager.updateSequence(topic, 1, 10)
-    expect(transactionManager.getSequence(topic, 1)).toEqual(15)
+    expect(eosManager.getSequence(topic, 1)).toEqual(0)
+    eosManager.updateSequence(topic, 1, 5)
+    eosManager.updateSequence(topic, 1, 10)
+    expect(eosManager.getSequence(topic, 1)).toEqual(15)
 
-    expect(transactionManager.getSequence(topic, 2)).toEqual(0) // Different partition
-    expect(transactionManager.getSequence('foobar', 1)).toEqual(0) // Different topic
+    expect(eosManager.getSequence(topic, 2)).toEqual(0) // Different partition
+    expect(eosManager.getSequence('foobar', 1)).toEqual(0) // Different topic
 
-    transactionManager.updateSequence(topic, 3, Math.pow(2, 32) - 100)
-    expect(transactionManager.getSequence(topic, 3)).toEqual(Math.pow(2, 32) - 100) // Rotates once we reach 2 ^ 32 (max Int32)
-    transactionManager.updateSequence(topic, 3, 100)
-    expect(transactionManager.getSequence(topic, 3)).toEqual(0) // Rotates once we reach 2 ^ 32 (max Int32)
+    eosManager.updateSequence(topic, 3, Math.pow(2, 32) - 100)
+    expect(eosManager.getSequence(topic, 3)).toEqual(Math.pow(2, 32) - 100) // Rotates once we reach 2 ^ 32 (max Int32)
+    eosManager.updateSequence(topic, 3, 100)
+    expect(eosManager.getSequence(topic, 3)).toEqual(0) // Rotates once we reach 2 ^ 32 (max Int32)
 
-    await transactionManager.initProducerId()
-    expect(transactionManager.getSequence(topic, 1)).toEqual(0) // Sequences reset by initProducerId
+    await eosManager.initProducerId()
+    expect(eosManager.getSequence(topic, 1)).toEqual(0) // Sequences reset by initProducerId
   })
 
   describe('if transactional=true', () => {
@@ -83,7 +83,7 @@ describe('Producer > transactionManager', () => {
     })
 
     test('initializing the producer id and epoch with the transactional id', async () => {
-      const transactionManager = createTransactionManager({
+      const eosManager = createEosManager({
         logger: newLogger(),
         cluster,
         transactionTimeout: 30000,
@@ -91,12 +91,12 @@ describe('Producer > transactionManager', () => {
         transactionalId,
       })
 
-      expect(transactionManager.getProducerId()).toEqual(-1)
-      expect(transactionManager.getProducerEpoch()).toEqual(0)
-      expect(transactionManager.getSequence(topic, 1)).toEqual(0)
-      expect(transactionManager.isInitialized()).toEqual(false)
+      expect(eosManager.getProducerId()).toEqual(-1)
+      expect(eosManager.getProducerEpoch()).toEqual(0)
+      expect(eosManager.getSequence(topic, 1)).toEqual(0)
+      expect(eosManager.isInitialized()).toEqual(false)
 
-      await transactionManager.initProducerId()
+      await eosManager.initProducerId()
 
       expect(cluster.refreshMetadataIfNecessary).toHaveBeenCalled()
       expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
@@ -108,22 +108,20 @@ describe('Producer > transactionManager', () => {
         transactionTimeout: 30000,
       })
 
-      expect(transactionManager.getProducerId()).toEqual(mockInitProducerIdResponse.producerId)
-      expect(transactionManager.getProducerEpoch()).toEqual(
-        mockInitProducerIdResponse.producerEpoch
-      )
-      expect(transactionManager.isInitialized()).toEqual(true)
+      expect(eosManager.getProducerId()).toEqual(mockInitProducerIdResponse.producerId)
+      expect(eosManager.getProducerEpoch()).toEqual(mockInitProducerIdResponse.producerEpoch)
+      expect(eosManager.isInitialized()).toEqual(true)
     })
 
     test('adding partitions to transaction', async () => {
-      const transactionManager = createTransactionManager({
+      const eosManager = createEosManager({
         logger: newLogger(),
         cluster,
         transactionalId,
         transactional: true,
       })
-      await transactionManager.initProducerId()
-      transactionManager.beginTransaction()
+      await eosManager.initProducerId()
+      eosManager.beginTransaction()
 
       const topicData = [
         {
@@ -137,7 +135,7 @@ describe('Producer > transactionManager', () => {
       ]
 
       cluster.findGroupCoordinator.mockClear()
-      await transactionManager.addPartitionsToTransaction(topicData)
+      await eosManager.addPartitionsToTransaction(topicData)
 
       expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
         groupId: transactionalId,
@@ -161,11 +159,11 @@ describe('Producer > transactionManager', () => {
       })
 
       broker.addPartitionsToTxn.mockClear()
-      await transactionManager.addPartitionsToTransaction(topicData)
+      await eosManager.addPartitionsToTransaction(topicData)
       expect(broker.addPartitionsToTxn).toHaveBeenCalledTimes(0) // No call if nothing new
 
       broker.addPartitionsToTxn.mockClear()
-      await transactionManager.addPartitionsToTransaction([
+      await eosManager.addPartitionsToTransaction([
         ...topicData,
         { topic: 'test-2', partitions: [{ partition: 2 }] },
         { topic: 'test-3', partitions: [{ partition: 1 }] },
@@ -189,7 +187,7 @@ describe('Producer > transactionManager', () => {
     })
 
     test('committing a transaction', async () => {
-      const transactionManager = createTransactionManager({
+      const eosManager = createEosManager({
         logger: newLogger(),
         cluster,
         transactionTimeout: 30000,
@@ -197,21 +195,21 @@ describe('Producer > transactionManager', () => {
         transactionalId,
       })
 
-      await expect(transactionManager.commit()).rejects.toEqual(
+      await expect(eosManager.commit()).rejects.toEqual(
         new KafkaJSNonRetriableError(
           'Transaction state exception: Cannot call "commit" in state "UNINITIALIZED"'
         )
       )
-      await transactionManager.initProducerId()
-      await expect(transactionManager.commit()).rejects.toEqual(
+      await eosManager.initProducerId()
+      await expect(eosManager.commit()).rejects.toEqual(
         new KafkaJSNonRetriableError(
           'Transaction state exception: Cannot call "commit" in state "READY"'
         )
       )
-      await transactionManager.beginTransaction()
+      await eosManager.beginTransaction()
 
       cluster.findGroupCoordinator.mockClear()
-      await transactionManager.commit()
+      await eosManager.commit()
 
       expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
         groupId: transactionalId,
@@ -226,7 +224,7 @@ describe('Producer > transactionManager', () => {
     })
 
     test('aborting a transaction', async () => {
-      const transactionManager = createTransactionManager({
+      const eosManager = createEosManager({
         logger: newLogger(),
         cluster,
         transactionTimeout: 30000,
@@ -234,21 +232,21 @@ describe('Producer > transactionManager', () => {
         transactionalId,
       })
 
-      await expect(transactionManager.abort()).rejects.toEqual(
+      await expect(eosManager.abort()).rejects.toEqual(
         new KafkaJSNonRetriableError(
           'Transaction state exception: Cannot call "abort" in state "UNINITIALIZED"'
         )
       )
-      await transactionManager.initProducerId()
-      await expect(transactionManager.abort()).rejects.toEqual(
+      await eosManager.initProducerId()
+      await expect(eosManager.abort()).rejects.toEqual(
         new KafkaJSNonRetriableError(
           'Transaction state exception: Cannot call "abort" in state "READY"'
         )
       )
-      await transactionManager.beginTransaction()
+      await eosManager.beginTransaction()
 
       cluster.findGroupCoordinator.mockClear()
-      await transactionManager.abort()
+      await eosManager.abort()
 
       expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
         groupId: transactionalId,
@@ -264,18 +262,18 @@ describe('Producer > transactionManager', () => {
   })
 
   describe('if transactional=false', () => {
-    let transactionManager
+    let eosManager
 
     beforeEach(async () => {
-      transactionManager = createTransactionManager({ logger: newLogger(), cluster })
-      await transactionManager.initProducerId()
+      eosManager = createEosManager({ logger: newLogger(), cluster })
+      await eosManager.initProducerId()
     })
 
     function testTransactionalGuardAsync(method) {
       test(`${method} throws`, async () => {
-        const transactionManager = createTransactionManager({ logger: newLogger(), cluster })
+        const eosManager = createEosManager({ logger: newLogger(), cluster })
 
-        await expect(transactionManager[method]()).rejects.toEqual(
+        await expect(eosManager[method]()).rejects.toEqual(
           new KafkaJSNonRetriableError(
             `Transaction state exception: Cannot call "${method}" in state "UNINITIALIZED"`
           )
@@ -284,7 +282,7 @@ describe('Producer > transactionManager', () => {
     }
 
     test(`beginTransaction throws`, async () => {
-      expect(() => transactionManager.beginTransaction()).toThrow(
+      expect(() => eosManager.beginTransaction()).toThrow(
         new KafkaJSNonRetriableError('Method unavailable if non-transactional')
       )
     })

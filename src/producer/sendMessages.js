@@ -12,7 +12,7 @@ const staleMetadata = e =>
     e.type
   )
 
-module.exports = ({ logger, cluster, partitioner, transactionManager }) => {
+module.exports = ({ logger, cluster, partitioner, eosManager }) => {
   const retrier = createRetry({ retries: TOTAL_INDIVIDUAL_ATTEMPTS })
 
   return async ({ acks, timeout, compression, topicMessages }) => {
@@ -48,7 +48,7 @@ module.exports = ({ logger, cluster, partitioner, transactionManager }) => {
 
         const partitions = keys(messagesPerPartition)
         const sequencePerPartition = partitions.reduce((result, partition) => {
-          result[partition] = transactionManager.getSequence(topic, partition)
+          result[partition] = eosManager.getSequence(topic, partition)
           return result
         }, {})
 
@@ -86,14 +86,14 @@ module.exports = ({ logger, cluster, partitioner, transactionManager }) => {
         const topicData = createTopicData(topicDataForBroker)
 
         try {
-          if (transactionManager.isTransactional()) {
-            await transactionManager.addPartitionsToTransaction(topicData)
+          if (eosManager.isTransactional()) {
+            await eosManager.addPartitionsToTransaction(topicData)
           }
 
           const response = await broker.produce({
-            transactionalId: transactionManager.getTransactionalId(),
-            producerId: transactionManager.getProducerId(),
-            producerEpoch: transactionManager.getProducerEpoch(),
+            transactionalId: eosManager.getTransactionalId(),
+            producerId: eosManager.getProducerId(),
+            producerEpoch: eosManager.getProducerEpoch(),
             acks,
             timeout,
             compression,
@@ -106,7 +106,7 @@ module.exports = ({ logger, cluster, partitioner, transactionManager }) => {
           formattedResponse.forEach(({ topicName, partition }) => {
             const increment = topicMetadata.get(topicName).messagesPerPartition[partition].length
 
-            transactionManager.updateSequence(topicName, partition, increment)
+            eosManager.updateSequence(topicName, partition, increment)
           })
 
           responsePerBroker.set(broker, formattedResponse)

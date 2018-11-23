@@ -2,7 +2,7 @@ const createRetry = require('../retry')
 const createDefaultPartitioner = require('./partitioners/default')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const events = require('./instrumentationEvents')
-const createTransactionManager = require('./transactionManager')
+const createEosManager = require('./eosManager')
 const createMessageProducer = require('./messageProducer')
 const { CONNECT, DISCONNECT } = require('./instrumentationEvents')
 const { KafkaJSNonRetriableError } = require('../errors')
@@ -39,7 +39,7 @@ module.exports = ({
   const partitioner = createPartitioner()
   const retrier = createRetry(Object.assign({}, cluster.retry, retry))
   const instrumentationEmitter = new InstrumentationEventEmitter()
-  const nontransactionalTransactionManager = createTransactionManager({
+  const nontransactionalEosManager = createEosManager({
     logger,
     cluster,
     transactionTimeout,
@@ -52,7 +52,7 @@ module.exports = ({
     logger,
     cluster,
     partitioner,
-    transactionManager: nontransactionalTransactionManager,
+    eosManager: nontransactionalEosManager,
     idempotent,
     retrier,
   })
@@ -85,7 +85,7 @@ module.exports = ({
     // We want to only initialize the (transactional) transaction manager once
     transactionManager =
       transactionManager ||
-      createTransactionManager({
+      createEosManager({
         logger,
         cluster,
         transactionTimeout,
@@ -103,7 +103,7 @@ module.exports = ({
       cluster,
       partitioner,
       retrier,
-      transactionManager,
+      eosManager: transactionManager,
       idempotent: true,
     })
 
@@ -143,8 +143,8 @@ module.exports = ({
       await cluster.connect()
       instrumentationEmitter.emit(CONNECT)
 
-      if (idempotent && !nontransactionalTransactionManager.isInitialized()) {
-        await nontransactionalTransactionManager.initProducerId()
+      if (idempotent && !nontransactionalEosManager.isInitialized()) {
+        await nontransactionalEosManager.initProducerId()
       }
     },
     /**
