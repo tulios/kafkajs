@@ -341,20 +341,37 @@ module.exports = class Broker {
   /**
    * @public
    * @param {number} replicaId=-1 Broker id of the follower. For normal consumers, use -1
-   * @param {object} topics e.g:
-   *                  [
-   *                    {
-   *                      topic: 'topic-name',
-   *                      partitions: [
-   *                        { partition: 0 }
-   *                      ]
-   *                    }
-   *                  ]
+   * @param {number} isolationLevel=1 This setting controls the visibility of transactional records (default READ_COMMITTED, Kafka >0.11 only)
+   * @param {TopicPartitionOffset[]} topics e.g:
+   *
+   * @typedef {Object} TopicPartitionOffset
+   * @property {string} topic
+   * @property {PartitionOffset[]} partitions
+   *
+   * @typedef {Object} PartitionOffset
+   * @property {number} partition
+   * @property {number} [timestamp=-1]
+   *
+   *
    * @returns {Promise}
    */
-  async listOffsets({ replicaId, topics }) {
+  async listOffsets({ replicaId, isolationLevel, topics }) {
     const listOffsets = this.lookupRequest(apiKeys.ListOffsets, requests.ListOffsets)
-    return await this.connection.send(listOffsets({ replicaId, topics }))
+    const result = await this.connection.send(listOffsets({ replicaId, isolationLevel, topics }))
+
+    // Kafka >= 0.11 will return a single `offset` (ListOffsets V2),
+    // rather than an array of `offsets` (ListOffsets V0).
+    // Normalize to just return `offset`.
+    result.responses.forEach(response => {
+      response.partitions.map(partition => {
+        if (partition.offsets) {
+          partition.offset = partition.offsets.pop()
+          delete partition.offsets
+        }
+      })
+    })
+
+    return result
   }
 
   /**
