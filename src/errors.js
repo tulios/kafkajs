@@ -49,10 +49,13 @@ class KafkaJSConnectionError extends KafkaJSError {
 }
 
 class KafkaJSRequestTimeoutError extends KafkaJSError {
-  constructor(e, { broker, correlationId } = {}) {
+  constructor(e, { broker, correlationId, createdAt, sentAt, pendingDuration } = {}) {
     super(e)
     this.broker = broker
     this.correlationId = correlationId
+    this.createdAt = createdAt
+    this.sentAt = sentAt
+    this.pendingDuration = pendingDuration
   }
 }
 
