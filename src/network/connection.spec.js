@@ -4,7 +4,6 @@ const { requests } = require('../protocol/requests')
 const Decoder = require('../protocol/decoder')
 const { KafkaJSRequestTimeoutError } = require('../errors')
 const Connection = require('./connection')
-const InFlightRequest = require('./inFlightRequest')
 
 describe('Network > Connection', () => {
   // According to RFC 5737:
@@ -132,8 +131,8 @@ describe('Network > Connection', () => {
 
       await sleep(50)
 
-      const inFlightRequestsSize = connection.inFlightRequests.size
-      const pendingRequestsSize = connection.pendingRequests.length
+      const inFlightRequestsSize = connection.requestQueue.inflight.size
+      const pendingRequestsSize = connection.requestQueue.pending.length
 
       await Promise.all(requests)
 
@@ -239,9 +238,13 @@ describe('Network > Connection', () => {
       const correlationId = 1
       const resolve = jest.fn()
       const entry = { correlationId, resolve }
-      const inFlightRequest = new InFlightRequest({ entry })
+      const inFlightRequest = connection.requestQueue.createRequest({
+        entry,
+        expectResponse: true,
+        send: jest.fn(),
+      })
 
-      connection.inFlightRequests.set(correlationId, inFlightRequest)
+      connection.requestQueue.push(inFlightRequest)
 
       const payload = Buffer.from('ab')
       const size = Buffer.byteLength(payload) + Decoder.int32Size()

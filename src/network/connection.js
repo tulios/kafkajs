@@ -5,7 +5,7 @@ const Decoder = require('../protocol/decoder')
 const { KafkaJSConnectionError } = require('../errors')
 const { INT_32_MAX_VALUE } = require('../constants')
 const getEnv = require('../env')
-const InFlightRequest = require('./inFlightRequest')
+const RequestQueue = require('./requestQueue')
 
 const requestInfo = ({ apiName, apiKey, apiVersion }) =>
   `${apiName}(key: ${apiKey}, version: ${apiVersion})`
@@ -58,13 +58,18 @@ module.exports = class Connection {
     this.retrier = createRetry({ ...this.retry })
     this.requestTimeout = requestTimeout
     this.connectionTimeout = connectionTimeout
-    this.maxInFlightRequests = maxInFlightRequests
 
     this.buffer = Buffer.alloc(0)
     this.connected = false
     this.correlationId = 0
-    this.inFlightRequests = new Map()
-    this.pendingRequests = []
+    this.requestQueue = new RequestQueue({
+      maxInFlightRequests,
+      requestTimeout,
+      clientId,
+      broker: this.broker,
+      logger: logger.namespace('RequestQueue'),
+    })
+
     this.authHandlers = null
     this.authExpectResponse = false
 
@@ -253,36 +258,15 @@ module.exports = class Connection {
         try {
           this.failIfNotConnected()
           const entry = { apiKey, apiName, apiVersion, correlationId, resolve, reject }
-          const inFlightRequest = new InFlightRequest({
+          const request = this.requestQueue.createRequest({
             entry,
-            broker: this.broker,
-            requestTimeout: this.requestTimeout,
+            expectResponse,
             send: () => {
-              this.inFlightRequests.set(correlationId, inFlightRequest)
               this.socket.write(requestPayload.buffer, 'binary')
-            },
-            onTimeout: () => {
-              this.inFlightRequests.delete(correlationId)
             },
           })
 
-          // TODO: Remove the "null" check once this is validated in production and
-          // can receive a default value
-          const shouldEnqueue =
-            this.maxInFlightRequests != null &&
-            this.inFlightRequests.size >= this.maxInFlightRequests
-
-          if (shouldEnqueue) {
-            this.pendingRequests.push(inFlightRequest)
-            return
-          }
-
-          inFlightRequest.send()
-
-          if (!expectResponse) {
-            this.inFlightRequests.delete(correlationId)
-            inFlightRequest.completed({ size: 0, payload: null })
-          }
+          this.requestQueue.push(request)
         } catch (e) {
           reject(e)
         }
@@ -382,20 +366,8 @@ module.exports = class Connection {
 
       const correlationId = response.readInt32()
       const payload = response.readAll()
-      const inFlightRequest = this.inFlightRequests.get(correlationId)
 
-      if (this.pendingRequests.length > 0) {
-        this.pendingRequests.pop().send()
-      }
-
-      this.inFlightRequests.delete(correlationId)
-
-      if (!inFlightRequest) {
-        this.logDebug(`Response without match`, { correlationId })
-        return
-      }
-
-      inFlightRequest.completed({ size: expectedResponseSize, payload })
+      this.requestQueue.onResponse({ correlationId, payload, size: expectedResponseSize })
     }
   }
 
@@ -403,9 +375,6 @@ module.exports = class Connection {
    * @private
    */
   rejectRequests(error) {
-    for (let inFlightRequest of this.inFlightRequests.values()) {
-      inFlightRequest.rejected(error)
-      this.inFlightRequests.delete(inFlightRequest.correlationId)
-    }
+    this.requestQueue.rejectAll(error)
   }
 }
