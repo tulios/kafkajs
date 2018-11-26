@@ -1,6 +1,15 @@
 const Connection = require('../network/connection')
 
-module.exports = ({ brokers, ssl, sasl, clientId, connectionTimeout, retry, logger }) => {
+module.exports = ({
+  brokers,
+  ssl,
+  sasl,
+  clientId,
+  connectionTimeout,
+  maxInFlightRequests,
+  retry,
+  logger,
+}) => {
   const size = brokers.length
   let index = 0
 
@@ -21,6 +30,7 @@ module.exports = ({ brokers, ssl, sasl, clientId, connectionTimeout, retry, logg
         sasl,
         clientId,
         connectionTimeout,
+        maxInFlightRequests,
         retry,
         logger,
       })
