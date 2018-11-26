@@ -1,6 +1,20 @@
 const { decode, parse } = require('./response')
 
 describe('Protocol > Requests > Fetch > v4', () => {
+  const batchContext = {
+    firstOffset: expect.any(String),
+    firstSequence: expect.any(Number),
+    firstTimestamp: expect.any(String),
+    inTransaction: expect.any(Boolean),
+    isControlBatch: expect.any(Boolean),
+    lastOffsetDelta: expect.any(Number),
+    magicByte: expect.any(Number),
+    maxTimestamp: expect.any(String),
+    partitionLeaderEpoch: expect.any(Number),
+    producerEpoch: expect.any(Number),
+    producerId: expect.any(String),
+  }
+
   test('response', async () => {
     const data = await decode(Buffer.from(require('../fixtures/v4_response.json')))
     expect(data).toEqual({
@@ -20,6 +34,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   offset: '0',
                   magicByte: 2,
                   attributes: 0,
+                  batchContext,
                   timestamp: '1509827900073',
                   headers: { 'header-key-0': Buffer.from('header-value-0') },
                   key: Buffer.from('key-0'),
@@ -30,6 +45,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   offset: '1',
                   magicByte: 2,
                   attributes: 0,
+                  batchContext,
                   timestamp: '1509827900073',
                   headers: { 'header-key-1': Buffer.from('header-value-1') },
                   key: Buffer.from('key-1'),
@@ -40,6 +56,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                   offset: '2',
                   magicByte: 2,
                   attributes: 0,
+                  batchContext,
                   timestamp: '1509827900073',
                   headers: { 'header-key-2': Buffer.from('header-value-2') },
                   key: Buffer.from('key-2'),
@@ -58,6 +75,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
 
   test('response with GZIP', async () => {
     const data = await decode(Buffer.from(require('../fixtures/v4_response_gzip.json')))
+
     expect(data).toEqual({
       throttleTime: 0,
       responses: [
@@ -74,6 +92,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                 {
                   magicByte: 2,
                   attributes: 0,
+                  batchContext,
                   timestamp: '1509827900073',
                   offset: '0',
                   headers: {},
@@ -84,6 +103,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                 {
                   magicByte: 2,
                   attributes: 0,
+                  batchContext,
                   timestamp: '1509827900073',
                   offset: '1',
                   headers: {},
@@ -94,6 +114,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                 {
                   magicByte: 2,
                   attributes: 0,
+                  batchContext,
                   timestamp: '1509827900073',
                   offset: '2',
                   headers: {},
@@ -104,6 +125,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                 {
                   magicByte: 2,
                   attributes: 0,
+                  batchContext,
                   timestamp: '1509827900073',
                   offset: '3',
                   headers: {},
@@ -114,6 +136,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                 {
                   magicByte: 2,
                   attributes: 0,
+                  batchContext,
                   timestamp: '1509827900073',
                   offset: '4',
                   headers: {},
@@ -124,6 +147,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                 {
                   magicByte: 2,
                   attributes: 0,
+                  batchContext,
                   timestamp: '1509827900073',
                   offset: '5',
                   headers: {},
@@ -200,6 +224,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                 {
                   magicByte: 2,
                   attributes: 0,
+                  batchContext,
                   timestamp: '1539644731680',
                   offset: '0',
                   key: Buffer.from('KEY-1'),
@@ -210,6 +235,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                 {
                   magicByte: 2,
                   attributes: 0,
+                  batchContext,
                   timestamp: '1539644732194',
                   offset: '1',
                   key: Buffer.from('KEY-2'),
@@ -220,6 +246,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                 {
                   magicByte: 2,
                   attributes: 0,
+                  batchContext,
                   timestamp: '1539644732699',
                   offset: '2',
                   key: Buffer.from('KEY-3'),
@@ -230,6 +257,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                 {
                   magicByte: 2,
                   attributes: 0,
+                  batchContext,
                   timestamp: '1539644733203',
                   offset: '3',
                   key: Buffer.from('KEY-4'),
@@ -240,6 +268,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                 {
                   magicByte: 2,
                   attributes: 0,
+                  batchContext,
                   timestamp: '1539644733708',
                   offset: '4',
                   key: Buffer.from('KEY-5'),
@@ -250,6 +279,7 @@ describe('Protocol > Requests > Fetch > v4', () => {
                 {
                   magicByte: 2,
                   attributes: 0,
+                  batchContext,
                   timestamp: '1539644734213',
                   offset: '5',
                   key: Buffer.from('KEY-6'),
