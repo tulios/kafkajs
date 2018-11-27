@@ -1,7 +1,5 @@
 const { newLogger } = require('testHelpers')
-
 const RequestQueue = require('./index')
-const SocketRequest = require('./socketRequest')
 
 describe('Network > RequestQueue', () => {
   let requestQueue
@@ -23,38 +21,16 @@ describe('Network > RequestQueue', () => {
     })
   })
 
-  describe('#createRequest', () => {
-    it('creates a SocketRequest with broker and requestTimeout', () => {
-      const entry = createEntry()
-      const send = jest.fn()
-      const request = requestQueue.createRequest({
-        entry,
-        send,
-        expectResponse: true,
-      })
-
-      expect(request).toBeInstanceOf(SocketRequest)
-      expect(request.broker).toEqual(requestQueue.broker)
-      expect(request.requestTimeout).toEqual(requestQueue.requestTimeout)
-    })
-  })
-
   describe('#push', () => {
     let request, send
 
     beforeEach(() => {
       send = jest.fn()
-      request = requestQueue.createRequest({
-        send,
+      request = {
+        sendRequest: send,
         entry: createEntry(),
         expectResponse: true,
-      })
-    })
-
-    it('sets the timeoutHandler on the request', () => {
-      expect(request.timeoutHandler).toEqual(null)
-      requestQueue.push(request)
-      expect(request.timeoutHandler).toEqual(expect.any(Function))
+      }
     })
 
     it('calls send on the request', () => {
@@ -68,9 +44,11 @@ describe('Network > RequestQueue', () => {
       })
 
       it('deletes the inflight request and complete the request', () => {
-        request.completed = jest.fn()
         requestQueue.push(request)
-        expect(request.completed).toHaveBeenCalledWith({ size: 0, payload: null })
+        expect(request.entry.resolve).toHaveBeenCalledWith(
+          expect.objectContaining({ size: 0, payload: null })
+        )
+
         expect(requestQueue.inflight.size).toEqual(0)
       })
     })
@@ -78,11 +56,11 @@ describe('Network > RequestQueue', () => {
     describe('when there are many inflight requests', () => {
       beforeEach(() => {
         while (requestQueue.inflight.size < requestQueue.maxInFlightRequests) {
-          const request = requestQueue.createRequest({
-            send: jest.fn(),
+          const request = {
+            sendRequest: jest.fn(),
             entry: createEntry(),
             expectResponse: true,
-          })
+          }
 
           requestQueue.push(request)
         }
@@ -112,44 +90,43 @@ describe('Network > RequestQueue', () => {
     })
   })
 
-  describe('#onResponse', () => {
+  describe('#fulfillRequest', () => {
     let request, send, size, payload
 
     beforeEach(() => {
       send = jest.fn()
       payload = { ok: true }
       size = 32
-      request = requestQueue.createRequest({
-        send,
+      request = {
+        sendRequest: send,
         entry: createEntry(),
         expectResponse: true,
-      })
+      }
 
       requestQueue.push(request)
     })
 
     it('deletes the inflight request and calls completed on the request', () => {
-      request.completed = jest.fn()
       expect(requestQueue.inflight.size).toEqual(1)
 
-      requestQueue.onResponse({
-        correlationId: request.correlationId,
+      requestQueue.fulfillRequest({
+        correlationId: request.entry.correlationId,
         payload,
         size,
       })
 
       expect(requestQueue.inflight.size).toEqual(0)
-      expect(request.completed).toHaveBeenCalledWith({ size, payload })
+      expect(request.entry.resolve).toHaveBeenCalledWith(expect.objectContaining({ size, payload }))
     })
 
     describe('when there are pending requests', () => {
       beforeEach(() => {
         while (requestQueue.inflight.size < requestQueue.maxInFlightRequests) {
-          const request = requestQueue.createRequest({
-            send: jest.fn(),
+          const request = {
+            sendRequest: jest.fn(),
             entry: createEntry(),
             expectResponse: true,
-          })
+          }
 
           requestQueue.push(request)
         }
@@ -160,11 +137,9 @@ describe('Network > RequestQueue', () => {
         expect(requestQueue.pending.length).toEqual(1)
 
         const currentInflightSize = requestQueue.inflight.size
-        const inflightRequest = Array.from(requestQueue.inflight.values()).pop()
-        inflightRequest.completed = jest.fn()
 
-        requestQueue.onResponse({
-          correlationId: inflightRequest.correlationId,
+        requestQueue.fulfillRequest({
+          correlationId: request.entry.correlationId,
           payload,
           size,
         })
@@ -180,31 +155,27 @@ describe('Network > RequestQueue', () => {
     it('calls rejected on all requests (inflight + pending)', () => {
       const allRequests = []
       while (requestQueue.inflight.size < requestQueue.maxInFlightRequests) {
-        const request = requestQueue.createRequest({
-          send: jest.fn(),
+        const request = {
+          sendRequest: jest.fn(),
           entry: createEntry(),
           expectResponse: true,
-        })
+        }
 
         requestQueue.push(request)
         allRequests.push(request)
       }
 
-      const pendingRequest = requestQueue.createRequest({
-        send: jest.fn(),
+      const pendingRequest = {
+        sendRequest: jest.fn(),
         entry: createEntry(),
         expectResponse: true,
-      })
+      }
 
       requestQueue.push(pendingRequest)
       allRequests.push(pendingRequest)
 
       expect(requestQueue.inflight.size).toEqual(requestQueue.maxInFlightRequests)
       expect(requestQueue.pending.length).toEqual(1)
-
-      for (let request of allRequests) {
-        request.rejected = jest.fn()
-      }
 
       const error = new Error('Broker closed the connection')
       requestQueue.rejectAll(error)
@@ -213,7 +184,7 @@ describe('Network > RequestQueue', () => {
       expect(requestQueue.pending.length).toEqual(0)
 
       for (let request of allRequests) {
-        expect(request.rejected).toHaveBeenCalledWith(error)
+        expect(request.entry.reject).toHaveBeenCalledWith(error)
       }
     })
   })

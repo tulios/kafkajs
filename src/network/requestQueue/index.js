@@ -6,7 +6,7 @@ module.exports = class RequestQueue {
    * @param {number} requestTimeout
    * @param {string} clientId
    * @param {string} broker
-   * @param {Object} logger
+   * @param {Logger} logger
    */
   constructor({ maxInFlightRequests, requestTimeout, clientId, broker, logger }) {
     this.maxInFlightRequests = maxInFlightRequests
@@ -19,28 +19,31 @@ module.exports = class RequestQueue {
     this.pending = []
   }
 
-  createRequest({ entry, expectResponse, send: sendRequest }) {
-    const request = new SocketRequest({
-      entry,
-      expectResponse,
+  /**
+   * @typedef {Object} PushedRequest
+   * @property {RequestEntry} entry
+   * @property {boolean} expectResponse
+   * @property {Function} sendRequest
+   *
+   * @public
+   * @param {PushedRequest} pushedRequest
+   */
+  push(pushedRequest) {
+    const { correlationId } = pushedRequest.entry
+    const socketRequest = new SocketRequest({
+      entry: pushedRequest.entry,
+      expectResponse: pushedRequest.expectResponse,
       broker: this.broker,
       requestTimeout: this.requestTimeout,
       send: () => {
-        this.inflight.set(entry.correlationId, request)
-        sendRequest()
+        this.inflight.set(correlationId, socketRequest)
+        pushedRequest.sendRequest()
       },
-    })
-
-    return request
-  }
-
-  push(request) {
-    const { correlationId } = request
-
-    request.onTimeout(() => {
-      this.inflight.delete(correlationId)
-      const request = this.pending.pop()
-      request && request.send()
+      timeout: () => {
+        this.inflight.delete(correlationId)
+        const pendingRequest = this.pending.pop()
+        pendingRequest && pendingRequest.send()
+      },
     })
 
     // TODO: Remove the "null" check once this is validated in production and
@@ -55,26 +58,32 @@ module.exports = class RequestQueue {
         correlationId,
       })
 
-      this.pending.push(request)
+      this.pending.push(socketRequest)
       return
     }
 
-    request.send()
+    socketRequest.send()
 
-    if (!request.expectResponse) {
+    if (!socketRequest.expectResponse) {
       this.logger.debug(`Request does not expect a response, resolving immediately`, {
         clientId: this.clientId,
         broker: this.broker,
-        correlationId: request.correlationId,
+        correlationId,
       })
 
       this.inflight.delete(correlationId)
-      request.completed({ size: 0, payload: null })
+      socketRequest.completed({ size: 0, payload: null })
     }
   }
 
-  onResponse({ correlationId, payload, size }) {
-    const request = this.inflight.get(correlationId)
+  /**
+   * @public
+   * @param {number} correlationId
+   * @param {Buffer} payload
+   * @param {number} size
+   */
+  fulfillRequest({ correlationId, payload, size }) {
+    const socketRequest = this.inflight.get(correlationId)
 
     if (this.pending.length > 0) {
       const pendingRequest = this.pending.pop()
@@ -84,14 +93,14 @@ module.exports = class RequestQueue {
         clientId: this.clientId,
         broker: this.broker,
         correlationId: pendingRequest.correlationId,
-        pendingDuration: request.pendingDuration,
+        pendingDuration: pendingRequest.pendingDuration,
         currentPendingQueueSize: this.pending.length,
       })
     }
 
     this.inflight.delete(correlationId)
 
-    if (!request) {
+    if (!socketRequest) {
       this.logger.warn(`Response without match`, {
         clientId: this.clientId,
         broker: this.broker,
@@ -101,17 +110,22 @@ module.exports = class RequestQueue {
       return
     }
 
-    request.completed({ size, payload })
+    socketRequest.completed({ size, payload })
   }
 
+  /**
+   * @public
+   * @param {Error} error
+   */
   rejectAll(error) {
     const requests = [...this.inflight.values(), ...this.pending]
 
-    for (let request of requests) {
-      request.rejected(error)
-      this.inflight.delete(request.correlationId)
+    for (let socketRequest of requests) {
+      socketRequest.rejected(error)
+      this.inflight.delete(socketRequest.correlationId)
     }
 
     this.pending = []
+    this.inflight.clear()
   }
 }

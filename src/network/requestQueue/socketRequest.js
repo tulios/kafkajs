@@ -25,6 +25,7 @@ const REQUEST_STATE = {
  * @property {RequestEntry} entry
  * @property {boolean} expectResponse
  * @property {Function} send
+ * @property {Function} timeout
  *
  * @typedef {Object} RequestEntry
  * @property {string} apiKey
@@ -42,7 +43,7 @@ module.exports = class SocketRequest {
    * @param {boolean} expectResponse
    * @param {Function} send
    */
-  constructor({ requestTimeout, broker, entry, expectResponse, send }) {
+  constructor({ requestTimeout, broker, entry, expectResponse, send, timeout }) {
     this.createdAt = Date.now()
     this.requestTimeout = requestTimeout
     this.broker = broker
@@ -50,8 +51,8 @@ module.exports = class SocketRequest {
     this.correlationId = entry.correlationId
     this.expectResponse = expectResponse
     this.sendRequest = send
+    this.timeoutHandler = timeout
 
-    this.timeoutHandler = null
     this.sentAt = null
     this.duration = null
     this.pendingDuration = null
@@ -60,13 +61,9 @@ module.exports = class SocketRequest {
     this[PRIVATE.STATE] = REQUEST_STATE.PENDING
   }
 
-  onTimeout(handler) {
-    this.timeoutHandler = handler
-  }
-
   send() {
     this.throwIfInvalidState({
-      accepted: REQUEST_STATE.PENDING,
+      accepted: [REQUEST_STATE.PENDING],
       next: REQUEST_STATE.SENT,
     })
 
@@ -96,7 +93,7 @@ module.exports = class SocketRequest {
 
   completed({ size, payload }) {
     this.throwIfInvalidState({
-      accepted: REQUEST_STATE.SENT,
+      accepted: [REQUEST_STATE.SENT],
       next: REQUEST_STATE.COMPLETED,
     })
 
@@ -110,7 +107,7 @@ module.exports = class SocketRequest {
 
   rejected(error) {
     this.throwIfInvalidState({
-      accepted: REQUEST_STATE.SENT,
+      accepted: [REQUEST_STATE.PENDING, REQUEST_STATE.SENT],
       next: REQUEST_STATE.REJECTED,
     })
 
@@ -124,7 +121,7 @@ module.exports = class SocketRequest {
    * @private
    */
   throwIfInvalidState({ accepted, next }) {
-    if (this[PRIVATE.STATE] === accepted) {
+    if (accepted.includes(this[PRIVATE.STATE])) {
       return
     }
 

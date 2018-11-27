@@ -258,15 +258,14 @@ module.exports = class Connection {
         try {
           this.failIfNotConnected()
           const entry = { apiKey, apiName, apiVersion, correlationId, resolve, reject }
-          const request = this.requestQueue.createRequest({
+
+          this.requestQueue.push({
             entry,
             expectResponse,
-            send: () => {
+            sendRequest: () => {
               this.socket.write(requestPayload.buffer, 'binary')
             },
           })
-
-          this.requestQueue.push(request)
         } catch (e) {
           reject(e)
         }
@@ -367,7 +366,11 @@ module.exports = class Connection {
       const correlationId = response.readInt32()
       const payload = response.readAll()
 
-      this.requestQueue.onResponse({ correlationId, payload, size: expectedResponseSize })
+      this.requestQueue.fulfillRequest({
+        size: expectedResponseSize,
+        correlationId,
+        payload,
+      })
     }
   }
 

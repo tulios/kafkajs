@@ -238,13 +238,12 @@ describe('Network > Connection', () => {
       const correlationId = 1
       const resolve = jest.fn()
       const entry = { correlationId, resolve }
-      const inFlightRequest = connection.requestQueue.createRequest({
+
+      connection.requestQueue.push({
         entry,
         expectResponse: true,
-        send: jest.fn(),
+        sendRequest: jest.fn(),
       })
-
-      connection.requestQueue.push(inFlightRequest)
 
       const payload = Buffer.from('ab')
       const size = Buffer.byteLength(payload) + Decoder.int32Size()

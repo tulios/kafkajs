@@ -18,17 +18,7 @@ describe('Network > SocketRequest', () => {
       expectResponse: true,
       entry: { correlationId: correlationId++, resolve: jest.fn(), reject: jest.fn() },
       send: sendRequest,
-    })
-
-    request.onTimeout(timeoutHandler)
-  })
-
-  describe('#onTimeout', () => {
-    it('assigns the timeoutHandler', () => {
-      const request = new SocketRequest({ entry: {} })
-      const handler = jest.fn()
-      request.onTimeout(handler)
-      expect(request.timeoutHandler).toEqual(handler)
+      timeout: timeoutHandler,
     })
   })
 
