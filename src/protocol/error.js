@@ -455,6 +455,30 @@ const errorCodes = [
     message:
       'There is no listener on the leader broker that matches the listener on which metadata request was processed',
   },
+  {
+    type: 'TOPIC_DELETION_DISABLED',
+    code: 73,
+    retriable: false,
+    message: 'Topic deletion is disabled',
+  },
+  {
+    type: 'FENCED_LEADER_EPOCH',
+    code: 74,
+    retriable: true,
+    message: 'The leader epoch in the request is older than the epoch on the broker',
+  },
+  {
+    type: 'UNKNOWN_LEADER_EPOCH',
+    code: 75,
+    retriable: true,
+    message: 'The leader epoch in the request is newer than the epoch on the broker',
+  },
+  {
+    type: 'UNSUPPORTED_COMPRESSION_TYPE',
+    code: 76,
+    retriable: false,
+    message: 'The requesting client does not support the compression type of given partition',
+  },
 ]
 
 const unknownErrorCode = errorCode => ({
