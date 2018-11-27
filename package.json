@@ -41,14 +41,14 @@
     "test:group:others:ci": "JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:others --ci --maxWorkers=4 --no-watchman\""
   },
   "devDependencies": {
-    "eslint": "^5.4.0",
-    "eslint-config-prettier": "^3.0.1",
-    "eslint-config-standard": "^12.0.0-alpha.0",
+    "eslint": "^5.9.0",
+    "eslint-config-prettier": "^3.3.0",
+    "eslint-config-standard": "^12.0.0",
     "eslint-plugin-import": "^2.14.0",
-    "eslint-plugin-node": "^7.0.1",
-    "eslint-plugin-prettier": "^2.6.2",
-    "eslint-plugin-promise": "^4.0.0",
-    "eslint-plugin-standard": "^3.1.0",
+    "eslint-plugin-node": "^8.0.0",
+    "eslint-plugin-prettier": "^3.0.0",
+    "eslint-plugin-promise": "^4.0.1",
+    "eslint-plugin-standard": "^4.0.0",
     "execa": "^0.8.0",
     "glob": "^7.1.2",
     "husky": "^0.14.3",
@@ -57,7 +57,7 @@
     "jest-junit": "^5.1.0",
     "lint-staged": "^6.0.0",
     "mockdate": "^2.0.2",
-    "prettier": "^1.14.2",
+    "prettier": "^1.15.2",
     "uuid": "^3.3.2"
   },
   "dependencies": {
