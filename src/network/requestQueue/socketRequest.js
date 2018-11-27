@@ -12,6 +12,9 @@ const REQUEST_STATE = {
 }
 
 /**
+ * SocketRequest abstracts the life cycle of a socket request, making it easier to track
+ * request durations and to have individual timeouts per request.
+ *
  * @typedef {Object} SocketRequest
  * @property {number} createdAt
  * @property {number} sentAt
