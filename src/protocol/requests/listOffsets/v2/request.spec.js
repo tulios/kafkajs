@@ -1,4 +1,4 @@
-const RequestV0Protocol = require('./request')
+const RequestV2Protocol = require('./request')
 
 describe('Protocol > Requests > ListOffsets > v2', () => {
   test('request', async () => {
@@ -10,7 +10,7 @@ describe('Protocol > Requests > ListOffsets > v2', () => {
       },
     ]
 
-    const { buffer } = await RequestV0Protocol({ replicaId: -1, topics }).encode()
+    const { buffer } = await RequestV2Protocol({ replicaId: -1, topics }).encode()
     expect(buffer).toEqual(Buffer.from(require('../fixtures/v2_request.json')))
   })
 })
