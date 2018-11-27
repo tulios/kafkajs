@@ -219,7 +219,7 @@ module.exports = ({
           producerId,
           producerEpoch,
           transactionalId,
-          transactionalResult: true,
+          transactionResult: true,
         })
 
         stateMachine.transitionTo(STATES.READY)
@@ -237,7 +237,7 @@ module.exports = ({
           producerId,
           producerEpoch,
           transactionalId,
-          transactionalResult: false,
+          transactionResult: false,
         })
 
         stateMachine.transitionTo(STATES.READY)

@@ -219,7 +219,7 @@ describe('Producer > eosManager', () => {
         producerId,
         producerEpoch,
         transactionalId,
-        transactionalResult: true,
+        transactionResult: true,
       })
     })
 
@@ -256,7 +256,7 @@ describe('Producer > eosManager', () => {
         producerId,
         producerEpoch,
         transactionalId,
-        transactionalResult: false,
+        transactionResult: false,
       })
     })
   })
