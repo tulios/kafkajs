@@ -9,7 +9,7 @@ const {
   createModPartitioner,
   newLogger,
   waitForMessages,
-  testIfKafka011,
+  testIfKafka_0_11,
   waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
@@ -61,7 +61,7 @@ describe('Consumer', () => {
     await producer.disconnect()
   })
 
-  testIfKafka011('consume 0.10 messages with 0.11 API', async () => {
+  testIfKafka_0_11('consume 0.10 messages with 0.11 API', async () => {
     await consumer.connect()
     await producer.connect()
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
@@ -79,7 +79,7 @@ describe('Consumer', () => {
     await waitForMessages(messagesConsumed, { number: messages.length })
   })
 
-  testIfKafka011('consume 0.10 GZIP messages with 0.11 API', async () => {
+  testIfKafka_0_11('consume 0.10 GZIP messages with 0.11 API', async () => {
     await consumer.connect()
     await producer.connect()
     await consumer.subscribe({ topic: topicName, fromBeginning: true })

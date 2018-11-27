@@ -12,7 +12,13 @@
     "standard/no-callback-literal": "off",
     "no-unexpected-multiline": "off",
     "no-return-await": "off",
-    "node/no-deprecated-api": "off"
+    "node/no-deprecated-api": "off",
+    "camelcase": [
+      "error",
+      {
+        "allow": ["^testIfKafka_*"]
+      }
+    ]
   },
   "env":{
     "jest": true,

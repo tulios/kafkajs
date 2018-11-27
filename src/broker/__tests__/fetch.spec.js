@@ -5,7 +5,7 @@ const {
   newLogger,
   createTopic,
   retryProtocol,
-  testIfKafka011,
+  testIfKafka_0_11,
 } = require('testHelpers')
 const { Types: Compression } = require('../../protocol/message/compression')
 
@@ -253,7 +253,7 @@ describe('Broker > Fetch', () => {
       await broker.connect()
     })
 
-    testIfKafka011('request', async () => {
+    testIfKafka_0_11('request', async () => {
       const targetPartition = 0
       const messages = createMessages()
       let topicData = createTopicData(targetPartition, messages)
@@ -329,7 +329,7 @@ describe('Broker > Fetch', () => {
       expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
     })
 
-    testIfKafka011('request with headers', async () => {
+    testIfKafka_0_11('request with headers', async () => {
       const targetPartition = 0
       const messages = createMessages(0, true)
       let topicData = createTopicData(targetPartition, messages)
@@ -405,7 +405,7 @@ describe('Broker > Fetch', () => {
       expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
     })
 
-    testIfKafka011('request with GZIP', async () => {
+    testIfKafka_0_11('request with GZIP', async () => {
       const targetPartition = 0
       const messages = createMessages()
       let topicData = createTopicData(targetPartition, messages)

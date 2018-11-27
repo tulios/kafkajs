@@ -10,7 +10,7 @@ const {
   newLogger,
   waitFor,
   waitForMessages,
-  testIfKafka011,
+  testIfKafka_0_11,
   waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
@@ -183,7 +183,7 @@ describe('Consumer', () => {
     ])
   })
 
-  testIfKafka011('consume messages with 0.11 format', async () => {
+  testIfKafka_0_11('consume messages with 0.11 format', async () => {
     const topicName2 = `test-topic2-${secureRandom()}`
     await createTopic({ topic: topicName2 })
 
@@ -317,7 +317,7 @@ describe('Consumer', () => {
     expect(messagesFromTopic2.map(m => m.message.offset)).toEqual(messages2.map((_, i) => `${i}`))
   })
 
-  testIfKafka011('consume GZIP messages with 0.11 format', async () => {
+  testIfKafka_0_11('consume GZIP messages with 0.11 format', async () => {
     cluster = createCluster({ allowExperimentalV011: true })
     producer = createProducer({
       cluster,

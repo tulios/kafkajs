@@ -7,7 +7,7 @@ const {
   createConnection,
   newLogger,
   createTopic,
-  testIfKafka011,
+  testIfKafka_0_11,
   retryProtocol,
 } = require('testHelpers')
 
@@ -161,7 +161,7 @@ describe('Broker > Produce', () => {
   })
 
   describe('Record batch', () => {
-    testIfKafka011('request', async () => {
+    testIfKafka_0_11('request', async () => {
       const metadata = await retryProtocol(
         'LEADER_NOT_AVAILABLE',
         async () => await broker.metadata([topicName])
@@ -206,7 +206,7 @@ describe('Broker > Produce', () => {
       })
     })
 
-    testIfKafka011('request with idempotent producer', async () => {
+    testIfKafka_0_11('request with idempotent producer', async () => {
       // Get producer id & epoch
       const {
         coordinator: { host, port },
@@ -297,7 +297,7 @@ describe('Broker > Produce', () => {
       })
     })
 
-    testIfKafka011('request with headers', async () => {
+    testIfKafka_0_11('request with headers', async () => {
       const metadata = await retryProtocol(
         'LEADER_NOT_AVAILABLE',
         async () => await broker.metadata([topicName])
@@ -342,7 +342,7 @@ describe('Broker > Produce', () => {
       })
     })
 
-    testIfKafka011('request with GZIP', async () => {
+    testIfKafka_0_11('request with GZIP', async () => {
       const metadata = await retryProtocol(
         'LEADER_NOT_AVAILABLE',
         async () => await broker.metadata([topicName])
@@ -395,7 +395,7 @@ describe('Broker > Produce', () => {
       })
     })
 
-    testIfKafka011('request to a topic with max timestamp difference configured', async () => {
+    testIfKafka_0_11('request to a topic with max timestamp difference configured', async () => {
       topicName = `test-max-timestamp-difference-${secureRandom()}`
 
       await createTopic({
