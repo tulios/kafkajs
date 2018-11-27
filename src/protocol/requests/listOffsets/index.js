@@ -9,6 +9,11 @@ const versions = {
     const response = require('./v0/response')
     return { request: request({ replicaId, topics }), response }
   },
+  1: ({ replicaId = REPLICA_ID, topics }) => {
+    const request = require('./v1/request')
+    const response = require('./v1/response')
+    return { request: request({ replicaId, topics }), response }
+  },
   2: ({ replicaId = REPLICA_ID, isolationLevel = ISOLATION_LEVEL.READ_COMMITTED, topics }) => {
     const request = require('./v2/request')
     const response = require('./v2/response')

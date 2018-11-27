@@ -1,6 +1,7 @@
+const { INT_32_MAX_VALUE } = require('../constants')
+
 const NO_PRODUCER_ID = -1
 const SEQUENCE_START = 0
-const INT_32_MAX_VALUE = Math.pow(2, 32)
 
 /**
  * Manage behavior for an idempotent producer and transactions.

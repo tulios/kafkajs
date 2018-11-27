@@ -48,6 +48,17 @@ class KafkaJSConnectionError extends KafkaJSError {
   }
 }
 
+class KafkaJSRequestTimeoutError extends KafkaJSError {
+  constructor(e, { broker, correlationId, createdAt, sentAt, pendingDuration } = {}) {
+    super(e)
+    this.broker = broker
+    this.correlationId = correlationId
+    this.createdAt = createdAt
+    this.sentAt = sentAt
+    this.pendingDuration = pendingDuration
+  }
+}
+
 class KafkaJSMetadataNotLoaded extends KafkaJSError {}
 class KafkaJSTopicMetadataNotLoaded extends KafkaJSMetadataNotLoaded {
   constructor(e, { topic } = {}) {
@@ -78,6 +89,7 @@ module.exports = {
   KafkaJSBrokerNotFound,
   KafkaJSProtocolError,
   KafkaJSConnectionError,
+  KafkaJSRequestTimeoutError,
   KafkaJSSASLAuthenticationError,
   KafkaJSNumberOfRetriesExceeded,
   KafkaJSOffsetOutOfRange,
