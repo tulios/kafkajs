@@ -1,4 +1,4 @@
-const { KafkaJSRequestTimeoutError } = require('../../errors')
+const { KafkaJSRequestTimeoutError, KafkaJSNonRetriableError } = require('../../errors')
 
 const PRIVATE = {
   STATE: Symbol('private:SocketRequest:state'),
@@ -62,9 +62,10 @@ module.exports = class SocketRequest {
   }
 
   send() {
-    if (this[PRIVATE.STATE] !== REQUEST_STATE.PENDING) {
-      return
-    }
+    this.throwIfInvalidState({
+      accepted: REQUEST_STATE.PENDING,
+      next: REQUEST_STATE.SENT,
+    })
 
     this.sendRequest()
     this.sentAt = Date.now()
@@ -91,9 +92,10 @@ module.exports = class SocketRequest {
   }
 
   completed({ size, payload }) {
-    if (this[PRIVATE.STATE] !== REQUEST_STATE.SENT) {
-      return
-    }
+    this.throwIfInvalidState({
+      accepted: REQUEST_STATE.SENT,
+      next: REQUEST_STATE.COMPLETED,
+    })
 
     clearTimeout(this.timeoutId)
     const { entry, correlationId } = this
@@ -104,13 +106,29 @@ module.exports = class SocketRequest {
   }
 
   rejected(error) {
-    if (this[PRIVATE.STATE] !== REQUEST_STATE.SENT) {
-      return
-    }
+    this.throwIfInvalidState({
+      accepted: REQUEST_STATE.SENT,
+      next: REQUEST_STATE.REJECTED,
+    })
 
     clearTimeout(this.timeoutId)
     this[PRIVATE.STATE] = REQUEST_STATE.REJECTED
     this.duration = Date.now() - this.sentAt
     this.entry.reject(error)
+  }
+
+  /**
+   * @private
+   */
+  throwIfInvalidState({ accepted, next }) {
+    if (this[PRIVATE.STATE] === accepted) {
+      return
+    }
+
+    const current = this[PRIVATE.STATE].toString()
+
+    throw new KafkaJSNonRetriableError(
+      `Invalid state, can't transition from ${current} to ${next.toString()}`
+    )
   }
 }

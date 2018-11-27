@@ -1,6 +1,6 @@
 const sleep = require('../../utils/sleep')
 const SocketRequest = require('./socketRequest')
-const { KafkaJSRequestTimeoutError } = require('../../errors')
+const { KafkaJSRequestTimeoutError, KafkaJSNonRetriableError } = require('../../errors')
 
 describe('Network > SocketRequest', () => {
   let request, sendRequest, timeoutHandler
@@ -50,9 +50,7 @@ describe('Network > SocketRequest', () => {
 
     it('does not call sendRequest more than once', () => {
       request.send()
-      request.send()
-      request.send()
-      request.send()
+      expect(() => request.send()).toThrow(KafkaJSNonRetriableError)
 
       expect(sendRequest).toHaveBeenCalledTimes(1)
       clearTimeout(request.timeoutId)
@@ -89,8 +87,7 @@ describe('Network > SocketRequest', () => {
     it('does not call resolve more than once', () => {
       request.send()
       request.completed({ size, payload })
-      request.completed({ size, payload })
-      request.completed({ size, payload })
+      expect(() => request.completed({ size, payload })).toThrow(KafkaJSNonRetriableError)
 
       expect(request.entry.resolve).toHaveBeenCalledTimes(1)
     })
@@ -112,8 +109,7 @@ describe('Network > SocketRequest', () => {
     it('does not call reject more than once', () => {
       request.send()
       request.rejected(error)
-      request.rejected(error)
-      request.rejected(error)
+      expect(() => request.rejected(error)).toThrow(KafkaJSNonRetriableError)
 
       expect(request.entry.reject).toHaveBeenCalledTimes(1)
     })
