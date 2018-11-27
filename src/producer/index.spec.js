@@ -558,7 +558,7 @@ describe('Producer', () => {
     })
   })
 
-  describe('when transactional=true', () => {
+  describe('transactions', () => {
     let transactionalId
 
     beforeEach(() => {
@@ -585,6 +585,11 @@ describe('Producer', () => {
 
         await producer.connect()
         const txn = await producer.transaction()
+        await expect(producer.transaction()).rejects.toEqual(
+          new KafkaJSNonRetriableError(
+            'There is already an ongoing transaction for this producer. Please end the transaction before beginning another.'
+          )
+        )
 
         await txn.send({
           topic: topicName,
@@ -612,6 +617,8 @@ describe('Producer', () => {
         await expect(txn.abort()).rejects.toEqual(
           new KafkaJSNonRetriableError('Cannot continue to use transaction once ended')
         )
+
+        expect(await producer.transaction()).toBeTruthy() // Can create another transaction
       })
     }
 

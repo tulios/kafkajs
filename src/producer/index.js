@@ -110,6 +110,12 @@ module.exports = ({
         transactionalId,
       })
 
+    if (transactionalEosManager.isInTransaction()) {
+      throw new KafkaJSNonRetriableError(
+        'There is already an ongoing transaction for this producer. Please end the transaction before beginning another.'
+      )
+    }
+
     // We only initialize the producer id once
     if (!transactionalEosManager.isInitialized()) {
       await transactionalEosManager.initProducerId()
