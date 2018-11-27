@@ -28,6 +28,7 @@ const mergeTopics = (obj, { topic, partitions }) => ({
  * @param {number} authenticationTimeout - in milliseconds
  * @param {number} metadataMaxAge - in milliseconds
  * @param {boolean} allowAutoTopicCreation
+ * @param {number} maxInFlightRequests
  * @param {Object} retry
  * @param {Object} logger
  */
@@ -44,6 +45,7 @@ module.exports = class Cluster {
     retry,
     allowExperimentalV011,
     allowAutoTopicCreation,
+    maxInFlightRequests,
   }) {
     this.rootLogger = rootLogger
     this.logger = rootLogger.namespace('Cluster')
@@ -55,6 +57,7 @@ module.exports = class Cluster {
       sasl,
       clientId,
       connectionTimeout,
+      maxInFlightRequests,
       retry,
     })
 

@@ -28,7 +28,11 @@ module.exports = class Client {
     allowExperimentalV011 = true,
   }) {
     this[PRIVATE.LOGGER] = createLogger({ level: logLevel, logCreator })
-    this[PRIVATE.CREATE_CLUSTER] = ({ metadataMaxAge = 300000, allowAutoTopicCreation = true }) =>
+    this[PRIVATE.CREATE_CLUSTER] = ({
+      metadataMaxAge = 300000,
+      allowAutoTopicCreation = true,
+      maxInFlightRequests = null,
+    }) =>
       new Cluster({
         logger: this[PRIVATE.LOGGER],
         brokers,
@@ -41,6 +45,7 @@ module.exports = class Client {
         retry,
         allowAutoTopicCreation,
         allowExperimentalV011,
+        maxInFlightRequests,
       })
   }
 
@@ -53,13 +58,14 @@ module.exports = class Client {
     metadataMaxAge,
     allowAutoTopicCreation,
     idempotent,
-    transactional,
     transactionalId,
     transactionTimeout,
+    maxInFlightRequests,
   } = {}) {
     const cluster = this[PRIVATE.CREATE_CLUSTER]({
       metadataMaxAge,
       allowAutoTopicCreation,
+      maxInFlightRequests,
     })
 
     return createProducer({
@@ -68,7 +74,6 @@ module.exports = class Client {
       cluster,
       createPartitioner,
       idempotent,
-      transactional,
       transactionalId,
       transactionTimeout,
     })
@@ -89,10 +94,12 @@ module.exports = class Client {
     maxWaitTimeInMs,
     retry,
     allowAutoTopicCreation,
+    maxInFlightRequests,
   } = {}) {
     const cluster = this[PRIVATE.CREATE_CLUSTER]({
       metadataMaxAge,
       allowAutoTopicCreation,
+      maxInFlightRequests,
     })
 
     return createConsumer({

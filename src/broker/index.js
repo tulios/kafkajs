@@ -359,17 +359,14 @@ module.exports = class Broker {
     const listOffsets = this.lookupRequest(apiKeys.ListOffsets, requests.ListOffsets)
     const result = await this.connection.send(listOffsets({ replicaId, isolationLevel, topics }))
 
-    // Kafka >= 0.11 will return a single `offset` (ListOffsets V2),
-    // rather than an array of `offsets` (ListOffsets V0).
+    // ListOffsets >= v1 will return a single `offset` rather than an array of `offsets` (ListOffsets V0).
     // Normalize to just return `offset`.
-    result.responses.forEach(response => {
-      response.partitions.map(partition => {
-        if (partition.offsets) {
-          partition.offset = partition.offsets.pop()
-          delete partition.offsets
-        }
-      })
-    })
+    for (let response of result.responses) {
+      response.partitions = response.partitions.map(
+        ({ offsets, ...partitionData }) =>
+          offsets ? { ...partitionData, offset: offsets.pop() } : partitionData
+      )
+    }
 
     return result
   }
