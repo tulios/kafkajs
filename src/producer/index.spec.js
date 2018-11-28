@@ -1,13 +1,13 @@
 let initProducerIdSpy
 let retrySpy
 
-jest.mock('./transactionManager', () => {
+jest.mock('./eosManager', () => {
   return (...args) => {
-    const transactionManager = jest.requireActual('./transactionManager')(...args)
+    const eosManager = jest.requireActual('./eosManager')(...args)
 
-    initProducerIdSpy = jest.spyOn(transactionManager, 'initProducerId')
+    initProducerIdSpy = jest.spyOn(eosManager, 'initProducerId')
 
-    return transactionManager
+    return eosManager
   }
 })
 
@@ -470,7 +470,7 @@ describe('Producer', () => {
   describe('when idempotent=true', () => {
     testProduceMessages(true)
 
-    test('throws an error if acks != -1', async () => {
+    test('throws an error if sending a message with acks != -1', async () => {
       const cluster = createCluster(
         Object.assign(connectionOpts(), {
           allowExperimentalV011: true,
@@ -555,6 +555,117 @@ describe('Producer', () => {
       initProducerIdSpy.mockClear()
       await producer.connect()
       expect(initProducerIdSpy).toHaveBeenCalledTimes(0)
+    })
+  })
+
+  describe('transactions', () => {
+    let transactionalId
+
+    beforeEach(() => {
+      transactionalId = `transactional-id-${secureRandom()}`
+    })
+
+    const testTransactionEnd = (shouldCommit = true) => {
+      const endFn = shouldCommit ? 'commit' : 'abort'
+      test(`transaction flow ${endFn}`, async () => {
+        const cluster = createCluster(
+          Object.assign(connectionOpts(), {
+            allowExperimentalV011: true,
+            createPartitioner: createModPartitioner,
+          })
+        )
+
+        await createTopic({ topic: topicName })
+
+        producer = createProducer({
+          cluster,
+          logger: newLogger(),
+          transactionalId,
+        })
+
+        await producer.connect()
+        const txn = await producer.transaction()
+        await expect(producer.transaction()).rejects.toEqual(
+          new KafkaJSNonRetriableError(
+            'There is already an ongoing transaction for this producer. Please end the transaction before beginning another.'
+          )
+        )
+
+        await txn.send({
+          topic: topicName,
+          messages: [{ key: '2', value: '2' }],
+        })
+        await txn.sendBatch({
+          topicMessages: [
+            {
+              topic: topicName,
+              messages: [{ key: '2', value: '2' }],
+            },
+          ],
+        })
+
+        await txn[endFn]() // Dynamic
+        await expect(txn.send()).rejects.toEqual(
+          new KafkaJSNonRetriableError('Cannot continue to use transaction once ended')
+        )
+        await expect(txn.sendBatch()).rejects.toEqual(
+          new KafkaJSNonRetriableError('Cannot continue to use transaction once ended')
+        )
+        await expect(txn.commit()).rejects.toEqual(
+          new KafkaJSNonRetriableError('Cannot continue to use transaction once ended')
+        )
+        await expect(txn.abort()).rejects.toEqual(
+          new KafkaJSNonRetriableError('Cannot continue to use transaction once ended')
+        )
+
+        expect(await producer.transaction()).toBeTruthy() // Can create another transaction
+      })
+    }
+
+    testTransactionEnd(true)
+    testTransactionEnd(false)
+
+    test('allows sending messages outside a transaction', async () => {
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          allowExperimentalV011: true,
+          createPartitioner: createModPartitioner,
+        })
+      )
+
+      await createTopic({ topic: topicName })
+
+      producer = createProducer({
+        cluster,
+        logger: newLogger(),
+        transactionalId,
+      })
+
+      await producer.connect()
+      await producer.transaction()
+
+      await producer.send({
+        topic: topicName,
+        messages: [
+          {
+            key: 'key',
+            value: 'value',
+          },
+        ],
+      })
+      await producer.sendBatch({
+        topicMessages: [
+          {
+            topic: topicName,
+            messages: [
+              {
+                key: 'key',
+                value: 'value',
+              },
+            ],
+          },
+        ],
+      })
     })
   })
 })
