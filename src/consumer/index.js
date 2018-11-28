@@ -4,7 +4,7 @@ const ConsumerGroup = require('./consumerGroup')
 const Runner = require('./runner')
 const events = require('./instrumentationEvents')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
-const { CONNECT, DISCONNECT, STOP } = require('./instrumentationEvents')
+const { CONNECT, DISCONNECT, STOP, CRASH } = require('./instrumentationEvents')
 const { KafkaJSNonRetriableError } = require('../errors')
 const { roundRobin } = require('./assigners')
 const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
@@ -185,6 +185,11 @@ module.exports = ({
       })
 
       await disconnect()
+
+      instrumentationEmitter.emit(CRASH, {
+        error: e,
+        groupId,
+      })
 
       if (e.name === 'KafkaJSNumberOfRetriesExceeded') {
         logger.error(`Restarting the consumer in ${e.retryTime}ms`, {
