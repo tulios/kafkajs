@@ -35,21 +35,17 @@ module.exports = ({ messages, abortedTransactions }) => {
     return messages
   }
 
-  // if (messages.length) {
-  //   console.log(JSON.stringify(abortedTransactions))
-  //   console.log(JSON.stringify(messages))
-  //   debugger
-  // }
+  const remainingAbortedTransactions = [...abortedTransactions]
 
   return messages.filter(message => {
     // console.log('With', message.offset, abortedTransactions[0])
     // If the message offset is GTE the first offset of the next aborted transaction
     // then we have stepped into an aborted transaction.
     if (
-      abortedTransactions.length &&
-      Long.fromValue(message.offset).gte(abortedTransactions[0].firstOffset)
+      remainingAbortedTransactions.length &&
+      Long.fromValue(message.offset).gte(remainingAbortedTransactions[0].firstOffset)
     ) {
-      const { producerId } = abortedTransactions.shift()
+      const { producerId } = remainingAbortedTransactions.shift()
       currentAbortedTransactions.set(producerId, true)
     }
 
