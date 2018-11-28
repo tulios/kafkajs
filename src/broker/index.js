@@ -362,9 +362,8 @@ module.exports = class Broker {
     // ListOffsets >= v1 will return a single `offset` rather than an array of `offsets` (ListOffsets V0).
     // Normalize to just return `offset`.
     for (let response of result.responses) {
-      response.partitions = response.partitions.map(
-        ({ offsets, ...partitionData }) =>
-          offsets ? { ...partitionData, offset: offsets.pop() } : partitionData
+      response.partitions = response.partitions.map(({ offsets, ...partitionData }) =>
+        offsets ? { ...partitionData, offset: offsets.pop() } : partitionData
       )
     }
 
