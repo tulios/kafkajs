@@ -11,4 +11,5 @@ module.exports = {
   CONNECT: consumerType('connect'),
   DISCONNECT: consumerType('disconnect'),
   STOP: consumerType('stop'),
+  CRASH: consumerType('crash'),
 }

@@ -1155,6 +1155,9 @@ List of available events:
 
 * consumer.events.STOP
 
+* consumer.events.CRASH
+  payload: {`error`, `groupId`}
+
 ### <a name="instrumentation-producer"></a> Producer
 
 * producer.events.CONNECT
