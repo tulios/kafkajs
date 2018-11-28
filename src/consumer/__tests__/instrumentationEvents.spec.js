@@ -264,22 +264,19 @@ describe('Consumer > Instrumentation Events', () => {
     })
     const crashListener = jest.fn()
     consumer.on(consumer.events.CRASH, crashListener)
-    let called = false
     const error = new Error('💣')
 
     await consumer.connect()
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
     await consumer.run({
       eachMessage: async () => {
-        called = true
         throw error
       },
     })
 
     await producer.send({ acks: 1, topic: topicName, messages: [message] })
 
-    await waitFor(() => called)
-
+    await waitFor(() => crashListener.mock.calls.length > 0)
     expect(crashListener).toHaveBeenCalledWith({
       id: expect.any(Number),
       timestamp: expect.any(Number),
