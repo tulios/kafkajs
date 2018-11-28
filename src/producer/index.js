@@ -1,9 +1,9 @@
 const createRetry = require('../retry')
 const createDefaultPartitioner = require('./partitioners/default')
-const createSendMessages = require('./sendMessages')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const events = require('./instrumentationEvents')
-const createTransactionManager = require('./transactionManager')
+const createEosManager = require('./eosManager')
+const createMessageProducer = require('./messageProducer')
 const { CONNECT, DISCONNECT } = require('./instrumentationEvents')
 const { KafkaJSNonRetriableError } = require('../errors')
 
@@ -19,6 +19,7 @@ module.exports = ({
   createPartitioner = createDefaultPartitioner,
   retry,
   idempotent = false,
+  transactionalId,
   transactionTimeout,
 }) => {
   retry = retry || { retries: idempotent ? Number.MAX_SAFE_INTEGER : 5 }
@@ -38,117 +39,23 @@ module.exports = ({
   const partitioner = createPartitioner()
   const retrier = createRetry(Object.assign({}, cluster.retry, retry))
   const instrumentationEmitter = new InstrumentationEventEmitter()
-  const transactionManager = createTransactionManager({ logger, cluster, transactionTimeout })
-  const sendMessages = createSendMessages({ logger, cluster, partitioner, transactionManager })
+  const idempotentEosManager = createEosManager({
+    logger,
+    cluster,
+    transactionTimeout,
+    transactional: false,
+    transactionalId,
+  })
+  let transactionalEosManager
 
-  /**
-   * @typedef {Object} TopicMessages
-   * @property {string} topic
-   * @property {Array} messages An array of objects with "key" and "value", example:
-   *                         [{ key: 'my-key', value: 'my-value'}]
-   *
-   * @typedef {Object} SendBatchRequest
-   * @property {Array<TopicMessages>} topicMessages
-   * @property {number} [acks=-1] Control the number of required acks.
-   *                           -1 = all replicas must acknowledge
-   *                            0 = no acknowledgments
-   *                            1 = only waits for the leader to acknowledge
-   *
-   * @property {number} [timeout=30000] The time to await a response in ms
-   * @property {Compression.Types} [compression=Compression.Types.None] Compression codec
-   *
-   * @param {SendBatchRequest}
-   * @returns {Promise}
-   */
-  const sendBatch = async ({ acks, timeout, compression, topicMessages = [] }) => {
-    if (topicMessages.length === 0 || topicMessages.some(({ topic }) => !topic)) {
-      throw new KafkaJSNonRetriableError(`Invalid topic`)
-    }
-
-    if (idempotent && acks !== -1) {
-      throw new KafkaJSNonRetriableError(
-        `Not requiring ack for all messages invalidates the idempotent producer's EoS guarantees`
-      )
-    }
-
-    for (let { topic, messages } of topicMessages) {
-      if (!messages) {
-        throw new KafkaJSNonRetriableError(
-          `Invalid messages array [${messages}] for topic "${topic}"`
-        )
-      }
-
-      const messageWithoutValue = messages.find(message => message.value === undefined)
-      if (messageWithoutValue) {
-        throw new KafkaJSNonRetriableError(
-          `Invalid message without value for topic "${topic}": ${JSON.stringify(
-            messageWithoutValue
-          )}`
-        )
-      }
-    }
-
-    return retrier(async (bail, retryCount, retryTime) => {
-      try {
-        return await sendMessages({
-          acks,
-          timeout,
-          compression,
-          topicMessages,
-        })
-      } catch (error) {
-        if (!cluster.isConnected()) {
-          logger.debug(`Cluster has disconnected, reconnecting: ${error.message}`, {
-            retryCount,
-            retryTime,
-          })
-          await cluster.connect()
-          await cluster.refreshMetadata()
-          throw error
-        }
-
-        // This is necessary in case the metadata is stale and the number of partitions
-        // for this topic has increased in the meantime
-        if (
-          error.name === 'KafkaJSConnectionError' ||
-          (error.name === 'KafkaJSProtocolError' && error.retriable)
-        ) {
-          logger.error(`Failed to send messages: ${error.message}`, { retryCount, retryTime })
-          await cluster.refreshMetadata()
-          throw error
-        }
-
-        // Skip retries for errors not related to the Kafka protocol
-        logger.error(`${error.message}`, { retryCount, retryTime })
-        bail(error)
-      }
-    })
-  }
-
-  /**
-   * @param {ProduceRequest} ProduceRequest
-   * @returns {Promise}
-   *
-   * @typedef {Object} ProduceRequest
-   * @property {string} topic
-   * @property {Array} messages An array of objects with "key" and "value", example:
-   *                         [{ key: 'my-key', value: 'my-value'}]
-   * @property {number} [acks=-1] Control the number of required acks.
-   *                           -1 = all replicas must acknowledge
-   *                            0 = no acknowledgments
-   *                            1 = only waits for the leader to acknowledge
-   * @property {number} [timeout=30000] The time to await a response in ms
-   * @property {Compression.Types} [compression=Compression.Types.None] Compression codec
-   */
-  const send = async ({ acks, timeout, compression, topic, messages }) => {
-    const topicMessage = { topic, messages }
-    return sendBatch({
-      acks,
-      timeout,
-      compression,
-      topicMessages: [topicMessage],
-    })
-  }
+  const { send, sendBatch } = createMessageProducer({
+    logger,
+    cluster,
+    partitioner,
+    eosManager: idempotentEosManager,
+    idempotent,
+    retrier,
+  })
 
   /**
    * @param {string} eventName
@@ -171,6 +78,97 @@ module.exports = ({
   }
 
   /**
+   * Begin a transaction. The returned object contains methods to send messages
+   * to the transaction and end the transaction by comitting or aborting.
+   *
+   * Only messages sent on the transaction object will participate in the transaction.
+   *
+   * Calling any of the transactional methods after the transaction has ended
+   * will raise an exception (use `isActive` to ascertain if ended).
+   * @returns {Promise<Transaction>}
+   *
+   * @typedef {Object} Transaction
+   * @property {Function} send  Identical to the producer "send" method
+   * @property {Function} sendBatch Identical to the producer "sendBatch" method
+   * @property {Function} abort Abort the transaction
+   * @property {Function} commit  Commit the transaction
+   * @property {Function} isActive  Whether the transaction is active
+   */
+  const transaction = async () => {
+    if (!transactionalId) {
+      throw new KafkaJSNonRetriableError('Must provide transactional id for transactional producer')
+    }
+
+    let transactionDidEnd = false
+    transactionalEosManager =
+      transactionalEosManager ||
+      createEosManager({
+        logger,
+        cluster,
+        transactionTimeout,
+        transactional: true,
+        transactionalId,
+      })
+
+    if (transactionalEosManager.isInTransaction()) {
+      throw new KafkaJSNonRetriableError(
+        'There is already an ongoing transaction for this producer. Please end the transaction before beginning another.'
+      )
+    }
+
+    // We only initialize the producer id once
+    if (!transactionalEosManager.isInitialized()) {
+      await transactionalEosManager.initProducerId()
+    }
+    transactionalEosManager.beginTransaction()
+
+    const { send: sendTxn, sendBatch: sendBatchTxn } = createMessageProducer({
+      logger,
+      cluster,
+      partitioner,
+      retrier,
+      eosManager: transactionalEosManager,
+      idempotent: true,
+    })
+
+    const isActive = () => transactionalEosManager.isInTransaction() && !transactionDidEnd
+
+    const transactionGuard = fn => (...args) => {
+      if (!isActive()) {
+        return Promise.reject(
+          new KafkaJSNonRetriableError('Cannot continue to use transaction once ended')
+        )
+      }
+
+      return fn(...args)
+    }
+
+    return {
+      sendBatch: transactionGuard(sendBatchTxn),
+      send: transactionGuard(sendTxn),
+      /**
+       * Abort the ongoing transaction.
+       *
+       * @throws {KafkaJSNonRetriableError} If non-transactional
+       */
+      abort: transactionGuard(async () => {
+        await transactionalEosManager.abort()
+        transactionDidEnd = true
+      }),
+      /**
+       * Commit the ongoing transaction.
+       *
+       * @throws {KafkaJSNonRetriableError} If non-transactional
+       */
+      commit: transactionGuard(async () => {
+        await transactionalEosManager.commit()
+        transactionDidEnd = true
+      }),
+      isActive,
+    }
+  }
+
+  /**
    * @returns {Object} logger
    */
   const getLogger = () => logger
@@ -183,11 +181,10 @@ module.exports = ({
       await cluster.connect()
       instrumentationEmitter.emit(CONNECT)
 
-      if (idempotent && !transactionManager.isInitialized()) {
-        await transactionManager.initProducerId()
+      if (idempotent && !idempotentEosManager.isInitialized()) {
+        await idempotentEosManager.initProducerId()
       }
     },
-
     /**
      * @return {Promise}
      */
@@ -195,15 +192,14 @@ module.exports = ({
       await cluster.disconnect()
       instrumentationEmitter.emit(DISCONNECT)
     },
-
+    isIdempotent: () => {
+      return idempotent
+    },
     events,
-
     on,
-
     send,
-
     sendBatch,
-
+    transaction,
     logger: getLogger,
   }
 }

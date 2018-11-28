@@ -57,6 +57,9 @@ module.exports = class Client {
     retry,
     metadataMaxAge,
     allowAutoTopicCreation,
+    idempotent,
+    transactionalId,
+    transactionTimeout,
     maxInFlightRequests,
   } = {}) {
     const cluster = this[PRIVATE.CREATE_CLUSTER]({
@@ -70,6 +73,9 @@ module.exports = class Client {
       logger: this[PRIVATE.LOGGER],
       cluster,
       createPartitioner,
+      idempotent,
+      transactionalId,
+      transactionTimeout,
     })
   }
 
