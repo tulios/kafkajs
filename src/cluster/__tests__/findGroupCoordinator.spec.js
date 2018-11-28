@@ -1,8 +1,11 @@
 jest.mock('../../utils/shuffle')
 const shuffle = require('../../utils/shuffle')
 shuffle.mockImplementation(brokers => brokers.sort((a, b) => a > b))
+
+const Broker = require('../../broker')
 const { createCluster, secureRandom } = require('testHelpers')
 const { KafkaJSBrokerNotFound, KafkaJSConnectionError } = require('../../errors')
+const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 
 describe('Cluster > findGroupCoordinator', () => {
   let cluster, groupId
@@ -11,6 +14,7 @@ describe('Cluster > findGroupCoordinator', () => {
     cluster = createCluster()
     await cluster.connect()
     await cluster.refreshMetadata()
+    jest.spyOn(Broker.prototype, 'findGroupCoordinator')
     groupId = `test-group-${secureRandom()}`
   })
 
@@ -20,6 +24,24 @@ describe('Cluster > findGroupCoordinator', () => {
 
   test('find the group coordinator', async () => {
     const broker = await cluster.findGroupCoordinator({ groupId })
+
+    expect(Broker.prototype.findGroupCoordinator).toHaveBeenCalledWith({
+      groupId,
+      coordinatorType: COORDINATOR_TYPES.GROUP,
+    })
+    expect(broker).not.toBeFalsy()
+  })
+
+  test('find the coordinator if transactional', async () => {
+    const broker = await cluster.findGroupCoordinator({
+      groupId,
+      coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+    })
+
+    expect(Broker.prototype.findGroupCoordinator).toHaveBeenCalledWith({
+      groupId,
+      coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+    })
     expect(broker).not.toBeFalsy()
   })
 

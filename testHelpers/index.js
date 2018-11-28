@@ -132,6 +132,10 @@ const waitForConsumerToJoinGroup = (consumer, { maxWait = 10000 } = {}) =>
       clearTimeout(timeoutId)
       resolve()
     })
+    consumer.on(consumer.events.CRASH, event => {
+      clearTimeout(timeoutId)
+      reject(event.payload.error)
+    })
   })
 
 const createTopic = async ({ topic, partitions = 1, config = [] }) => {

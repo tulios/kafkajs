@@ -10,6 +10,7 @@ const {
   KafkaJSTopicMetadataNotLoaded,
   KafkaJSGroupCoordinatorNotFound,
 } = require('../errors')
+const COORDINATOR_TYPES = require('../protocol/coordinatorTypes')
 
 const { keys } = Object
 
@@ -27,6 +28,7 @@ const mergeTopics = (obj, { topic, partitions }) => ({
  * @param {number} authenticationTimeout - in milliseconds
  * @param {number} metadataMaxAge - in milliseconds
  * @param {boolean} allowAutoTopicCreation
+ * @param {number} maxInFlightRequests
  * @param {Object} retry
  * @param {Object} logger
  */
@@ -43,6 +45,7 @@ module.exports = class Cluster {
     retry,
     allowExperimentalV011,
     allowAutoTopicCreation,
+    maxInFlightRequests,
   }) {
     this.rootLogger = rootLogger
     this.logger = rootLogger.namespace('Cluster')
@@ -54,6 +57,7 @@ module.exports = class Cluster {
       sasl,
       clientId,
       connectionTimeout,
+      maxInFlightRequests,
       retry,
     })
 
@@ -215,12 +219,16 @@ module.exports = class Cluster {
   /**
    * @public
    * @param {string} groupId
+   * @param {number} [coordinatorType=0]
    * @returns {Promise<Broker>}
    */
-  async findGroupCoordinator({ groupId }) {
+  async findGroupCoordinator({ groupId, coordinatorType = COORDINATOR_TYPES.GROUP }) {
     return this.retrier(async (bail, retryCount, retryTime) => {
       try {
-        const { coordinator } = await this.findGroupCoordinatorMetadata({ groupId })
+        const { coordinator } = await this.findGroupCoordinatorMetadata({
+          groupId,
+          coordinatorType,
+        })
         return await this.findBroker({ nodeId: coordinator.nodeId })
       } catch (e) {
         // A new broker can join the cluster before we have the chance
@@ -244,13 +252,14 @@ module.exports = class Cluster {
   /**
    * @public
    * @param {string} groupId
+   * @param {number} [coordinatorType=0]
    * @returns {Promise<Object>}
    */
-  async findGroupCoordinatorMetadata({ groupId }) {
+  async findGroupCoordinatorMetadata({ groupId, coordinatorType }) {
     const brokerMetadata = await this.brokerPool.withBroker(async ({ nodeId, broker }) => {
       return await this.retrier(async (bail, retryCount, retryTime) => {
         try {
-          const brokerMetadata = await broker.findGroupCoordinator({ groupId })
+          const brokerMetadata = await broker.findGroupCoordinator({ groupId, coordinatorType })
           this.logger.debug('Found group coordinator', {
             broker: brokerMetadata.host,
             nodeId: brokerMetadata.coordinator.nodeId,
