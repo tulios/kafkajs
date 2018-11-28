@@ -166,7 +166,8 @@ module.exports = class ConsumerGroup {
     }
 
     // Check if the consumer is aware of all assigned partitions
-    for (let topic of keys(currentMemberAssignment)) {
+    const safeAssignedTopics = keys(currentMemberAssignment)
+    for (let topic of safeAssignedTopics) {
       const assignedPartitions = currentMemberAssignment[topic]
       const knownPartitions = this.partitionsPerSubscribedTopic.get(topic)
       const isAwareOfAllAssignedPartitions = assignedPartitions.every(partition =>
