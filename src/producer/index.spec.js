@@ -29,7 +29,7 @@ const {
   sslBrokers,
   saslBrokers,
   newLogger,
-  testIfKafka011,
+  testIfKafka_0_11,
   createTopic,
 } = require('testHelpers')
 
@@ -371,7 +371,7 @@ describe('Producer', () => {
       )
     })
 
-    testIfKafka011('produce messages for Kafka 0.11', async () => {
+    testIfKafka_0_11('produce messages for Kafka 0.11', async () => {
       const cluster = createCluster(
         Object.assign(connectionOpts(), {
           allowExperimentalV011: true,
@@ -415,7 +415,7 @@ describe('Producer', () => {
       ])
     })
 
-    testIfKafka011('produce messages for Kafka 0.11 with headers', async () => {
+    testIfKafka_0_11('produce messages for Kafka 0.11 with headers', async () => {
       const cluster = createCluster(
         Object.assign(connectionOpts(), {
           allowExperimentalV011: true,

@@ -169,14 +169,21 @@ const addPartitions = async ({ topic, partitions }) => {
   })
 }
 
-const testIfKafka011 = (description, callback, testFn = test) => {
-  return process.env.KAFKA_VERSION === '0.11'
+const testIfKafkaVersion = version => (description, callback, testFn = test) => {
+  const kafkaVersions = process.env.KAFKA_VERSION.split(/\s*,\s*/)
+  return kafkaVersions.includes(version)
     ? testFn(description, callback)
     : test.skip(description, callback)
 }
 
-testIfKafka011.only = (description, callback) => {
-  return testIfKafka011(description, callback, test.only)
+const testIfKafka_0_11 = testIfKafkaVersion('0.11')
+testIfKafka_0_11.only = (description, callback) => {
+  return testIfKafka_0_11(description, callback, test.only)
+}
+
+const testIfKafka_1_1_0 = testIfKafkaVersion('1.1')
+testIfKafka_1_1_0.only = (description, callback) => {
+  return testIfKafka_1_1_0(description, callback, test.only)
 }
 
 const unsupportedVersionResponse = () => Buffer.from({ type: 'Buffer', data: [0, 35, 0, 0, 0, 0] })
@@ -203,7 +210,8 @@ module.exports = {
   waitFor: testWaitFor,
   waitForMessages,
   waitForConsumerToJoinGroup,
-  testIfKafka011,
+  testIfKafka_0_11,
+  testIfKafka_1_1_0,
   addPartitions,
   unsupportedVersionResponse,
   unsupportedVersionResponseWithTimeout,
