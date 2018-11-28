@@ -249,4 +249,39 @@ describe('Consumer > Instrumentation Events', () => {
     expect(stopListener).toHaveBeenCalled()
     expect(disconnectListener).toHaveBeenCalled()
   })
+
+  it('emits crash events', async () => {
+    consumer = createConsumer({
+      cluster,
+      groupId,
+      logger: newLogger(),
+      heartbeatInterval: 100,
+      maxWaitTimeInMs: 1,
+      maxBytesPerPartition: 180,
+      retry: {
+        retries: 0,
+      },
+    })
+    const crashListener = jest.fn()
+    consumer.on(consumer.events.CRASH, crashListener)
+    const error = new Error('💣')
+
+    await consumer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.run({
+      eachMessage: async () => {
+        throw error
+      },
+    })
+
+    await producer.send({ acks: 1, topic: topicName, messages: [message] })
+
+    await waitFor(() => crashListener.mock.calls.length > 0)
+    expect(crashListener).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.crash',
+      payload: { error, groupId },
+    })
+  })
 })
