@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.4.5] - 2018-11-28
+
+### Fixed
+  - Fix crash in mitigation for receiving metadata for unsubscribed topics #221
+
+### Added
+  - Add `CRASH` instrumentation event for the consumer #221
+
 ## [1.4.4] - 2018-10-29
 
 ### Fixed
