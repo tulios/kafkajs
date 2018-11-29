@@ -38,7 +38,6 @@ module.exports = ({ messages, abortedTransactions }) => {
   const remainingAbortedTransactions = [...abortedTransactions]
 
   return messages.filter(message => {
-    // console.log('With', message.offset, abortedTransactions[0])
     // If the message offset is GTE the first offset of the next aborted transaction
     // then we have stepped into an aborted transaction.
     if (

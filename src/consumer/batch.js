@@ -23,18 +23,6 @@ module.exports = class Batch {
     )
     this.unfilteredMessages = messagesWithinOffset
 
-    if (partitionData.messages.length) {
-      debugger
-    }
-
-    if (this.unfilteredMessages && this.unfilteredMessages.length) {
-      // console.log(JSON.stringify(partitionData.abortedTransactions || []))
-      // console.log(JSON.stringify(partitionData.messages))
-      console.log(
-        `${this.unfilteredMessages.length} / ${partitionData.messages.length} Unfiltered messages`
-      )
-    }
-
     // 1. Don't expose aborted messages
     // 2. Don't expose control records
     // @see https://kafka.apache.org/documentation/#controlbatch
