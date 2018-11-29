@@ -320,7 +320,7 @@ const errorCodes = [
   {
     type: 'CONCURRENT_TRANSACTIONS',
     code: 51,
-    retriable: false,
+    retriable: true,
     message:
       'The producer attempted to update a transaction while another concurrent operation on the same transaction was ongoing',
   },

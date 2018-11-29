@@ -553,7 +553,7 @@ describe('Consumer', () => {
       expect(messagesConsumed[number - 2].message.value.toString()).toMatch(/value-txn2-99/)
     })
 
-    test.only('does not receive aborted messages', async () => {
+    testIfKafka_0_11('does not receive aborted messages', async () => {
       cluster = createCluster({ allowExperimentalV011: true })
       producer = createProducer({
         cluster,
