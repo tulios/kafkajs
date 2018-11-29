@@ -418,4 +418,63 @@ describe('Consumer', () => {
 
     expect(calls).toEqual(1)
   })
+
+  describe('transactions', () => {
+    const generateMessages = (prefix, length = 100) =>
+      Array(length)
+        .fill()
+        .map((v, i) => {
+          const value = secureRandom()
+          return {
+            key: `key-${prefix}-${i}-${value}`,
+            value: `value-${prefix}-${i}-${value}`,
+          }
+        })
+
+    testIfKafka_0_11('accepts messages from an idempotent producer', async () => {
+      cluster = createCluster({ allowExperimentalV011: true })
+      producer = createProducer({
+        cluster,
+        createPartitioner: createModPartitioner,
+        logger: newLogger(),
+        transactionalId: `transactional-id-${secureRandom()}`,
+        idempotent: true,
+        maxInFlightRequests: 1,
+      })
+
+      consumer = createConsumer({
+        cluster,
+        groupId,
+        maxWaitTimeInMs: 100,
+        logger: newLogger(),
+      })
+
+      jest.spyOn(cluster, 'refreshMetadataIfNecessary')
+
+      await consumer.connect()
+      await producer.connect()
+      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+      const messagesConsumed = []
+      const idempotentMessages = generateMessages('idempotent')
+
+      consumer.run({
+        eachMessage: async event => messagesConsumed.push(event),
+      })
+      await waitForConsumerToJoinGroup(consumer)
+
+      await producer.sendBatch({
+        topicMessages: [{ topic: topicName, messages: idempotentMessages }],
+      })
+
+      const number = idempotentMessages.length
+      await waitForMessages(messagesConsumed, {
+        number,
+      })
+
+      expect(messagesConsumed).toHaveLength(idempotentMessages.length)
+      expect(messagesConsumed[0].message.value.toString()).toMatch(/value-idempotent-0/)
+      expect(messagesConsumed[99].message.value.toString()).toMatch(/value-idempotent-99/)
+    })
+  })
 })
