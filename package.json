@@ -32,7 +32,7 @@
     "test:group:broker": "yarn test:local --testPathPattern 'src/broker/.*'",
     "test:group:admin": "yarn test:local --testPathPattern 'src/admin/.*'",
     "test:group:producer": "yarn test:local --testPathPattern 'src/producer/.*'",
-    "test:group:consumer": "yarn test:local --testPathPattern 'src/consumer/.*'",
+    "test:group:consumer": "yarn test:local --testPathPattern 'src/consumer/.*.spec.js'",
     "test:group:others": "yarn test:local --testPathPattern 'src/(?!(broker|admin|producer|consumer)/).*'",
     "test:group:broker:ci": "JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:broker --ci --maxWorkers=4 --no-watchman\"",
     "test:group:admin:ci": "JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:admin --ci --maxWorkers=4 --no-watchman\"",
