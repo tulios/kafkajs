@@ -1,4 +1,5 @@
 const apiKeys = require('./apiKeys')
+const { KafkaJSServerDoesNotSupportApiKey } = require('../../errors')
 
 const requests = {
   Produce: require('./produce'),
@@ -51,6 +52,10 @@ const BEGIN_EXPERIMENTAL_V011_REQUEST_VERSION = {
   [apiKeys.Fetch]: 4,
 }
 
+const names = Object.keys(apiKeys)
+const keys = Object.values(apiKeys)
+const findApiName = apiKey => names[keys.indexOf(apiKey)]
+
 const lookup = (versions, allowExperimentalV011) => (apiKey, definition) => {
   const version = versions[apiKey]
   const availableVersions = definition.versions.map(Number)
@@ -62,6 +67,14 @@ const lookup = (versions, allowExperimentalV011) => (apiKey, definition) => {
           version < BEGIN_EXPERIMENTAL_V011_REQUEST_VERSION[apiKey]
       )
   const bestImplementedVersion = Math.max.apply(this, allowedVersions)
+
+  if (!version || version.maxVersion == null) {
+    throw new KafkaJSServerDoesNotSupportApiKey(
+      `The Kafka server does not support the requested API version`,
+      { apiKey, apiName: findApiName(apiKey) }
+    )
+  }
+
   const bestSupportedVersion = Math.min(bestImplementedVersion, version.maxVersion)
   return definition.protocol({ version: bestSupportedVersion })
 }

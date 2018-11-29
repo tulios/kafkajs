@@ -74,6 +74,14 @@ class KafkaJSStaleTopicMetadataAssignment extends KafkaJSError {
   }
 }
 
+class KafkaJSServerDoesNotSupportApiKey extends KafkaJSNonRetriableError {
+  constructor(e, { apiKey, apiName } = {}) {
+    super(e)
+    this.apiKey = apiKey
+    this.apiName = apiName
+  }
+}
+
 class KafkaJSBrokerNotFound extends KafkaJSError {}
 class KafkaJSPartialMessageError extends KafkaJSNonRetriableError {}
 class KafkaJSSASLAuthenticationError extends KafkaJSNonRetriableError {}
@@ -100,4 +108,5 @@ module.exports = {
   KafkaJSStaleTopicMetadataAssignment,
   KafkaJSTimeout,
   KafkaJSLockTimeout,
+  KafkaJSServerDoesNotSupportApiKey,
 }
