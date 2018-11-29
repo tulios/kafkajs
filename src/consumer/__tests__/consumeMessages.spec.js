@@ -552,5 +552,73 @@ describe('Consumer', () => {
       )
       expect(messagesConsumed[number - 2].message.value.toString()).toMatch(/value-txn2-99/)
     })
+
+    test.only('does not receive aborted messages', async () => {
+      cluster = createCluster({ allowExperimentalV011: true })
+      producer = createProducer({
+        cluster,
+        createPartitioner: createModPartitioner,
+        logger: newLogger(),
+        transactionalId: `transactional-id-${secureRandom()}`,
+        maxInFlightRequests: 1,
+      })
+
+      consumer = createConsumer({
+        cluster,
+        groupId,
+        maxWaitTimeInMs: 100,
+        logger: newLogger(),
+      })
+
+      jest.spyOn(cluster, 'refreshMetadataIfNecessary')
+
+      await consumer.connect()
+      await producer.connect()
+      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+      const messagesConsumed = []
+
+      const abortedMessages1 = generateMessages('aborted-txn-1')
+      const abortedMessages2 = generateMessages('aborted-txn-2')
+      const nontransactionalMessages = generateMessages('nontransactional', 1)
+      const committedMessages = generateMessages('committed-txn', 10)
+
+      consumer.run({
+        eachMessage: async event => messagesConsumed.push(event),
+      })
+      await waitForConsumerToJoinGroup(consumer)
+
+      const abortedTxn1 = await producer.transaction()
+      await abortedTxn1.sendBatch({
+        topicMessages: [{ topic: topicName, messages: abortedMessages1 }],
+      })
+      await abortedTxn1.abort()
+
+      await producer.sendBatch({
+        topicMessages: [{ topic: topicName, messages: nontransactionalMessages }],
+      })
+
+      const abortedTxn2 = await producer.transaction()
+      await abortedTxn2.sendBatch({
+        topicMessages: [{ topic: topicName, messages: abortedMessages2 }],
+      })
+      await abortedTxn2.abort()
+
+      const committedTxn = await producer.transaction()
+      await committedTxn.sendBatch({
+        topicMessages: [{ topic: topicName, messages: committedMessages }],
+      })
+      await committedTxn.commit()
+
+      const number = nontransactionalMessages.length + committedMessages.length
+      await waitForMessages(messagesConsumed, {
+        number,
+      })
+
+      expect(messagesConsumed).toHaveLength(11)
+      expect(messagesConsumed[0].message.value.toString()).toMatch(/value-nontransactional-0/)
+      expect(messagesConsumed[1].message.value.toString()).toMatch(/value-committed-txn-0/)
+      expect(messagesConsumed[10].message.value.toString()).toMatch(/value-committed-txn-9/)
+    })
   })
 })
