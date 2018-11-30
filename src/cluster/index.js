@@ -46,6 +46,7 @@ module.exports = class Cluster {
     allowExperimentalV011,
     allowAutoTopicCreation,
     maxInFlightRequests,
+    isolationLevel,
   }) {
     this.rootLogger = rootLogger
     this.logger = rootLogger.namespace('Cluster')
@@ -62,6 +63,7 @@ module.exports = class Cluster {
     })
 
     this.targetTopics = new Set()
+    this.isolationLevel = isolationLevel
     this.brokerPool = new BrokerPool({
       connectionBuilder: this.connectionBuilder,
       logger: this.rootLogger,
@@ -356,6 +358,7 @@ module.exports = class Cluster {
       const partitions = partitionsPerBroker[nodeId]
 
       const { responses: topicOffsets } = await broker.listOffsets({
+        isolationLevel: this.isolationLevel,
         topics: keys(partitions).map(topic => ({
           topic,
           partitions: partitions[topic].map(addDefaultOffset(topic)),

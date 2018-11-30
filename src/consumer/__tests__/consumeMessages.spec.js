@@ -1,6 +1,7 @@
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
 const { Types } = require('../../protocol/message/compression')
+const ISOLATION_LEVEL = require('../../protocol/isolationLevel')
 
 const {
   secureRandom,
@@ -620,5 +621,61 @@ describe('Consumer', () => {
       expect(messagesConsumed[1].message.value.toString()).toMatch(/value-committed-txn-0/)
       expect(messagesConsumed[10].message.value.toString()).toMatch(/value-committed-txn-9/)
     })
+
+    testIfKafka_0_11(
+      'receives aborted messages for an isolation level of READ_UNCOMMITTED',
+      async () => {
+        const isolationLevel = ISOLATION_LEVEL.READ_UNCOMMITTED
+
+        cluster = createCluster({ allowExperimentalV011: true, isolationLevel })
+        producer = createProducer({
+          cluster,
+          createPartitioner: createModPartitioner,
+          logger: newLogger(),
+          transactionalId: `transactional-id-${secureRandom()}`,
+          maxInFlightRequests: 1,
+        })
+
+        consumer = createConsumer({
+          cluster,
+          groupId,
+          maxWaitTimeInMs: 100,
+          logger: newLogger(),
+          isolationLevel,
+        })
+
+        jest.spyOn(cluster, 'refreshMetadataIfNecessary')
+
+        await consumer.connect()
+        await producer.connect()
+        await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+        const messagesConsumed = []
+
+        const abortedMessages = generateMessages('aborted-txn1')
+
+        consumer.run({
+          eachMessage: async event => messagesConsumed.push(event),
+        })
+        await waitForConsumerToJoinGroup(consumer)
+
+        const abortedTxn1 = await producer.transaction()
+        await abortedTxn1.sendBatch({
+          topicMessages: [{ topic: topicName, messages: abortedMessages }],
+        })
+        await abortedTxn1.abort()
+
+        const number = 1 //abortedTxn1.length
+        await waitForMessages(messagesConsumed, {
+          number,
+        })
+
+        expect(messagesConsumed).toHaveLength(abortedMessages.length)
+        expect(messagesConsumed[0].message.value.toString()).toMatch(/value-aborted-txn1-0/)
+        expect(messagesConsumed[messagesConsumed.length - 1].message.value.toString()).toMatch(
+          /value-aborted-txn1-99/
+        )
+      }
+    )
   })
 })

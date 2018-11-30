@@ -95,11 +95,17 @@ module.exports = class Client {
     retry,
     allowAutoTopicCreation,
     maxInFlightRequests,
+    readUncommitted = false,
   } = {}) {
+    const isolationLevel = readUncommitted
+      ? ISOLATION_LEVEL.READ_UNCOMMITTED
+      : ISOLATION_LEVEL.READ_COMMITTED
+
     const cluster = this[PRIVATE.CREATE_CLUSTER]({
       metadataMaxAge,
       allowAutoTopicCreation,
       maxInFlightRequests,
+      isolationLevel,
     })
 
     return createConsumer({
@@ -114,6 +120,7 @@ module.exports = class Client {
       minBytes,
       maxBytes,
       maxWaitTimeInMs,
+      isolationLevel,
     })
   }
 
