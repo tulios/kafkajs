@@ -190,6 +190,17 @@ const unsupportedVersionResponse = () => Buffer.from({ type: 'Buffer', data: [0,
 const unsupportedVersionResponseWithTimeout = () =>
   Buffer.from({ type: 'Buffer', data: [0, 0, 0, 0, 0, 35] })
 
+const generateMessages = ({ prefix = 'generated', number = 100 }) =>
+  Array(number)
+    .fill()
+    .map((v, i) => {
+      const value = secureRandom()
+      return {
+        key: `key-${prefix}-${i}-${value}`,
+        value: `value-${prefix}-${i}-${value}`,
+      }
+    })
+
 module.exports = {
   secureRandom,
   connectionOpts,
@@ -214,5 +225,6 @@ module.exports = {
   testIfKafka_1_1_0,
   addPartitions,
   unsupportedVersionResponse,
+  generateMessages,
   unsupportedVersionResponseWithTimeout,
 }

@@ -1,13 +1,17 @@
 const Broker = require('../index')
+const createProducer = require('../../producer')
 const {
   secureRandom,
   createConnection,
+  createCluster,
   newLogger,
   createTopic,
   retryProtocol,
   testIfKafka_0_11,
+  generateMessages,
 } = require('testHelpers')
 const { Types: Compression } = require('../../protocol/message/compression')
+const ISOLATION_LEVEL = require('../../protocol/isolationLevel')
 
 const minBytes = 1
 const maxBytes = 10485760 // 10MB
@@ -55,6 +59,21 @@ describe('Broker > Fetch', () => {
       ],
     },
   ]
+
+  const expectedBatchContext = (options = {}) => ({
+    firstOffset: expect.any(String),
+    firstSequence: expect.any(Number),
+    firstTimestamp: expect.any(String),
+    inTransaction: false,
+    isControlBatch: false,
+    lastOffsetDelta: expect.any(Number),
+    magicByte: 2,
+    maxTimestamp: expect.any(String),
+    partitionLeaderEpoch: expect.any(Number),
+    producerEpoch: 0,
+    producerId: '-1',
+    ...options,
+  })
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
@@ -242,20 +261,6 @@ describe('Broker > Fetch', () => {
   })
 
   describe('Record batch', () => {
-    const batchContext = {
-      firstOffset: expect.any(String),
-      firstSequence: expect.any(Number),
-      firstTimestamp: expect.any(String),
-      inTransaction: false,
-      isControlBatch: false,
-      lastOffsetDelta: expect.any(Number),
-      magicByte: 2,
-      maxTimestamp: expect.any(String),
-      partitionLeaderEpoch: expect.any(Number),
-      producerEpoch: 0,
-      producerId: '-1',
-    }
-
     beforeEach(async () => {
       await broker.disconnect()
 
@@ -303,7 +308,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
-                    batchContext,
+                    batchContext: expectedBatchContext(),
                     offset: '0',
                     timestamp: '1509827900073',
                     headers: {},
@@ -314,7 +319,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
-                    batchContext,
+                    batchContext: expectedBatchContext(),
                     offset: '1',
                     timestamp: '1509827900073',
                     headers: {},
@@ -325,7 +330,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
-                    batchContext,
+                    batchContext: expectedBatchContext(),
                     offset: '2',
                     timestamp: '1509827900073',
                     headers: {},
@@ -382,7 +387,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
-                    batchContext,
+                    batchContext: expectedBatchContext(),
                     offset: '0',
                     timestamp: '1509827900073',
                     headers: headerFor(messages[0]),
@@ -393,7 +398,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
-                    batchContext,
+                    batchContext: expectedBatchContext(),
                     offset: '1',
                     timestamp: '1509827900073',
                     headers: headerFor(messages[1]),
@@ -404,7 +409,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
-                    batchContext,
+                    batchContext: expectedBatchContext(),
                     offset: '2',
                     timestamp: '1509827900073',
                     headers: headerFor(messages[2]),
@@ -461,7 +466,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
-                    batchContext,
+                    batchContext: expectedBatchContext(),
                     offset: '0',
                     timestamp: '1509827900073',
                     headers: {},
@@ -472,7 +477,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
-                    batchContext,
+                    batchContext: expectedBatchContext(),
                     offset: '1',
                     timestamp: '1509827900073',
                     headers: {},
@@ -483,7 +488,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
-                    batchContext,
+                    batchContext: expectedBatchContext(),
                     offset: '2',
                     timestamp: '1509827900073',
                     headers: {},
@@ -503,5 +508,316 @@ describe('Broker > Fetch', () => {
       fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
     })
+  })
+
+  describe('transactional', () => {
+    let transactionalId, producer
+
+    beforeEach(async () => {
+      transactionalId = `transactional-id-${secureRandom()}`
+
+      producer = createProducer({
+        cluster: createCluster({ allowExperimentalV011: true }),
+        logger: newLogger(),
+        transactionalId,
+        maxInFlightRequests: 1,
+      })
+
+      broker = new Broker({
+        connection: createConnection(newBrokerData),
+        logger: newLogger(),
+        allowExperimentalV011: true,
+      })
+      await broker.connect()
+    })
+
+    testIfKafka_0_11(
+      'returns transactional messages only after transaction has ended for an isolation level of "read_committed" (default)',
+      async () => {
+        const targetPartition = 0
+        const messages = generateMessages({ prefix: 'aborted', number: 3 }).map(m => ({
+          ...m,
+          partition: targetPartition,
+        }))
+
+        const txn = await producer.transaction()
+        await txn.send({
+          topic: topicName,
+          messages,
+        })
+
+        const topics = [
+          {
+            topic: topicName,
+            partitions: [
+              {
+                partition: targetPartition,
+                fetchOffset: 0,
+                maxBytes: maxBytesPerPartition,
+              },
+            ],
+          },
+        ]
+
+        let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
+        expect(fetchResponse).toEqual({
+          throttleTime: 0,
+          responses: [
+            {
+              topicName,
+              partitions: [
+                {
+                  abortedTransactions: [],
+                  lastStableOffset: '0',
+                  errorCode: 0,
+                  highWatermark: '3',
+                  partition: 0,
+                  messages: [],
+                },
+              ],
+            },
+          ],
+        })
+
+        await txn.abort()
+
+        fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
+        expect(fetchResponse).toEqual({
+          throttleTime: 0,
+          responses: [
+            {
+              topicName,
+              partitions: [
+                {
+                  abortedTransactions: [
+                    {
+                      firstOffset: '0',
+                      producerId: expect.any(String),
+                    },
+                  ],
+                  errorCode: 0,
+                  highWatermark: '4', // Number of produced messages + 1 control record
+                  lastStableOffset: '4',
+                  partition: 0,
+                  messages: [
+                    {
+                      magicByte: 2,
+                      attributes: 0,
+                      batchContext: expectedBatchContext({
+                        producerEpoch: expect.any(Number),
+                        producerId: expect.any(String),
+                        inTransaction: true,
+                      }),
+                      offset: '0',
+                      timestamp: expect.any(String),
+                      headers: {},
+                      key: Buffer.from(messages[0].key),
+                      value: Buffer.from(messages[0].value),
+                      isControlRecord: false,
+                    },
+                    {
+                      magicByte: 2,
+                      attributes: 0,
+                      batchContext: expectedBatchContext({
+                        producerEpoch: expect.any(Number),
+                        producerId: expect.any(String),
+                        inTransaction: true,
+                      }),
+                      offset: '1',
+                      timestamp: expect.any(String),
+                      headers: {},
+                      key: Buffer.from(messages[1].key),
+                      value: Buffer.from(messages[1].value),
+                      isControlRecord: false,
+                    },
+                    {
+                      magicByte: 2,
+                      attributes: 0,
+                      batchContext: expectedBatchContext({
+                        producerEpoch: expect.any(Number),
+                        producerId: expect.any(String),
+                        inTransaction: true,
+                      }),
+                      offset: '2',
+                      timestamp: expect.any(String),
+                      headers: {},
+                      key: Buffer.from(messages[2].key),
+                      value: Buffer.from(messages[2].value),
+                      isControlRecord: false,
+                    },
+                    // Control record
+                    {
+                      magicByte: 2,
+                      attributes: 0,
+                      batchContext: expectedBatchContext({
+                        producerEpoch: expect.any(Number),
+                        producerId: expect.any(String),
+                        inTransaction: true,
+                        isControlBatch: true,
+                      }),
+                      offset: '3',
+                      timestamp: expect.any(String),
+                      key: Buffer.from([0, 0, 0, 0]), // Aborted
+                      value: expect.any(Buffer),
+                      headers: {},
+                      isControlRecord: true,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        })
+      }
+    )
+
+    testIfKafka_0_11(
+      'returns transactional messages immediately for an isolation level of "read_uncommitted"',
+      async () => {
+        const targetPartition = 0
+        const messages = generateMessages({ prefix: 'aborted', number: 3 }).map(m => ({
+          ...m,
+          partition: targetPartition,
+        }))
+
+        const txn = await producer.transaction()
+        await txn.send({
+          topic: topicName,
+          messages,
+        })
+
+        const topics = [
+          {
+            topic: topicName,
+            partitions: [
+              {
+                partition: targetPartition,
+                fetchOffset: 0,
+                maxBytes: maxBytesPerPartition,
+              },
+            ],
+          },
+        ]
+
+        let fetchResponse = await broker.fetch({
+          maxWaitTime,
+          minBytes,
+          maxBytes,
+          topics,
+          isolationLevel: ISOLATION_LEVEL.READ_UNCOMMITTED,
+        })
+        expect(fetchResponse).toEqual({
+          throttleTime: 0,
+          responses: [
+            {
+              topicName,
+              partitions: [
+                {
+                  abortedTransactions: [], // None of these messages have been aborted yet
+                  errorCode: 0,
+                  highWatermark: '3', // Number of produced messages
+                  lastStableOffset: '-1', // None
+                  partition: 0,
+                  messages: [
+                    {
+                      magicByte: 2,
+                      attributes: 0,
+                      batchContext: expectedBatchContext({
+                        producerEpoch: expect.any(Number),
+                        producerId: expect.any(String),
+                        inTransaction: true,
+                      }),
+                      offset: '0',
+                      timestamp: expect.any(String),
+                      headers: {},
+                      key: Buffer.from(messages[0].key),
+                      value: Buffer.from(messages[0].value),
+                      isControlRecord: false,
+                    },
+                    {
+                      magicByte: 2,
+                      attributes: 0,
+                      batchContext: expectedBatchContext({
+                        producerEpoch: expect.any(Number),
+                        producerId: expect.any(String),
+                        inTransaction: true,
+                      }),
+                      offset: '1',
+                      timestamp: expect.any(String),
+                      headers: {},
+                      key: Buffer.from(messages[1].key),
+                      value: Buffer.from(messages[1].value),
+                      isControlRecord: false,
+                    },
+                    {
+                      magicByte: 2,
+                      attributes: 0,
+                      batchContext: expectedBatchContext({
+                        producerEpoch: expect.any(Number),
+                        producerId: expect.any(String),
+                        inTransaction: true,
+                      }),
+                      offset: '2',
+                      timestamp: expect.any(String),
+                      headers: {},
+                      key: Buffer.from(messages[2].key),
+                      value: Buffer.from(messages[2].value),
+                      isControlRecord: false,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        })
+
+        await txn.abort()
+
+        topics[0].partitions[0].fetchOffset = 3
+        fetchResponse = await broker.fetch({
+          maxWaitTime,
+          minBytes,
+          maxBytes,
+          topics,
+          isolationLevel: ISOLATION_LEVEL.READ_UNCOMMITTED,
+        })
+        expect(fetchResponse).toEqual({
+          throttleTime: 0,
+          responses: [
+            {
+              topicName,
+              partitions: [
+                {
+                  abortedTransactions: [],
+                  errorCode: 0,
+                  highWatermark: '4',
+                  lastStableOffset: '-1',
+                  partition: 0,
+                  messages: [
+                    // Control record
+                    {
+                      magicByte: 2,
+                      attributes: 0,
+                      batchContext: expectedBatchContext({
+                        producerEpoch: expect.any(Number),
+                        producerId: expect.any(String),
+                        inTransaction: true,
+                        isControlBatch: true,
+                      }),
+                      offset: '3',
+                      timestamp: expect.any(String),
+                      key: Buffer.from([0, 0, 0, 0]), // Aborted
+                      value: expect.any(Buffer),
+                      headers: {},
+                      isControlRecord: true,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        })
+      }
+    )
   })
 })
