@@ -41,6 +41,7 @@ module.exports = class ConsumerGroup {
     this.cluster = cluster
     this.groupId = groupId
     this.topics = topics
+    this.topicsSubscribed = topics
     this.topicConfigurations = topicConfigurations
     this.logger = logger.namespace('ConsumerGroup')
     this.instrumentationEmitter = instrumentationEmitter
@@ -102,7 +103,16 @@ module.exports = class ConsumerGroup {
 
   async sync() {
     let assignment = []
-    const { groupId, generationId, memberId, members, groupProtocol, topics, coordinator } = this
+    const {
+      groupId,
+      generationId,
+      memberId,
+      members,
+      groupProtocol,
+      topics,
+      topicsSubscribed,
+      coordinator,
+    } = this
 
     if (this.isLeader()) {
       this.logger.debug('Chosen as group leader', { groupId, generationId, memberId, topics })
@@ -116,13 +126,13 @@ module.exports = class ConsumerGroup {
 
       await this.cluster.refreshMetadata()
 
-      assignment = await assigner.assign({ members, topics })
+      assignment = await assigner.assign({ members, topics: topicsSubscribed })
       this.logger.debug('Group assignment', {
         groupId,
         generationId,
-        topics,
         groupProtocol,
         assignment,
+        topics: topicsSubscribed,
       })
     }
 
@@ -145,7 +155,7 @@ module.exports = class ConsumerGroup {
 
     let currentMemberAssignment = decodedAssignment
     const assignedTopics = keys(currentMemberAssignment)
-    const topicsNotSubscribed = arrayDiff(assignedTopics, this.topics)
+    const topicsNotSubscribed = arrayDiff(assignedTopics, topicsSubscribed)
 
     if (topicsNotSubscribed.length > 0) {
       this.logger.warn('Consumer group received unsubscribed topics', {
@@ -153,7 +163,7 @@ module.exports = class ConsumerGroup {
         generationId,
         memberId,
         assignedTopics,
-        topicsSubscribed: this.topics,
+        topicsSubscribed,
         topicsNotSubscribed,
       })
 
@@ -426,7 +436,7 @@ module.exports = class ConsumerGroup {
   generatePartitionsPerSubscribedTopic() {
     const map = new Map()
 
-    for (let topic of this.topics) {
+    for (let topic of this.topicsSubscribed) {
       const partitions = this.cluster
         .findTopicPartitionMetadata(topic)
         .map(m => m.partitionId)
