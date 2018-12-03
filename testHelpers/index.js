@@ -128,9 +128,9 @@ const waitForMessages = (buffer, { number = 1, delay = 50 } = {}) =>
 const waitForConsumerToJoinGroup = (consumer, { maxWait = 10000 } = {}) =>
   new Promise((resolve, reject) => {
     const timeoutId = setTimeout(() => reject(new Error('Timeout')), maxWait)
-    consumer.on(consumer.events.GROUP_JOIN, () => {
+    consumer.on(consumer.events.GROUP_JOIN, event => {
       clearTimeout(timeoutId)
-      resolve()
+      resolve(event)
     })
     consumer.on(consumer.events.CRASH, event => {
       clearTimeout(timeoutId)
