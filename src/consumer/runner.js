@@ -48,6 +48,8 @@ module.exports = class Runner {
         await this.consumerGroup.join()
         await this.consumerGroup.sync()
 
+        this.running = true
+
         const payload = {
           groupId: this.consumerGroup.groupId,
           memberId: this.consumerGroup.memberId,
