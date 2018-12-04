@@ -665,7 +665,7 @@ describe('Consumer', () => {
         })
         await abortedTxn1.abort()
 
-        const number = 1 //abortedTxn1.length
+        const number = 1
         await waitForMessages(messagesConsumed, {
           number,
         })
