@@ -139,6 +139,7 @@ module.exports = ({
   }
 
   /**
+   * @param {boolean} [autoCommit=true]
    * @param {number} [autoCommitInterval=null]
    * @param {number} [autoCommitThreshold=null]
    * @param {boolean} [eachBatchAutoResolve=true] Automatically resolves the last offset of the batch when the
@@ -148,6 +149,7 @@ module.exports = ({
    * @return {Promise}
    */
   const run = async ({
+    autoCommit = true,
     autoCommitInterval = null,
     autoCommitThreshold = null,
     eachBatchAutoResolve = true,
@@ -162,6 +164,7 @@ module.exports = ({
     const start = async onCrash => {
       logger.info('Starting', { groupId })
       runner = createRunner({
+        autoCommit,
         eachBatchAutoResolve,
         eachBatch,
         eachMessage,
@@ -173,6 +176,7 @@ module.exports = ({
 
     const restart = onCrash => {
       consumerGroup = createConsumerGroup({
+        autoCommit,
         autoCommitInterval,
         autoCommitThreshold,
       })
