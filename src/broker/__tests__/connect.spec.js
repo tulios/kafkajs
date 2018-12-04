@@ -138,7 +138,7 @@ describe('Broker > connect', () => {
       expect(broker.supportAuthenticationProtocol).toEqual(true)
     })
 
-    testIfKafka_1_1_0.only('authenticate with SASL SCRAM 256 if configured', async () => {
+    testIfKafka_1_1_0('authenticate with SASL SCRAM 256 if configured', async () => {
       broker = new Broker({
         connection: createConnection(saslSCRAM256ConnectionOpts()),
         logger: newLogger(),
