@@ -38,7 +38,7 @@ const requests = {
   AlterConfigs: require('./alterConfigs'),
   AlterReplicaLogDirs: {},
   DescribeLogDirs: {},
-  SaslAuthenticate: {},
+  SaslAuthenticate: require('./saslAuthenticate'),
   CreatePartitions: {},
   CreateDelegationToken: {},
   RenewDelegationToken: {},
