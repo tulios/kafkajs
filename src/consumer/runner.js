@@ -215,7 +215,6 @@ module.exports = class Runner {
       }
 
       if (batch.isEmpty()) {
-        this.consumerGroup.resetOffset(batch)
         continue
       }
 
