@@ -293,7 +293,7 @@ describe('Producer > sendMessages', () => {
     ])
   })
 
-  test('produces with the transactional id and producer id & epoch', async () => {
+  test('if transactional produces with the transactional id and producer id & epoch', async () => {
     const sendMessages = createSendMessages({
       logger: newLogger(),
       cluster,
@@ -333,6 +333,51 @@ describe('Producer > sendMessages', () => {
       expect.objectContaining({
         producerId: mockProducerId,
         transactionalId: mockTransactionalId,
+        producerEpoch: mockProducerEpoch,
+      })
+    )
+  })
+
+  test('if idempotent produces with the producer id & epoch without the transactional id', async () => {
+    const sendMessages = createSendMessages({
+      logger: newLogger(),
+      cluster,
+      partitioner,
+      eosManager,
+    })
+
+    cluster.findTopicPartitionMetadata
+      .mockImplementationOnce(() => ({}))
+      .mockImplementationOnce(() => partitionsPerLeader)
+
+    eosManager.isTransactional.mockReturnValue(false)
+
+    mockProducerId = 1000
+    mockProducerEpoch = 1
+    mockTransactionalId = 'transactionalid'
+
+    await sendMessages({
+      topicMessages: [{ topic, messages }],
+    })
+
+    expect(brokers[1].produce).toHaveBeenCalledWith(
+      expect.objectContaining({
+        producerId: mockProducerId,
+        transactionalId: undefined,
+        producerEpoch: mockProducerEpoch,
+      })
+    )
+    expect(brokers[3].produce).toHaveBeenCalledWith(
+      expect.objectContaining({
+        producerId: mockProducerId,
+        transactionalId: undefined,
+        producerEpoch: mockProducerEpoch,
+      })
+    )
+    expect(brokers[3].produce).toHaveBeenCalledWith(
+      expect.objectContaining({
+        producerId: mockProducerId,
+        transactionalId: undefined,
         producerEpoch: mockProducerEpoch,
       })
     )

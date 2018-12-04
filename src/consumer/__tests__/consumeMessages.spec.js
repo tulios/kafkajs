@@ -157,7 +157,7 @@ describe('Consumer', () => {
     await producer.send({ acks: 1, topic: topicName, messages: [message1, message2] })
 
     await expect(waitForMessages(batchesConsumed)).resolves.toEqual([
-      {
+      expect.objectContaining({
         topic: topicName,
         partition: 0,
         highWatermark: '2',
@@ -173,7 +173,7 @@ describe('Consumer', () => {
             offset: '1',
           }),
         ],
-      },
+      }),
     ])
 
     expect(functionsExposed).toEqual([
@@ -417,5 +417,208 @@ describe('Consumer', () => {
     await consumer.disconnect() // don't give the consumer the chance to consume the 2nd message
 
     expect(calls).toEqual(1)
+  })
+
+  describe('transactions', () => {
+    const generateMessages = (prefix, length = 100) =>
+      Array(length)
+        .fill()
+        .map((v, i) => {
+          const value = secureRandom()
+          return {
+            key: `key-${prefix}-${i}-${value}`,
+            value: `value-${prefix}-${i}-${value}`,
+          }
+        })
+
+    testIfKafka_0_11('accepts messages from an idempotent producer', async () => {
+      cluster = createCluster({ allowExperimentalV011: true })
+      producer = createProducer({
+        cluster,
+        createPartitioner: createModPartitioner,
+        logger: newLogger(),
+        transactionalId: `transactional-id-${secureRandom()}`,
+        idempotent: true,
+        maxInFlightRequests: 1,
+      })
+
+      consumer = createConsumer({
+        cluster,
+        groupId,
+        maxWaitTimeInMs: 100,
+        logger: newLogger(),
+      })
+
+      jest.spyOn(cluster, 'refreshMetadataIfNecessary')
+
+      await consumer.connect()
+      await producer.connect()
+      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+      const messagesConsumed = []
+      const idempotentMessages = generateMessages('idempotent')
+
+      consumer.run({
+        eachMessage: async event => messagesConsumed.push(event),
+      })
+      await waitForConsumerToJoinGroup(consumer)
+
+      await producer.sendBatch({
+        topicMessages: [{ topic: topicName, messages: idempotentMessages }],
+      })
+
+      const number = idempotentMessages.length
+      await waitForMessages(messagesConsumed, {
+        number,
+      })
+
+      expect(messagesConsumed).toHaveLength(idempotentMessages.length)
+      expect(messagesConsumed[0].message.value.toString()).toMatch(/value-idempotent-0/)
+      expect(messagesConsumed[99].message.value.toString()).toMatch(/value-idempotent-99/)
+    })
+
+    testIfKafka_0_11('accepts messages from committed transactions', async () => {
+      cluster = createCluster({ allowExperimentalV011: true })
+      producer = createProducer({
+        cluster,
+        createPartitioner: createModPartitioner,
+        logger: newLogger(),
+        transactionalId: `transactional-id-${secureRandom()}`,
+        maxInFlightRequests: 1,
+      })
+
+      consumer = createConsumer({
+        cluster,
+        groupId,
+        maxWaitTimeInMs: 100,
+        logger: newLogger(),
+      })
+
+      jest.spyOn(cluster, 'refreshMetadataIfNecessary')
+
+      await consumer.connect()
+      await producer.connect()
+      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+      const messagesConsumed = []
+
+      const messages1 = generateMessages('txn1')
+      const messages2 = generateMessages('txn2')
+      const nontransactionalMessages1 = generateMessages('nontransactional1', 1)
+      const nontransactionalMessages2 = generateMessages('nontransactional2', 1)
+
+      consumer.run({
+        eachMessage: async event => messagesConsumed.push(event),
+      })
+      await waitForConsumerToJoinGroup(consumer)
+
+      // We can send non-transaction messages
+      await producer.sendBatch({
+        topicMessages: [{ topic: topicName, messages: nontransactionalMessages1 }],
+      })
+
+      // We can run a transaction
+      const txn1 = await producer.transaction()
+      await txn1.sendBatch({
+        topicMessages: [{ topic: topicName, messages: messages1 }],
+      })
+      await txn1.commit()
+
+      // We can immediately run another transaction
+      const txn2 = await producer.transaction()
+      await txn2.sendBatch({
+        topicMessages: [{ topic: topicName, messages: messages2 }],
+      })
+      await txn2.commit()
+
+      // We can return to sending non-transaction messages
+      await producer.sendBatch({
+        topicMessages: [{ topic: topicName, messages: nontransactionalMessages2 }],
+      })
+
+      const number =
+        messages1.length +
+        messages2.length +
+        nontransactionalMessages1.length +
+        nontransactionalMessages2.length
+      await waitForMessages(messagesConsumed, {
+        number,
+      })
+
+      expect(messagesConsumed[0].message.value.toString()).toMatch(/value-nontransactional1-0/)
+      expect(messagesConsumed[1].message.value.toString()).toMatch(/value-txn1-0/)
+      expect(messagesConsumed[number - 1].message.value.toString()).toMatch(
+        /value-nontransactional2-0/
+      )
+      expect(messagesConsumed[number - 2].message.value.toString()).toMatch(/value-txn2-99/)
+    })
+
+    testIfKafka_0_11('does not receive aborted messages', async () => {
+      cluster = createCluster({ allowExperimentalV011: true })
+      producer = createProducer({
+        cluster,
+        createPartitioner: createModPartitioner,
+        logger: newLogger(),
+        transactionalId: `transactional-id-${secureRandom()}`,
+        maxInFlightRequests: 1,
+      })
+
+      consumer = createConsumer({
+        cluster,
+        groupId,
+        maxWaitTimeInMs: 100,
+        logger: newLogger(),
+      })
+
+      jest.spyOn(cluster, 'refreshMetadataIfNecessary')
+
+      await consumer.connect()
+      await producer.connect()
+      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+      const messagesConsumed = []
+
+      const abortedMessages1 = generateMessages('aborted-txn-1')
+      const abortedMessages2 = generateMessages('aborted-txn-2')
+      const nontransactionalMessages = generateMessages('nontransactional', 1)
+      const committedMessages = generateMessages('committed-txn', 10)
+
+      consumer.run({
+        eachMessage: async event => messagesConsumed.push(event),
+      })
+      await waitForConsumerToJoinGroup(consumer)
+
+      const abortedTxn1 = await producer.transaction()
+      await abortedTxn1.sendBatch({
+        topicMessages: [{ topic: topicName, messages: abortedMessages1 }],
+      })
+      await abortedTxn1.abort()
+
+      await producer.sendBatch({
+        topicMessages: [{ topic: topicName, messages: nontransactionalMessages }],
+      })
+
+      const abortedTxn2 = await producer.transaction()
+      await abortedTxn2.sendBatch({
+        topicMessages: [{ topic: topicName, messages: abortedMessages2 }],
+      })
+      await abortedTxn2.abort()
+
+      const committedTxn = await producer.transaction()
+      await committedTxn.sendBatch({
+        topicMessages: [{ topic: topicName, messages: committedMessages }],
+      })
+      await committedTxn.commit()
+
+      const number = nontransactionalMessages.length + committedMessages.length
+      await waitForMessages(messagesConsumed, {
+        number,
+      })
+
+      expect(messagesConsumed).toHaveLength(11)
+      expect(messagesConsumed[0].message.value.toString()).toMatch(/value-nontransactional-0/)
+      expect(messagesConsumed[1].message.value.toString()).toMatch(/value-committed-txn-0/)
+      expect(messagesConsumed[10].message.value.toString()).toMatch(/value-committed-txn-9/)
+    })
   })
 })

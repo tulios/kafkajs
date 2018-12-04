@@ -53,4 +53,65 @@ describe('Consumer', () => {
     consumer2.run({ eachMessage: () => {} })
     await waitForConsumerToJoinGroup(consumer2)
   })
+
+  it('Starts consuming from new topics after already having assignments', async () => {
+    consumer2 = createConsumer({
+      cluster: createCluster({ metadataMaxAge: 50 }),
+      groupId,
+      heartbeatInterval: 100,
+      maxWaitTimeInMs: 100,
+      logger: newLogger(),
+    })
+
+    // Both consumers receive assignments for one topic
+    let assignments = await Promise.all(
+      [consumer1, consumer2].map(async consumer => {
+        await consumer.connect()
+        await consumer.subscribe({ topic: topicNames[0] })
+        consumer.run({ eachMessage: () => {} })
+        return waitForConsumerToJoinGroup(consumer)
+      })
+    )
+
+    assignments.forEach(assignment =>
+      expect(Object.keys(assignment.payload.memberAssignment)).toEqual([topicNames[0]])
+    )
+
+    // One consumer is replaced with a new one, subscribing to the old topic as well as a new one
+    await consumer1.disconnect()
+    consumer1 = createConsumer({
+      cluster: createCluster({ metadataMaxAge: 50 }),
+      groupId,
+      heartbeatInterval: 100,
+      maxWaitTimeInMs: 100,
+      logger: newLogger(),
+    })
+    await consumer1.connect()
+    await Promise.all(topicNames.map(topic => consumer1.subscribe({ topic })))
+    consumer1.run({ eachMessage: () => {} })
+    await waitForConsumerToJoinGroup(consumer1)
+
+    // Second consumer is also replaced, subscribing to both topics
+    await consumer2.disconnect()
+    consumer2 = createConsumer({
+      cluster: createCluster({ metadataMaxAge: 50 }),
+      groupId,
+      heartbeatInterval: 100,
+      maxWaitTimeInMs: 100,
+      logger: newLogger(),
+    })
+
+    await consumer2.connect()
+    await Promise.all(topicNames.map(topic => consumer2.subscribe({ topic })))
+    consumer2.run({ eachMessage: () => {} })
+
+    // Both consumers are assigned to both topics
+    assignments = await Promise.all(
+      [consumer1, consumer2].map(consumer => waitForConsumerToJoinGroup(consumer))
+    )
+
+    assignments.forEach(assignment =>
+      expect(Object.keys(assignment.payload.memberAssignment)).toEqual(topicNames)
+    )
+  })
 })

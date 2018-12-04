@@ -242,6 +242,20 @@ describe('Broker > Fetch', () => {
   })
 
   describe('Record batch', () => {
+    const batchContext = {
+      firstOffset: expect.any(String),
+      firstSequence: expect.any(Number),
+      firstTimestamp: expect.any(String),
+      inTransaction: false,
+      isControlBatch: false,
+      lastOffsetDelta: expect.any(Number),
+      magicByte: 2,
+      maxTimestamp: expect.any(String),
+      partitionLeaderEpoch: expect.any(Number),
+      producerEpoch: 0,
+      producerId: '-1',
+    }
+
     beforeEach(async () => {
       await broker.disconnect()
 
@@ -289,6 +303,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
+                    batchContext,
                     offset: '0',
                     timestamp: '1509827900073',
                     headers: {},
@@ -299,6 +314,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
+                    batchContext,
                     offset: '1',
                     timestamp: '1509827900073',
                     headers: {},
@@ -309,6 +325,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
+                    batchContext,
                     offset: '2',
                     timestamp: '1509827900073',
                     headers: {},
@@ -365,6 +382,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
+                    batchContext,
                     offset: '0',
                     timestamp: '1509827900073',
                     headers: headerFor(messages[0]),
@@ -375,6 +393,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
+                    batchContext,
                     offset: '1',
                     timestamp: '1509827900073',
                     headers: headerFor(messages[1]),
@@ -385,6 +404,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
+                    batchContext,
                     offset: '2',
                     timestamp: '1509827900073',
                     headers: headerFor(messages[2]),
@@ -441,6 +461,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
+                    batchContext,
                     offset: '0',
                     timestamp: '1509827900073',
                     headers: {},
@@ -451,6 +472,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
+                    batchContext,
                     offset: '1',
                     timestamp: '1509827900073',
                     headers: {},
@@ -461,6 +483,7 @@ describe('Broker > Fetch', () => {
                   {
                     magicByte: 2,
                     attributes: 0,
+                    batchContext,
                     offset: '2',
                     timestamp: '1509827900073',
                     headers: {},
