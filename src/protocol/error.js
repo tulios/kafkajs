@@ -320,6 +320,11 @@ const errorCodes = [
   {
     type: 'CONCURRENT_TRANSACTIONS',
     code: 51,
+    /**
+     * The concurrent transactions error has "retriable" set to false on the protocol documentation (https://kafka.apache.org/protocol.html#protocol_error_codes)
+     * but the server expects the clients to retry. PR #223
+     * @see https://github.com/apache/kafka/blob/12f310d50e7f5b1c18c4f61a119a6cd830da3bc0/core/src/main/scala/kafka/coordinator/transaction/TransactionCoordinator.scala#L153
+     */
     retriable: true,
     message:
       'The producer attempted to update a transaction while another concurrent operation on the same transaction was ongoing',
