@@ -17,6 +17,7 @@ const SASLAuthenticator = require('./saslAuthenticator')
  * @param {boolean} [allowAutoTopicCreation=true] If this and the broker config 'auto.create.topics.enable'
  *                                                are true, topics that don't exist will be created when
  *                                                fetching metadata.
+ * @param {boolean} [supportAuthenticationProtocol=null] If the server supports the SASLAuthenticate protocol
  */
 module.exports = class Broker {
   constructor({
@@ -27,6 +28,7 @@ module.exports = class Broker {
     versions = null,
     authenticationTimeout = 1000,
     allowAutoTopicCreation = true,
+    supportAuthenticationProtocol = null,
   }) {
     this.connection = connection
     this.nodeId = nodeId
@@ -35,6 +37,7 @@ module.exports = class Broker {
     this.allowExperimentalV011 = allowExperimentalV011
     this.authenticationTimeout = authenticationTimeout
     this.allowAutoTopicCreation = allowAutoTopicCreation
+    this.supportAuthenticationProtocol = supportAuthenticationProtocol
     this.authenticated = false
 
     const lockTimeout = this.connection.connectionTimeout + this.authenticationTimeout
@@ -79,6 +82,20 @@ module.exports = class Broker {
       }
 
       this.lookupRequest = lookup(this.versions, this.allowExperimentalV011)
+
+      if (this.supportAuthenticationProtocol === null) {
+        try {
+          this.lookupRequest(apiKeys.SaslAuthenticate, requests.SaslAuthenticate)
+          this.supportAuthenticationProtocol = true
+        } catch (_) {
+          this.supportAuthenticationProtocol = false
+        }
+
+        this.logger.debug(`Verified support for SaslAuthenticate`, {
+          broker: this.brokerAddress,
+          supportAuthenticationProtocol: this.supportAuthenticationProtocol,
+        })
+      }
 
       if (!this.authenticated && this.connection.sasl) {
         await new SASLAuthenticator(this.connection, this.rootLogger, this.versions).authenticate()
