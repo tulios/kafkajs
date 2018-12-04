@@ -110,11 +110,13 @@ class SCRAM {
   /**
    * @param {Connection} connection
    * @param {Logger} logger
+   * @param {Function} saslAuthenticate
    * @param {DigestDefinition} digestDefinition
    */
-  constructor(connection, logger, digestDefinition) {
+  constructor(connection, logger, saslAuthenticate, digestDefinition) {
     this.connection = connection
     this.logger = logger
+    this.saslAuthenticate = saslAuthenticate
     this.digestDefinition = digestDefinition
 
     const digestType = digestDefinition.type.toUpperCase()
@@ -166,7 +168,7 @@ class SCRAM {
     const request = scram.firstMessage.request({ clientFirstMessage })
     const response = scram.firstMessage.response
 
-    return this.connection.authenticate({
+    return this.saslAuthenticate({
       authExpectResponse: true,
       request,
       response,
@@ -199,7 +201,7 @@ class SCRAM {
     const request = scram.finalMessage.request({ finalMessage })
     const response = scram.finalMessage.response
 
-    return this.connection.authenticate({
+    return this.saslAuthenticate({
       authExpectResponse: true,
       request,
       response,

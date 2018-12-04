@@ -33,6 +33,7 @@ module.exports = class Broker {
     this.connection = connection
     this.nodeId = nodeId
     this.rootLogger = logger
+    this.logger = logger.namespace('Broker')
     this.versions = versions
     this.allowExperimentalV011 = allowExperimentalV011
     this.authenticationTimeout = authenticationTimeout
@@ -41,11 +42,11 @@ module.exports = class Broker {
     this.authenticated = false
 
     const lockTimeout = this.connection.connectionTimeout + this.authenticationTimeout
-    const brokerAddress = `${this.connection.host}:${this.connection.port}`
+    this.brokerAddress = `${this.connection.host}:${this.connection.port}`
 
     this.lock = new Lock({
       timeout: lockTimeout,
-      description: `connect to broker ${brokerAddress}`,
+      description: `connect to broker ${this.brokerAddress}`,
     })
 
     this.lookupRequest = () => {
@@ -98,7 +99,14 @@ module.exports = class Broker {
       }
 
       if (!this.authenticated && this.connection.sasl) {
-        await new SASLAuthenticator(this.connection, this.rootLogger, this.versions).authenticate()
+        const authenticator = new SASLAuthenticator(
+          this.connection,
+          this.rootLogger,
+          this.versions,
+          this.supportAuthenticationProtocol
+        )
+
+        await authenticator.authenticate()
         this.authenticated = true
       }
     } finally {

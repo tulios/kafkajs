@@ -3,25 +3,27 @@ const { newLogger } = require('testHelpers')
 const SCRAM256 = require('./scram256')
 
 describe('Broker > SASL Authenticator > SCRAM', () => {
-  let connection, logger
+  let connection, saslAuthenticate, logger
 
   beforeEach(() => {
     connection = {
       authenticate: jest.fn(),
       sasl: { username: 'user', password: 'pencil' },
     }
+    saslAuthenticate = ({ request, response, authExpectResponse }) =>
+      connection.authenticate({ request, response, authExpectResponse })
 
     logger = { debug: jest.fn() }
     logger.namespace = () => logger
   })
 
   it('throws KafkaJSSASLAuthenticationError for invalid username', async () => {
-    const scram = new SCRAM256({ sasl: {} }, newLogger())
+    const scram = new SCRAM256({ sasl: {} }, newLogger(), saslAuthenticate)
     await expect(scram.authenticate()).rejects.toThrow('Invalid username or password')
   })
 
   it('throws KafkaJSSASLAuthenticationError for invalid password', async () => {
-    const scram = new SCRAM256({ sasl: { username: '<username>' } }, newLogger())
+    const scram = new SCRAM256({ sasl: { username: '<username>' } }, newLogger(), saslAuthenticate)
     await expect(scram.authenticate()).rejects.toThrow('Invalid username or password')
   })
 
@@ -29,7 +31,7 @@ describe('Broker > SASL Authenticator > SCRAM', () => {
     let scram
 
     beforeEach(() => {
-      scram = new SCRAM256(connection, logger)
+      scram = new SCRAM256(connection, logger, saslAuthenticate)
     })
 
     test('saltPassword', async () => {
