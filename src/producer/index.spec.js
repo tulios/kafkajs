@@ -33,7 +33,7 @@ const {
   createTopic,
 } = require('testHelpers')
 
-const { KafkaJSSASLAuthenticationError, KafkaJSNonRetriableError } = require('../errors')
+const { KafkaJSNonRetriableError } = require('../errors')
 
 describe('Producer', () => {
   let topicName, producer
