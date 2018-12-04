@@ -1,41 +1,59 @@
 const Long = require('long')
+const filterAbortedMessages = require('./filterAbortedMessages')
 
+/**
+ * A batch collects messages returned from a single fetch call.
+ *
+ * A batch could contain _multiple_ Kafka RecordBatches.
+ */
 module.exports = class Batch {
   constructor(topic, fetchedOffset, partitionData) {
     const longFetchedOffset = Long.fromValue(fetchedOffset)
+    const { abortedTransactions } = partitionData
 
     this.topic = topic
     this.partition = partitionData.partition
     this.highWatermark = partitionData.highWatermark
 
-    this.messages = partitionData.messages
-      // Apparently fetch can return different offsets than the target offset provided to the fetch API.
-      // Discard messages that are not in the requested offset
-      // https://github.com/apache/kafka/blob/bf237fa7c576bd141d78fdea9f17f65ea269c290/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L912
-      .filter(message => Long.fromValue(message.offset).gte(longFetchedOffset))
-      // Don't expose control records to the end user
-      // @see https://kafka.apache.org/documentation/#controlbatch
-      .filter(message => !message.isControlRecord)
+    // Apparently fetch can return different offsets than the target offset provided to the fetch API.
+    // Discard messages that are not in the requested offset
+    // https://github.com/apache/kafka/blob/bf237fa7c576bd141d78fdea9f17f65ea269c290/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L912
+    const messagesWithinOffset = partitionData.messages.filter(message =>
+      Long.fromValue(message.offset).gte(longFetchedOffset)
+    )
+    this.unfilteredMessages = messagesWithinOffset
+
+    // 1. Don't expose aborted messages
+    // 2. Don't expose control records
+    // @see https://kafka.apache.org/documentation/#controlbatch
+    this.messages = filterAbortedMessages({
+      messages: messagesWithinOffset,
+      abortedTransactions,
+    }).filter(message => !message.isControlRecord)
   }
 
   isEmpty() {
     return this.messages.length === 0
   }
 
+  isEmptyIncludingFiltered() {
+    return this.unfilteredMessages.length === 0
+  }
+
   firstOffset() {
-    return this.isEmpty() ? null : this.messages[0].offset
+    return this.isEmptyIncludingFiltered() ? null : this.unfilteredMessages[0].offset
   }
 
   lastOffset() {
-    return this.isEmpty()
+    return this.isEmptyIncludingFiltered()
       ? Long.fromValue(this.highWatermark)
           .add(-1)
           .toString()
-      : this.messages[this.messages.length - 1].offset
+      : this.unfilteredMessages[this.unfilteredMessages.length - 1].offset
   }
 
   offsetLag() {
-    if (this.isEmpty()) {
+    if (this.isEmptyIncludingFiltered()) {
       return '0'
     }
 

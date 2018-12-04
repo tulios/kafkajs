@@ -91,7 +91,9 @@ module.exports = ({ logger, cluster, partitioner, eosManager }) => {
           }
 
           const response = await broker.produce({
-            transactionalId: eosManager.getTransactionalId(),
+            transactionalId: eosManager.isTransactional()
+              ? eosManager.getTransactionalId()
+              : undefined,
             producerId: eosManager.getProducerId(),
             producerEpoch: eosManager.getProducerEpoch(),
             acks,
