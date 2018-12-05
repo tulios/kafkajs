@@ -1,5 +1,7 @@
 const Broker = require('../index')
 const createProducer = require('../../producer')
+const createRetrier = require('../../retry')
+
 const {
   secureRandom,
   createConnection,
@@ -511,7 +513,7 @@ describe('Broker > Fetch', () => {
   })
 
   describe('transactional', () => {
-    let transactionalId, producer
+    let transactionalId, producer, retry
 
     beforeEach(async () => {
       transactionalId = `transactional-id-${secureRandom()}`
@@ -529,6 +531,8 @@ describe('Broker > Fetch', () => {
         allowExperimentalV011: true,
       })
       await broker.connect()
+
+      retry = createRetrier({ retries: 5 })
     })
 
     testIfKafka_0_11(
@@ -581,92 +585,99 @@ describe('Broker > Fetch', () => {
 
         await txn.abort()
 
-        fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
-        expect(fetchResponse).toEqual({
-          throttleTime: 0,
-          responses: [
-            {
-              topicName,
-              partitions: [
-                {
-                  abortedTransactions: [
-                    {
-                      firstOffset: '0',
-                      producerId: expect.any(String),
-                    },
-                  ],
-                  errorCode: 0,
-                  highWatermark: '4', // Number of produced messages + 1 control record
-                  lastStableOffset: '4',
-                  partition: 0,
-                  messages: [
-                    {
-                      magicByte: 2,
-                      attributes: 0,
-                      batchContext: expectedBatchContext({
-                        producerEpoch: expect.any(Number),
+        // It appears there can be a delay between the EndTxn response
+        // and the control record appearing in the partition, likely because the
+        // transaction coordinator does not wait for the control record to
+        // be fully replicated. Retry since it should eventually appear.
+        // @see https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#bookmark=id.3af5934pfogc
+        await retry(async () => {
+          fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
+          expect(fetchResponse).toEqual({
+            throttleTime: 0,
+            responses: [
+              {
+                topicName,
+                partitions: [
+                  {
+                    abortedTransactions: [
+                      {
+                        firstOffset: '0',
                         producerId: expect.any(String),
-                        inTransaction: true,
-                      }),
-                      offset: '0',
-                      timestamp: expect.any(String),
-                      headers: {},
-                      key: Buffer.from(messages[0].key),
-                      value: Buffer.from(messages[0].value),
-                      isControlRecord: false,
-                    },
-                    {
-                      magicByte: 2,
-                      attributes: 0,
-                      batchContext: expectedBatchContext({
-                        producerEpoch: expect.any(Number),
-                        producerId: expect.any(String),
-                        inTransaction: true,
-                      }),
-                      offset: '1',
-                      timestamp: expect.any(String),
-                      headers: {},
-                      key: Buffer.from(messages[1].key),
-                      value: Buffer.from(messages[1].value),
-                      isControlRecord: false,
-                    },
-                    {
-                      magicByte: 2,
-                      attributes: 0,
-                      batchContext: expectedBatchContext({
-                        producerEpoch: expect.any(Number),
-                        producerId: expect.any(String),
-                        inTransaction: true,
-                      }),
-                      offset: '2',
-                      timestamp: expect.any(String),
-                      headers: {},
-                      key: Buffer.from(messages[2].key),
-                      value: Buffer.from(messages[2].value),
-                      isControlRecord: false,
-                    },
-                    // Control record
-                    {
-                      magicByte: 2,
-                      attributes: 0,
-                      batchContext: expectedBatchContext({
-                        producerEpoch: expect.any(Number),
-                        producerId: expect.any(String),
-                        inTransaction: true,
-                        isControlBatch: true,
-                      }),
-                      offset: '3',
-                      timestamp: expect.any(String),
-                      key: Buffer.from([0, 0, 0, 0]), // Aborted
-                      value: expect.any(Buffer),
-                      headers: {},
-                      isControlRecord: true,
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
+                      },
+                    ],
+                    errorCode: 0,
+                    highWatermark: '4', // Number of produced messages + 1 control record
+                    lastStableOffset: '4',
+                    partition: 0,
+                    messages: [
+                      {
+                        magicByte: 2,
+                        attributes: 0,
+                        batchContext: expectedBatchContext({
+                          producerEpoch: expect.any(Number),
+                          producerId: expect.any(String),
+                          inTransaction: true,
+                        }),
+                        offset: '0',
+                        timestamp: expect.any(String),
+                        headers: {},
+                        key: Buffer.from(messages[0].key),
+                        value: Buffer.from(messages[0].value),
+                        isControlRecord: false,
+                      },
+                      {
+                        magicByte: 2,
+                        attributes: 0,
+                        batchContext: expectedBatchContext({
+                          producerEpoch: expect.any(Number),
+                          producerId: expect.any(String),
+                          inTransaction: true,
+                        }),
+                        offset: '1',
+                        timestamp: expect.any(String),
+                        headers: {},
+                        key: Buffer.from(messages[1].key),
+                        value: Buffer.from(messages[1].value),
+                        isControlRecord: false,
+                      },
+                      {
+                        magicByte: 2,
+                        attributes: 0,
+                        batchContext: expectedBatchContext({
+                          producerEpoch: expect.any(Number),
+                          producerId: expect.any(String),
+                          inTransaction: true,
+                        }),
+                        offset: '2',
+                        timestamp: expect.any(String),
+                        headers: {},
+                        key: Buffer.from(messages[2].key),
+                        value: Buffer.from(messages[2].value),
+                        isControlRecord: false,
+                      },
+                      // Control record
+                      {
+                        magicByte: 2,
+                        attributes: 0,
+                        batchContext: expectedBatchContext({
+                          producerEpoch: expect.any(Number),
+                          producerId: expect.any(String),
+                          inTransaction: true,
+                          isControlBatch: true,
+                        }),
+                        offset: '3',
+                        timestamp: expect.any(String),
+                        key: Buffer.from([0, 0, 0, 0]), // Aborted
+                        value: expect.any(Buffer),
+                        headers: {},
+                        isControlRecord: true,
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          })
         })
       }
     )
@@ -774,48 +785,56 @@ describe('Broker > Fetch', () => {
         await txn.abort()
 
         topics[0].partitions[0].fetchOffset = 3
-        fetchResponse = await broker.fetch({
-          maxWaitTime,
-          minBytes,
-          maxBytes,
-          topics,
-          isolationLevel: ISOLATION_LEVEL.READ_UNCOMMITTED,
-        })
-        expect(fetchResponse).toEqual({
-          throttleTime: 0,
-          responses: [
-            {
-              topicName,
-              partitions: [
-                {
-                  abortedTransactions: [],
-                  errorCode: 0,
-                  highWatermark: '4',
-                  lastStableOffset: '-1',
-                  partition: 0,
-                  messages: [
-                    // Control record
-                    {
-                      magicByte: 2,
-                      attributes: 0,
-                      batchContext: expectedBatchContext({
-                        producerEpoch: expect.any(Number),
-                        producerId: expect.any(String),
-                        inTransaction: true,
-                        isControlBatch: true,
-                      }),
-                      offset: '3',
-                      timestamp: expect.any(String),
-                      key: Buffer.from([0, 0, 0, 0]), // Aborted
-                      value: expect.any(Buffer),
-                      headers: {},
-                      isControlRecord: true,
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
+
+        // It appears there can be a delay between the EndTxn response
+        // and the control record appearing in the partition, likely because the
+        // transaction coordinator does not wait for the control record to
+        // be fully replicated. Retry since it should eventually appear.
+        // @see https://docs.google.com/document/d/11Jqy_GjUGtdXJK94XGsEIK7CP1SnQGdp2eF0wSw9ra8/edit#bookmark=id.3af5934pfogc
+        await retry(async () => {
+          fetchResponse = await broker.fetch({
+            maxWaitTime,
+            minBytes,
+            maxBytes,
+            topics,
+            isolationLevel: ISOLATION_LEVEL.READ_UNCOMMITTED,
+          })
+          expect(fetchResponse).toEqual({
+            throttleTime: 0,
+            responses: [
+              {
+                topicName,
+                partitions: [
+                  {
+                    abortedTransactions: [],
+                    errorCode: 0,
+                    highWatermark: '4',
+                    lastStableOffset: '-1',
+                    partition: 0,
+                    messages: [
+                      // Control record
+                      {
+                        magicByte: 2,
+                        attributes: 0,
+                        batchContext: expectedBatchContext({
+                          producerEpoch: expect.any(Number),
+                          producerId: expect.any(String),
+                          inTransaction: true,
+                          isControlBatch: true,
+                        }),
+                        offset: '3',
+                        timestamp: expect.any(String),
+                        key: Buffer.from([0, 0, 0, 0]), // Aborted
+                        value: expect.any(Buffer),
+                        headers: {},
+                        isControlRecord: true,
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          })
         })
       }
     )
