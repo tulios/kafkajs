@@ -5,6 +5,7 @@ const {
   saslSCRAM256ConnectionOpts,
   saslSCRAM512ConnectionOpts,
   newLogger,
+  testIfKafka_1_1_0,
 } = require('testHelpers')
 
 const Broker = require('../index')
@@ -122,6 +123,60 @@ describe('Broker > connect', () => {
       })
       await broker.connect()
       expect(broker.isConnected()).toEqual(true)
+    })
+  })
+
+  describe('when SaslAuthenticate protocol is available', () => {
+    testIfKafka_1_1_0('authenticate with SASL PLAIN if configured', async () => {
+      broker = new Broker({
+        connection: createConnection(saslConnectionOpts()),
+        logger: newLogger(),
+      })
+      expect(broker.authenticated).toEqual(false)
+      await broker.connect()
+      expect(broker.authenticated).toEqual(true)
+      expect(broker.supportAuthenticationProtocol).toEqual(true)
+    })
+
+    testIfKafka_1_1_0('authenticate with SASL SCRAM 256 if configured', async () => {
+      broker = new Broker({
+        connection: createConnection(saslSCRAM256ConnectionOpts()),
+        logger: newLogger(),
+      })
+      expect(broker.authenticated).toEqual(false)
+      await broker.connect()
+      expect(broker.authenticated).toEqual(true)
+      expect(broker.supportAuthenticationProtocol).toEqual(true)
+    })
+
+    testIfKafka_1_1_0('authenticate with SASL SCRAM 512 if configured', async () => {
+      broker = new Broker({
+        connection: createConnection(saslSCRAM512ConnectionOpts()),
+        logger: newLogger(),
+      })
+      expect(broker.authenticated).toEqual(false)
+      await broker.connect()
+      expect(broker.authenticated).toEqual(true)
+      expect(broker.supportAuthenticationProtocol).toEqual(true)
+    })
+
+    testIfKafka_1_1_0('parallel calls to connect using SCRAM', async () => {
+      broker = new Broker({
+        connection: createConnection(saslSCRAM256ConnectionOpts()),
+        logger: newLogger(),
+      })
+
+      expect(broker.authenticated).toEqual(false)
+
+      await Promise.all([
+        broker.connect(),
+        broker.connect(),
+        broker.connect(),
+        broker.connect(),
+        broker.connect(),
+      ])
+
+      expect(broker.authenticated).toEqual(true)
     })
   })
 })

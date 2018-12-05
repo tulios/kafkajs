@@ -46,6 +46,7 @@ module.exports = class BrokerPool {
     this.metadata = null
     this.metadataExpireAt = null
     this.versions = null
+    this.supportAuthenticationProtocol = null
   }
 
   /**
@@ -98,9 +99,11 @@ module.exports = class BrokerPool {
   async disconnect() {
     await this.seedBroker.disconnect()
     await Promise.all(values(this.brokers).map(broker => broker.disconnect()))
+
     this.brokers = {}
     this.metadata = null
     this.versions = null
+    this.supportAuthenticationProtocol = null
   }
 
   /**
@@ -133,6 +136,7 @@ module.exports = class BrokerPool {
             [nodeId]: this.createBroker({
               logger: this.rootLogger,
               versions: this.versions,
+              supportAuthenticationProtocol: this.supportAuthenticationProtocol,
               connection: this.connectionBuilder.build({ host, port, rack }),
               nodeId,
             }),

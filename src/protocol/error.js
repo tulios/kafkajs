@@ -371,7 +371,7 @@ const errorCodes = [
     type: 'SASL_AUTHENTICATION_FAILED',
     code: 58,
     retriable: false,
-    message: 'False	SASL Authentication failed',
+    message: 'SASL Authentication failed',
   },
   {
     type: 'UNKNOWN_PRODUCER_ID',
@@ -500,6 +500,7 @@ const failure = code => code !== SUCCESS_CODE
 const createErrorFromCode = code => {
   return new KafkaJSProtocolError(errorCodes.find(e => e.code === code) || unknownErrorCode(code))
 }
+
 const failIfVersionNotSupported = code => {
   if (code === UNSUPPORTED_VERSION_CODE) {
     throw createErrorFromCode(UNSUPPORTED_VERSION_CODE)
