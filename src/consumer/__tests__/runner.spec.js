@@ -22,6 +22,7 @@ describe('Consumer > Runner', () => {
       resolveOffset: jest.fn(),
       commitOffsets: jest.fn(),
       commitOffsetsIfNecessary: jest.fn(),
+      uncommittedOffsets: jest.fn(),
       heartbeat: jest.fn(),
       isLeader: jest.fn(() => true),
     }
@@ -101,11 +102,17 @@ describe('Consumer > Runner', () => {
   })
 
   describe('when autoCommit is set to false', () => {
+    let eachBatchCallUncommittedOffsets
+
     beforeEach(() => {
+      eachBatchCallUncommittedOffsets = jest.fn(({ uncommittedOffsets }) => {
+        uncommittedOffsets()
+      })
+
       runner = new Runner({
         consumerGroup,
         instrumentationEmitter: new InstrumentationEventEmitter(),
-        eachBatch,
+        eachBatch: eachBatchCallUncommittedOffsets,
         onCrash,
         autoCommit: false,
         logger: newLogger(),
@@ -126,9 +133,12 @@ describe('Consumer > Runner', () => {
       runner.scheduleFetch = jest.fn()
       await runner.start()
       await runner.fetch() // Manually fetch for test
-      expect(eachBatch).toHaveBeenCalled()
+
       expect(consumerGroup.commitOffsets).not.toHaveBeenCalled()
       expect(consumerGroup.commitOffsetsIfNecessary).not.toHaveBeenCalled()
+      expect(eachBatchCallUncommittedOffsets).toHaveBeenCalled()
+      expect(consumerGroup.uncommittedOffsets).toHaveBeenCalled()
+
       expect(onCrash).not.toHaveBeenCalled()
     })
   })

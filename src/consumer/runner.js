@@ -174,8 +174,15 @@ module.exports = class Runner {
         heartbeat: async () => {
           await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
         },
+        /**
+         * Note that this method _does not_ heed the "autoCommit" option,
+         * since it will only ever be called manually by the user.
+         */
         commitOffsetsIfNecessary: async () => {
           await this.consumerGroup.commitOffsetsIfNecessary()
+        },
+        uncommittedOffsets: () => {
+          this.consumerGroup.uncommittedOffsets()
         },
         isRunning: () => this.running,
       })
