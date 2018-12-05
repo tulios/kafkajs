@@ -199,7 +199,7 @@ module.exports = class OffsetManager {
    * @property {PartitionOffset[]} partitions
    *
    * @typedef {Object} PartitionOffset
-   * @property {number} partition
+   * @property {string} partition
    * @property {string} offset
    */
   uncommittedOffsets() {
@@ -250,7 +250,7 @@ module.exports = class OffsetManager {
     this.instrumentationEmitter.emit(COMMIT_OFFSETS, payload)
 
     // Update local reference of committed offsets
-    topicsWithPartitionsToCommit.forEach(({ topic, partitions }) => {
+    topics.forEach(({ topic, partitions }) => {
       const updatedOffsets = partitions.reduce(
         (obj, { partition, offset }) => assign(obj, { [partition]: offset }),
         {}
