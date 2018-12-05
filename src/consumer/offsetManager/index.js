@@ -188,9 +188,21 @@ module.exports = class OffsetManager {
     }
   }
 
-  async commitOffsets() {
-    const { groupId, generationId, memberId } = this
-
+  /**
+   * Return all locally resolved offsets which are not marked as committed, by topic-partition.
+   * @returns {OffsetsByTopicPartition}
+   *
+   * @typedef {Object} OffsetsByTopicPartition
+   * @property {TopicOffsets[]} topics
+   *
+   * @typedef {Object} TopicOffsets
+   * @property {PartitionOffset[]} partitions
+   *
+   * @typedef {Object} PartitionOffset
+   * @property {number} partition
+   * @property {string} offset
+   */
+  uncommittedOffsets() {
     const offsets = topic => keys(this.resolvedOffsets[topic])
     const emptyPartitions = ({ partitions }) => partitions.length > 0
     const toPartitions = topic => partition => ({
@@ -214,7 +226,14 @@ module.exports = class OffsetManager {
       }))
       .filter(emptyPartitions)
 
-    if (topicsWithPartitionsToCommit.length === 0) {
+    return { topics: topicsWithPartitionsToCommit }
+  }
+
+  async commitOffsets() {
+    const { groupId, generationId, memberId } = this
+    const { topics } = this.uncommittedOffsets()
+
+    if (topics.length === 0) {
       this.lastCommit = Date.now()
       return
     }
@@ -223,7 +242,7 @@ module.exports = class OffsetManager {
       groupId,
       memberId,
       groupGenerationId: generationId,
-      topics: topicsWithPartitionsToCommit,
+      topics,
     }
 
     const coordinator = await this.getCoordinator()
