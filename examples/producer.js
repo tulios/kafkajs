@@ -48,7 +48,9 @@ const run = async () => {
   setInterval(sendMessage, 3000)
 }
 
-run().catch(console.error)
+run()
+  .catch(e => console.error(`[example/producer] ${e.message}`, e))
+  .then(() => producer.disconnect())
 
 const errorTypes = ['unhandledRejection', 'uncaughtException']
 const signalTraps = ['SIGTERM', 'SIGINT', 'SIGUSR2']

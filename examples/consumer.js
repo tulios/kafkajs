@@ -38,7 +38,9 @@ const run = async () => {
   })
 }
 
-run().catch(e => console.error(`[example/consumer] ${e.message}`, e))
+run()
+  .catch(e => console.error(`[example/consumer] ${e.message}`, e))
+  .then(() => consumer.disconnect())
 
 const errorTypes = ['unhandledRejection', 'uncaughtException']
 const signalTraps = ['SIGTERM', 'SIGINT', 'SIGUSR2']

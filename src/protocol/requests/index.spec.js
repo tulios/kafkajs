@@ -1,3 +1,4 @@
+const { KafkaJSServerDoesNotSupportApiKey } = require('../../errors')
 const { lookup } = require('./index')
 
 const API_KEY_PRODUCE = 0
@@ -33,6 +34,22 @@ describe('Protocol > Requests > lookup', () => {
 
       expect(lookup(versions)(apiKey, definition)).toEqual(true)
       expect(protocol).toHaveBeenCalledWith({ version: 2 })
+    })
+  })
+
+  describe('when the server does not support the requested version', () => {
+    it('throws KafkaJSServerDoesNotSupportApiKey', () => {
+      // versions supported by the server
+      const versions = { 1: { minVersion: 1, maxVersion: 3 } }
+
+      // versions supported by the client
+      const protocol = jest.fn(() => true)
+      const definition = { versions: [0, 1, 2], protocol }
+
+      const apiKeyNotSupportedByTheServer = 34
+      expect(() => lookup(versions)(apiKeyNotSupportedByTheServer, definition)).toThrow(
+        KafkaJSServerDoesNotSupportApiKey
+      )
     })
   })
 

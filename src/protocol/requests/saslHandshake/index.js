@@ -4,6 +4,11 @@ const versions = {
     const response = require('./v0/response')
     return { request: request({ mechanism }), response }
   },
+  1: ({ mechanism }) => {
+    const request = require('./v1/request')
+    const response = require('./v1/response')
+    return { request: request({ mechanism }), response }
+  },
 }
 
 module.exports = {

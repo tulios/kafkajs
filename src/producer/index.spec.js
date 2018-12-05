@@ -33,7 +33,7 @@ const {
   createTopic,
 } = require('testHelpers')
 
-const { KafkaJSSASLAuthenticationError, KafkaJSNonRetriableError } = require('../errors')
+const { KafkaJSNonRetriableError } = require('../errors')
 
 describe('Producer', () => {
   let topicName, producer
@@ -123,11 +123,7 @@ describe('Producer', () => {
     )
 
     producer = createProducer({ cluster, logger: newLogger() })
-    await expect(producer.connect()).rejects.toEqual(
-      new KafkaJSSASLAuthenticationError(
-        'SASL PLAIN authentication failed: Connection closed by the server'
-      )
-    )
+    await expect(producer.connect()).rejects.toThrow(/SASL PLAIN authentication failed/)
   })
 
   test('throws an error if SASL SCRAM 256 fails to authenticate', async () => {
@@ -143,11 +139,7 @@ describe('Producer', () => {
     )
 
     producer = createProducer({ cluster, logger: newLogger() })
-    await expect(producer.connect()).rejects.toEqual(
-      new KafkaJSSASLAuthenticationError(
-        'SASL SCRAM SHA256 authentication failed: Connection closed by the server'
-      )
-    )
+    await expect(producer.connect()).rejects.toThrow(/SASL SCRAM SHA256 authentication failed/)
   })
 
   test('throws an error if SASL SCRAM 512 fails to authenticate', async () => {
@@ -163,11 +155,7 @@ describe('Producer', () => {
     )
 
     producer = createProducer({ cluster, logger: newLogger() })
-    await expect(producer.connect()).rejects.toEqual(
-      new KafkaJSSASLAuthenticationError(
-        'SASL SCRAM SHA512 authentication failed: Connection closed by the server'
-      )
-    )
+    await expect(producer.connect()).rejects.toThrow(/SASL SCRAM SHA512 authentication failed/)
   })
 
   test('reconnects the cluster if disconnected', async () => {
