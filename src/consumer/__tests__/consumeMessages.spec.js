@@ -13,6 +13,7 @@ const {
   waitForMessages,
   testIfKafka_0_11,
   waitForConsumerToJoinGroup,
+  generateMessages,
 } = require('testHelpers')
 
 describe('Consumer', () => {
@@ -213,24 +214,18 @@ describe('Consumer', () => {
     consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
     await waitForConsumerToJoinGroup(consumer)
 
-    const generateMessages = () =>
-      Array(103)
-        .fill()
-        .map(() => {
-          const value = secureRandom()
-          return {
-            key: `key-${value}`,
-            value: `value-${value}`,
-            headers: {
-              'header-keyA': `header-valueA-${value}`,
-              'header-keyB': `header-valueB-${value}`,
-              'header-keyC': `header-valueC-${value}`,
-            },
-          }
-        })
+    const generateMessagesWitHeaders = () =>
+      generateMessages({ number: 103 }).map((message, i) => ({
+        ...message,
+        headers: {
+          'header-keyA': `header-valueA-${i}`,
+          'header-keyB': `header-valueB-${i}`,
+          'header-keyC': `header-valueC-${i}`,
+        },
+      }))
 
-    const messages1 = generateMessages()
-    const messages2 = generateMessages()
+    const messages1 = generateMessagesWitHeaders()
+    const messages2 = generateMessagesWitHeaders()
 
     await producer.sendBatch({
       acks: 1,
@@ -421,17 +416,6 @@ describe('Consumer', () => {
   })
 
   describe('transactions', () => {
-    const generateMessages = (prefix, length = 100) =>
-      Array(length)
-        .fill()
-        .map((v, i) => {
-          const value = secureRandom()
-          return {
-            key: `key-${prefix}-${i}-${value}`,
-            value: `value-${prefix}-${i}-${value}`,
-          }
-        })
-
     testIfKafka_0_11('accepts messages from an idempotent producer', async () => {
       cluster = createCluster({ allowExperimentalV011: true })
       producer = createProducer({
@@ -457,7 +441,7 @@ describe('Consumer', () => {
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
       const messagesConsumed = []
-      const idempotentMessages = generateMessages('idempotent')
+      const idempotentMessages = generateMessages({ prefix: 'idempotent' })
 
       consumer.run({
         eachMessage: async event => messagesConsumed.push(event),
@@ -503,10 +487,10 @@ describe('Consumer', () => {
 
       const messagesConsumed = []
 
-      const messages1 = generateMessages('txn1')
-      const messages2 = generateMessages('txn2')
-      const nontransactionalMessages1 = generateMessages('nontransactional1', 1)
-      const nontransactionalMessages2 = generateMessages('nontransactional2', 1)
+      const messages1 = generateMessages({ prefix: 'txn1' })
+      const messages2 = generateMessages({ prefix: 'txn2' })
+      const nontransactionalMessages1 = generateMessages({ prefix: 'nontransactional1', number: 1 })
+      const nontransactionalMessages2 = generateMessages({ prefix: 'nontransactional2', number: 1 })
 
       consumer.run({
         eachMessage: async event => messagesConsumed.push(event),
@@ -579,10 +563,10 @@ describe('Consumer', () => {
 
       const messagesConsumed = []
 
-      const abortedMessages1 = generateMessages('aborted-txn-1')
-      const abortedMessages2 = generateMessages('aborted-txn-2')
-      const nontransactionalMessages = generateMessages('nontransactional', 1)
-      const committedMessages = generateMessages('committed-txn', 10)
+      const abortedMessages1 = generateMessages({ prefix: 'aborted-txn-1' })
+      const abortedMessages2 = generateMessages({ prefix: 'aborted-txn-2' })
+      const nontransactionalMessages = generateMessages({ prefix: 'nontransactional', number: 1 })
+      const committedMessages = generateMessages({ prefix: 'committed-txn', number: 10 })
 
       consumer.run({
         eachMessage: async event => messagesConsumed.push(event),
@@ -652,7 +636,7 @@ describe('Consumer', () => {
 
         const messagesConsumed = []
 
-        const abortedMessages = generateMessages('aborted-txn1')
+        const abortedMessages = generateMessages({ prefix: 'aborted-txn1' })
 
         consumer.run({
           eachMessage: async event => messagesConsumed.push(event),
