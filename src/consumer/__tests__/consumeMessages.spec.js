@@ -686,37 +686,94 @@ describe('Consumer', () => {
 
       // 1. Run consumer with "autoCommit=false"
 
-      const messagesConsumed = []
-      const uncommittedOffsetsPerMessage = []
+      let messagesConsumed = []
+      let uncommittedOffsetsPerMessage = []
 
-      consumer.run({
-        eachBatch: async ({
-          batch: { messages },
-          uncommittedOffsets,
-          heartbeat,
-          resolveOffset,
-        }) => {
-          for (const message in messages) {
-            messagesConsumed.push(message)
-            resolveOffset(message.offset)
-            uncommittedOffsetsPerMessage.push(uncommittedOffsets())
-          }
+      const eachBatch = async ({
+        batch: { messages },
+        uncommittedOffsets,
+        heartbeat,
+        resolveOffset,
+      }) => {
+        for (const message in messages) {
+          messagesConsumed.push(message)
+          resolveOffset(message.offset)
+          uncommittedOffsetsPerMessage.push(uncommittedOffsets())
+        }
 
-          await heartbeat()
-        },
-      })
+        await heartbeat()
+      }
+
+      consumer.run({ eachBatch })
       await waitForConsumerToJoinGroup(consumer)
 
       // 2. Produce messages
+
+      const messages = generateMessages()
+      await producer.send({
+        topic: topicName,
+        messages,
+      })
+
       // 3. Call sendOffset for all offsets prior to the last message
+      const number = messages.length
+      await waitForMessages(messagesConsumed, {
+        number,
+      })
+
+      expect(messagesConsumed[0].message.value.toString()).toMatch(/value-generated-0/)
+      expect(messagesConsumed[99].message.value.toString()).toMatch(/value-generated-99/)
+
+      // * Assert we received offsets
+
+      const txnToAbort = await producer.transaction()
+      await txnToAbort.sendOffsets(
+        uncommittedOffsetsPerMessage[uncommittedOffsetsPerMessage.length - 2]
+      )
+
       // 4. Stop consumer
+
+      await consumer.stop()
+
       // 5. Abort txn
+
+      await txnToAbort.abort()
+
       // 6. Start consumer
+
+      messagesConsumed = []
+      uncommittedOffsetsPerMessage = []
+      consumer.run({ eachBatch })
+
       // 7. Assert we process previously produced messages
-      // 8. Repeat #3 & #4
-      // 9. Commit txn
+      await waitForMessages(messagesConsumed, {
+        number,
+      })
+
+      expect(messagesConsumed[0].message.value.toString()).toMatch(/value-generated-0/)
+      expect(messagesConsumed[99].message.value.toString()).toMatch(/value-generated-99/)
+
+      // 8. Stop the consumer again
+
+      await consumer.stop()
+
+      // 9. Send offsets & commit txn
+
+      const txnToCommit = await producer.transaction()
+      await txnToCommit.sendOffsets(
+        uncommittedOffsetsPerMessage[uncommittedOffsetsPerMessage.length - 2]
+      )
+      await txnToCommit.commit()
+
       // 10. Start consumer
+
+      consumer.run({ eachBatch })
+
       // 11. Assert we consume from the last message (whose offset is after that which we sent)
+      await waitForMessages(messagesConsumed, {
+        number: 1,
+      })
+      expect(messagesConsumed[0].message.value.toString()).toMatch(/value-generated-99/)
     })
   })
 })
