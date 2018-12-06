@@ -8,6 +8,7 @@ const Cluster = require('./cluster')
 const createProducer = require('./producer')
 const createConsumer = require('./consumer')
 const createAdmin = require('./admin')
+const ISOLATION_LEVEL = require('./protocol/isolationLevel')
 
 const PRIVATE = {
   CREATE_CLUSTER: Symbol('private:Kafka:createCluster'),
@@ -32,6 +33,7 @@ module.exports = class Client {
       metadataMaxAge = 300000,
       allowAutoTopicCreation = true,
       maxInFlightRequests = null,
+      isolationLevel,
     }) =>
       new Cluster({
         logger: this[PRIVATE.LOGGER],
@@ -46,6 +48,7 @@ module.exports = class Client {
         allowAutoTopicCreation,
         allowExperimentalV011,
         maxInFlightRequests,
+        isolationLevel,
       })
   }
 
@@ -95,11 +98,17 @@ module.exports = class Client {
     retry,
     allowAutoTopicCreation,
     maxInFlightRequests,
+    readUncommitted = false,
   } = {}) {
+    const isolationLevel = readUncommitted
+      ? ISOLATION_LEVEL.READ_UNCOMMITTED
+      : ISOLATION_LEVEL.READ_COMMITTED
+
     const cluster = this[PRIVATE.CREATE_CLUSTER]({
       metadataMaxAge,
       allowAutoTopicCreation,
       maxInFlightRequests,
+      isolationLevel,
     })
 
     return createConsumer({
@@ -114,6 +123,7 @@ module.exports = class Client {
       minBytes,
       maxBytes,
       maxWaitTimeInMs,
+      isolationLevel,
     })
   }
 

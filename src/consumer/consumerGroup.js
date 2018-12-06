@@ -37,6 +37,7 @@ module.exports = class ConsumerGroup {
     maxWaitTimeInMs,
     autoCommitInterval,
     autoCommitThreshold,
+    isolationLevel,
   }) {
     this.cluster = cluster
     this.groupId = groupId
@@ -53,6 +54,7 @@ module.exports = class ConsumerGroup {
     this.maxWaitTime = maxWaitTimeInMs
     this.autoCommitInterval = autoCommitInterval
     this.autoCommitThreshold = autoCommitThreshold
+    this.isolationLevel = isolationLevel
 
     this.seekOffset = new SeekOffsets()
     this.coordinator = null
@@ -348,6 +350,7 @@ module.exports = class ConsumerGroup {
           maxWaitTime,
           minBytes,
           maxBytes,
+          isolationLevel: this.isolationLevel,
           topics: requestsPerLeader[nodeId],
         })
 

@@ -1,8 +1,12 @@
 jest.mock('./producer')
+jest.mock('./consumer')
 jest.mock('./cluster')
 
 const Client = require('./index')
 const createProducer = require('./producer')
+const createConsumer = require('./consumer')
+const Cluster = require('./cluster')
+const ISOLATION_LEVEL = require('./protocol/isolationLevel')
 
 describe('Client', () => {
   it('gives access to its logger', () => {
@@ -23,5 +27,45 @@ describe('Client', () => {
     client.producer(options)
 
     expect(createProducer).toHaveBeenCalledWith(options)
+  })
+
+  describe('consumer', () => {
+    test('creates a consumer with the correct isolation level', () => {
+      const client = new Client({ brokers: [] })
+
+      const readCommittedConsumerOptions = {
+        readUncommitted: false,
+      }
+      const readUncommittedConsumerOptions = {
+        readUncommitted: true,
+      }
+      client.consumer(readCommittedConsumerOptions)
+
+      expect(Cluster).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isolationLevel: ISOLATION_LEVEL.READ_COMMITTED,
+        })
+      )
+      expect(createConsumer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isolationLevel: ISOLATION_LEVEL.READ_COMMITTED,
+        })
+      )
+
+      createConsumer.mockClear()
+      Cluster.mockClear()
+      client.consumer(readUncommittedConsumerOptions)
+
+      expect(Cluster).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isolationLevel: ISOLATION_LEVEL.READ_UNCOMMITTED,
+        })
+      )
+      expect(createConsumer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isolationLevel: ISOLATION_LEVEL.READ_UNCOMMITTED,
+        })
+      )
+    })
   })
 })
