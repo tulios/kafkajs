@@ -661,5 +661,62 @@ describe('Consumer', () => {
         )
       }
     )
+
+    test.only('supports the "consume-transform-produce" workflow', async () => {
+      cluster = createCluster({ allowExperimentalV011: true })
+      producer = createProducer({
+        cluster,
+        createPartitioner: createModPartitioner,
+        logger: newLogger(),
+        transactionalId: `transactional-id-${secureRandom()}`,
+        maxInFlightRequests: 1,
+      })
+
+      consumer = createConsumer({
+        autoCommit: false, // Have to manage offsets manually
+        cluster,
+        groupId,
+        maxWaitTimeInMs: 100,
+        logger: newLogger(),
+      })
+
+      await consumer.connect()
+      await producer.connect()
+      await consumer.subscribe({ topic: topicName })
+
+      // 1. Run consumer with "autoCommit=false"
+
+      const messagesConsumed = []
+      const uncommittedOffsetsPerMessage = []
+
+      consumer.run({
+        eachBatch: async ({
+          batch: { messages },
+          uncommittedOffsets,
+          heartbeat,
+          resolveOffset,
+        }) => {
+          for (const message in messages) {
+            messagesConsumed.push(message)
+            resolveOffset(message.offset)
+            uncommittedOffsetsPerMessage.push(uncommittedOffsets())
+          }
+
+          await heartbeat()
+        },
+      })
+      await waitForConsumerToJoinGroup(consumer)
+
+      // 2. Produce messages
+      // 3. Call sendOffset for all offsets prior to the last message
+      // 4. Stop consumer
+      // 5. Abort txn
+      // 6. Start consumer
+      // 7. Assert we process previously produced messages
+      // 8. Repeat #3 & #4
+      // 9. Commit txn
+      // 10. Start consumer
+      // 11. Assert we consume from the last message (whose offset is after that which we sent)
+    })
   })
 })
