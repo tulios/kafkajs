@@ -126,7 +126,12 @@ module.exports = class ConsumerGroup {
 
       await this.cluster.refreshMetadata()
 
-      assignment = await assigner.assign({ members, topics: topicsSubscribed })
+      assignment = await assigner.assign({
+        members,
+        leaderMemberId: memberId,
+        topics: topicsSubscribed,
+      })
+
       this.logger.debug('Group assignment', {
         groupId,
         generationId,
