@@ -273,14 +273,15 @@ module.exports = class ConsumerGroup {
   async heartbeat({ interval }) {
     const { groupId, generationId, memberId } = this
     const now = Date.now()
-    if (now >= this.lastRequest + interval) {
+
+    if (memberId && now >= this.lastRequest + interval) {
       const payload = {
         groupId,
         memberId,
         groupGenerationId: generationId,
       }
-      await this.coordinator.heartbeat(payload)
 
+      await this.coordinator.heartbeat(payload)
       this.instrumentationEmitter.emit(HEARTBEAT, payload)
       this.lastRequest = Date.now()
     }
