@@ -326,7 +326,11 @@ describe('Consumer > Instrumentation Events', () => {
     const requestListener = jest.fn().mockName('request')
     consumer.on(consumer.events.REQUEST_TIMEOUT, requestListener)
 
-    await consumer.connect().catch(e => e)
+    await consumer
+      .connect()
+      .then(() => consumer.run({ eachMessage: () => true }))
+      .catch(e => e)
+
     expect(requestListener).toHaveBeenCalledWith({
       id: expect.any(Number),
       timestamp: expect.any(Number),
