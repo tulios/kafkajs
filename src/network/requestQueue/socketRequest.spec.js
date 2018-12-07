@@ -1,6 +1,8 @@
 const sleep = require('../../utils/sleep')
 const SocketRequest = require('./socketRequest')
 const { KafkaJSRequestTimeoutError, KafkaJSNonRetriableError } = require('../../errors')
+const InstrumentationEventEmitter = require('../../instrumentation/emitter')
+const events = require('../instrumentationEvents')
 
 describe('Network > SocketRequest', () => {
   let request, sendRequest, timeoutHandler
@@ -9,14 +11,27 @@ describe('Network > SocketRequest', () => {
   const size = 32
   const payload = { ok: true }
 
+  const createSocketRequest = (args = {}) =>
+    new SocketRequest({
+      requestTimeout,
+      broker: 'localhost:9092',
+      clientId: 'KafkaJS',
+      expectResponse: true,
+      entry: {
+        apiKey: 0,
+        apiVersion: 4,
+        apiName: 'Produce',
+        correlationId: correlationId++,
+        resolve: jest.fn(),
+        reject: jest.fn(),
+      },
+      ...args,
+    })
+
   beforeEach(() => {
     sendRequest = jest.fn()
     timeoutHandler = jest.fn()
-    request = new SocketRequest({
-      requestTimeout,
-      broker: 'localhost:9092',
-      expectResponse: true,
-      entry: { correlationId: correlationId++, resolve: jest.fn(), reject: jest.fn() },
+    request = createSocketRequest({
       send: sendRequest,
       timeout: timeoutHandler,
     })
@@ -102,6 +117,74 @@ describe('Network > SocketRequest', () => {
       expect(() => request.rejected(error)).toThrow(KafkaJSNonRetriableError)
 
       expect(request.entry.reject).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('instrumentation events', () => {
+    let emitter, removeListener, eventCalled
+
+    beforeEach(() => {
+      eventCalled = jest.fn()
+      emitter = new InstrumentationEventEmitter()
+      request = request = createSocketRequest({
+        send: sendRequest,
+        timeout: timeoutHandler,
+        instrumentationEmitter: emitter,
+      })
+    })
+
+    afterEach(() => {
+      removeListener && removeListener()
+    })
+
+    it('emits NETWORK_REQUEST', () => {
+      emitter.addListener(events.NETWORK_REQUEST, eventCalled)
+      request.send()
+      request.completed({ size, payload })
+      expect(eventCalled).toHaveBeenCalledWith({
+        id: expect.any(Number),
+        type: 'network.request',
+        timestamp: expect.any(Number),
+        payload: {
+          apiKey: 0,
+          apiName: 'Produce',
+          apiVersion: 4,
+          broker: 'localhost:9092',
+          clientId: 'KafkaJS',
+          correlationId: expect.any(Number),
+          createdAt: expect.any(Number),
+          duration: expect.any(Number),
+          pendingDuration: expect.any(Number),
+          sentAt: expect.any(Number),
+          size,
+        },
+      })
+    })
+
+    it('emits NETWORK_REQUEST_TIMEOUT', async () => {
+      jest.spyOn(request, 'rejected')
+      emitter.addListener(events.NETWORK_REQUEST_TIMEOUT, eventCalled)
+      request.send()
+
+      await sleep(requestTimeout + 1)
+
+      expect(timeoutHandler).toHaveBeenCalled()
+      expect(eventCalled).toHaveBeenCalledWith({
+        id: expect.any(Number),
+        type: 'network.request_timeout',
+        timestamp: expect.any(Number),
+        payload: {
+          apiKey: 0,
+          apiName: 'Produce',
+          apiVersion: 4,
+          broker: 'localhost:9092',
+          clientId: 'KafkaJS',
+          correlationId: expect.any(Number),
+          createdAt: expect.any(Number),
+          pendingDuration: expect.any(Number),
+          sentAt: expect.any(Number),
+        },
+      })
     })
   })
 })
