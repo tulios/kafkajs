@@ -1,10 +1,9 @@
 const createRetry = require('../retry')
 const createDefaultPartitioner = require('./partitioners/default')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
-const events = require('./instrumentationEvents')
 const createEosManager = require('./eosManager')
 const createMessageProducer = require('./messageProducer')
-const { CONNECT, DISCONNECT } = require('./instrumentationEvents')
+const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentationEvents')
 const { KafkaJSNonRetriableError } = require('../errors')
 
 const { values, keys } = Object
@@ -12,6 +11,8 @@ const eventNames = values(events)
 const eventKeys = keys(events)
   .map(key => `producer.events.${key}`)
   .join(', ')
+
+const { CONNECT, DISCONNECT } = events
 
 module.exports = ({
   cluster,
@@ -21,6 +22,7 @@ module.exports = ({
   idempotent = false,
   transactionalId,
   transactionTimeout,
+  instrumentationEmitter: rootInstrumentationEmitter,
 }) => {
   retry = retry || { retries: idempotent ? Number.MAX_SAFE_INTEGER : 5 }
 
@@ -38,7 +40,7 @@ module.exports = ({
 
   const partitioner = createPartitioner()
   const retrier = createRetry(Object.assign({}, cluster.retry, retry))
-  const instrumentationEmitter = new InstrumentationEventEmitter()
+  const instrumentationEmitter = rootInstrumentationEmitter || new InstrumentationEventEmitter()
   const idempotentEosManager = createEosManager({
     logger,
     cluster,
@@ -46,7 +48,6 @@ module.exports = ({
     transactional: false,
     transactionalId,
   })
-  let transactionalEosManager
 
   const { send, sendBatch } = createMessageProducer({
     logger,
@@ -56,6 +57,8 @@ module.exports = ({
     idempotent,
     retrier,
   })
+
+  let transactionalEosManager
 
   /**
    * @param {string} eventName
@@ -67,7 +70,8 @@ module.exports = ({
       throw new KafkaJSNonRetriableError(`Event name should be one of ${eventKeys}`)
     }
 
-    return instrumentationEmitter.addListener(eventName, event => {
+    return instrumentationEmitter.addListener(unwrapEvent(eventName), event => {
+      event.type = wrapEvent(event.type)
       Promise.resolve(listener(event)).catch(e => {
         logger.error(`Failed to execute listener: ${e.message}`, {
           eventName,

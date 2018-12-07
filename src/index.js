@@ -70,10 +70,12 @@ module.exports = class Client {
     transactionTimeout,
     maxInFlightRequests,
   } = {}) {
+    const instrumentationEmitter = new InstrumentationEventEmitter()
     const cluster = this[PRIVATE.CREATE_CLUSTER]({
       metadataMaxAge,
       allowAutoTopicCreation,
       maxInFlightRequests,
+      instrumentationEmitter,
     })
 
     return createProducer({
@@ -84,6 +86,7 @@ module.exports = class Client {
       idempotent,
       transactionalId,
       transactionTimeout,
+      instrumentationEmitter,
     })
   }
 
