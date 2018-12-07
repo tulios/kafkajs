@@ -143,9 +143,9 @@ describe('Consumer', () => {
     const batchesConsumed = []
     const functionsExposed = []
     consumer.run({
-      eachBatch: async ({ batch, resolveOffset, heartbeat, isRunning }) => {
+      eachBatch: async ({ batch, resolveOffset, heartbeat, isRunning, uncommittedOffsets }) => {
         batchesConsumed.push(batch)
-        functionsExposed.push(resolveOffset, heartbeat, isRunning)
+        functionsExposed.push(resolveOffset, heartbeat, isRunning, uncommittedOffsets)
       },
     })
 
@@ -179,6 +179,7 @@ describe('Consumer', () => {
     ])
 
     expect(functionsExposed).toEqual([
+      expect.any(Function),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
