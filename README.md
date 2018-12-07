@@ -1181,11 +1181,67 @@ List of available events:
 * consumer.events.CRASH
   payload: {`error`, `groupId`}
 
+* consumer.events.REQUEST
+  payload: {
+    `broker`,
+    `clientId`,
+    `correlationId`,
+    `size`,
+    `createdAt`,
+    `sentAt`,
+    `pendingDuration`,
+    `duration`,
+    `apiName`,
+    `apiKey`,
+    `apiVersion`
+  }
+
+* consumer.events.REQUEST_TIMEOUT
+  payload: {
+    `broker`,
+    `clientId`,
+    `correlationId`,
+    `createdAt`,
+    `sentAt`,
+    `pendingDuration`,
+    `apiName`,
+    `apiKey`,
+    `apiVersion`
+  }
+
 ### <a name="instrumentation-producer"></a> Producer
 
 * producer.events.CONNECT
 
 * producer.events.DISCONNECT
+
+* producer.events.REQUEST
+  payload: {
+    `broker`,
+    `clientId`,
+    `correlationId`,
+    `size`,
+    `createdAt`,
+    `sentAt`,
+    `pendingDuration`,
+    `duration`,
+    `apiName`,
+    `apiKey`,
+    `apiVersion`
+  }
+
+* producer.events.REQUEST_TIMEOUT
+  payload: {
+    `broker`,
+    `clientId`,
+    `correlationId`,
+    `createdAt`,
+    `sentAt`,
+    `pendingDuration`,
+    `apiName`,
+    `apiKey`,
+    `apiVersion`
+  }
 
 ### <a name="instrumentation-admin"></a> Admin
 
