@@ -5,7 +5,9 @@ const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
 const SubscriptionState = require('./subscriptionState')
-const { HEARTBEAT } = require('./instrumentationEvents')
+const {
+  events: { HEARTBEAT },
+} = require('./instrumentationEvents')
 const { MemberAssignment } = require('./assignerProtocol')
 const {
   KafkaJSError,

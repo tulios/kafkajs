@@ -1,10 +1,7 @@
 const createRetry = require('../retry')
 const { KafkaJSError } = require('../errors')
 const {
-  GROUP_JOIN,
-  FETCH,
-  START_BATCH_PROCESS,
-  END_BATCH_PROCESS,
+  events: { GROUP_JOIN, FETCH, START_BATCH_PROCESS, END_BATCH_PROCESS },
 } = require('./instrumentationEvents')
 
 const isTestMode = process.env.NODE_ENV === 'test'

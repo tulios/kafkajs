@@ -1,3 +1,4 @@
+const InstrumentationEventEmitter = require('../../instrumentation/emitter')
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
 
@@ -11,7 +12,7 @@ const {
 } = require('testHelpers')
 
 describe('Consumer > Instrumentation Events', () => {
-  let topicName, groupId, cluster, producer, consumer, message
+  let topicName, groupId, cluster, producer, consumer, message, emitter
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
@@ -19,7 +20,8 @@ describe('Consumer > Instrumentation Events', () => {
 
     await createTopic({ topic: topicName })
 
-    cluster = createCluster()
+    emitter = new InstrumentationEventEmitter()
+    cluster = createCluster({ instrumentationEmitter: emitter })
     producer = createProducer({
       cluster,
       createPartitioner: createModPartitioner,
@@ -33,6 +35,7 @@ describe('Consumer > Instrumentation Events', () => {
       heartbeatInterval: 100,
       maxWaitTimeInMs: 1,
       maxBytesPerPartition: 180,
+      instrumentationEmitter: emitter,
     })
 
     message = { key: `key-${secureRandom()}`, value: `value-${secureRandom()}` }
@@ -283,6 +286,62 @@ describe('Consumer > Instrumentation Events', () => {
       timestamp: expect.any(Number),
       type: 'consumer.crash',
       payload: { error, groupId },
+    })
+  })
+
+  it('emits request events', async () => {
+    const requestListener = jest.fn().mockName('request')
+    consumer.on(consumer.events.REQUEST, requestListener)
+
+    await consumer.connect()
+    expect(requestListener).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.network.request',
+      payload: {
+        apiKey: 18,
+        apiName: 'ApiVersions',
+        apiVersion: expect.any(Number),
+        broker: expect.any(String),
+        clientId: expect.any(String),
+        correlationId: expect.any(Number),
+        createdAt: expect.any(Number),
+        duration: expect.any(Number),
+        pendingDuration: expect.any(Number),
+        sentAt: expect.any(Number),
+        size: expect.any(Number),
+      },
+    })
+  })
+
+  it('emits request timeout events', async () => {
+    cluster = createCluster({ instrumentationEmitter: emitter, requestTimeout: 1 })
+    consumer = createConsumer({
+      cluster,
+      groupId,
+      logger: newLogger(),
+      instrumentationEmitter: emitter,
+    })
+
+    const requestListener = jest.fn().mockName('request')
+    consumer.on(consumer.events.REQUEST_TIMEOUT, requestListener)
+
+    await consumer.connect().catch(e => e)
+    expect(requestListener).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.network.request_timeout',
+      payload: {
+        apiKey: 18,
+        apiName: 'ApiVersions',
+        apiVersion: expect.any(Number),
+        broker: expect.any(String),
+        clientId: expect.any(String),
+        correlationId: expect.any(Number),
+        createdAt: expect.any(Number),
+        pendingDuration: expect.any(Number),
+        sentAt: expect.any(Number),
+      },
     })
   })
 })

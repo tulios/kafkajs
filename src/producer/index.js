@@ -59,8 +59,8 @@ module.exports = ({
 
   /**
    * @param {string} eventName
-   * @param {Function} listener
-   * @return {Function}
+   * @param {AsyncFunction} listener
+   * @return {Function} removeListener
    */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {

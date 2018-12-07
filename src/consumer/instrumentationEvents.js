@@ -1,7 +1,9 @@
+const swapObject = require('../utils/swapObject')
 const InstrumentationEventType = require('../instrumentation/eventType')
+const networkEvents = require('../network/InstrumentationEvents')
 const consumerType = InstrumentationEventType('consumer')
 
-module.exports = {
+const events = {
   HEARTBEAT: consumerType('heartbeat'),
   COMMIT_OFFSETS: consumerType('commit_offsets'),
   GROUP_JOIN: consumerType('group_join'),
@@ -12,4 +14,21 @@ module.exports = {
   DISCONNECT: consumerType('disconnect'),
   STOP: consumerType('stop'),
   CRASH: consumerType('crash'),
+  REQUEST: consumerType(networkEvents.NETWORK_REQUEST),
+  REQUEST_TIMEOUT: consumerType(networkEvents.NETWORK_REQUEST_TIMEOUT),
+}
+
+const wrappedEvents = {
+  [events.REQUEST]: networkEvents.NETWORK_REQUEST,
+  [events.REQUEST_TIMEOUT]: networkEvents.NETWORK_REQUEST_TIMEOUT,
+}
+
+const reversedWrappedEvents = swapObject(wrappedEvents)
+const unwrap = eventName => wrappedEvents[eventName] || eventName
+const wrap = eventName => reversedWrappedEvents[eventName] || eventName
+
+module.exports = {
+  events,
+  wrap,
+  unwrap,
 }
