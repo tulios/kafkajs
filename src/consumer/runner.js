@@ -181,9 +181,7 @@ module.exports = class Runner {
         commitOffsetsIfNecessary: async () => {
           await this.consumerGroup.commitOffsetsIfNecessary()
         },
-        uncommittedOffsets: () => {
-          this.consumerGroup.uncommittedOffsets()
-        },
+        uncommittedOffsets: () => this.consumerGroup.uncommittedOffsets(),
         isRunning: () => this.running,
       })
     } catch (e) {
