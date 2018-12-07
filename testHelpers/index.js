@@ -190,16 +190,20 @@ const unsupportedVersionResponse = () => Buffer.from({ type: 'Buffer', data: [0,
 const unsupportedVersionResponseWithTimeout = () =>
   Buffer.from({ type: 'Buffer', data: [0, 0, 0, 0, 0, 35] })
 
-const generateMessages = ({ prefix = 'generated', number = 100 }) =>
-  Array(number)
+const generateMessages = options => {
+  const { prefix, number = 100 } = options || {}
+  const prefixOrEmpty = prefix ? `-${prefix}` : ''
+
+  return Array(number)
     .fill()
     .map((v, i) => {
       const value = secureRandom()
       return {
-        key: `key-${prefix}-${i}-${value}`,
-        value: `value-${prefix}-${i}-${value}`,
+        key: `key${prefixOrEmpty}-${i}-${value}`,
+        value: `value${prefixOrEmpty}-${i}-${value}`,
       }
     })
+}
 
 module.exports = {
   secureRandom,
