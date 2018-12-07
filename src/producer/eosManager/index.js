@@ -276,20 +276,25 @@ module.exports = ({
        * @property {number} offset
        */
       async sendOffsets({ consumerGroupId, topics }) {
-        const consumerBroker = await cluster.findGroupCoordinator({
-          groupId: consumerGroupId,
-          coordinatorType: COORDINATOR_TYPES.GROUP,
-        })
+        assert(consumerGroupId, 'Missing consumerGroupId')
+        assert(topics, 'Missing offset topics')
+
+        const transactionCoordinator = await findTransactionCoordinator()
 
         // Do we need to add offsets if we've already done so for this consumer group?
-        await consumerBroker.addOffsetsToTxn({
+        await transactionCoordinator.addOffsetsToTxn({
           transactionalId,
           producerId,
           producerEpoch,
           groupId: consumerGroupId,
         })
 
-        await consumerBroker.txnOffsetCommit({
+        const groupCoordinator = await cluster.findGroupCoordinator({
+          groupId: consumerGroupId,
+          coordinatorType: COORDINATOR_TYPES.GROUP,
+        })
+
+        await groupCoordinator.txnOffsetCommit({
           transactionalId,
           producerId,
           producerEpoch,

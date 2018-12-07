@@ -1,4 +1,5 @@
 let initProducerIdSpy
+let sendOffsetsSpy
 let retrySpy
 
 jest.mock('./eosManager', () => {
@@ -6,6 +7,7 @@ jest.mock('./eosManager', () => {
     const eosManager = jest.requireActual('./eosManager')(...args)
 
     initProducerIdSpy = jest.spyOn(eosManager, 'initProducerId')
+    sendOffsetsSpy = jest.spyOn(eosManager, 'sendOffsets')
 
     return eosManager
   }
@@ -555,7 +557,7 @@ describe('Producer', () => {
 
     const testTransactionEnd = (shouldCommit = true) => {
       const endFn = shouldCommit ? 'commit' : 'abort'
-      test(`transaction flow ${endFn}`, async () => {
+      testIfKafka_0_11(`transaction flow ${endFn}`, async () => {
         const cluster = createCluster(
           Object.assign(connectionOpts(), {
             allowExperimentalV011: true,
@@ -613,7 +615,7 @@ describe('Producer', () => {
     testTransactionEnd(true)
     testTransactionEnd(false)
 
-    test('allows sending messages outside a transaction', async () => {
+    testIfKafka_0_11('allows sending messages outside a transaction', async () => {
       const cluster = createCluster(
         Object.assign(connectionOpts(), {
           allowExperimentalV011: true,
@@ -653,6 +655,45 @@ describe('Producer', () => {
             ],
           },
         ],
+      })
+    })
+
+    testIfKafka_0_11('supports sending offsets', async () => {
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          allowExperimentalV011: true,
+        })
+      )
+
+      await createTopic({ topic: topicName })
+
+      producer = createProducer({
+        cluster,
+        logger: newLogger(),
+        transactionalId,
+      })
+
+      await producer.connect()
+
+      const consumerGroupId = `consumer-group-id-${secureRandom()}`
+      const offsets = {
+        topics: [
+          {
+            topic: topicName,
+            partitions: [
+              {
+                partition: 0,
+                offset: '1',
+              },
+            ],
+          },
+        ],
+      }
+      const txn = await producer.transaction()
+      await txn.sendOffsets({ consumerGroupId, offsets })
+      expect(sendOffsetsSpy).toHaveBeenCalledWith({
+        consumerGroupId,
+        topics: offsets.topics,
       })
     })
   })
