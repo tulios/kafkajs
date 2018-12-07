@@ -33,13 +33,12 @@ module.exports = ({
   minBytes = 1,
   maxBytes = 10485760, // 10MB
   maxWaitTimeInMs = 5000,
-  retry = {
-    retries: 10,
-  },
+  retry = { retries: 10 },
   isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
+  instrumentationEmitter: rootInstrumentationEmitter,
 }) => {
   const logger = rootLogger.namespace('Consumer')
-  const instrumentationEmitter = new InstrumentationEventEmitter()
+  const instrumentationEmitter = rootInstrumentationEmitter || new InstrumentationEventEmitter()
   const assigners = partitionAssigners.map(createAssigner =>
     createAssigner({ groupId, logger, cluster })
   )
@@ -208,8 +207,8 @@ module.exports = ({
 
   /**
    * @param {string} eventName
-   * @param {Function} listener
-   * @return {Function}
+   * @param {AsyncFunction} listener
+   * @return {Function} removeListener
    */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {

@@ -3,6 +3,7 @@ const {
   LEVELS: { INFO },
 } = require('./loggers')
 
+const InstrumentationEventEmitter = require('./instrumentation/emitter')
 const LoggerConsole = require('./loggers/console')
 const Cluster = require('./cluster')
 const createProducer = require('./producer')
@@ -23,6 +24,7 @@ module.exports = class Client {
     clientId,
     connectionTimeout,
     authenticationTimeout,
+    requestTimeout,
     retry,
     logLevel = INFO,
     logCreator = LoggerConsole,
@@ -33,6 +35,7 @@ module.exports = class Client {
       metadataMaxAge = 300000,
       allowAutoTopicCreation = true,
       maxInFlightRequests = null,
+      instrumentationEmitter = null,
       isolationLevel,
     }) =>
       new Cluster({
@@ -43,7 +46,9 @@ module.exports = class Client {
         clientId,
         connectionTimeout,
         authenticationTimeout,
+        requestTimeout,
         metadataMaxAge,
+        instrumentationEmitter,
         retry,
         allowAutoTopicCreation,
         allowExperimentalV011,
@@ -104,11 +109,13 @@ module.exports = class Client {
       ? ISOLATION_LEVEL.READ_UNCOMMITTED
       : ISOLATION_LEVEL.READ_COMMITTED
 
+    const instrumentationEmitter = new InstrumentationEventEmitter()
     const cluster = this[PRIVATE.CREATE_CLUSTER]({
       metadataMaxAge,
       allowAutoTopicCreation,
       maxInFlightRequests,
       isolationLevel,
+      instrumentationEmitter,
     })
 
     return createConsumer({
@@ -124,6 +131,7 @@ module.exports = class Client {
       maxBytes,
       maxWaitTimeInMs,
       isolationLevel,
+      instrumentationEmitter,
     })
   }
 
