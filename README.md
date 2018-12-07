@@ -28,6 +28,7 @@ KafkaJS is battle-tested and ready for production.
   - [SSL](#configuration-ssl)
   - [SASL](#configuration-sasl)
   - [Connection timeout](#configuration-connection-timeout)
+  - [Request timeout](#configuration-request-timeout)
   - [Default retry](#configuration-default-retry)
   - [Logging](#configuration-logging)
 - [Producing messages](#producing-messages)
@@ -137,6 +138,18 @@ new Kafka({
   clientId: 'my-app',
   brokers: ['kafka1:9092', 'kafka2:9092'],
   connectionTimeout: 3000
+})
+```
+
+### <a name="configuration-request-timeout"></a> Request Timeout
+
+Time in milliseconds to wait for a successful request. The default value is: `30000`.
+
+```javascript
+new Kafka({
+  clientId: 'my-app',
+  brokers: ['kafka1:9092', 'kafka2:9092'],
+  requestTimeout: 25000
 })
 ```
 
