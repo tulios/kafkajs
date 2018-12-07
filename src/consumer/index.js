@@ -8,6 +8,7 @@ const { CONNECT, DISCONNECT, STOP, CRASH } = require('./instrumentationEvents')
 const { KafkaJSNonRetriableError } = require('../errors')
 const { roundRobin } = require('./assigners')
 const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
+const ISOLATION_LEVEL = require('../protocol/isolationLevel')
 
 const { keys, values } = Object
 
@@ -35,6 +36,7 @@ module.exports = ({
   retry = {
     retries: 10,
   },
+  isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
 }) => {
   const logger = rootLogger.namespace('Consumer')
   const instrumentationEmitter = new InstrumentationEventEmitter()
@@ -68,6 +70,7 @@ module.exports = ({
       instrumentationEmitter,
       autoCommitInterval,
       autoCommitThreshold,
+      isolationLevel,
     })
   }
 

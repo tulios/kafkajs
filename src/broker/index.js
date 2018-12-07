@@ -250,6 +250,7 @@ module.exports = class Broker {
   /**
    * @public
    * @param {number} replicaId=-1 Broker id of the follower. For normal consumers, use -1
+   * @param {number} isolationLevel=1 This setting controls the visibility of transactional records. Default READ_COMMITTED.
    * @param {number} maxWaitTime=5000 Maximum time in ms to wait for the response
    * @param {number} minBytes=1 Minimum bytes to accumulate in the response
    * @param {number} maxBytes=10485760 Maximum bytes to accumulate in the response. Note that this is
@@ -271,10 +272,19 @@ module.exports = class Broker {
    *                        ]
    * @returns {Promise}
    */
-  async fetch({ replicaId, maxWaitTime = 5000, minBytes = 1, maxBytes = 10485760, topics }) {
+  async fetch({
+    replicaId,
+    isolationLevel,
+    maxWaitTime = 5000,
+    minBytes = 1,
+    maxBytes = 10485760,
+    topics,
+  }) {
     // TODO: validate topics not null/empty
     const fetch = this.lookupRequest(apiKeys.Fetch, requests.Fetch)
-    return await this.connection.send(fetch({ replicaId, maxWaitTime, minBytes, maxBytes, topics }))
+    return await this.connection.send(
+      fetch({ replicaId, isolationLevel, maxWaitTime, minBytes, maxBytes, topics })
+    )
   }
 
   /**
@@ -387,9 +397,9 @@ module.exports = class Broker {
     // ListOffsets >= v1 will return a single `offset` rather than an array of `offsets` (ListOffsets V0).
     // Normalize to just return `offset`.
     for (let response of result.responses) {
-      response.partitions = response.partitions.map(({ offsets, ...partitionData }) =>
-        offsets ? { ...partitionData, offset: offsets.pop() } : partitionData
-      )
+      response.partitions = response.partitions.map(({ offsets, ...partitionData }) => {
+        return offsets ? { ...partitionData, offset: offsets.pop() } : partitionData
+      })
     }
 
     return result
