@@ -1,3 +1,8 @@
+/**
+ * Enum for isolation levels
+ * @readonly
+ * @enum {IsolationLevel}
+ */
 module.exports = {
   // Makes all records visible
   READ_UNCOMMITTED: 0,
