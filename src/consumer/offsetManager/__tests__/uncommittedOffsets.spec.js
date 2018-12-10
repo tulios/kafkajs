@@ -1,5 +1,3 @@
-const Long = require('long')
-const sleep = require('../../../utils/sleep')
 const OffsetManager = require('../index')
 
 describe('Consumer > OffsetMananger > uncommittedOffsets', () => {
