@@ -675,7 +675,6 @@ describe('Consumer', () => {
         })
 
         consumer = createConsumer({
-          autoCommit: false, // Have to manage offsets manually
           cluster,
           groupId,
           maxWaitTimeInMs: 100,
@@ -702,6 +701,7 @@ describe('Consumer', () => {
         }
 
         consumer.run({
+          autoCommit: false,
           eachBatch,
         })
         await waitForConsumerToJoinGroup(consumer)
@@ -764,7 +764,6 @@ describe('Consumer', () => {
         })
 
         consumer = createConsumer({
-          autoCommit: false, // Have to manage offsets manually
           cluster,
           groupId,
           maxWaitTimeInMs: 100,
@@ -792,6 +791,7 @@ describe('Consumer', () => {
         }
 
         consumer.run({
+          autoCommit: false,
           eachBatch,
         })
         await waitForConsumerToJoinGroup(consumer)
@@ -827,7 +827,10 @@ describe('Consumer', () => {
         messagesConsumed = []
         uncommittedOffsetsPerMessage = []
 
-        consumer.run({ eachBatch })
+        consumer.run({
+          autoCommit: false,
+          eachBatch,
+        })
 
         await waitFor(() => messagesConsumed.length >= 1, {
           ignoreTimeout: false,

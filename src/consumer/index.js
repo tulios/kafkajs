@@ -74,8 +74,9 @@ module.exports = ({
     })
   }
 
-  const createRunner = ({ eachBatchAutoResolve, eachBatch, eachMessage, onCrash }) => {
+  const createRunner = ({ eachBatchAutoResolve, eachBatch, eachMessage, onCrash, autoCommit }) => {
     return new Runner({
+      autoCommit,
       logger: rootLogger,
       consumerGroup,
       instrumentationEmitter,
