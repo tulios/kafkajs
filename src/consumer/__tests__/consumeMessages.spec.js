@@ -663,179 +663,185 @@ describe('Consumer', () => {
       }
     )
 
-    testIfKafka_0_11('supports the "consume-transform-produce" commit', async () => {
-      cluster = createCluster({ allowExperimentalV011: true })
-      producer = createProducer({
-        cluster,
-        logger: newLogger(),
-        transactionalId: `transactional-id-${secureRandom()}`,
-        maxInFlightRequests: 1,
-      })
+    testIfKafka_0_11(
+      'respects offsets sent by a committed transaction ("consume-transform-produce" flow)',
+      async () => {
+        cluster = createCluster({ allowExperimentalV011: true })
+        producer = createProducer({
+          cluster,
+          logger: newLogger(),
+          transactionalId: `transactional-id-${secureRandom()}`,
+          maxInFlightRequests: 1,
+        })
 
-      consumer = createConsumer({
-        autoCommit: false, // Have to manage offsets manually
-        cluster,
-        groupId,
-        maxWaitTimeInMs: 100,
-        logger: newLogger(),
-      })
+        consumer = createConsumer({
+          autoCommit: false, // Have to manage offsets manually
+          cluster,
+          groupId,
+          maxWaitTimeInMs: 100,
+          logger: newLogger(),
+        })
 
-      await consumer.connect()
-      await producer.connect()
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+        await consumer.connect()
+        await producer.connect()
+        await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-      // 1. Run consumer with "autoCommit=false"
+        // 1. Run consumer with "autoCommit=false"
 
-      let messagesConsumed = []
-      let uncommittedOffsetsPerMessage = []
+        let messagesConsumed = []
+        let uncommittedOffsetsPerMessage = []
 
-      const eachBatch = async ({ batch, uncommittedOffsets, heartbeat, resolveOffset }) => {
-        for (const message of batch.messages) {
-          messagesConsumed.push(message)
-          resolveOffset(message.offset)
-          uncommittedOffsetsPerMessage.push(uncommittedOffsets())
+        const eachBatch = async ({ batch, uncommittedOffsets, heartbeat, resolveOffset }) => {
+          for (const message of batch.messages) {
+            messagesConsumed.push(message)
+            resolveOffset(message.offset)
+            uncommittedOffsetsPerMessage.push(uncommittedOffsets())
+          }
+
+          await heartbeat()
         }
 
-        await heartbeat()
+        consumer.run({
+          eachBatch,
+        })
+        await waitForConsumerToJoinGroup(consumer)
+
+        // 2. Produce messages and consume
+
+        const messages = generateMessages()
+        await producer.send({
+          acks: 1,
+          topic: topicName,
+          messages,
+        })
+
+        const number = messages.length
+        await waitForMessages(messagesConsumed, {
+          number,
+        })
+
+        expect(messagesConsumed[0].value.toString()).toMatch(/value-0/)
+        expect(messagesConsumed[99].value.toString()).toMatch(/value-99/)
+        expect(uncommittedOffsetsPerMessage).toHaveLength(messagesConsumed.length)
+
+        // 3. Send offsets in a transaction and commit
+        const txnToCommit = await producer.transaction()
+        await txnToCommit.sendOffsets({
+          consumerGroupId: groupId,
+          offsets: uncommittedOffsetsPerMessage[98],
+        })
+        await txnToCommit.commit()
+
+        // Restart consumer
+        await consumer.stop()
+        messagesConsumed = []
+        uncommittedOffsetsPerMessage = []
+
+        consumer.run({ eachBatch })
+
+        // Assert we only consume the messages that were after the sent offset
+        await waitForMessages(messagesConsumed, {
+          number: 1,
+        })
+
+        expect(messagesConsumed).toHaveLength(1)
+        expect(messagesConsumed[0].value.toString()).toMatch(/value-99/)
       }
+    )
 
-      consumer.run({
-        eachBatch,
-      })
-      await waitForConsumerToJoinGroup(consumer)
+    testIfKafka_0_11(
+      'does not respect offsets sent by an aborted transaction ("consume-transform-produce" flow)',
+      async () => {
+        cluster = createCluster({
+          allowExperimentalV011: true,
+          isolationLevel: ISOLATION_LEVEL.READ_COMMITTED,
+        })
+        producer = createProducer({
+          cluster,
+          logger: newLogger(),
+          transactionalId: `transactional-id-${secureRandom()}`,
+          maxInFlightRequests: 1,
+        })
 
-      // 2. Produce messages and consume
+        consumer = createConsumer({
+          autoCommit: false, // Have to manage offsets manually
+          cluster,
+          groupId,
+          maxWaitTimeInMs: 100,
+          logger: newLogger(),
+          isolationLevel: ISOLATION_LEVEL.READ_COMMITTED,
+        })
 
-      const messages = generateMessages()
-      await producer.send({
-        acks: 1,
-        topic: topicName,
-        messages,
-      })
+        await consumer.connect()
+        await producer.connect()
+        await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-      const number = messages.length
-      await waitForMessages(messagesConsumed, {
-        number,
-      })
+        // 1. Run consumer with "autoCommit=false"
 
-      expect(messagesConsumed[0].value.toString()).toMatch(/value-0/)
-      expect(messagesConsumed[99].value.toString()).toMatch(/value-99/)
-      expect(uncommittedOffsetsPerMessage).toHaveLength(messagesConsumed.length)
+        let messagesConsumed = []
+        let uncommittedOffsetsPerMessage = []
 
-      // 3. Send offsets in a transaction and commit
-      const txnToCommit = await producer.transaction()
-      await txnToCommit.sendOffsets({
-        consumerGroupId: groupId,
-        offsets: uncommittedOffsetsPerMessage[98],
-      })
-      await txnToCommit.commit()
+        const eachBatch = async ({ batch, uncommittedOffsets, heartbeat, resolveOffset }) => {
+          for (const message of batch.messages) {
+            messagesConsumed.push(message)
+            resolveOffset(message.offset)
+            uncommittedOffsetsPerMessage.push(uncommittedOffsets())
+          }
 
-      // Restart consumer
-      await consumer.stop()
-      messagesConsumed = []
-      uncommittedOffsetsPerMessage = []
-
-      consumer.run({ eachBatch })
-
-      // Assert we only consume the messages that were after the sent offset
-      await waitForMessages(messagesConsumed, {
-        number: 1,
-      })
-
-      expect(messagesConsumed).toHaveLength(1)
-      expect(messagesConsumed[0].value.toString()).toMatch(/value-99/)
-    })
-
-    testIfKafka_0_11('does not respect offsets sent by an aborted transaction', async () => {
-      cluster = createCluster({
-        allowExperimentalV011: true,
-        isolationLevel: ISOLATION_LEVEL.READ_COMMITTED,
-      })
-      producer = createProducer({
-        cluster,
-        logger: newLogger(),
-        transactionalId: `transactional-id-${secureRandom()}`,
-        maxInFlightRequests: 1,
-      })
-
-      consumer = createConsumer({
-        autoCommit: false, // Have to manage offsets manually
-        cluster,
-        groupId,
-        maxWaitTimeInMs: 100,
-        logger: newLogger(),
-        isolationLevel: ISOLATION_LEVEL.READ_COMMITTED,
-      })
-
-      await consumer.connect()
-      await producer.connect()
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
-
-      // 1. Run consumer with "autoCommit=false"
-
-      let messagesConsumed = []
-      let uncommittedOffsetsPerMessage = []
-
-      const eachBatch = async ({ batch, uncommittedOffsets, heartbeat, resolveOffset }) => {
-        for (const message of batch.messages) {
-          messagesConsumed.push(message)
-          resolveOffset(message.offset)
-          uncommittedOffsetsPerMessage.push(uncommittedOffsets())
+          await heartbeat()
         }
 
-        await heartbeat()
+        consumer.run({
+          eachBatch,
+        })
+        await waitForConsumerToJoinGroup(consumer)
+
+        // 2. Produce messages and consume
+
+        const messages = generateMessages()
+        await producer.send({
+          acks: 1,
+          topic: topicName,
+          messages,
+        })
+
+        const number = messages.length
+        await waitForMessages(messagesConsumed, {
+          number,
+        })
+        await consumer.stop()
+
+        expect(messagesConsumed[0].value.toString()).toMatch(/value-0/)
+        expect(messagesConsumed[99].value.toString()).toMatch(/value-99/)
+        expect(uncommittedOffsetsPerMessage).toHaveLength(messagesConsumed.length)
+
+        // 3. Send offsets in a transaction and abort
+        const txnToAbort = await producer.transaction()
+        await txnToAbort.sendOffsets({
+          consumerGroupId: groupId,
+          offsets: uncommittedOffsetsPerMessage[98],
+        })
+        await txnToAbort.abort()
+
+        // Restart consumer
+        messagesConsumed = []
+        uncommittedOffsetsPerMessage = []
+
+        consumer.run({ eachBatch })
+
+        // Assert we reprocess all the same messages
+        await waitForMessages(messagesConsumed, {
+          number: 1,
+        })
+
+        expect(messagesConsumed[0].value.toString()).toMatch(/value-0/)
+
+        await waitForMessages(messagesConsumed, {
+          number,
+        })
+
+        expect(messagesConsumed[messagesConsumed.length - 1].value.toString()).toMatch(/value-99/)
       }
-
-      consumer.run({
-        eachBatch,
-      })
-      await waitForConsumerToJoinGroup(consumer)
-
-      // 2. Produce messages and consume
-
-      const messages = generateMessages()
-      await producer.send({
-        acks: 1,
-        topic: topicName,
-        messages,
-      })
-
-      const number = messages.length
-      await waitForMessages(messagesConsumed, {
-        number,
-      })
-      await consumer.stop()
-
-      expect(messagesConsumed[0].value.toString()).toMatch(/value-0/)
-      expect(messagesConsumed[99].value.toString()).toMatch(/value-99/)
-      expect(uncommittedOffsetsPerMessage).toHaveLength(messagesConsumed.length)
-
-      // 3. Send offsets in a transaction and abort
-      const txnToAbort = await producer.transaction()
-      await txnToAbort.sendOffsets({
-        consumerGroupId: groupId,
-        offsets: uncommittedOffsetsPerMessage[98],
-      })
-      await txnToAbort.abort()
-
-      // Restart consumer
-      messagesConsumed = []
-      uncommittedOffsetsPerMessage = []
-
-      consumer.run({ eachBatch })
-
-      // Assert we reprocess all the same messages
-      await waitForMessages(messagesConsumed, {
-        number: 1,
-      })
-
-      expect(messagesConsumed[0].value.toString()).toMatch(/value-0/)
-
-      await waitForMessages(messagesConsumed, {
-        number,
-      })
-
-      expect(messagesConsumed[messagesConsumed.length - 1].value.toString()).toMatch(/value-99/)
-    })
+    )
   })
 })
