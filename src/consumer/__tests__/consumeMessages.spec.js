@@ -805,9 +805,9 @@ describe('Consumer', () => {
           messages,
         })
 
-        const number = messages.length
-        await waitForMessages(messagesConsumed, {
-          number,
+        await waitFor(() => messagesConsumed.length >= messages.length, {
+          ignoreTimeout: false,
+          timeoutMessage: `Failed to consume all produced messages`,
         })
         await consumer.stop()
 
@@ -829,15 +829,16 @@ describe('Consumer', () => {
 
         consumer.run({ eachBatch })
 
-        // Assert we reprocess all the same messages
-        await waitForMessages(messagesConsumed, {
-          number: 1,
+        await waitFor(() => messagesConsumed.length >= 1, {
+          ignoreTimeout: false,
+          timeoutMessage: 'Failed to consume any messages after transaction was aborted',
         })
 
         expect(messagesConsumed[0].value.toString()).toMatch(/value-0/)
 
-        await waitForMessages(messagesConsumed, {
-          number,
+        await waitFor(() => messagesConsumed.length >= messages.length, {
+          ignoreTimeout: false,
+          timeoutMessage: 'Failed to consume all messages after transaction was aborted',
         })
 
         expect(messagesConsumed[messagesConsumed.length - 1].value.toString()).toMatch(/value-99/)

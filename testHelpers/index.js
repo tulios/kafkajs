@@ -105,7 +105,7 @@ const createModPartitioner = () => ({ partitionMetadata, message }) => {
   return ((key || 0) % 3) % numPartitions
 }
 
-const testWaitFor = async (fn, opts = {}) => waitFor(fn, { ...opts, ignoreTimeout: true })
+const testWaitFor = async (fn, opts = {}) => waitFor(fn, { ignoreTimeout: true, ...opts })
 
 const retryProtocol = (errorType, fn) =>
   waitFor(
