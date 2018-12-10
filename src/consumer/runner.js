@@ -43,10 +43,9 @@ module.exports = class Runner {
   }
 
   async join() {
+    const startJoin = Date.now()
     return this.retrier(async (bail, retryCount, retryTime) => {
       try {
-        const startJoin = Date.now()
-
         await this.consumerGroup.join()
         await this.consumerGroup.sync()
 
@@ -58,6 +57,7 @@ module.exports = class Runner {
           leaderId: this.consumerGroup.leaderId,
           isLeader: this.consumerGroup.isLeader(),
           memberAssignment: this.consumerGroup.memberAssignment,
+          groupProtocol: this.consumerGroup.groupProtocol,
           duration: Date.now() - startJoin,
         }
 
