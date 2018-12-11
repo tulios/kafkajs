@@ -689,12 +689,14 @@ describe('Consumer', () => {
 
         let messagesConsumed = []
         let uncommittedOffsetsPerMessage = []
+        let getCurrentUncommittedOffsets
 
         const eachBatch = async ({ batch, uncommittedOffsets, heartbeat, resolveOffset }) => {
           for (const message of batch.messages) {
             messagesConsumed.push(message)
             resolveOffset(message.offset)
             uncommittedOffsetsPerMessage.push(uncommittedOffsets())
+            getCurrentUncommittedOffsets = uncommittedOffsets
           }
 
           await heartbeat()
@@ -708,7 +710,11 @@ describe('Consumer', () => {
 
         // 2. Produce messages and consume
 
-        const messages = generateMessages()
+        const partition = 0
+        const messages = generateMessages().map(message => ({
+          ...message,
+          partition,
+        }))
         await producer.send({
           acks: 1,
           topic: topicName,
@@ -728,7 +734,7 @@ describe('Consumer', () => {
         const txnToCommit = await producer.transaction()
         await txnToCommit.sendOffsets({
           consumerGroupId: groupId,
-          offsets: uncommittedOffsetsPerMessage[98],
+          offsets: uncommittedOffsetsPerMessage[97],
         })
         await txnToCommit.commit()
 
@@ -737,15 +743,24 @@ describe('Consumer', () => {
         messagesConsumed = []
         uncommittedOffsetsPerMessage = []
 
-        consumer.run({ eachBatch })
+        consumer.run({ eachBatch, autoCommit: false })
 
         // Assert we only consume the messages that were after the sent offset
         await waitForMessages(messagesConsumed, {
-          number: 1,
+          number: 2,
         })
 
-        expect(messagesConsumed).toHaveLength(1)
-        expect(messagesConsumed[0].value.toString()).toMatch(/value-99/)
+        expect(messagesConsumed).toHaveLength(2)
+        expect(messagesConsumed[0].value.toString()).toMatch(/value-98/)
+        expect(messagesConsumed[1].value.toString()).toMatch(/value-99/)
+
+        const lastUncommittedOffsets = uncommittedOffsetsPerMessage.pop()
+        expect(getCurrentUncommittedOffsets()).toEqual(lastUncommittedOffsets)
+        expect(getCurrentUncommittedOffsets()).toEqual({
+          topics: [
+            { topic: topicName, partitions: [{ partition: partition.toString(), offset: '100' }] },
+          ],
+        })
       }
     )
 
@@ -779,12 +794,14 @@ describe('Consumer', () => {
 
         let messagesConsumed = []
         let uncommittedOffsetsPerMessage = []
+        let getCurrentUncommittedOffsets
 
         const eachBatch = async ({ batch, uncommittedOffsets, heartbeat, resolveOffset }) => {
           for (const message of batch.messages) {
             messagesConsumed.push(message)
             resolveOffset(message.offset)
             uncommittedOffsetsPerMessage.push(uncommittedOffsets())
+            getCurrentUncommittedOffsets = uncommittedOffsets
           }
 
           await heartbeat()
@@ -798,7 +815,11 @@ describe('Consumer', () => {
 
         // 2. Produce messages and consume
 
-        const messages = generateMessages()
+        const partition = 0
+        const messages = generateMessages().map(message => ({
+          ...message,
+          partition,
+        }))
         await producer.send({
           acks: 1,
           topic: topicName,
@@ -845,6 +866,14 @@ describe('Consumer', () => {
         })
 
         expect(messagesConsumed[messagesConsumed.length - 1].value.toString()).toMatch(/value-99/)
+
+        const lastUncommittedOffsets = uncommittedOffsetsPerMessage.pop()
+        expect(getCurrentUncommittedOffsets()).toEqual(lastUncommittedOffsets)
+        expect(getCurrentUncommittedOffsets()).toEqual({
+          topics: [
+            { topic: topicName, partitions: [{ partition: partition.toString(), offset: '100' }] },
+          ],
+        })
       }
     )
   })
