@@ -28,6 +28,9 @@ describe('Consumer > OffsetMananger > commitOffsets', () => {
     }
 
     offsetManager = new OffsetManager({
+      cluster: {
+        committedOffsets: jest.fn(() => ({})),
+      },
       memberAssignment,
       groupId,
       generationId,
@@ -50,7 +53,7 @@ describe('Consumer > OffsetMananger > commitOffsets', () => {
     const defaultResolvedOffsetStr = defaultResolvedOffsetInt.toString()
 
     // If committed offset equal to resolved offset, then partition is marked as committed
-    offsetManager.committedOffsets[topic2][0] = defaultResolvedOffsetInt.toString() // "committed"
+    offsetManager.committedOffsets()[topic2][0] = defaultResolvedOffsetInt.toString() // "committed"
 
     await offsetManager.commitOffsets()
 
@@ -77,7 +80,7 @@ describe('Consumer > OffsetMananger > commitOffsets', () => {
       ],
     })
 
-    expect(offsetManager.committedOffsets).toEqual({
+    expect(offsetManager.committedOffsets()).toEqual({
       'topic-1': {
         '0': defaultResolvedOffsetStr,
         '1': defaultResolvedOffsetStr,

@@ -31,6 +31,7 @@ const mergeTopics = (obj, { topic, partitions }) => ({
  * @param {number} maxInFlightRequests
  * @param {Object} retry
  * @param {Object} logger
+ * @param {Map} offsets
  */
 module.exports = class Cluster {
   constructor({
@@ -47,6 +48,7 @@ module.exports = class Cluster {
     allowAutoTopicCreation,
     maxInFlightRequests,
     isolationLevel,
+    offsets = new Map(),
   }) {
     this.rootLogger = rootLogger
     this.logger = rootLogger.namespace('Cluster')
@@ -73,6 +75,7 @@ module.exports = class Cluster {
       authenticationTimeout,
       metadataMaxAge,
     })
+    this.committedOffsetsByGroup = offsets
   }
 
   isConnected() {
@@ -379,5 +382,33 @@ module.exports = class Cluster {
         offset,
       })),
     }))
+  }
+
+  /**
+   * Retrieve the object mapping for committed offsets for a single consumer group
+   * @param {string} groupId
+   * @returns {Object}
+   */
+  committedOffsets({ groupId }) {
+    if (!this.committedOffsetsByGroup.has(groupId)) {
+      this.committedOffsetsByGroup.set(groupId, {})
+    }
+
+    return this.committedOffsetsByGroup.get(groupId)
+  }
+
+  /**
+   * Mark offset as committed for a single consumer group's topic-partition
+   * @param {string} groupId
+   * @param {string} topic
+   * @param {string|number} partition
+   * @param {string} offset
+   * @returns {undefined}
+   */
+  markOffsetAsCommitted({ groupId, topic, partition, offset }) {
+    const committedOffsets = this.committedOffsets({ groupId })
+
+    committedOffsets[topic] = committedOffsets[topic] || {}
+    committedOffsets[topic][partition] = offset
   }
 }

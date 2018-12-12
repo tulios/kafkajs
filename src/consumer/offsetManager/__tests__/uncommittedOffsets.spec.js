@@ -27,9 +27,9 @@ describe('Consumer > OffsetMananger > uncommittedOffsets', () => {
     const defaultResolvedOffsetInt = defaultOffsetInt + 1
 
     // If committed offset equal to resolved offset, then partition is marked as committed
-    offsetManager.committedOffsets[topic2][0] = defaultResolvedOffsetInt.toString() // "committed"
-    offsetManager.committedOffsets[topic2][1] = (defaultResolvedOffsetInt - 1).toString() // not "committed"
-    offsetManager.committedOffsets[topic2][2] = (defaultResolvedOffsetInt + 1).toString() // not "committed"
+    offsetManager.committedOffsets()[topic2][0] = defaultResolvedOffsetInt.toString() // "committed"
+    offsetManager.committedOffsets()[topic2][1] = (defaultResolvedOffsetInt - 1).toString() // not "committed"
+    offsetManager.committedOffsets()[topic2][2] = (defaultResolvedOffsetInt + 1).toString() // not "committed"
 
     expect(offsetManager.uncommittedOffsets()).toEqual({
       topics: [
