@@ -34,6 +34,7 @@ const {
   testIfKafka_0_11,
   createTopic,
 } = require('testHelpers')
+const createRetrier = require('../retry')
 
 const { KafkaJSNonRetriableError } = require('../errors')
 
@@ -717,26 +718,32 @@ describe('Producer', () => {
       await txn.commit()
 
       const coordinator = await cluster.findGroupCoordinator({ groupId: consumerGroupId })
-      const { responses: consumerOffsets } = await coordinator.offsetFetch({
-        groupId: consumerGroupId,
-        topics,
-      })
+      const retry = createRetrier({ retries: 5 })
 
-      expect(consumerOffsets).toEqual([
-        {
-          topic: topicName,
-          partitions: [
-            expect.objectContaining({
-              offset: '5',
-              partition: 0,
-            }),
-            expect.objectContaining({
-              offset: '10',
-              partition: 1,
-            }),
-          ],
-        },
-      ])
+      // There is a potential delay between transaction commit and offset
+      // commits propagating to all replicas - retry expecting initial failure.
+      await retry(async () => {
+        const { responses: consumerOffsets } = await coordinator.offsetFetch({
+          groupId: consumerGroupId,
+          topics,
+        })
+
+        expect(consumerOffsets).toEqual([
+          {
+            topic: topicName,
+            partitions: [
+              expect.objectContaining({
+                offset: '5',
+                partition: 0,
+              }),
+              expect.objectContaining({
+                offset: '10',
+                partition: 1,
+              }),
+            ],
+          },
+        ])
+      })
     })
   })
 })
