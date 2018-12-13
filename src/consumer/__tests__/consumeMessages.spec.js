@@ -758,8 +758,22 @@ describe('Consumer', () => {
         expect(getCurrentUncommittedOffsets()).toEqual(lastUncommittedOffsets)
         expect(getCurrentUncommittedOffsets()).toEqual({
           topics: [
-            { topic: topicName, partitions: [{ partition: partition.toString(), offset: '100' }] },
+            {
+              topic: topicName,
+              partitions: [{ partition: partition.toString(), offset: '100' }],
+            },
           ],
+        })
+
+        const txn2ToCommit = await producer.transaction()
+        await txn2ToCommit.sendOffsets({
+          consumerGroupId: groupId,
+          offsets: lastUncommittedOffsets,
+        })
+        await txn2ToCommit.commit()
+
+        expect(getCurrentUncommittedOffsets()).toEqual({
+          topics: [],
         })
       }
     )

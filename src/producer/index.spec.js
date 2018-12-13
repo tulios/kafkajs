@@ -685,11 +685,11 @@ describe('Producer', () => {
             partitions: [
               {
                 partition: 0,
-                offset: '1',
+                offset: '5',
               },
               {
                 partition: 1,
-                offset: '2',
+                offset: '10',
               },
             ],
           },
@@ -697,6 +697,7 @@ describe('Producer', () => {
       }
       const txn = await producer.transaction()
       await txn.sendOffsets({ consumerGroupId, offsets })
+
       expect(sendOffsetsSpy).toHaveBeenCalledWith({
         consumerGroupId,
         topics: offsets.topics,
@@ -706,14 +707,38 @@ describe('Producer', () => {
         groupId: consumerGroupId,
         topic: topicName,
         partition: 0,
-        offset: '1',
+        offset: '5',
       })
       expect(markOffsetAsCommittedSpy.mock.calls[1][0]).toEqual({
         groupId: consumerGroupId,
         topic: topicName,
         partition: 1,
-        offset: '2',
+        offset: '10',
       })
+
+      await txn.commit()
+
+      const coordinator = await cluster.findGroupCoordinator({ groupId: consumerGroupId })
+      const { responses: consumerOffsets } = await coordinator.offsetFetch({
+        groupId: consumerGroupId,
+        topics: offsets.topics,
+      })
+
+      expect(consumerOffsets).toEqual([
+        {
+          topic: topicName,
+          partitions: [
+            expect.objectContaining({
+              offset: '5',
+              partition: 0,
+            }),
+            expect.objectContaining({
+              offset: '10',
+              partition: 1,
+            }),
+          ],
+        },
+      ])
     })
   })
 })
