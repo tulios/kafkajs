@@ -169,9 +169,22 @@ module.exports = ({
        *
        * @throws {KafkaJSNonRetriableError} If transaction has ended
        */
-      sendOffsets: transactionGuard(({ consumerGroupId, offsets }) =>
-        transactionalEosManager.sendOffsets({ consumerGroupId, topics: offsets.topics })
-      ),
+      sendOffsets: transactionGuard(({ consumerGroupId, offsets }) => {
+        const { topics } = offsets
+        transactionalEosManager.sendOffsets({ consumerGroupId, topics })
+
+        for (const topicOffsets of topics) {
+          const { topic, partitions } = topicOffsets
+          for (const { partition, offset } of partitions) {
+            cluster.markOffsetAsCommitted({
+              groupId: consumerGroupId,
+              topic,
+              partition,
+              offset,
+            })
+          }
+        }
+      }),
       isActive,
     }
   }

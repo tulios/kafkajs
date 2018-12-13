@@ -665,6 +665,8 @@ describe('Producer', () => {
         })
       )
 
+      const markOffsetAsCommittedSpy = jest.spyOn(cluster, 'markOffsetAsCommitted')
+
       await createTopic({ topic: topicName })
 
       producer = createProducer({
@@ -685,6 +687,10 @@ describe('Producer', () => {
                 partition: 0,
                 offset: '1',
               },
+              {
+                partition: 1,
+                offset: '2',
+              },
             ],
           },
         ],
@@ -694,6 +700,19 @@ describe('Producer', () => {
       expect(sendOffsetsSpy).toHaveBeenCalledWith({
         consumerGroupId,
         topics: offsets.topics,
+      })
+      expect(markOffsetAsCommittedSpy).toHaveBeenCalledTimes(2)
+      expect(markOffsetAsCommittedSpy.mock.calls[0][0]).toEqual({
+        groupId: consumerGroupId,
+        topic: topicName,
+        partition: 0,
+        offset: '1',
+      })
+      expect(markOffsetAsCommittedSpy.mock.calls[1][0]).toEqual({
+        groupId: consumerGroupId,
+        topic: topicName,
+        partition: 1,
+        offset: '2',
       })
     })
   })
