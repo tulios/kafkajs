@@ -169,9 +169,7 @@ module.exports = ({
        *
        * @throws {KafkaJSNonRetriableError} If transaction has ended
        */
-      sendOffsets: transactionGuard(async ({ consumerGroupId, offsets }) => {
-        const { topics } = offsets
-
+      sendOffsets: transactionGuard(async ({ consumerGroupId, topics }) => {
         await transactionalEosManager.sendOffsets({ consumerGroupId, topics })
 
         for (const topicOffsets of topics) {

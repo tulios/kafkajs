@@ -734,7 +734,7 @@ describe('Consumer', () => {
         const txnToCommit = await producer.transaction()
         await txnToCommit.sendOffsets({
           consumerGroupId: groupId,
-          offsets: uncommittedOffsetsPerMessage[97],
+          topics: uncommittedOffsetsPerMessage[97].topics,
         })
         await txnToCommit.commit()
 
@@ -768,7 +768,7 @@ describe('Consumer', () => {
         const txn2ToCommit = await producer.transaction()
         await txn2ToCommit.sendOffsets({
           consumerGroupId: groupId,
-          offsets: lastUncommittedOffsets,
+          topics: lastUncommittedOffsets.topics,
         })
         await txn2ToCommit.commit()
 
@@ -854,7 +854,7 @@ describe('Consumer', () => {
         const txnToAbort = await producer.transaction()
         await txnToAbort.sendOffsets({
           consumerGroupId: groupId,
-          offsets: uncommittedOffsetsPerMessage[98],
+          topics: uncommittedOffsetsPerMessage[98].topics,
         })
         await txnToAbort.abort()
 

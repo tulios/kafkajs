@@ -678,29 +678,27 @@ describe('Producer', () => {
       await producer.connect()
 
       const consumerGroupId = `consumer-group-id-${secureRandom()}`
-      const offsets = {
-        topics: [
-          {
-            topic: topicName,
-            partitions: [
-              {
-                partition: 0,
-                offset: '5',
-              },
-              {
-                partition: 1,
-                offset: '10',
-              },
-            ],
-          },
-        ],
-      }
+      const topics = [
+        {
+          topic: topicName,
+          partitions: [
+            {
+              partition: 0,
+              offset: '5',
+            },
+            {
+              partition: 1,
+              offset: '10',
+            },
+          ],
+        },
+      ]
       const txn = await producer.transaction()
-      await txn.sendOffsets({ consumerGroupId, offsets })
+      await txn.sendOffsets({ consumerGroupId, topics })
 
       expect(sendOffsetsSpy).toHaveBeenCalledWith({
         consumerGroupId,
-        topics: offsets.topics,
+        topics,
       })
       expect(markOffsetAsCommittedSpy).toHaveBeenCalledTimes(2)
       expect(markOffsetAsCommittedSpy.mock.calls[0][0]).toEqual({
@@ -721,7 +719,7 @@ describe('Producer', () => {
       const coordinator = await cluster.findGroupCoordinator({ groupId: consumerGroupId })
       const { responses: consumerOffsets } = await coordinator.offsetFetch({
         groupId: consumerGroupId,
-        topics: offsets.topics,
+        topics,
       })
 
       expect(consumerOffsets).toEqual([
