@@ -1249,6 +1249,34 @@ List of available events:
 
 * admin.events.DISCONNECT
 
+* admin.events.REQUEST
+  payload: {
+    `broker`,
+    `clientId`,
+    `correlationId`,
+    `size`,
+    `createdAt`,
+    `sentAt`,
+    `pendingDuration`,
+    `duration`,
+    `apiName`,
+    `apiKey`,
+    `apiVersion`
+  }
+
+* admin.events.REQUEST_TIMEOUT
+  payload: {
+    `broker`,
+    `clientId`,
+    `correlationId`,
+    `createdAt`,
+    `sentAt`,
+    `pendingDuration`,
+    `apiName`,
+    `apiKey`,
+    `apiVersion`
+  }
+
 ## <a name="custom-logging"></a> Custom logging
 
 The logger is customized using log creators. A log creator is a function which receives a log level and returns a log function. The log function receives namespace, level, label, and log.
