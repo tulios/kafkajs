@@ -2,11 +2,12 @@ const createRetry = require('../retry')
 const waitFor = require('../utils/waitFor')
 const createConsumer = require('../consumer')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
-const events = require('./instrumentationEvents')
-const { CONNECT, DISCONNECT } = require('./instrumentationEvents')
+const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentationEvents')
 const { LEVELS } = require('../loggers')
 const { KafkaJSNonRetriableError } = require('../errors')
 const RESOURCE_TYPES = require('../protocol/resourceTypes')
+
+const { CONNECT, DISCONNECT } = events
 
 const { values, keys } = Object
 const eventNames = values(events)
@@ -40,9 +41,14 @@ const findTopicPartitions = async (cluster, topic) => {
     .sort()
 }
 
-module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
+module.exports = ({
+  logger: rootLogger,
+  instrumentationEmitter: rootInstrumentationEmitter,
+  retry = { retries: 5 },
+  cluster,
+}) => {
   const logger = rootLogger.namespace('Admin')
-  const instrumentationEmitter = new InstrumentationEventEmitter()
+  const instrumentationEmitter = rootInstrumentationEmitter || new InstrumentationEventEmitter()
 
   /**
    * @returns {Promise}
@@ -485,7 +491,8 @@ module.exports = ({ retry = { retries: 5 }, logger: rootLogger, cluster }) => {
       throw new KafkaJSNonRetriableError(`Event name should be one of ${eventKeys}`)
     }
 
-    return instrumentationEmitter.addListener(eventName, event => {
+    return instrumentationEmitter.addListener(unwrapEvent(eventName), event => {
+      event.type = wrapEvent(event.type)
       Promise.resolve(listener(event)).catch(e => {
         logger.error(`Failed to execute listener: ${e.message}`, {
           eventName,

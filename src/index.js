@@ -142,10 +142,16 @@ module.exports = class Client {
    * @public
    */
   admin({ retry } = {}) {
-    const cluster = this[PRIVATE.CREATE_CLUSTER]({ allowAutoTopicCreation: false })
+    const instrumentationEmitter = new InstrumentationEventEmitter()
+    const cluster = this[PRIVATE.CREATE_CLUSTER]({
+      allowAutoTopicCreation: false,
+      instrumentationEmitter,
+    })
+
     return createAdmin({
       retry: { ...cluster.retry, retry },
       logger: this[PRIVATE.LOGGER],
+      instrumentationEmitter,
       cluster,
     })
   }
