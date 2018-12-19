@@ -3,7 +3,7 @@ const sleep = require('../../../utils/sleep')
 const OffsetManager = require('../index')
 
 describe('Consumer > OffsetMananger > commitOffsetsIfNecessary', () => {
-  let offsetManager
+  let offsetManager, mockCommitOffsets
 
   beforeEach(() => {
     const memberAssignment = {
@@ -11,9 +11,26 @@ describe('Consumer > OffsetMananger > commitOffsetsIfNecessary', () => {
       topic2: [0, 1, 2, 3, 4, 5],
     }
 
-    offsetManager = new OffsetManager({ memberAssignment })
+    offsetManager = new OffsetManager({
+      memberAssignment,
+      cluster: {
+        committedOffsets: jest.fn(() => ({})),
+      },
+    })
     offsetManager.commitOffsets = jest.fn()
-    offsetManager.committedOffsets['topic1'][0] = '-1'
+    offsetManager.committedOffsets()['topic1'][0] = '-1'
+
+    mockCommitOffsets = () => {
+      const committedOffsets = offsetManager.committedOffsets()
+
+      for (const topic in offsetManager.resolvedOffsets) {
+        committedOffsets[topic] = {}
+        for (const partition in offsetManager.resolvedOffsets[topic]) {
+          committedOffsets[topic][partition] = offsetManager.resolvedOffsets[topic][partition]
+        }
+      }
+      offsetManager.lastCommit = Date.now()
+    }
   })
 
   describe('when autoCommitInterval and autoCommitThreshold are undefined', () => {
@@ -50,9 +67,7 @@ describe('Consumer > OffsetMananger > commitOffsetsIfNecessary', () => {
     it('commits the offsets whenever the threshold is reached', async () => {
       offsetManager.autoCommitInterval = undefined
       offsetManager.autoCommitThreshold = 3
-      offsetManager.commitOffsets.mockImplementation(() => {
-        offsetManager.committedOffsets = offsetManager.resolvedOffsets
-      })
+      offsetManager.commitOffsets.mockImplementation(mockCommitOffsets)
 
       await offsetManager.commitOffsetsIfNecessary()
       offsetManager.resolveOffset({ topic: 'topic1', partition: 0, offset: '3' })
@@ -66,10 +81,7 @@ describe('Consumer > OffsetMananger > commitOffsetsIfNecessary', () => {
 
   describe('when autoCommitInterval and autoCommitThreshold are defined', () => {
     beforeEach(() => {
-      offsetManager.commitOffsets.mockImplementation(() => {
-        offsetManager.committedOffsets = offsetManager.resolvedOffsets
-        offsetManager.lastCommit = Date.now()
-      })
+      offsetManager.commitOffsets.mockImplementation(mockCommitOffsets)
     })
 
     it('commits the offsets if the interval is reached before the threshold', async () => {

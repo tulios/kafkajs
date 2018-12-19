@@ -149,7 +149,7 @@ module.exports = ({
       /**
        * Abort the ongoing transaction.
        *
-       * @throws {KafkaJSNonRetriableError} If non-transactional
+       * @throws {KafkaJSNonRetriableError} If transaction has ended
        */
       abort: transactionGuard(async () => {
         await transactionalEosManager.abort()
@@ -158,11 +158,31 @@ module.exports = ({
       /**
        * Commit the ongoing transaction.
        *
-       * @throws {KafkaJSNonRetriableError} If non-transactional
+       * @throws {KafkaJSNonRetriableError} If transaction has ended
        */
       commit: transactionGuard(async () => {
         await transactionalEosManager.commit()
         transactionDidEnd = true
+      }),
+      /**
+       * Sends a list of specified offsets to the consumer group coordinator, and also marks those offsets as part of the current transaction.
+       *
+       * @throws {KafkaJSNonRetriableError} If transaction has ended
+       */
+      sendOffsets: transactionGuard(async ({ consumerGroupId, topics }) => {
+        await transactionalEosManager.sendOffsets({ consumerGroupId, topics })
+
+        for (const topicOffsets of topics) {
+          const { topic, partitions } = topicOffsets
+          for (const { partition, offset } of partitions) {
+            cluster.markOffsetAsCommitted({
+              groupId: consumerGroupId,
+              topic,
+              partition,
+              offset,
+            })
+          }
+        }
       }),
       isActive,
     }

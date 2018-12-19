@@ -7,6 +7,9 @@ const { COMMIT_OFFSETS } = require('../instrumentationEvents')
 const { keys, assign } = Object
 const indexTopics = topics => topics.reduce((obj, topic) => assign(obj, { [topic]: {} }), {})
 
+const PRIVATE = {
+  COMMITTED_OFFSETS: Symbol('private:OffsetManager:committedOffsets'),
+}
 module.exports = class OffsetManager {
   constructor({
     cluster,
@@ -51,7 +54,7 @@ module.exports = class OffsetManager {
    */
   nextOffset(topic, partition) {
     if (!this.resolvedOffsets[topic][partition]) {
-      this.resolvedOffsets[topic][partition] = this.committedOffsets[topic][partition]
+      this.resolvedOffsets[topic][partition] = this.committedOffsets()[topic][partition]
     }
 
     let offset = this.resolvedOffsets[topic][partition]
@@ -78,7 +81,7 @@ module.exports = class OffsetManager {
    * @param {number} partition
    */
   resetOffset({ topic, partition }) {
-    this.resolvedOffsets[topic][partition] = this.committedOffsets[topic][partition]
+    this.resolvedOffsets[topic][partition] = this.committedOffsets()[topic][partition]
   }
 
   /**
@@ -108,7 +111,7 @@ module.exports = class OffsetManager {
     const subtractPartitionOffsets = (topic, partition) =>
       subtractOffsets(
         this.resolvedOffsets[topic][partition],
-        this.committedOffsets[topic][partition]
+        this.committedOffsets()[topic][partition]
       )
 
     const subtractTopicOffsets = topic =>
@@ -188,9 +191,21 @@ module.exports = class OffsetManager {
     }
   }
 
-  async commitOffsets() {
-    const { groupId, generationId, memberId } = this
-
+  /**
+   * Return all locally resolved offsets which are not marked as committed, by topic-partition.
+   * @returns {OffsetsByTopicPartition}
+   *
+   * @typedef {Object} OffsetsByTopicPartition
+   * @property {TopicOffsets[]} topics
+   *
+   * @typedef {Object} TopicOffsets
+   * @property {PartitionOffset[]} partitions
+   *
+   * @typedef {Object} PartitionOffset
+   * @property {string} partition
+   * @property {string} offset
+   */
+  uncommittedOffsets() {
     const offsets = topic => keys(this.resolvedOffsets[topic])
     const emptyPartitions = ({ partitions }) => partitions.length > 0
     const toPartitions = topic => partition => ({
@@ -199,7 +214,7 @@ module.exports = class OffsetManager {
     })
     const changedOffsets = topic => ({ partition, offset }) => {
       return (
-        offset !== this.committedOffsets[topic][partition] &&
+        offset !== this.committedOffsets()[topic][partition] &&
         Long.fromValue(offset).greaterThanOrEqual(0)
       )
     }
@@ -214,7 +229,14 @@ module.exports = class OffsetManager {
       }))
       .filter(emptyPartitions)
 
-    if (topicsWithPartitionsToCommit.length === 0) {
+    return { topics: topicsWithPartitionsToCommit }
+  }
+
+  async commitOffsets() {
+    const { groupId, generationId, memberId } = this
+    const { topics } = this.uncommittedOffsets()
+
+    if (topics.length === 0) {
       this.lastCommit = Date.now()
       return
     }
@@ -223,7 +245,7 @@ module.exports = class OffsetManager {
       groupId,
       memberId,
       groupGenerationId: generationId,
-      topics: topicsWithPartitionsToCommit,
+      topics,
     }
 
     const coordinator = await this.getCoordinator()
@@ -231,12 +253,12 @@ module.exports = class OffsetManager {
     this.instrumentationEmitter.emit(COMMIT_OFFSETS, payload)
 
     // Update local reference of committed offsets
-    topicsWithPartitionsToCommit.forEach(({ topic, partitions }) => {
+    topics.forEach(({ topic, partitions }) => {
       const updatedOffsets = partitions.reduce(
         (obj, { partition, offset }) => assign(obj, { [partition]: offset }),
         {}
       )
-      assign(this.committedOffsets[topic], updatedOffsets)
+      assign(this.committedOffsets()[topic], updatedOffsets)
     })
 
     this.lastCommit = Date.now()
@@ -245,7 +267,7 @@ module.exports = class OffsetManager {
   async resolveOffsets() {
     const { groupId } = this
     const invalidOffset = topic => partition => {
-      return isInvalidOffset(this.committedOffsets[topic][partition])
+      return isInvalidOffset(this.committedOffsets()[topic][partition])
     }
 
     const pendingPartitions = this.topics
@@ -293,8 +315,8 @@ module.exports = class OffsetManager {
     }
 
     offsets.forEach(({ topic, partitions }) => {
-      this.committedOffsets[topic] = partitions.reduce(indexPartitions, {
-        ...this.committedOffsets[topic],
+      this.committedOffsets()[topic] = partitions.reduce(indexPartitions, {
+        ...this.committedOffsets()[topic],
       })
     })
   }
@@ -305,7 +327,7 @@ module.exports = class OffsetManager {
    * @param {number} partition
    */
   clearOffsets({ topic, partition }) {
-    delete this.committedOffsets[topic][partition]
+    delete this.committedOffsets()[topic][partition]
     delete this.resolvedOffsets[topic][partition]
   }
 
@@ -313,7 +335,26 @@ module.exports = class OffsetManager {
    * @private
    */
   clearAllOffsets() {
-    this.committedOffsets = indexTopics(this.topics)
+    const committedOffsets = this.committedOffsets()
+
+    for (const topic in committedOffsets) {
+      delete committedOffsets[topic]
+    }
+
+    for (const topic of this.topics) {
+      committedOffsets[topic] = {}
+    }
+
     this.resolvedOffsets = indexTopics(this.topics)
+  }
+
+  committedOffsets() {
+    if (!this[PRIVATE.COMMITTED_OFFSETS]) {
+      this[PRIVATE.COMMITTED_OFFSETS] = this.groupId
+        ? this.cluster.committedOffsets({ groupId: this.groupId })
+        : {}
+    }
+
+    return this[PRIVATE.COMMITTED_OFFSETS]
   }
 }

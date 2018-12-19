@@ -1,4 +1,5 @@
 let initProducerIdSpy
+let sendOffsetsSpy
 let retrySpy
 
 jest.mock('./eosManager', () => {
@@ -6,6 +7,7 @@ jest.mock('./eosManager', () => {
     const eosManager = jest.requireActual('./eosManager')(...args)
 
     initProducerIdSpy = jest.spyOn(eosManager, 'initProducerId')
+    sendOffsetsSpy = jest.spyOn(eosManager, 'sendOffsets')
 
     return eosManager
   }
@@ -32,6 +34,7 @@ const {
   testIfKafka_0_11,
   createTopic,
 } = require('testHelpers')
+const createRetrier = require('../retry')
 
 const { KafkaJSNonRetriableError } = require('../errors')
 
@@ -555,7 +558,7 @@ describe('Producer', () => {
 
     const testTransactionEnd = (shouldCommit = true) => {
       const endFn = shouldCommit ? 'commit' : 'abort'
-      test(`transaction flow ${endFn}`, async () => {
+      testIfKafka_0_11(`transaction flow ${endFn}`, async () => {
         const cluster = createCluster(
           Object.assign(connectionOpts(), {
             allowExperimentalV011: true,
@@ -613,7 +616,7 @@ describe('Producer', () => {
     testTransactionEnd(true)
     testTransactionEnd(false)
 
-    test('allows sending messages outside a transaction', async () => {
+    testIfKafka_0_11('allows sending messages outside a transaction', async () => {
       const cluster = createCluster(
         Object.assign(connectionOpts(), {
           allowExperimentalV011: true,
@@ -653,6 +656,93 @@ describe('Producer', () => {
             ],
           },
         ],
+      })
+    })
+
+    testIfKafka_0_11('supports sending offsets', async () => {
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          allowExperimentalV011: true,
+        })
+      )
+
+      const markOffsetAsCommittedSpy = jest.spyOn(cluster, 'markOffsetAsCommitted')
+
+      await createTopic({ topic: topicName })
+
+      producer = createProducer({
+        cluster,
+        logger: newLogger(),
+        transactionalId,
+      })
+
+      await producer.connect()
+
+      const consumerGroupId = `consumer-group-id-${secureRandom()}`
+      const topics = [
+        {
+          topic: topicName,
+          partitions: [
+            {
+              partition: 0,
+              offset: '5',
+            },
+            {
+              partition: 1,
+              offset: '10',
+            },
+          ],
+        },
+      ]
+      const txn = await producer.transaction()
+      await txn.sendOffsets({ consumerGroupId, topics })
+
+      expect(sendOffsetsSpy).toHaveBeenCalledWith({
+        consumerGroupId,
+        topics,
+      })
+      expect(markOffsetAsCommittedSpy).toHaveBeenCalledTimes(2)
+      expect(markOffsetAsCommittedSpy.mock.calls[0][0]).toEqual({
+        groupId: consumerGroupId,
+        topic: topicName,
+        partition: 0,
+        offset: '5',
+      })
+      expect(markOffsetAsCommittedSpy.mock.calls[1][0]).toEqual({
+        groupId: consumerGroupId,
+        topic: topicName,
+        partition: 1,
+        offset: '10',
+      })
+
+      await txn.commit()
+
+      const coordinator = await cluster.findGroupCoordinator({ groupId: consumerGroupId })
+      const retry = createRetrier({ retries: 5 })
+
+      // There is a potential delay between transaction commit and offset
+      // commits propagating to all replicas - retry expecting initial failure.
+      await retry(async () => {
+        const { responses: consumerOffsets } = await coordinator.offsetFetch({
+          groupId: consumerGroupId,
+          topics,
+        })
+
+        expect(consumerOffsets).toEqual([
+          {
+            topic: topicName,
+            partitions: [
+              expect.objectContaining({
+                offset: '5',
+                partition: 0,
+              }),
+              expect.objectContaining({
+                offset: '10',
+                partition: 1,
+              }),
+            ],
+          },
+        ])
       })
     })
   })
