@@ -13,6 +13,22 @@ describe('Client', () => {
     expect(new Client({ brokers: [] }).logger()).toMatchSnapshot()
   })
 
+  it('shares a commit mapping between the consumer and the producer', () => {
+    const client = new Client({ brokers: [] })
+
+    expect(Cluster).toHaveBeenCalledTimes(0)
+
+    client.producer({})
+    client.consumer({})
+
+    expect(Cluster).toHaveBeenCalledTimes(2)
+    expect(Cluster.mock.calls[0][0].offsets).toBeInstanceOf(Map)
+    expect(Cluster.mock.calls[0][0].offsets).toBe(Cluster.mock.calls[1][0].offsets)
+
+    expect(createProducer.mock.calls[0][0].cluster).toBe(Cluster.mock.instances[0])
+    expect(createConsumer.mock.calls[0][0].cluster).toBe(Cluster.mock.instances[1])
+  })
+
   it('passes options to the producer', () => {
     const client = new Client({ brokers: [] })
     const options = {

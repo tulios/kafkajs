@@ -20,14 +20,19 @@ describe('Consumer > OffsetMananger > countResolvedOffsets', () => {
       topic2: [0, 1, 2, 3, 4, 5],
     }
 
-    offsetManager = new OffsetManager({ memberAssignment })
+    offsetManager = new OffsetManager({
+      memberAssignment,
+      cluster: {
+        committedOffsets: jest.fn(() => new Map()),
+      },
+    })
   })
 
   it('counts the number of resolved offsets for all topics', () => {
-    offsetManager.committedOffsets['topic1'][0] = '-1'
-    offsetManager.committedOffsets['topic1'][1] = '-1'
-    offsetManager.committedOffsets['topic1'][2] = '-1'
-    offsetManager.committedOffsets['topic2'][5] = '-1'
+    offsetManager.committedOffsets()['topic1'][0] = '-1'
+    offsetManager.committedOffsets()['topic1'][1] = '-1'
+    offsetManager.committedOffsets()['topic1'][2] = '-1'
+    offsetManager.committedOffsets()['topic2'][5] = '-1'
 
     resolveOffsets('topic1', 0, { count: 10 })
     resolveOffsets('topic1', 1, { count: 1 })
@@ -39,10 +44,10 @@ describe('Consumer > OffsetMananger > countResolvedOffsets', () => {
 
   it('takes the committed offsets in consideration', () => {
     // committedOffsets will always have the next offset or -1
-    offsetManager.committedOffsets['topic1'][0] = '10'
-    offsetManager.committedOffsets['topic1'][1] = '1'
-    offsetManager.committedOffsets['topic1'][2] = '3'
-    offsetManager.committedOffsets['topic2'][5] = '5' // missing 1
+    offsetManager.committedOffsets()['topic1'][0] = '10'
+    offsetManager.committedOffsets()['topic1'][1] = '1'
+    offsetManager.committedOffsets()['topic1'][2] = '3'
+    offsetManager.committedOffsets()['topic2'][5] = '5' // missing 1
 
     resolveOffsets('topic1', 0, { count: 10 })
     resolveOffsets('topic1', 1, { count: 1 })

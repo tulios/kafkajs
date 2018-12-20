@@ -22,6 +22,7 @@ module.exports = class Runner {
     heartbeatInterval,
     onCrash,
     retry,
+    autoCommit = true,
   }) {
     this.logger = logger.namespace('Runner')
     this.consumerGroup = consumerGroup
@@ -32,6 +33,7 @@ module.exports = class Runner {
     this.heartbeatInterval = heartbeatInterval
     this.retrier = createRetry(Object.assign({}, retry))
     this.onCrash = onCrash
+    this.autoCommit = autoCommit
 
     this.running = false
     this.consuming = false
@@ -169,9 +171,14 @@ module.exports = class Runner {
         heartbeat: async () => {
           await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
         },
+        /**
+         * Note that this method _does not_ heed the "autoCommit" option,
+         * since it will only ever be called manually by the user.
+         */
         commitOffsetsIfNecessary: async () => {
           await this.consumerGroup.commitOffsetsIfNecessary()
         },
+        uncommittedOffsets: () => this.consumerGroup.uncommittedOffsets(),
         isRunning: () => this.running,
       })
     } catch (e) {
@@ -186,7 +193,7 @@ module.exports = class Runner {
 
       // eachBatch has a special resolveOffset which can be used
       // to keep track of the messages
-      await this.consumerGroup.commitOffsets()
+      await this.autoCommitOffsets()
       throw e
     }
 
@@ -212,7 +219,6 @@ module.exports = class Runner {
       }
 
       if (batch.isEmpty()) {
-        this.consumerGroup.resetOffset(batch)
         continue
       }
 
@@ -241,7 +247,7 @@ module.exports = class Runner {
       })
     }
 
-    await this.consumerGroup.commitOffsets()
+    await this.autoCommitOffsets()
     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
   }
 
@@ -318,5 +324,17 @@ module.exports = class Runner {
         this.consuming = false
       }
     }).catch(this.onCrash)
+  }
+
+  autoCommitOffsets() {
+    if (this.autoCommit) {
+      return this.consumerGroup.commitOffsets()
+    }
+  }
+
+  autoCommitOffsetsIfNecessary() {
+    if (this.autoCommit) {
+      return this.consumerGroup.commitOffsetsIfNecessary()
+    }
   }
 }

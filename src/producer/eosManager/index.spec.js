@@ -19,6 +19,8 @@ describe('Producer > eosManager', () => {
       initProducerId: jest.fn().mockReturnValue(mockInitProducerIdResponse),
       addPartitionsToTxn: jest.fn(),
       endTxn: jest.fn(),
+      addOffsetsToTxn: jest.fn(),
+      txnOffsetCommit: jest.fn(),
     }
     cluster = {
       refreshMetadataIfNecessary: jest.fn(),
@@ -259,6 +261,53 @@ describe('Producer > eosManager', () => {
         transactionResult: false,
       })
     })
+
+    test('sending offsets', async () => {
+      const consumerGroupId = 'consumer-group-id'
+      const topics = [{ topic: 'test-topic-1', partitions: [{ partition: 0 }] }]
+      const eosManager = createEosManager({
+        logger: newLogger(),
+        cluster,
+        transactionTimeout: 30000,
+        transactional: true,
+        transactionalId,
+      })
+
+      await expect(eosManager.sendOffsets()).rejects.toEqual(
+        new KafkaJSNonRetriableError(
+          'Transaction state exception: Cannot call "sendOffsets" in state "UNINITIALIZED"'
+        )
+      )
+      await eosManager.initProducerId()
+      await expect(eosManager.sendOffsets()).rejects.toEqual(
+        new KafkaJSNonRetriableError(
+          'Transaction state exception: Cannot call "sendOffsets" in state "READY"'
+        )
+      )
+      await eosManager.beginTransaction()
+
+      cluster.findGroupCoordinator.mockClear()
+
+      await eosManager.sendOffsets({ consumerGroupId, topics })
+
+      expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
+        groupId: consumerGroupId,
+        coordinatorType: COORDINATOR_TYPES.GROUP,
+      })
+      expect(broker.addOffsetsToTxn).toHaveBeenCalledWith({
+        producerId,
+        producerEpoch,
+        transactionalId,
+        groupId: consumerGroupId,
+      })
+      expect(broker.txnOffsetCommit).toHaveBeenCalledWith({
+        transactionalId,
+        producerId,
+        producerEpoch,
+        groupId: consumerGroupId,
+        topics,
+      })
+    })
   })
 
   describe('if transactional=false', () => {
@@ -288,6 +337,7 @@ describe('Producer > eosManager', () => {
     })
 
     testTransactionalGuardAsync('addPartitionsToTransaction')
+    testTransactionalGuardAsync('sendOffsets')
     testTransactionalGuardAsync('commit')
     testTransactionalGuardAsync('abort')
   })

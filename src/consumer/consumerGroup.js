@@ -270,6 +270,10 @@ module.exports = class ConsumerGroup {
     await this.offsetManager.commitOffsets()
   }
 
+  uncommittedOffsets() {
+    return this.offsetManager.uncommittedOffsets()
+  }
+
   async heartbeat({ interval }) {
     const { groupId, generationId, memberId } = this
     const now = Date.now()

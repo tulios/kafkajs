@@ -14,6 +14,7 @@ const ISOLATION_LEVEL = require('./protocol/isolationLevel')
 const PRIVATE = {
   CREATE_CLUSTER: Symbol('private:Kafka:createCluster'),
   LOGGER: Symbol('private:Kafka:logger'),
+  OFFSETS: Symbol('private:Kafka:offsets'),
 }
 
 module.exports = class Client {
@@ -30,6 +31,7 @@ module.exports = class Client {
     logCreator = LoggerConsole,
     allowExperimentalV011 = true,
   }) {
+    this[PRIVATE.OFFSETS] = new Map()
     this[PRIVATE.LOGGER] = createLogger({ level: logLevel, logCreator })
     this[PRIVATE.CREATE_CLUSTER] = ({
       metadataMaxAge = 300000,
@@ -54,6 +56,7 @@ module.exports = class Client {
         allowExperimentalV011,
         maxInFlightRequests,
         isolationLevel,
+        offsets: this[PRIVATE.OFFSETS],
       })
   }
 

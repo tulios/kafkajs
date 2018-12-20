@@ -1,6 +1,7 @@
 const { KafkaJSNonRetriableError } = require('../../errors')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 const createStateMachine = require('./transactionStateMachine')
+const assert = require('assert')
 
 const STATES = require('./transactionStates')
 const NO_PRODUCER_ID = -1
@@ -257,6 +258,50 @@ module.exports = ({
       isInTransaction() {
         return stateMachine.state() === STATES.TRANSACTING
       },
+
+      /**
+       * Mark the provided offsets as participating in the transaction for the given consumer group.
+       *
+       * This allows us to commit an offset as consumed only if the transaction passes.
+       * @param {string} consumerGroupId The unique group identifier
+       * @param {OffsetCommitTopic[]} topics The unique group identifier
+       * @returns {Promise}
+       *
+       * @typedef {Object} OffsetCommitTopic
+       * @property {string} topic
+       * @property {OffsetCommitTopicPartition[]} partitions
+       *
+       * @typedef {Object} OffsetCommitTopicPartition
+       * @property {number} partition
+       * @property {number} offset
+       */
+      async sendOffsets({ consumerGroupId, topics }) {
+        assert(consumerGroupId, 'Missing consumerGroupId')
+        assert(topics, 'Missing offset topics')
+
+        const transactionCoordinator = await findTransactionCoordinator()
+
+        // Do we need to add offsets if we've already done so for this consumer group?
+        await transactionCoordinator.addOffsetsToTxn({
+          transactionalId,
+          producerId,
+          producerEpoch,
+          groupId: consumerGroupId,
+        })
+
+        const groupCoordinator = await cluster.findGroupCoordinator({
+          groupId: consumerGroupId,
+          coordinatorType: COORDINATOR_TYPES.GROUP,
+        })
+
+        await groupCoordinator.txnOffsetCommit({
+          transactionalId,
+          producerId,
+          producerEpoch,
+          groupId: consumerGroupId,
+          topics,
+        })
+      },
     },
     /**
      * Transaction state guards
@@ -265,6 +310,7 @@ module.exports = ({
       initProducerId: { legalStates: [STATES.UNINITIALIZED, STATES.READY] },
       beginTransaction: { legalStates: [STATES.READY], async: false },
       addPartitionsToTransaction: { legalStates: [STATES.TRANSACTING] },
+      sendOffsets: { legalStates: [STATES.TRANSACTING] },
       commit: { legalStates: [STATES.TRANSACTING] },
       abort: { legalStates: [STATES.TRANSACTING] },
     }
