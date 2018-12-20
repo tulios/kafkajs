@@ -1,5 +1,5 @@
 const swapObject = require('../utils/swapObject')
-const networkEvents = require('../network/InstrumentationEvents')
+const networkEvents = require('../network/instrumentationEvents')
 const InstrumentationEventType = require('../instrumentation/eventType')
 const adminType = InstrumentationEventType('admin')
 
