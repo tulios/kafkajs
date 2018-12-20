@@ -176,7 +176,7 @@ module.exports = class OffsetManager {
     this.clearOffsets({ topic, partition })
   }
 
-  async commitOffsetsIfNecessary() {
+  async commitOffsetsIfNecessary(offsets) {
     const now = Date.now()
 
     const timeoutReached =
@@ -187,7 +187,7 @@ module.exports = class OffsetManager {
       this.countResolvedOffsets().gte(Long.fromValue(this.autoCommitThreshold))
 
     if (timeoutReached || thresholdReached) {
-      return this.commitOffsets()
+      return this.commitOffsets(offsets)
     }
   }
 
@@ -232,9 +232,9 @@ module.exports = class OffsetManager {
     return { topics: topicsWithPartitionsToCommit }
   }
 
-  async commitOffsets() {
+  async commitOffsets(offsets = {}) {
     const { groupId, generationId, memberId } = this
-    const { topics } = this.uncommittedOffsets()
+    const { topics = this.uncommittedOffsets().topics } = offsets
 
     if (topics.length === 0) {
       this.lastCommit = Date.now()

@@ -177,9 +177,11 @@ module.exports = class Runner {
         /**
          * Note that this method _does not_ heed the "autoCommit" option,
          * since it will only ever be called manually by the user.
+         *
+         * @param {OffsetsByTopicPartition} [offsets] Optional. Offsets to commit for given topic partitions. If missing will commit all resolved but uncommitted offsets.
          */
-        commitOffsetsIfNecessary: async () => {
-          await this.consumerGroup.commitOffsetsIfNecessary()
+        commitOffsetsIfNecessary: async offsets => {
+          await this.consumerGroup.commitOffsetsIfNecessary(offsets)
         },
         uncommittedOffsets: () => this.consumerGroup.uncommittedOffsets(),
         isRunning: () => this.running,

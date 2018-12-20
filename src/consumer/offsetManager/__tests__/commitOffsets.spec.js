@@ -93,4 +93,22 @@ describe('Consumer > OffsetMananger > commitOffsets', () => {
       },
     })
   })
+
+  it('commits any provided offsets', async () => {
+    const offset = Math.random().toString()
+    const offsets = { topics: [{ topic: topic1, partitions: [{ partition: '0', offset }] }] }
+    await offsetManager.commitOffsets(offsets)
+
+    expect(mockCoordinator.offsetCommit).toHaveBeenCalledWith({
+      groupId,
+      memberId,
+      groupGenerationId: generationId,
+      topics: [
+        {
+          topic: topic1,
+          partitions: [{ partition: '0', offset }],
+        },
+      ],
+    })
+  })
 })
