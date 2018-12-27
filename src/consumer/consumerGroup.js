@@ -260,12 +260,12 @@ module.exports = class ConsumerGroup {
     return this.subscriptionState.paused()
   }
 
-  async commitOffsetsIfNecessary(offsets) {
-    await this.offsetManager.commitOffsetsIfNecessary(offsets)
+  async commitOffsetsIfNecessary() {
+    await this.offsetManager.commitOffsetsIfNecessary()
   }
 
-  async commitOffsets() {
-    await this.offsetManager.commitOffsets()
+  async commitOffsets(offsets) {
+    await this.offsetManager.commitOffsets(offsets)
   }
 
   uncommittedOffsets() {

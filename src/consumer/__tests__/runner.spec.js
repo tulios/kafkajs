@@ -72,6 +72,54 @@ describe('Consumer > Runner', () => {
     expect(onCrash).not.toHaveBeenCalled()
   })
 
+  describe('"eachBatch" callback', () => {
+    it('allows providing offsets to "commitOffsetIfNecessary"', async () => {
+      const topic = 'topic-name'
+      const partition = 0
+      const batch = new Batch(topic, 0, {
+        partition,
+        highWatermark: 5,
+        messages: [{ offset: 4, key: '1', value: '2' }],
+      })
+
+      consumerGroup.fetch.mockImplementationOnce(() => [batch])
+      runner.scheduleFetch = jest.fn()
+      await runner.start()
+      await runner.fetch() // Manually fetch for test
+
+      expect(eachBatch).toHaveBeenCalledWith({
+        batch: expect.any(Object),
+        commitOffsetsIfNecessary: expect.any(Function),
+        heartbeat: expect.any(Function),
+        isRunning: expect.any(Function),
+        resolveOffset: expect.any(Function),
+        uncommittedOffsets: expect.any(Function),
+      })
+
+      const { commitOffsetsIfNecessary } = eachBatch.mock.calls[0][0] // Access the callback
+
+      // Clear state
+      consumerGroup.commitOffsetsIfNecessary.mockClear()
+      consumerGroup.commitOffsets.mockClear()
+
+      // No offsets provided
+      await commitOffsetsIfNecessary()
+      expect(consumerGroup.commitOffsetsIfNecessary).toHaveBeenCalledTimes(1)
+      expect(consumerGroup.commitOffsets).toHaveBeenCalledTimes(0)
+
+      // Clear state
+      consumerGroup.commitOffsetsIfNecessary.mockClear()
+      consumerGroup.commitOffsets.mockClear()
+
+      // Provide offsets
+      const offsets = { topics: [{ topic: 'foobar', partitions: [{ offset: '1', partition: 0 }] }] }
+      await commitOffsetsIfNecessary(offsets)
+      expect(consumerGroup.commitOffsetsIfNecessary).toHaveBeenCalledTimes(0)
+      expect(consumerGroup.commitOffsets).toHaveBeenCalledTimes(1)
+      expect(consumerGroup.commitOffsets).toHaveBeenCalledWith(offsets)
+    })
+  })
+
   describe('when eachBatchAutoResolve is set to false', () => {
     beforeEach(() => {
       runner = new Runner({

@@ -176,7 +176,7 @@ module.exports = class OffsetManager {
     this.clearOffsets({ topic, partition })
   }
 
-  async commitOffsetsIfNecessary(offsets) {
+  async commitOffsetsIfNecessary() {
     const now = Date.now()
 
     const timeoutReached =
@@ -187,7 +187,7 @@ module.exports = class OffsetManager {
       this.countResolvedOffsets().gte(Long.fromValue(this.autoCommitThreshold))
 
     if (timeoutReached || thresholdReached) {
-      return this.commitOffsets(offsets)
+      return this.commitOffsets()
     }
   }
 
