@@ -87,14 +87,11 @@ describe('Consumer > Runner', () => {
       await runner.start()
       await runner.fetch() // Manually fetch for test
 
-      expect(eachBatch).toHaveBeenCalledWith({
-        batch: expect.any(Object),
-        commitOffsetsIfNecessary: expect.any(Function),
-        heartbeat: expect.any(Function),
-        isRunning: expect.any(Function),
-        resolveOffset: expect.any(Function),
-        uncommittedOffsets: expect.any(Function),
-      })
+      expect(eachBatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          commitOffsetsIfNecessary: expect.any(Function),
+        })
+      )
 
       const { commitOffsetsIfNecessary } = eachBatch.mock.calls[0][0] // Access the callback
 
