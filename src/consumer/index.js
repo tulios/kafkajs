@@ -2,15 +2,15 @@ const Long = require('long')
 const createRetry = require('../retry')
 const ConsumerGroup = require('./consumerGroup')
 const Runner = require('./runner')
-const events = require('./instrumentationEvents')
+const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentationEvents')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
-const { CONNECT, DISCONNECT, STOP, CRASH } = require('./instrumentationEvents')
 const { KafkaJSNonRetriableError } = require('../errors')
 const { roundRobin } = require('./assigners')
 const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
 const ISOLATION_LEVEL = require('../protocol/isolationLevel')
 
 const { keys, values } = Object
+const { CONNECT, DISCONNECT, STOP, CRASH } = events
 
 const eventNames = values(events)
 const eventKeys = keys(events)
@@ -33,13 +33,12 @@ module.exports = ({
   minBytes = 1,
   maxBytes = 10485760, // 10MB
   maxWaitTimeInMs = 5000,
-  retry = {
-    retries: 10,
-  },
+  retry = { retries: 10 },
   isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
+  instrumentationEmitter: rootInstrumentationEmitter,
 }) => {
   const logger = rootLogger.namespace('Consumer')
-  const instrumentationEmitter = new InstrumentationEventEmitter()
+  const instrumentationEmitter = rootInstrumentationEmitter || new InstrumentationEventEmitter()
   const assigners = partitionAssigners.map(createAssigner =>
     createAssigner({ groupId, logger, cluster })
   )
@@ -213,15 +212,16 @@ module.exports = ({
 
   /**
    * @param {string} eventName
-   * @param {Function} listener
-   * @return {Function}
+   * @param {AsyncFunction} listener
+   * @return {Function} removeListener
    */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {
       throw new KafkaJSNonRetriableError(`Event name should be one of ${eventKeys}`)
     }
 
-    return instrumentationEmitter.addListener(eventName, event => {
+    return instrumentationEmitter.addListener(unwrapEvent(eventName), event => {
+      event.type = wrapEvent(event.type)
       Promise.resolve(listener(event)).catch(e => {
         logger.error(`Failed to execute listener: ${e.message}`, {
           eventName,

@@ -5,10 +5,12 @@ module.exports = ({
   ssl,
   sasl,
   clientId,
+  requestTimeout,
   connectionTimeout,
   maxInFlightRequests,
   retry,
   logger,
+  instrumentationEmitter = null,
 }) => {
   const size = brokers.length
   let index = 0
@@ -30,7 +32,9 @@ module.exports = ({
         sasl,
         clientId,
         connectionTimeout,
+        requestTimeout,
         maxInFlightRequests,
+        instrumentationEmitter,
         retry,
         logger,
       })

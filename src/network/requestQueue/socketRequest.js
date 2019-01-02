@@ -1,7 +1,9 @@
 const { KafkaJSRequestTimeoutError, KafkaJSNonRetriableError } = require('../../errors')
+const events = require('../instrumentationEvents')
 
 const PRIVATE = {
   STATE: Symbol('private:SocketRequest:state'),
+  EMIT_EVENT: Symbol('private:SocketRequest:emitEvent'),
 }
 
 const REQUEST_STATE = {
@@ -22,6 +24,7 @@ const REQUEST_STATE = {
  * @property {number} duration
  * @property {number} requestTimeout
  * @property {string} broker
+ * @property {string} clientId
  * @property {RequestEntry} entry
  * @property {boolean} expectResponse
  * @property {Function} send
@@ -38,15 +41,26 @@ const REQUEST_STATE = {
 module.exports = class SocketRequest {
   /**
    * @param {number} requestTimeout
-   * @param {string} broker
+   * @param {string} broker - e.g: 127.0.0.1:9092
    * @param {RequestEntry} entry
    * @param {boolean} expectResponse
    * @param {Function} send
+   * @param {InstrumentationEventEmitter} [instrumentationEmitter=null]
    */
-  constructor({ requestTimeout, broker, entry, expectResponse, send, timeout }) {
+  constructor({
+    requestTimeout,
+    broker,
+    clientId,
+    entry,
+    expectResponse,
+    send,
+    timeout,
+    instrumentationEmitter = null,
+  }) {
     this.createdAt = Date.now()
     this.requestTimeout = requestTimeout
     this.broker = broker
+    this.clientId = clientId
     this.entry = entry
     this.correlationId = entry.correlationId
     this.expectResponse = expectResponse
@@ -59,6 +73,8 @@ module.exports = class SocketRequest {
     this.timeoutId = null
 
     this[PRIVATE.STATE] = REQUEST_STATE.PENDING
+    this[PRIVATE.EMIT_EVENT] = (eventName, payload) =>
+      instrumentationEmitter && instrumentationEmitter.emit(eventName, payload)
   }
 
   send() {
@@ -75,17 +91,23 @@ module.exports = class SocketRequest {
     const timeoutCallback = () => {
       const { apiName, apiKey, apiVersion } = this.entry
       const requestInfo = `${apiName}(key: ${apiKey}, version: ${apiVersion})`
+      const eventData = {
+        broker: this.broker,
+        clientId: this.clientId,
+        correlationId: this.correlationId,
+        createdAt: this.createdAt,
+        sentAt: this.sentAt,
+        pendingDuration: this.pendingDuration,
+      }
 
       this.timeoutHandler()
-      this.rejected(
-        new KafkaJSRequestTimeoutError(`Request ${requestInfo} timed out`, {
-          broker: this.broker,
-          correlationId: this.correlationId,
-          createdAt: this.createdAt,
-          sentAt: this.sentAt,
-          pendingDuration: this.pendingDuration,
-        })
-      )
+      this.rejected(new KafkaJSRequestTimeoutError(`Request ${requestInfo} timed out`, eventData))
+      this[PRIVATE.EMIT_EVENT](events.NETWORK_REQUEST_TIMEOUT, {
+        ...eventData,
+        apiName,
+        apiKey,
+        apiVersion,
+      })
     }
 
     this.timeoutId = setTimeout(timeoutCallback, this.requestTimeout)
@@ -98,11 +120,25 @@ module.exports = class SocketRequest {
     })
 
     clearTimeout(this.timeoutId)
-    const { entry, correlationId } = this
+    const { entry, correlationId, broker, clientId, createdAt, sentAt, pendingDuration } = this
 
     this[PRIVATE.STATE] = REQUEST_STATE.COMPLETED
     this.duration = Date.now() - this.sentAt
     entry.resolve({ correlationId, entry, size, payload })
+
+    this[PRIVATE.EMIT_EVENT](events.NETWORK_REQUEST, {
+      broker,
+      clientId,
+      correlationId,
+      size,
+      createdAt,
+      sentAt,
+      pendingDuration,
+      duration: this.duration,
+      apiName: entry.apiName,
+      apiKey: entry.apiKey,
+      apiVersion: entry.apiVersion,
+    })
   }
 
   rejected(error) {

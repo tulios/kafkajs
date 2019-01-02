@@ -5,7 +5,9 @@ const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
 const SubscriptionState = require('./subscriptionState')
-const { HEARTBEAT } = require('./instrumentationEvents')
+const {
+  events: { HEARTBEAT },
+} = require('./instrumentationEvents')
 const { MemberAssignment } = require('./assignerProtocol')
 const {
   KafkaJSError,
@@ -275,14 +277,15 @@ module.exports = class ConsumerGroup {
   async heartbeat({ interval }) {
     const { groupId, generationId, memberId } = this
     const now = Date.now()
-    if (now >= this.lastRequest + interval) {
+
+    if (memberId && now >= this.lastRequest + interval) {
       const payload = {
         groupId,
         memberId,
         groupGenerationId: generationId,
       }
-      await this.coordinator.heartbeat(payload)
 
+      await this.coordinator.heartbeat(payload)
       this.instrumentationEmitter.emit(HEARTBEAT, payload)
       this.lastRequest = Date.now()
     }
