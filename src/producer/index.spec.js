@@ -19,6 +19,7 @@ jest.mock('../retry', () => {
   return spy
 })
 
+const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const createProducer = require('./index')
 const {
   secureRandom,
@@ -216,6 +217,83 @@ describe('Producer', () => {
 
     await producer.disconnect()
     expect(disconnectListener).toHaveBeenCalled()
+  })
+
+  test('emits the request event', async () => {
+    const emitter = new InstrumentationEventEmitter()
+    producer = createProducer({
+      logger: newLogger(),
+      cluster: createCluster({ instrumentationEmitter: emitter }),
+      instrumentationEmitter: emitter,
+    })
+
+    const requestListener = jest.fn().mockName('request')
+    producer.on(producer.events.REQUEST, requestListener)
+
+    await producer.connect()
+    expect(requestListener).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'producer.network.request',
+      payload: {
+        apiKey: expect.any(Number),
+        apiName: 'ApiVersions',
+        apiVersion: expect.any(Number),
+        broker: expect.any(String),
+        clientId: expect.any(String),
+        correlationId: expect.any(Number),
+        createdAt: expect.any(Number),
+        duration: expect.any(Number),
+        pendingDuration: expect.any(Number),
+        sentAt: expect.any(Number),
+        size: expect.any(Number),
+      },
+    })
+  })
+
+  test('emits the request timeout event', async () => {
+    const emitter = new InstrumentationEventEmitter()
+    const cluster = createCluster({
+      requestTimeout: 1,
+      instrumentationEmitter: emitter,
+    })
+
+    producer = createProducer({
+      cluster,
+      logger: newLogger(),
+      instrumentationEmitter: emitter,
+    })
+
+    const requestListener = jest.fn().mockName('request_timeout')
+    producer.on(producer.events.REQUEST_TIMEOUT, requestListener)
+
+    await producer
+      .connect()
+      .then(() =>
+        producer.send({
+          acks: -1,
+          topic: topicName,
+          messages: [{ key: 'key-0', value: 'value-0' }],
+        })
+      )
+      .catch(e => e)
+
+    expect(requestListener).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'producer.network.request_timeout',
+      payload: {
+        apiKey: expect.any(Number),
+        apiName: expect.any(String),
+        apiVersion: expect.any(Number),
+        broker: expect.any(String),
+        clientId: expect.any(String),
+        correlationId: expect.any(Number),
+        createdAt: expect.any(Number),
+        pendingDuration: expect.any(Number),
+        sentAt: expect.any(Number),
+      },
+    })
   })
 
   describe('when acks=0', () => {

@@ -39,6 +39,7 @@ describe('Client', () => {
       idempotent: true,
       transactionalId: 'transactional-id',
       transactionTimeout: 1,
+      instrumentationEmitter: expect.any(Object),
     }
     client.producer(options)
 

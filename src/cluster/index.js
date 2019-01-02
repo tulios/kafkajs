@@ -26,12 +26,15 @@ const mergeTopics = (obj, { topic, partitions }) => ({
  * @param {string} clientId
  * @param {number} connectionTimeout - in milliseconds
  * @param {number} authenticationTimeout - in milliseconds
+ * @param {number} requestTimeout - in milliseconds
  * @param {number} metadataMaxAge - in milliseconds
  * @param {boolean} allowAutoTopicCreation
  * @param {number} maxInFlightRequests
+ * @param {IsolationLevel} isolationLevel
  * @param {Object} retry
- * @param {Object} logger
+ * @param {Logger} logger
  * @param {Map} offsets
+ * @param {InstrumentationEventEmitter} [instrumentationEmitter=null]
  */
 module.exports = class Cluster {
   constructor({
@@ -42,12 +45,14 @@ module.exports = class Cluster {
     clientId,
     connectionTimeout,
     authenticationTimeout,
+    requestTimeout,
     metadataMaxAge,
     retry,
     allowExperimentalV011,
     allowAutoTopicCreation,
     maxInFlightRequests,
     isolationLevel,
+    instrumentationEmitter = null,
     offsets = new Map(),
   }) {
     this.rootLogger = rootLogger
@@ -55,11 +60,13 @@ module.exports = class Cluster {
     this.retrier = createRetry({ ...retry })
     this.connectionBuilder = connectionBuilder({
       logger: rootLogger,
+      instrumentationEmitter,
       brokers,
       ssl,
       sasl,
       clientId,
       connectionTimeout,
+      requestTimeout,
       maxInFlightRequests,
       retry,
     })

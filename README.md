@@ -28,6 +28,7 @@ KafkaJS is battle-tested and ready for production.
   - [SSL](#configuration-ssl)
   - [SASL](#configuration-sasl)
   - [Connection timeout](#configuration-connection-timeout)
+  - [Request timeout](#configuration-request-timeout)
   - [Default retry](#configuration-default-retry)
   - [Logging](#configuration-logging)
 - [Producing messages](#producing-messages)
@@ -137,6 +138,18 @@ new Kafka({
   clientId: 'my-app',
   brokers: ['kafka1:9092', 'kafka2:9092'],
   connectionTimeout: 3000
+})
+```
+
+### <a name="configuration-request-timeout"></a> Request Timeout
+
+Time in milliseconds to wait for a successful request. The default value is: `30000`.
+
+```javascript
+new Kafka({
+  clientId: 'my-app',
+  brokers: ['kafka1:9092', 'kafka2:9092'],
+  requestTimeout: 25000
 })
 ```
 
@@ -1168,17 +1181,101 @@ List of available events:
 * consumer.events.CRASH
   payload: {`error`, `groupId`}
 
+* consumer.events.REQUEST
+  payload: {
+    `broker`,
+    `clientId`,
+    `correlationId`,
+    `size`,
+    `createdAt`,
+    `sentAt`,
+    `pendingDuration`,
+    `duration`,
+    `apiName`,
+    `apiKey`,
+    `apiVersion`
+  }
+
+* consumer.events.REQUEST_TIMEOUT
+  payload: {
+    `broker`,
+    `clientId`,
+    `correlationId`,
+    `createdAt`,
+    `sentAt`,
+    `pendingDuration`,
+    `apiName`,
+    `apiKey`,
+    `apiVersion`
+  }
+
 ### <a name="instrumentation-producer"></a> Producer
 
 * producer.events.CONNECT
 
 * producer.events.DISCONNECT
 
+* producer.events.REQUEST
+  payload: {
+    `broker`,
+    `clientId`,
+    `correlationId`,
+    `size`,
+    `createdAt`,
+    `sentAt`,
+    `pendingDuration`,
+    `duration`,
+    `apiName`,
+    `apiKey`,
+    `apiVersion`
+  }
+
+* producer.events.REQUEST_TIMEOUT
+  payload: {
+    `broker`,
+    `clientId`,
+    `correlationId`,
+    `createdAt`,
+    `sentAt`,
+    `pendingDuration`,
+    `apiName`,
+    `apiKey`,
+    `apiVersion`
+  }
+
 ### <a name="instrumentation-admin"></a> Admin
 
 * admin.events.CONNECT
 
 * admin.events.DISCONNECT
+
+* admin.events.REQUEST
+  payload: {
+    `broker`,
+    `clientId`,
+    `correlationId`,
+    `size`,
+    `createdAt`,
+    `sentAt`,
+    `pendingDuration`,
+    `duration`,
+    `apiName`,
+    `apiKey`,
+    `apiVersion`
+  }
+
+* admin.events.REQUEST_TIMEOUT
+  payload: {
+    `broker`,
+    `clientId`,
+    `correlationId`,
+    `createdAt`,
+    `sentAt`,
+    `pendingDuration`,
+    `apiName`,
+    `apiKey`,
+    `apiVersion`
+  }
 
 ## <a name="custom-logging"></a> Custom logging
 

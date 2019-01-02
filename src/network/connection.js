@@ -29,6 +29,7 @@ const requestInfo = ({ apiName, apiKey, apiVersion }) =>
  *                              retry module inside network
  * @param {number} [maxInFlightRequests=null] The maximum number of unacknowledged requests on a connection before
  *                                            enqueuing
+ * @param {InstrumentationEventEmitter} [instrumentationEmitter=null]
  */
 module.exports = class Connection {
   constructor({
@@ -42,6 +43,7 @@ module.exports = class Connection {
     connectionTimeout = 1000,
     requestTimeout = 30000,
     maxInFlightRequests = null,
+    instrumentationEmitter = null,
     retry = {},
   }) {
     this.host = host
@@ -63,6 +65,7 @@ module.exports = class Connection {
     this.connected = false
     this.correlationId = 0
     this.requestQueue = new RequestQueue({
+      instrumentationEmitter,
       maxInFlightRequests,
       requestTimeout,
       clientId,

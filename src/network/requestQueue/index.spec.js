@@ -1,4 +1,6 @@
 const { newLogger } = require('testHelpers')
+const InstrumentationEventEmitter = require('../../instrumentation/emitter')
+const events = require('../instrumentationEvents')
 const RequestQueue = require('./index')
 
 describe('Network > RequestQueue', () => {
@@ -11,14 +13,18 @@ describe('Network > RequestQueue', () => {
     reject: jest.fn(),
   })
 
-  beforeEach(() => {
-    requestQueue = new RequestQueue({
+  const createRequestQueue = (args = {}) =>
+    new RequestQueue({
       maxInFlightRequests: 2,
       requestTimeout: 50,
       clientId: 'KafkaJS',
       broker: 'localhost:9092',
       logger: newLogger(),
+      ...args,
     })
+
+  beforeEach(() => {
+    requestQueue = createRequestQueue()
   })
 
   describe('#push', () => {
@@ -186,6 +192,111 @@ describe('Network > RequestQueue', () => {
       for (let request of allRequests) {
         expect(request.entry.reject).toHaveBeenCalledWith(error)
       }
+    })
+  })
+
+  describe('instrumentation events', () => {
+    let emitter, removeListener, eventCalled, request, payload, size
+
+    beforeEach(() => {
+      eventCalled = jest.fn()
+      emitter = new InstrumentationEventEmitter()
+      requestQueue = createRequestQueue({ instrumentationEmitter: emitter })
+      request = {
+        sendRequest: jest.fn(),
+        entry: createEntry(),
+        expectResponse: true,
+      }
+      payload = { ok: true }
+      size = 32
+    })
+
+    afterEach(() => {
+      removeListener && removeListener()
+    })
+
+    it('does not emit the event if the queue size remains the same', () => {
+      emitter.addListener(events.NETWORK_REQUEST_QUEUE_SIZE, eventCalled)
+      expect(requestQueue.pending.length).toEqual(0)
+      requestQueue.push(request)
+      expect(requestQueue.pending.length).toEqual(0)
+      expect(eventCalled).not.toHaveBeenCalled()
+    })
+
+    it('emits NETWORK_REQUEST_QUEUE_SIZE when a new request is added', () => {
+      emitter.addListener(events.NETWORK_REQUEST_QUEUE_SIZE, eventCalled)
+
+      while (requestQueue.inflight.size < requestQueue.maxInFlightRequests) {
+        const request = {
+          sendRequest: jest.fn(),
+          entry: createEntry(),
+          expectResponse: true,
+        }
+
+        requestQueue.push(request)
+      }
+
+      requestQueue.push(request)
+      expect(eventCalled).toHaveBeenCalledWith({
+        id: expect.any(Number),
+        type: 'network.request_queue_size',
+        timestamp: expect.any(Number),
+        payload: {
+          broker: 'localhost:9092',
+          clientId: 'KafkaJS',
+          queueSize: requestQueue.pending.length,
+        },
+      })
+    })
+
+    it('emits NETWORK_REQUEST_QUEUE_SIZE when a request is removed', () => {
+      emitter.addListener(events.NETWORK_REQUEST_QUEUE_SIZE, eventCalled)
+
+      while (requestQueue.inflight.size < requestQueue.maxInFlightRequests) {
+        const request = {
+          sendRequest: jest.fn(),
+          entry: createEntry(),
+          expectResponse: true,
+        }
+
+        requestQueue.push(request)
+      }
+
+      requestQueue.push(request)
+      requestQueue.fulfillRequest({
+        correlationId: request.entry.correlationId,
+        payload,
+        size,
+      })
+
+      expect(eventCalled).toHaveBeenCalledTimes(2)
+      expect(eventCalled).toHaveBeenCalledWith({
+        id: expect.any(Number),
+        type: 'network.request_queue_size',
+        timestamp: expect.any(Number),
+        payload: {
+          broker: 'localhost:9092',
+          clientId: 'KafkaJS',
+          queueSize: 0,
+        },
+      })
+    })
+
+    it('emits NETWORK_REQUEST_QUEUE_SIZE when the requests are rejected', () => {
+      emitter.addListener(events.NETWORK_REQUEST_QUEUE_SIZE, eventCalled)
+      const error = new Error('Broker closed the connection')
+      requestQueue.rejectAll(error)
+
+      expect(eventCalled).toHaveBeenCalledWith({
+        id: expect.any(Number),
+        type: 'network.request_queue_size',
+        timestamp: expect.any(Number),
+        payload: {
+          broker: 'localhost:9092',
+          clientId: 'KafkaJS',
+          queueSize: 0,
+        },
+      })
     })
   })
 })

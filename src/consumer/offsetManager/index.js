@@ -2,7 +2,9 @@ const Long = require('long')
 const flatten = require('../../utils/flatten')
 const isInvalidOffset = require('./isInvalidOffset')
 const initializeConsumerOffsets = require('./initializeConsumerOffsets')
-const { COMMIT_OFFSETS } = require('../instrumentationEvents')
+const {
+  events: { COMMIT_OFFSETS },
+} = require('../instrumentationEvents')
 
 const { keys, assign } = Object
 const indexTopics = topics => topics.reduce((obj, topic) => assign(obj, { [topic]: {} }), {})
