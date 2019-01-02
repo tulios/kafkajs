@@ -172,11 +172,15 @@ module.exports = class Runner {
           await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
         },
         /**
-         * Note that this method _does not_ heed the "autoCommit" option,
-         * since it will only ever be called manually by the user.
+         * Commit offsets if provided. Otherwise commit most recent resolved offsets
+         * if the autoCommit conditions are met.
+         *
+         * @param {OffsetsByTopicPartition} [offsets] Optional.
          */
-        commitOffsetsIfNecessary: async () => {
-          await this.consumerGroup.commitOffsetsIfNecessary()
+        commitOffsetsIfNecessary: async offsets => {
+          return offsets
+            ? this.consumerGroup.commitOffsets(offsets)
+            : this.consumerGroup.commitOffsetsIfNecessary()
         },
         uncommittedOffsets: () => this.consumerGroup.uncommittedOffsets(),
         isRunning: () => this.running,

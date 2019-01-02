@@ -21,4 +21,15 @@ describe('ConsumerGroup', () => {
       expect(consumerGroup.offsetManager.uncommittedOffsets).toHaveBeenCalled()
     })
   })
+
+  describe('commitOffsets', () => {
+    it("calls the offset manager's commitOffsets", async () => {
+      consumerGroup.offsetManager = { commitOffsets: jest.fn(() => Promise.resolve()) }
+
+      const offsets = { topics: [{ partitions: [{ offset: '0', partition: 0 }] }] }
+      await consumerGroup.commitOffsets(offsets)
+      expect(consumerGroup.offsetManager.commitOffsets).toHaveBeenCalledTimes(1)
+      expect(consumerGroup.offsetManager.commitOffsets).toHaveBeenCalledWith(offsets)
+    })
+  })
 })

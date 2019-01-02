@@ -266,8 +266,8 @@ module.exports = class ConsumerGroup {
     await this.offsetManager.commitOffsetsIfNecessary()
   }
 
-  async commitOffsets() {
-    await this.offsetManager.commitOffsets()
+  async commitOffsets(offsets) {
+    await this.offsetManager.commitOffsets(offsets)
   }
 
   uncommittedOffsets() {

@@ -234,9 +234,9 @@ module.exports = class OffsetManager {
     return { topics: topicsWithPartitionsToCommit }
   }
 
-  async commitOffsets() {
+  async commitOffsets(offsets = {}) {
     const { groupId, generationId, memberId } = this
-    const { topics } = this.uncommittedOffsets()
+    const { topics = this.uncommittedOffsets().topics } = offsets
 
     if (topics.length === 0) {
       this.lastCommit = Date.now()
