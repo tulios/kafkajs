@@ -4,6 +4,8 @@
 
 [![Build Status](https://travis-ci.org/tulios/kafkajs.svg?branch=master)](https://travis-ci.org/tulios/kafkajs)
 [![npm version](https://badge.fury.io/js/kafkajs.svg)](https://badge.fury.io/js/kafkajs)
+[![Slack Channel](https://kafkajs-slackin.herokuapp.com/badge.svg)](https://kafkajs-slackin.herokuapp.com/)
+
 
 A modern Apache Kafka client for node.js. This library is compatible with Kafka `0.10+`.  
 Native support for Kafka `0.11` features.
