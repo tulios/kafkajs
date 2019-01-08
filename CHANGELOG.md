@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.5.0-beta.0] - 2019-01-08
+
+### Changed
+  - Add transactional attributes to record batch #199
+  - Ignore control records #208
+  - Filter aborted messages on the consumer #223 #210 #228
+  - Make Round robin assigner forward `userdata` #231
+
+### Added
+  - Protocol `FindCoordinator` v1 #189
+  - Protocol `InitProducerId` v0 #190
+  - Protocol `AddPartitionsToTxn` v0 #191
+  - Protocol `AddOffsetsToTxn` v0 #194
+  - Protocol `TxnOffCommit` v0 #195
+  - Protocol `EndTxn` v0 #198
+  - Protocol `ListOffsets` v1 and v2 #217 #209
+  - Accept max in-flight requests on the connection #216
+  - Idempotent producer #203
+  - Transactional producer #206
+  - Protocol `SASLAuthenticate` #229
+  - Add SendOffsets to consumer `eachBatch` #232
+  - Add network instrumentation events #233
+  - Allow users to provide offsets to the `commitOffsetsIfNecessary` #235
+
 ## [1.4.6] - 2018-12-03
 
 ### Fixed
