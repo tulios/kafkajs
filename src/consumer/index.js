@@ -37,6 +37,10 @@ module.exports = ({
   isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
   instrumentationEmitter: rootInstrumentationEmitter,
 }) => {
+  if (!groupId) {
+    throw new KafkaJSNonRetriableError('Consumer groupId must be a non-empty string.')
+  }
+
   const logger = rootLogger.namespace('Consumer')
   const instrumentationEmitter = rootInstrumentationEmitter || new InstrumentationEventEmitter()
   const assigners = partitionAssigners.map(createAssigner =>
