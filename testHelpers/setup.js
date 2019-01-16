@@ -1,5 +1,6 @@
 jest.setTimeout(90000)
 
+require('jest-extended')
 const glob = require('glob')
 const path = require('path')
 

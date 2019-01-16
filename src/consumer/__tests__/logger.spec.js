@@ -7,7 +7,7 @@ describe('Consumer', () => {
     expect(
       createConsumer({
         cluster: createCluster(),
-        groupId: '',
+        groupId: 'test-consumer',
         logger: newLogger(),
       }).logger()
     ).toMatchSnapshot()
