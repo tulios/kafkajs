@@ -106,6 +106,46 @@ describe('Admin', () => {
     })
   })
 
+  test('emits the request queue size event', async () => {
+    const emitter = new InstrumentationEventEmitter()
+    const cluster = createCluster({
+      instrumentationEmitter: emitter,
+      maxInFlightRequests: 1,
+    })
+
+    const admin = createAdmin({
+      cluster,
+      logger: newLogger(),
+      instrumentationEmitter: emitter,
+    })
+
+    const requestListener = jest.fn().mockName('request_queue_size')
+    admin.on(admin.events.REQUEST_QUEUE_SIZE, requestListener)
+
+    await admin.connect()
+    await Promise.all([
+      admin.createTopics({
+        waitForLeaders: false,
+        topics: [{ topic: `test-topic-${secureRandom()}`, partitions: 8 }],
+      }),
+      admin.createTopics({
+        waitForLeaders: false,
+        topics: [{ topic: `test-topic-${secureRandom()}`, partitions: 8 }],
+      }),
+    ])
+
+    expect(requestListener).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'admin.network.request_queue_size',
+      payload: {
+        broker: expect.any(String),
+        clientId: expect.any(String),
+        queueSize: expect.any(Number),
+      },
+    })
+  })
+
   test('on throws an error when provided with an invalid event name', () => {
     const admin = createAdmin({
       cluster: createCluster(),
