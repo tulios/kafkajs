@@ -54,6 +54,7 @@
     "husky": "^0.14.3",
     "ip": "^1.1.5",
     "jest": "^23.5.0",
+    "jest-extended": "^0.11.0",
     "jest-junit": "^5.1.0",
     "lint-staged": "^6.0.0",
     "mockdate": "^2.0.2",
