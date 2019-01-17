@@ -34,6 +34,13 @@ module.exports = async (primaryDecoder, size = null) => {
         break
       }
 
+      if (e.name === 'KafkaJSUnsupportedMagicByteInMessageSet') {
+        // Received a MessageSet and a RecordBatch on the same response, the cluster is probably
+        // upgrading the message format from 0.10 to 0.11. Stop processing this message set to
+        // receive the full record batch on the next request
+        break
+      }
+
       throw e
     }
   }
