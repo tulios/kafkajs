@@ -45,7 +45,7 @@ module.exports = class Encoder {
   }
 
   static sizeOfVarIntBytes(value) {
-    const size = value === null ? -1 : Buffer.byteLength(value)
+    const size = value == null ? -1 : Buffer.byteLength(value)
 
     if (size < 0) {
       return Encoder.sizeOfVarInt(-1)
