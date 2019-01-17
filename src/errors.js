@@ -70,6 +70,7 @@ class KafkaJSGroupCoordinatorNotFound extends KafkaJSNonRetriableError {}
 class KafkaJSNotImplemented extends KafkaJSNonRetriableError {}
 class KafkaJSTimeout extends KafkaJSNonRetriableError {}
 class KafkaJSLockTimeout extends KafkaJSTimeout {}
+class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSNonRetriableError {}
 
 module.exports = {
   KafkaJSError,
@@ -88,4 +89,5 @@ module.exports = {
   KafkaJSStaleTopicMetadataAssignment,
   KafkaJSTimeout,
   KafkaJSLockTimeout,
+  KafkaJSUnsupportedMagicByteInMessageSet,
 }
