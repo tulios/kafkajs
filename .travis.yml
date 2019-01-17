@@ -6,7 +6,7 @@ node_js:
 branches:
   only:
     - master
-    - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
+    - /^v\d+\.\d+(\.\d+)?$/
 env:
   global:
     - DOCKER_COMPOSE_VERSION=1.22.0
