@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.5.0-beta.1] - 2019-01-17
+
+### Fixed
+  - Rolling upgrade from 0.10 to 0.11 causes unknown magic byte errors #246
+
+### Changed
+  - Validate consumer groupId #244
+
+### Added
+  - Expose network queue size event to consumers, producers and admin #245
+
 ## [1.5.0-beta.0] - 2019-01-08
 
 ### Changed
@@ -28,6 +39,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Add SendOffsets to consumer `eachBatch` #232
   - Add network instrumentation events #233
   - Allow users to provide offsets to the `commitOffsetsIfNecessary` #235
+
+## [1.4.7] - 2019-01-17
+
+### Fixed
+  - Rolling upgrade from 0.10 to 0.11 causes unknown magic byte errors #246
 
 ## [1.4.6] - 2018-12-03
 
