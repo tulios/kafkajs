@@ -8,11 +8,13 @@ const events = {
   DISCONNECT: adminType('disconnect'),
   REQUEST: adminType(networkEvents.NETWORK_REQUEST),
   REQUEST_TIMEOUT: adminType(networkEvents.NETWORK_REQUEST_TIMEOUT),
+  REQUEST_QUEUE_SIZE: adminType(networkEvents.NETWORK_REQUEST_QUEUE_SIZE),
 }
 
 const wrappedEvents = {
   [events.REQUEST]: networkEvents.NETWORK_REQUEST,
   [events.REQUEST_TIMEOUT]: networkEvents.NETWORK_REQUEST_TIMEOUT,
+  [events.REQUEST_QUEUE_SIZE]: networkEvents.NETWORK_REQUEST_QUEUE_SIZE,
 }
 
 const reversedWrappedEvents = swapObject(wrappedEvents)

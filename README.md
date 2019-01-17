@@ -432,7 +432,7 @@ const producer = client.producer({ idempotent: true })
 // Begin a transaction
 const  transaction = await producer.transaction()
 
-try { 
+try {
   // Call one of the transaction's send methods
   await transaction.send({ topic, messages })
 
@@ -449,8 +449,8 @@ try {
 To send offsets as part of a transaction, meaning they will be committed only if the transaction succeeds, use the `transaction.sendOffsets()` method. This is necessary whenever we want a transaction to produce messages derived from a consumer, in a "consume-transform-produce" loop.
 
 ```javascript
-await transaction.sendOffsets({ 
-  consumerGroupId, topics 
+await transaction.sendOffsets({
+  consumerGroupId, topics
 })
 ```
 
@@ -1281,6 +1281,13 @@ List of available events:
     `apiVersion`
   }
 
+* consumer.events.REQUEST_QUEUE_SIZE
+  payload: {
+    `broker`,
+    `clientId`,
+    `queueSize`
+  }
+
 ### <a name="instrumentation-producer"></a> Producer
 
 * producer.events.CONNECT
@@ -1315,6 +1322,13 @@ List of available events:
     `apiVersion`
   }
 
+* producer.events.REQUEST_QUEUE_SIZE
+  payload: {
+    `broker`,
+    `clientId`,
+    `queueSize`
+  }
+
 ### <a name="instrumentation-admin"></a> Admin
 
 * admin.events.CONNECT
@@ -1347,6 +1361,13 @@ List of available events:
     `apiName`,
     `apiKey`,
     `apiVersion`
+  }
+
+* admin.events.REQUEST_QUEUE_SIZE
+  payload: {
+    `broker`,
+    `clientId`,
+    `queueSize`
   }
 
 ## <a name="custom-logging"></a> Custom logging

@@ -323,7 +323,7 @@ describe('Consumer > Instrumentation Events', () => {
       instrumentationEmitter: emitter,
     })
 
-    const requestListener = jest.fn().mockName('request')
+    const requestListener = jest.fn().mockName('request_timeout')
     consumer.on(consumer.events.REQUEST_TIMEOUT, requestListener)
 
     await consumer
@@ -345,6 +345,61 @@ describe('Consumer > Instrumentation Events', () => {
         createdAt: expect.any(Number),
         pendingDuration: expect.any(Number),
         sentAt: expect.any(Number),
+      },
+    })
+  })
+
+  it('emits request queue size events', async () => {
+    const cluster = createCluster({
+      instrumentationEmitter: emitter,
+      maxInFlightRequests: 1,
+    })
+
+    consumer = createConsumer({
+      groupId,
+      cluster,
+      logger: newLogger(),
+      heartbeatInterval: 100,
+      maxWaitTimeInMs: 1,
+      maxBytesPerPartition: 180,
+      instrumentationEmitter: emitter,
+    })
+
+    const consumer2 = createConsumer({
+      groupId,
+      cluster,
+      logger: newLogger(),
+      heartbeatInterval: 100,
+      maxWaitTimeInMs: 1,
+      maxBytesPerPartition: 180,
+      instrumentationEmitter: emitter,
+    })
+
+    const requestListener = jest.fn().mockName('request_queue_size')
+    consumer.on(consumer.events.REQUEST_QUEUE_SIZE, requestListener)
+    consumer2.on(consumer2.events.REQUEST_QUEUE_SIZE, requestListener)
+
+    await Promise.all([
+      consumer
+        .connect()
+        .then(() => consumer.run({ eachMessage: () => true }))
+        .catch(e => e),
+      consumer2
+        .connect()
+        .then(() => consumer.run({ eachMessage: () => true }))
+        .catch(e => e),
+    ])
+
+    await consumer2.disconnect()
+
+    expect(requestListener).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.network.request_queue_size',
+      payload: {
+        broker: expect.any(String),
+        clientId: expect.any(String),
+        queueSize: expect.any(Number),
       },
     })
   })

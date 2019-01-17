@@ -296,6 +296,59 @@ describe('Producer', () => {
     })
   })
 
+  test('emits the request queue size event', async () => {
+    await createTopic({ topic: topicName, partitions: 8 })
+
+    const emitter = new InstrumentationEventEmitter()
+    const cluster = createCluster({
+      instrumentationEmitter: emitter,
+      maxInFlightRequests: 1,
+      clientId: 'test-client-id11111',
+    })
+
+    producer = createProducer({
+      cluster,
+      logger: newLogger(),
+      instrumentationEmitter: emitter,
+    })
+
+    const requestListener = jest.fn().mockName('request_queue_size')
+    producer.on(producer.events.REQUEST_QUEUE_SIZE, requestListener)
+
+    await producer.connect()
+    await Promise.all([
+      producer.send({
+        acks: -1,
+        topic: topicName,
+        messages: [
+          { partition: 0, value: 'value-0' },
+          { partition: 1, value: 'value-1' },
+          { partition: 2, value: 'value-2' },
+        ],
+      }),
+      producer.send({
+        acks: -1,
+        topic: topicName,
+        messages: [
+          { partition: 0, value: 'value-0' },
+          { partition: 1, value: 'value-1' },
+          { partition: 2, value: 'value-2' },
+        ],
+      }),
+    ])
+
+    expect(requestListener).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'producer.network.request_queue_size',
+      payload: {
+        broker: expect.any(String),
+        clientId: expect.any(String),
+        queueSize: expect.any(Number),
+      },
+    })
+  })
+
   describe('when acks=0', () => {
     it('returns immediately', async () => {
       const cluster = createCluster({

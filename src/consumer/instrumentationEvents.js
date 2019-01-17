@@ -16,11 +16,13 @@ const events = {
   CRASH: consumerType('crash'),
   REQUEST: consumerType(networkEvents.NETWORK_REQUEST),
   REQUEST_TIMEOUT: consumerType(networkEvents.NETWORK_REQUEST_TIMEOUT),
+  REQUEST_QUEUE_SIZE: consumerType(networkEvents.NETWORK_REQUEST_QUEUE_SIZE),
 }
 
 const wrappedEvents = {
   [events.REQUEST]: networkEvents.NETWORK_REQUEST,
   [events.REQUEST_TIMEOUT]: networkEvents.NETWORK_REQUEST_TIMEOUT,
+  [events.REQUEST_QUEUE_SIZE]: networkEvents.NETWORK_REQUEST_QUEUE_SIZE,
 }
 
 const reversedWrappedEvents = swapObject(wrappedEvents)
