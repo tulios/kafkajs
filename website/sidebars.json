@@ -1,0 +1,6 @@
+{
+  "docs": {
+    "Usage": ["getting-started", "configuration", "producing", "transactions", "consuming", "admin", "instrumentation-events", "custom-logger", "retry-detailed", "faq"],
+    "API Reference": []
+  }
+}
