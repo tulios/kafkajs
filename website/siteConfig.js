@@ -22,8 +22,8 @@ const siteConfig = {
   footerIcon: 'img/docusaurus.svg',
   favicon: 'img/favicon.png',
   colors: {
-    primaryColor: '#2E8555',
-    secondaryColor: '#205C3B',
+    primaryColor: '#24292e',
+    secondaryColor: '#2f363d',
   },
   /* Custom fonts for website */
   /*
