@@ -18,8 +18,8 @@ const siteConfig = {
   projectName: 'kafkajs',
   organizationName: 'kafkajs',
   headerLinks: [{ doc: 'getting-started', label: 'Docs' }, { page: 'help', label: 'Help' }],
-  headerIcon: 'img/docusaurus.svg',
-  footerIcon: 'img/docusaurus.svg',
+  headerIcon: 'img/kafkajs-logo.svg',
+  footerIcon: 'img/kafkajs-logo.svg',
   favicon: 'img/favicon.png',
   colors: {
     primaryColor: '#24292e',
