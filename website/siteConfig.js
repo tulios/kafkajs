@@ -8,6 +8,8 @@
 // See https://docusaurus.io/docs/site-config for all the possible
 // site configuration options.
 
+const repoUrl = 'https://github.com/tulios/kafkajs'
+
 const siteConfig = {
   title: 'KafkaJS',
   tagline: 'A modern Apache Kafka client for Node.js',
@@ -46,14 +48,16 @@ const siteConfig = {
   onPageNav: 'separate',
   // No .html extensions for paths.
   cleanUrl: true,
+  editUrl: repoUrl + '/edit/master/docs/',
 
   // Open Graph and Twitter card images.
   ogImage: 'img/docusaurus.png',
   twitterImage: 'img/docusaurus.png',
 
   // You may provide arbitrary config keys to be used as needed by your
-  // template. For example, if you need your repo's URL...
-  repoUrl: 'https://github.com/tulios/kafkajs',
+  // template.
+  repoUrl,
+  siteConfigUrl: repoUrl + '/edit/master/website/siteConfig.js',
 }
 
 module.exports = siteConfig
