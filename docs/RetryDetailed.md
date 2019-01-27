@@ -1,6 +1,6 @@
 ---
 id: retry-detailed
-title: Retry
+title: Retry Mechanism Explained
 ---
 
 The retry mechanism uses a randomization function that grows exponentially. This formula and how the default values affect it is best described by the example below:
