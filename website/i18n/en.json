@@ -11,11 +11,17 @@
       "configuration": {
         "title": "Client Configuration"
       },
+      "consumer-example": {
+        "title": "Consumer"
+      },
       "consuming": {
         "title": "Consuming Messages"
       },
       "custom-logger": {
         "title": "Custom Logger"
+      },
+      "running-kafka-in-development": {
+        "title": "Running Kafka in Development"
       },
       "faq": {
         "title": "Frequently Asked Questions"
@@ -26,6 +32,9 @@
       },
       "instrumentation-events": {
         "title": "Instrumentation Events"
+      },
+      "producer-example": {
+        "title": "Producer"
       },
       "producing": {
         "title": "Producing Messages"
@@ -43,6 +52,7 @@
     },
     "categories": {
       "Usage": "Usage",
+      "Examples": "Examples",
       "API Reference": "API Reference"
     }
   },
