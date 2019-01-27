@@ -24,6 +24,7 @@ const siteConfig = {
   colors: {
     primaryColor: '#24292e',
     secondaryColor: '#2f363d',
+    linkColor: '#0366d6',
   },
   /* Custom fonts for website */
   /*
@@ -39,7 +40,7 @@ const siteConfig = {
   },
   */
   highlight: {
-    theme: 'default',
+    theme: 'github',
   },
 
   // Add custom scripts here that would be placed in <script> tags.

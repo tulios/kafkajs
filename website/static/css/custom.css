@@ -14,3 +14,25 @@
 
 @media only screen and (min-width: 1500px) {
 }
+
+body .hljs {
+    display: block;
+    overflow-x: auto;
+    padding: 0.75rem 1rem;
+    background: #f6f6f6;
+    border-left: 2px solid #d0d4c7;
+    color: black;
+}
+
+blockquote {
+    padding: .75rem 1.25rem .75rem .75rem;
+    border-left: .5rem solid #ffe564
+}
+
+.mainContainer a {
+    color: $linkColor;
+}
+
+.mainContainer a:hover {
+    text-decoration: underline;
+}
