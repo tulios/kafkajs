@@ -12,6 +12,10 @@ Native support for Kafka `0.11` features.
 
 KafkaJS is battle-tested and ready for production.
 
+## Requirements
+
+- Minimum node version: v8.6.0
+
 ## Features
 
 - Producer
