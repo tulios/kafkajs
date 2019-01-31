@@ -18,7 +18,7 @@ const siteConfig = {
   baseUrl: '/kafkajs/',
   projectName: 'kafkajs',
   organizationName: 'tulios',
-  cname: 'kafkajs.js.org',
+  cname: 'kafka.js.org',
   headerLinks: [
     { doc: 'getting-started', label: 'Docs' },
     { page: 'help', label: 'Help' },
