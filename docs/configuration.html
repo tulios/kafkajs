@@ -1,0 +1,154 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Client Configuration · KafkaJS</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="&lt;p&gt;The client must be configured with at least one broker. The brokers on the list are considered seed brokers and are only used to bootstrap the client and load initial metadata.&lt;/p&gt;
+"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Client Configuration · KafkaJS"/><meta property="og:type" content="website"/><meta property="og:url" content="https://tulios.github.io/kafkajsindex.html"/><meta property="og:description" content="&lt;p&gt;The client must be configured with at least one broker. The brokers on the list are considered seed brokers and are only used to bootstrap the client and load initial metadata.&lt;/p&gt;
+"/><meta property="og:image" content="https://tulios.github.io/kafkajs/img/docusaurus.png"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://tulios.github.io/kafkajs/img/docusaurus.png"/><link rel="shortcut icon" href="/kafkajsimg/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><link rel="stylesheet" href="/kafkajscss/main.css"/><script src="/kafkajsjs/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/kafkajs"><img class="logo" src="/kafkajsimg/kafkajs-logo.svg" alt="KafkaJS"/><h2 class="headerTitleWithLogo">KafkaJS</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/kafkajsdocs/getting-started" target="_self">Docs</a></li><li class=""><a href="/kafkajshelp" target="_self">Help</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><i></i></div><h2><i>›</i><span>Usage</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Usage</h3><ul class=""><li class="navListItem"><a class="navItem" href="/kafkajsdocs/getting-started">Getting Started</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/kafkajsdocs/configuration">Client Configuration</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/producing">Producing Messages</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/transactions">Transactions</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/consuming">Consuming Messages</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/admin">Admin Client</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/instrumentation-events">Instrumentation Events</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/custom-logger">Custom Logger</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/retry-detailed">Retry Mechanism Explained</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/faq">Frequently Asked Questions</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Examples</h3><ul class=""><li class="navListItem"><a class="navItem" href="/kafkajsdocs/running-kafka-in-development">Running Kafka in Development</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/producer-example">Producer</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/consumer-example">Consumer</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              const headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                if (event.target.tagName === 'A') {
+                  document.body.classList.remove('tocActive');
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/tulios/kafkajs/edit/master/docs/Configuration.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">Client Configuration</h1></header><article><div><span><p>The client must be configured with at least one broker. The brokers on the list are considered seed brokers and are only used to bootstrap the client and load initial metadata.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { Kafka } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+
+<span class="hljs-comment">// Create the client with the broker list</span>
+<span class="hljs-keyword">const</span> kafka = <span class="hljs-keyword">new</span> Kafka({
+  <span class="hljs-attr">clientId</span>: <span class="hljs-string">'my-app'</span>,
+  <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>]
+})
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="ssl"></a><a href="#ssl" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>SSL</h2>
+<p>The <code>ssl</code> option can be used to configure the TLS sockets. The options are passed directly to <a href="https://nodejs.org/api/tls.html#tls_tls_connect_options_callback"><code>tls.connect</code></a> and used to create the TLS Secure Context, all options are accepted.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> fs = <span class="hljs-built_in">require</span>(<span class="hljs-string">'fs'</span>)
+
+<span class="hljs-keyword">new</span> Kafka({
+  <span class="hljs-attr">clientId</span>: <span class="hljs-string">'my-app'</span>,
+  <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
+  <span class="hljs-attr">ssl</span>: {
+    <span class="hljs-attr">rejectUnauthorized</span>: <span class="hljs-literal">false</span>,
+    <span class="hljs-attr">ca</span>: [fs.readFileSync(<span class="hljs-string">'/my/custom/ca.crt'</span>, <span class="hljs-string">'utf-8'</span>)],
+    <span class="hljs-attr">key</span>: fs.readFileSync(<span class="hljs-string">'/my/custom/client-key.pem'</span>, <span class="hljs-string">'utf-8'</span>),
+    <span class="hljs-attr">cert</span>: fs.readFileSync(<span class="hljs-string">'/my/custom/client-cert.pem'</span>, <span class="hljs-string">'utf-8'</span>)
+  },
+})
+</code></pre>
+<p>Refer to <a href="https://nodejs.org/dist/latest-v8.x/docs/api/tls.html#tls_tls_createsecurecontext_options">TLS create secure context</a> for more information. <code>NODE_EXTRA_CA_CERTS</code> can be used to add custom CAs. Use <code>ssl: true</code> if you don't have any extra configurations and want to enable SSL.</p>
+<h2><a class="anchor" aria-hidden="true" id="a-name-sasl-a-sasl"></a><a href="#a-name-sasl-a-sasl" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="sasl"></a> SASL</h2>
+<p>Kafka has support for using SASL to authenticate clients. The <code>sasl</code> option can be used to configure the authentication mechanism. Currently, KafkaJS supports <code>PLAIN</code>, <code>SCRAM-SHA-256</code>, and <code>SCRAM-SHA-512</code> mechanisms.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">new</span> Kafka({
+  <span class="hljs-attr">clientId</span>: <span class="hljs-string">'my-app'</span>,
+  <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
+  <span class="hljs-comment">// authenticationTimeout: 1000,</span>
+  sasl: {
+    <span class="hljs-attr">mechanism</span>: <span class="hljs-string">'plain'</span>, <span class="hljs-comment">// scram-sha-256 or scram-sha-512</span>
+    username: <span class="hljs-string">'my-username'</span>,
+    <span class="hljs-attr">password</span>: <span class="hljs-string">'my-password'</span>
+  },
+})
+</code></pre>
+<p>It is <strong>highly recommended</strong> that you use SSL for encryption when using <code>PLAIN</code>.</p>
+<h2><a class="anchor" aria-hidden="true" id="connection-timeout"></a><a href="#connection-timeout" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Connection Timeout</h2>
+<p>Time in milliseconds to wait for a successful connection. The default value is: <code>1000</code>.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">new</span> Kafka({
+  <span class="hljs-attr">clientId</span>: <span class="hljs-string">'my-app'</span>,
+  <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
+  <span class="hljs-attr">connectionTimeout</span>: <span class="hljs-number">3000</span>
+})
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="request-timeout"></a><a href="#request-timeout" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Request Timeout</h2>
+<p>Time in milliseconds to wait for a successful request. The default value is: <code>30000</code>.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">new</span> Kafka({
+  <span class="hljs-attr">clientId</span>: <span class="hljs-string">'my-app'</span>,
+  <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
+  <span class="hljs-attr">requestTimeout</span>: <span class="hljs-number">25000</span>
+})
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-retry-a-default-retry"></a><a href="#a-name-retry-a-default-retry" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="retry"></a> Default Retry</h2>
+<p>The <code>retry</code> option can be used to set the configuration of the retry mechanism, which is used to retry connections and API calls to Kafka (when using producers or consumers).</p>
+<p>The retry mechanism uses a randomization function that grows exponentially.
+<a href="/kafkajsdocs/retry-detailed">Detailed example</a></p>
+<p>If the max number of retries is exceeded the retrier will throw <code>KafkaJSNumberOfRetriesExceeded</code> and interrupt. Producers will bubble up the error to the user code; Consumers will wait the retry time attached to the exception (it will be based on the number of attempts) and perform a full restart.</p>
+<p><strong>Available options:</strong></p>
+<table>
+<thead>
+<tr><th>option</th><th>description</th><th>default</th></tr>
+</thead>
+<tbody>
+<tr><td>maxRetryTime</td><td>Maximum wait time for a retry in milliseconds</td><td><code>30000</code></td></tr>
+<tr><td>initialRetryTime</td><td>Initial value used to calculate the retry in milliseconds (This is still randomized following the randomization factor)</td><td><code>300</code></td></tr>
+<tr><td>factor</td><td>Randomization factor</td><td><code>0.2</code></td></tr>
+<tr><td>multiplier</td><td>Exponential factor</td><td><code>2</code></td></tr>
+<tr><td>retries</td><td>Max number of retries per call</td><td><code>5</code></td></tr>
+<tr><td>maxInFlightRequests</td><td>Max number of requests that may be in progress at any time. If falsey then no limit.</td><td><code>null</code> <em>(no limit)</em></td></tr>
+</tbody>
+</table>
+<p>Example:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">new</span> Kafka({
+  <span class="hljs-attr">clientId</span>: <span class="hljs-string">'my-app'</span>,
+  <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
+  <span class="hljs-attr">retry</span>: {
+    <span class="hljs-attr">initialRetryTime</span>: <span class="hljs-number">100</span>,
+    <span class="hljs-attr">retries</span>: <span class="hljs-number">8</span>
+  }
+})
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="logging"></a><a href="#logging" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Logging</h2>
+<p>KafkaJS has a built-in <code>STDOUT</code> logger which outputs JSON. It also accepts a custom log creator which allows you to integrate your favorite logger library. There are 5 log levels available: <code>NOTHING</code>, <code>ERROR</code>, <code>WARN</code>, <code>INFO</code>, and <code>DEBUG</code>. <code>INFO</code> is configured by default.</p>
+<h5><a class="anchor" aria-hidden="true" id="log-level"></a><a href="#log-level" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Log level</h5>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { Kafka, logLevel } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+
+<span class="hljs-keyword">const</span> kafka = <span class="hljs-keyword">new</span> Kafka({
+  <span class="hljs-attr">clientId</span>: <span class="hljs-string">'my-app'</span>,
+  <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
+  <span class="hljs-attr">logLevel</span>: logLevel.ERROR
+})
+</code></pre>
+<p>The environment variable <code>KAFKAJS_LOG_LEVEL</code> can also be used and it has precedence over the configuration in code, example:</p>
+<pre><code class="hljs css language-sh">KAFKAJS_LOG_LEVEL=info node code.js
+</code></pre>
+<blockquote>
+<p>Note: for more information on how to customize your logs, take a look at <a href="#custom-logging">Custom logging</a></p>
+</blockquote>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/kafkajsdocs/getting-started"><span class="arrow-prev">← </span><span>Getting Started</span></a><a class="docs-next button" href="/kafkajsdocs/producing"><span>Producing Messages</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#ssl">SSL</a></li><li><a href="#a-name-sasl-a-sasl">SASL</a></li><li><a href="#connection-timeout">Connection Timeout</a></li><li><a href="#request-timeout">Request Timeout</a></li><li><a href="#a-name-retry-a-default-retry">Default Retry</a></li><li><a href="#logging">Logging</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/kafkajs" class="nav-home"><img src="/kafkajsimg/kafkajs-logo.svg" alt="KafkaJS" width="52" height="84"/></a><div><h5>Docs</h5><a href="/kafkajsdocs/en/getting-started">Usage</a></div><div><h5>Community</h5><a href="https://kafkajs-slackin.herokuapp.com">Slack</a></div><div><h5>More</h5><a href="https://github.com/tulios/kafkajs">GitHub</a><a class="github-button" href="https://github.com/tulios/kafkajs" data-icon="octicon-star" data-count-href="/tulios/kafkajs/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section></footer></div></body></html>

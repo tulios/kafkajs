@@ -1,0 +1,268 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Producing Messages · KafkaJS</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="&lt;p&gt;To publish messages to Kafka you have to create a producer. Simply call the &lt;code&gt;producer&lt;/code&gt; function of the client to create it:&lt;/p&gt;
+"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Producing Messages · KafkaJS"/><meta property="og:type" content="website"/><meta property="og:url" content="https://tulios.github.io/kafkajsindex.html"/><meta property="og:description" content="&lt;p&gt;To publish messages to Kafka you have to create a producer. Simply call the &lt;code&gt;producer&lt;/code&gt; function of the client to create it:&lt;/p&gt;
+"/><meta property="og:image" content="https://tulios.github.io/kafkajs/img/docusaurus.png"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://tulios.github.io/kafkajs/img/docusaurus.png"/><link rel="shortcut icon" href="/kafkajsimg/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><link rel="stylesheet" href="/kafkajscss/main.css"/><script src="/kafkajsjs/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/kafkajs"><img class="logo" src="/kafkajsimg/kafkajs-logo.svg" alt="KafkaJS"/><h2 class="headerTitleWithLogo">KafkaJS</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/kafkajsdocs/getting-started" target="_self">Docs</a></li><li class=""><a href="/kafkajshelp" target="_self">Help</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><i></i></div><h2><i>›</i><span>Usage</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Usage</h3><ul class=""><li class="navListItem"><a class="navItem" href="/kafkajsdocs/getting-started">Getting Started</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/configuration">Client Configuration</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/kafkajsdocs/producing">Producing Messages</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/transactions">Transactions</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/consuming">Consuming Messages</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/admin">Admin Client</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/instrumentation-events">Instrumentation Events</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/custom-logger">Custom Logger</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/retry-detailed">Retry Mechanism Explained</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/faq">Frequently Asked Questions</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Examples</h3><ul class=""><li class="navListItem"><a class="navItem" href="/kafkajsdocs/running-kafka-in-development">Running Kafka in Development</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/producer-example">Producer</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/consumer-example">Consumer</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              const headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                if (event.target.tagName === 'A') {
+                  document.body.classList.remove('tocActive');
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/tulios/kafkajs/edit/master/docs/Producing.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">Producing Messages</h1></header><article><div><span><p>To publish messages to Kafka you have to create a producer. Simply call the <code>producer</code> function of the client to create it:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> producer = kafka.producer()
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="options"></a><a href="#options" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Options</h2>
+<table>
+<thead>
+<tr><th>option</th><th>description</th><th>default</th></tr>
+</thead>
+<tbody>
+<tr><td>createPartitioner</td><td>Take a look at <a href="#custom-partitioner">Custom Partitioner</a> for more information</td><td><code>null</code></td></tr>
+<tr><td>retry</td><td>Take a look at <a href="#retry">Producer Retry</a> for more information</td><td><code>null</code></td></tr>
+<tr><td>metadataMaxAge</td><td>The period of time in milliseconds after which we force a refresh of metadata even if we haven't seen any partition leadership changes to proactively discover any new brokers or partitions</td><td><code>300000</code> - 5 minutes</td></tr>
+<tr><td>allowAutoTopicCreation</td><td>Allow topic creation when querying metadata for non-existent topics</td><td><code>true</code></td></tr>
+</tbody>
+</table>
+<p>The method <code>send</code> is used to publish messages to the Kafka cluster.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> producer = kafka.producer()
+
+<span class="hljs-keyword">await</span> producer.connect()
+<span class="hljs-keyword">await</span> producer.send({
+    <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-name'</span>,
+    <span class="hljs-attr">messages</span>: [
+        { <span class="hljs-attr">key</span>: <span class="hljs-string">'key1'</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">'hello world'</span> },
+        { <span class="hljs-attr">key</span>: <span class="hljs-string">'key2'</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">'hey hey!'</span> }
+    ],
+})
+</code></pre>
+<p>Example with a defined partition:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> producer = kafka.producer()
+
+<span class="hljs-keyword">await</span> producer.connect()
+<span class="hljs-keyword">await</span> producer.send({
+    <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-name'</span>,
+    <span class="hljs-attr">messages</span>: [
+        { <span class="hljs-attr">key</span>: <span class="hljs-string">'key1'</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">'hello world'</span>, <span class="hljs-attr">partition</span>: <span class="hljs-number">0</span> },
+        { <span class="hljs-attr">key</span>: <span class="hljs-string">'key2'</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">'hey hey!'</span>, <span class="hljs-attr">partition</span>: <span class="hljs-number">1</span> }
+    ],
+})
+</code></pre>
+<p>The method <code>send</code> has the following signature:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> producer.send({
+    <span class="hljs-attr">topic</span>: &lt;String&gt;,
+    messages: &lt;Message[]&gt;,
+    acks: &lt;Number&gt;,
+    timeout: &lt;Number&gt;,
+    compression: &lt;CompressionTypes&gt;,
+})
+</code></pre>
+<table>
+<thead>
+<tr><th>property</th><th>description</th><th>default</th></tr>
+</thead>
+<tbody>
+<tr><td>topic</td><td>topic name</td><td><code>null</code></td></tr>
+<tr><td>messages</td><td>An array of objects with &quot;key&quot; and &quot;value&quot;, example: <br> <code>[{ key: 'my-key', value: 'my-value'}]</code></td><td><code>null</code></td></tr>
+<tr><td>acks</td><td>Control the number of required acks. <br> <strong>-1</strong> = all replicas must acknowledge <em>(default)</em> <br> <strong>0</strong> = no acknowledgments <br> <strong>1</strong> = only waits for the leader to acknowledge</td><td><code>-1</code> all replicas must acknowledge</td></tr>
+<tr><td>timeout</td><td>The time to await a response in ms</td><td><code>30000</code></td></tr>
+<tr><td>compression</td><td>Compression codec</td><td><code>CompressionTypes.None</code></td></tr>
+<tr><td>transactionTimeout</td><td>The maximum amount of time in ms that the transaction coordinator will wait for a transaction status update from the producer before proactively aborting the ongoing transaction. If this value is larger than the <code>transaction.max.timeout.ms</code> setting in the <strong>broker</strong>, the request will fail with a <code>InvalidTransactionTimeout</code> error</td><td><code>60000</code></td></tr>
+<tr><td>idempotent</td><td><em>Experimental.</em> If enabled producer will ensure each message is written exactly once. Acks <em>must</em> be set to -1 (&quot;all&quot;). Retries will default to MAX_SAFE_INTEGER.</td><td><code>false</code></td></tr>
+</tbody>
+</table>
+<p>By default, the producer is configured to distribute the messages with the following logic:</p>
+<ul>
+<li>If a partition is specified in the message, use it</li>
+<li>If no partition is specified but a key is present choose a partition based on a hash (murmur2) of the key</li>
+<li>If no partition or key is present choose a partition in a round-robin fashion</li>
+</ul>
+<h2><a class="anchor" aria-hidden="true" id="message-headers"></a><a href="#message-headers" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Message Headers</h2>
+<p>Kafka v0.11 introduces record headers, which allows your messages to carry extra metadata. To send headers with your message, include the key <code>headers</code> with the values. Example:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> producer.send({
+    <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-name'</span>,
+    <span class="hljs-attr">messages</span>: [{
+        <span class="hljs-attr">key</span>: <span class="hljs-string">'key1'</span>,
+        <span class="hljs-attr">value</span>: <span class="hljs-string">'hello world'</span>,
+        <span class="hljs-attr">headers</span>: {
+            <span class="hljs-string">'correlation-id'</span>: <span class="hljs-string">'2bfb68bb-893a-423b-a7fa-7b568cad5b67'</span>,
+            <span class="hljs-string">'system-id'</span>: <span class="hljs-string">'my-system'</span>
+        }
+    }]
+})
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="producing-to-multiple-topics"></a><a href="#producing-to-multiple-topics" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Producing to multiple topics</h2>
+<p>To produce to multiple topics at the same time, use <code>sendBatch</code>. This can be useful, for example, when migrating between two topics.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> topicMessages = [
+  {
+    <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-a'</span>,
+    <span class="hljs-attr">messages</span>: [{ <span class="hljs-attr">key</span>: <span class="hljs-string">'key'</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">'hello topic-a'</span> }],
+  },
+  {
+    <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-b'</span>,
+    <span class="hljs-attr">messages</span>: [{ <span class="hljs-attr">key</span>: <span class="hljs-string">'key'</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">'hello topic-b'</span> }],
+  },
+  {
+    <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-c'</span>,
+    <span class="hljs-attr">messages</span>: [
+      {
+        <span class="hljs-attr">key</span>: <span class="hljs-string">'key'</span>,
+        <span class="hljs-attr">value</span>: <span class="hljs-string">'hello topic-c'</span>,
+        <span class="hljs-attr">headers</span>: {
+          <span class="hljs-string">'correlation-id'</span>: <span class="hljs-string">'2bfb68bb-893a-423b-a7fa-7b568cad5b67'</span>,
+        },
+      }
+    ],
+  }
+]
+<span class="hljs-keyword">await</span> producer.sendBatch({ topicMessages })
+</code></pre>
+<p><code>sendBatch</code> has the same signature as <code>send</code>, except <code>topic</code> and <code>messages</code> are replaced with <code>topicMessages</code>:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> producer.sendBatch({
+    <span class="hljs-attr">topicMessages</span>: &lt;TopicMessages[]&gt;,
+    acks: &lt;Number&gt;,
+    timeout: &lt;Number&gt;,
+    compression: &lt;CompressionTypes&gt;,
+})
+</code></pre>
+<table>
+<thead>
+<tr><th>property</th><th>description</th></tr>
+</thead>
+<tbody>
+<tr><td>topicMessages</td><td>An array of objects with <code>topic</code> and <code>messages</code>.<br><code>messages</code> is an array of the same type as for <code>send</code>.</td></tr>
+</tbody>
+</table>
+<h2><a class="anchor" aria-hidden="true" id="a-name-custom-partitioner-a-custom-partitioner"></a><a href="#a-name-custom-partitioner-a-custom-partitioner" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="custom-partitioner"></a> Custom partitioner</h2>
+<p>It's possible to assign a custom partitioner to the producer. A partitioner is a function which returns another function responsible for the partition selection, something like this:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> MyPartitioner = <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+    <span class="hljs-keyword">return</span> <span class="hljs-function">(<span class="hljs-params">{ topic, partitionMetadata, message }</span>) =&gt;</span> {
+        <span class="hljs-comment">// select a partition based on some logic</span>
+        <span class="hljs-comment">// return the partition number</span>
+        <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>
+    }
+}
+</code></pre>
+<p><code>partitionMetadata</code> is an array of partitions with the following structure:</p>
+<p><code>{ partitionId: &lt;NodeId&gt;, leader: &lt;NodeId&gt; }</code></p>
+<p>Example:</p>
+<pre><code class="hljs css language-javascript">[
+    { <span class="hljs-attr">partitionId</span>: <span class="hljs-number">1</span>, <span class="hljs-attr">leader</span>: <span class="hljs-number">1</span> },
+    { <span class="hljs-attr">partitionId</span>: <span class="hljs-number">2</span>, <span class="hljs-attr">leader</span>: <span class="hljs-number">2</span> },
+    { <span class="hljs-attr">partitionId</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">leader</span>: <span class="hljs-number">0</span> }
+]
+</code></pre>
+<p>To use your custom partitioner, use the option <code>createPartitioner</code> when creating the producer.</p>
+<pre><code class="hljs css language-javascript">kafka.producer({ <span class="hljs-attr">createPartitioner</span>: MyPartitioner })
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-retry-a-retry"></a><a href="#a-name-retry-a-retry" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="retry"></a> Retry</h2>
+<p>The option <code>retry</code> can be used to customize the configuration for the producer.</p>
+<p>Take a look at <a href="/kafkajsdocs/configuration#retry">Retry</a> for more information.</p>
+<h2><a class="anchor" aria-hidden="true" id="a-name-compression-a-compression"></a><a href="#a-name-compression-a-compression" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="compression"></a> Compression</h2>
+<p>Since KafkaJS aims to have as small footprint and as few dependencies as possible, only the GZIP codec is part of the core functionality. Providing plugins supporting other codecs might be considered in the future.</p>
+<h3><a class="anchor" aria-hidden="true" id="a-name-compression-gzip-a-gzip"></a><a href="#a-name-compression-gzip-a-gzip" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="compression-gzip"></a> GZIP</h3>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { CompressionTypes } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+
+<span class="hljs-keyword">async</span> () =&gt; {
+  <span class="hljs-keyword">await</span> producer.send({
+    <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-name'</span>,
+    <span class="hljs-attr">compression</span>: CompressionTypes.GZIP,
+    <span class="hljs-attr">messages</span>: [
+        { <span class="hljs-attr">key</span>: <span class="hljs-string">'key1'</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">'hello world'</span> },
+        { <span class="hljs-attr">key</span>: <span class="hljs-string">'key2'</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">'hey hey!'</span> }
+    ],
+  })
+}
+</code></pre>
+<p>The consumers know how to decompress GZIP, so no further work is necessary.</p>
+<h3><a class="anchor" aria-hidden="true" id="a-name-compression-snappy-a-snappy"></a><a href="#a-name-compression-snappy-a-snappy" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="compression-snappy"></a> Snappy</h3>
+<p>Snappy support is provided by the package <code>kafkajs-snappy</code></p>
+<pre><code class="hljs css language-sh">npm install kafkajs-snappy
+<span class="hljs-comment"># yarn add kafkajs-snappy</span>
+</code></pre>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> {  CompressionTypes, CompressionCodecs } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+<span class="hljs-keyword">const</span> SnappyCodec = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs-snappy'</span>)
+
+CompressionCodecs[CompressionTypes.Snappy] = SnappyCodec
+</code></pre>
+<p>Take a look at the official <a href="https://github.com/tulios/kafkajs-snappy">readme</a> for more information</p>
+<h3><a class="anchor" aria-hidden="true" id="a-name-compression-lz4-a-lz4"></a><a href="#a-name-compression-lz4-a-lz4" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="compression-lz4"></a> LZ4</h3>
+<p>LZ4 support is provided by the package <code>kafkajs-lz4</code></p>
+<pre><code class="hljs css language-sh">npm install kafkajs-lz4
+<span class="hljs-comment"># yarn add kafkajs-lz4</span>
+</code></pre>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { CompressionTypes, CompressionCodecs } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+<span class="hljs-keyword">const</span> LZ4 = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs-lz4'</span>)
+
+CompressionCodecs[CompressionTypes.LZ4] = <span class="hljs-keyword">new</span> LZ4().codec
+</code></pre>
+<p>The package also accepts options to granularly control LZ4 compression &amp; decompression. Take a look at the official <a href="https://github.com/indix/kafkajs-lz4">readme</a> for more information.</p>
+<h3><a class="anchor" aria-hidden="true" id="a-name-compression-other-a-other"></a><a href="#a-name-compression-other-a-other" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="compression-other"></a> Other</h3>
+<p>Any other codec than GZIP can be easily implemented using existing libraries.</p>
+<p>A codec is an object with two <code>async</code> functions: <code>compress</code> and <code>decompress</code>. Import the libraries and define the codec object:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> MyCustomSnappyCodec = {
+    <span class="hljs-keyword">async</span> compress(encoder) {
+        <span class="hljs-keyword">return</span> someCompressFunction(encoder.buffer)
+    },
+
+    <span class="hljs-keyword">async</span> decompress(buffer) {
+        <span class="hljs-keyword">return</span> someDecompressFunction(buffer)
+    }
+}
+</code></pre>
+<p>Now that we have the codec object, we can add it to the implementation:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { CompressionTypes, CompressionCodecs } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+CompressionCodecs[CompressionTypes.Snappy] = MyCustomSnappyCodec
+</code></pre>
+<p>The new codec can now be used with the <code>send</code> method, example:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> producer.send({
+    <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-name'</span>,
+    <span class="hljs-attr">compression</span>: CompressionTypes.Snappy,
+    <span class="hljs-attr">messages</span>: [
+        { <span class="hljs-attr">key</span>: <span class="hljs-string">'key1'</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">'hello world'</span> },
+        { <span class="hljs-attr">key</span>: <span class="hljs-string">'key2'</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">'hey hey!'</span> }
+    ],
+})
+</code></pre>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/kafkajsdocs/configuration"><span class="arrow-prev">← </span><span>Client Configuration</span></a><a class="docs-next button" href="/kafkajsdocs/transactions"><span>Transactions</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#options">Options</a></li><li><a href="#message-headers">Message Headers</a></li><li><a href="#producing-to-multiple-topics">Producing to multiple topics</a></li><li><a href="#a-name-custom-partitioner-a-custom-partitioner">Custom partitioner</a></li><li><a href="#a-name-retry-a-retry">Retry</a></li><li><a href="#a-name-compression-a-compression">Compression</a><ul class="toc-headings"><li><a href="#a-name-compression-gzip-a-gzip">GZIP</a></li><li><a href="#a-name-compression-snappy-a-snappy">Snappy</a></li><li><a href="#a-name-compression-lz4-a-lz4">LZ4</a></li><li><a href="#a-name-compression-other-a-other">Other</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/kafkajs" class="nav-home"><img src="/kafkajsimg/kafkajs-logo.svg" alt="KafkaJS" width="52" height="84"/></a><div><h5>Docs</h5><a href="/kafkajsdocs/en/getting-started">Usage</a></div><div><h5>Community</h5><a href="https://kafkajs-slackin.herokuapp.com">Slack</a></div><div><h5>More</h5><a href="https://github.com/tulios/kafkajs">GitHub</a><a class="github-button" href="https://github.com/tulios/kafkajs" data-icon="octicon-star" data-count-href="/tulios/kafkajs/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section></footer></div></body></html>

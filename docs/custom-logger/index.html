@@ -1,0 +1,130 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Custom Logger · KafkaJS</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="&lt;p&gt;The logger is customized using log creators. A log creator is a function which receives a log level and returns a log function. The log function receives namespace, level, label, and log.&lt;/p&gt;
+"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Custom Logger · KafkaJS"/><meta property="og:type" content="website"/><meta property="og:url" content="https://tulios.github.io/kafkajsindex.html"/><meta property="og:description" content="&lt;p&gt;The logger is customized using log creators. A log creator is a function which receives a log level and returns a log function. The log function receives namespace, level, label, and log.&lt;/p&gt;
+"/><meta property="og:image" content="https://tulios.github.io/kafkajs/img/docusaurus.png"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://tulios.github.io/kafkajs/img/docusaurus.png"/><link rel="shortcut icon" href="/kafkajsimg/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><link rel="stylesheet" href="/kafkajscss/main.css"/><script src="/kafkajsjs/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/kafkajs"><img class="logo" src="/kafkajsimg/kafkajs-logo.svg" alt="KafkaJS"/><h2 class="headerTitleWithLogo">KafkaJS</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/kafkajsdocs/getting-started" target="_self">Docs</a></li><li class=""><a href="/kafkajshelp" target="_self">Help</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><i></i></div><h2><i>›</i><span>Usage</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Usage</h3><ul class=""><li class="navListItem"><a class="navItem" href="/kafkajsdocs/getting-started">Getting Started</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/configuration">Client Configuration</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/producing">Producing Messages</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/transactions">Transactions</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/consuming">Consuming Messages</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/admin">Admin Client</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/instrumentation-events">Instrumentation Events</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/kafkajsdocs/custom-logger">Custom Logger</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/retry-detailed">Retry Mechanism Explained</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/faq">Frequently Asked Questions</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Examples</h3><ul class=""><li class="navListItem"><a class="navItem" href="/kafkajsdocs/running-kafka-in-development">Running Kafka in Development</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/producer-example">Producer</a></li><li class="navListItem"><a class="navItem" href="/kafkajsdocs/consumer-example">Consumer</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              const headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                if (event.target.tagName === 'A') {
+                  document.body.classList.remove('tocActive');
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/tulios/kafkajs/edit/master/docs/CustomLogger.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">Custom Logger</h1></header><article><div><span><p>The logger is customized using log creators. A log creator is a function which receives a log level and returns a log function. The log function receives namespace, level, label, and log.</p>
+<ul>
+<li><code>namespace</code> identifies the component which is performing the log, for example, connection or consumer.</li>
+<li><code>level</code> is the log level of the log entry.</li>
+<li><code>label</code> is a text representation of the log level, example: 'INFO'.</li>
+<li><code>log</code> is an object with the following keys: <code>timestamp</code>, <code>logger</code>, <code>message</code>, and the extra keys given by the user. (<code>logger.info('test', { extra_data: true })</code>)</li>
+</ul>
+<pre><code class="hljs css language-javascript">{
+    <span class="hljs-attr">level</span>: <span class="hljs-number">4</span>,
+    <span class="hljs-attr">label</span>: <span class="hljs-string">'INFO'</span>, <span class="hljs-comment">// NOTHING, ERROR, WARN, INFO, or DEBUG</span>
+    timestamp: <span class="hljs-string">'2017-12-29T13:39:54.575Z'</span>,
+    <span class="hljs-attr">logger</span>: <span class="hljs-string">'kafkajs'</span>,
+    <span class="hljs-attr">message</span>: <span class="hljs-string">'Started'</span>,
+    <span class="hljs-comment">// ... any other extra key provided to the log function</span>
+}
+</code></pre>
+<p>The general structure looks like this:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> MyLogCreator = <span class="hljs-function"><span class="hljs-params">logLevel</span> =&gt;</span> ({ namespace, level, label, log }) =&gt; {
+    <span class="hljs-comment">// Example:</span>
+    <span class="hljs-comment">// const { timestamp, logger, message, ...others } = log</span>
+    <span class="hljs-comment">// console.log(`${label} [${namespace}] ${message} ${JSON.stringify(others)}`)</span>
+}
+</code></pre>
+<p>Example using <a href="https://github.com/winstonjs/winston">Winston</a>:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { logLevel } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+<span class="hljs-keyword">const</span> winston = <span class="hljs-built_in">require</span>(<span class="hljs-string">'winston'</span>)
+<span class="hljs-keyword">const</span> toWinstonLogLevel = <span class="hljs-function"><span class="hljs-params">level</span> =&gt;</span> <span class="hljs-keyword">switch</span>(level) {
+    <span class="hljs-keyword">case</span> logLevel.ERROR:
+    <span class="hljs-keyword">case</span> logLevel.NOTHING:
+        <span class="hljs-keyword">return</span> <span class="hljs-string">'error'</span>
+    <span class="hljs-keyword">case</span> logLevel.WARN:
+        <span class="hljs-keyword">return</span> <span class="hljs-string">'warn'</span>
+    <span class="hljs-keyword">case</span> logLevel.INFO:
+        <span class="hljs-keyword">return</span> <span class="hljs-string">'info'</span>
+    <span class="hljs-keyword">case</span> logLevel.DEBUG:
+        <span class="hljs-keyword">return</span> <span class="hljs-string">'debug'</span>
+}
+
+<span class="hljs-keyword">const</span> WinstonLogCreator = <span class="hljs-function"><span class="hljs-params">logLevel</span> =&gt;</span> {
+    <span class="hljs-keyword">const</span> logger = winston.createLogger({
+        <span class="hljs-attr">level</span>: toWinstonLogLevel(logLevel),
+        <span class="hljs-attr">transports</span>: [
+            <span class="hljs-keyword">new</span> winston.transports.Console(),
+            <span class="hljs-keyword">new</span> winston.transports.File({ <span class="hljs-attr">filename</span>: <span class="hljs-string">'myapp.log'</span> })
+        ]
+    })
+
+    <span class="hljs-keyword">return</span> <span class="hljs-function">(<span class="hljs-params">{ namespace, level, { message, ...extra } }</span>) =&gt;</span> {
+        logger.log({
+            <span class="hljs-attr">level</span>: toWinstonLogLevel(level),
+            message,
+            extra,
+        })
+    }
+}
+</code></pre>
+<p>Once you have your log creator you can use the <code>logCreator</code> option to configure the client:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> kafka = <span class="hljs-keyword">new</span> Kafka({
+    <span class="hljs-attr">clientId</span>: <span class="hljs-string">'my-app'</span>,
+    <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
+    <span class="hljs-attr">logLevel</span>: logLevel.ERROR,
+    <span class="hljs-attr">logCreator</span>: WinstonLogCreator
+})
+</code></pre>
+<p>To get access to the namespaced logger of a consumer, producer, admin or root Kafka client after instantiation, you can use the <code>logger</code> method:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> client = <span class="hljs-keyword">new</span> Kafka( ... )
+client.logger().info( ... )
+
+<span class="hljs-keyword">const</span> consumer = kafka.consumer( ... )
+consumer.logger().info( ... )
+
+<span class="hljs-keyword">const</span> producer = kafka.producer( ... )
+producer.logger().info( ... )
+
+<span class="hljs-keyword">const</span> admin = kafka.admin( ... )
+admin.logger().info( ... )
+</code></pre>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/kafkajsdocs/instrumentation-events"><span class="arrow-prev">← </span><span>Instrumentation Events</span></a><a class="docs-next button" href="/kafkajsdocs/retry-detailed"><span>Retry Mechanism Explained</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/kafkajs" class="nav-home"><img src="/kafkajsimg/kafkajs-logo.svg" alt="KafkaJS" width="52" height="84"/></a><div><h5>Docs</h5><a href="/kafkajsdocs/en/getting-started">Usage</a></div><div><h5>Community</h5><a href="https://kafkajs-slackin.herokuapp.com">Slack</a></div><div><h5>More</h5><a href="https://github.com/tulios/kafkajs">GitHub</a><a class="github-button" href="https://github.com/tulios/kafkajs" data-icon="octicon-star" data-count-href="/tulios/kafkajs/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section></footer></div></body></html>
