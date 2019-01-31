@@ -36,3 +36,28 @@ blockquote {
 .mainContainer a:hover {
     text-decoration: underline;
 }
+
+.projectTitle {
+    font-size: 200%;
+}
+
+.projectTitle .projectName {
+    display: block;
+    margin-top: 10px;
+}
+
+.projectTitle img {
+    max-width: 100px;
+    width: 100%;
+    display: block;
+    margin: 0 auto;
+    position: relative;
+    left: 15px;
+}
+
+.projectTitle small {
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-weight: 100;
+    line-height: 1.9rem;
+}

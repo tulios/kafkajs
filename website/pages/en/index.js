@@ -13,13 +13,26 @@ const MarkdownBlock = CompLibrary.MarkdownBlock /* Used to read markdown */
 const Container = CompLibrary.Container
 const GridBlock = CompLibrary.GridBlock
 
+const Button = props => (
+  <div className="pluginWrapper buttonWrapper">
+    <a className="button" href={props.href} target={props.target}>
+      {props.children}
+    </a>
+  </div>
+)
+
+const createLinkGenerator = ({ siteConfig, language = '' }) => {
+  const { baseUrl, docsUrl } = siteConfig
+  const docsPart = `${docsUrl ? `${docsUrl}/` : ''}`
+  const langPart = `${language ? `${language}/` : ''}`
+  return doc => `${baseUrl}${docsPart}${langPart}${doc}`
+}
+
 class HomeSplash extends React.Component {
   render() {
-    const { siteConfig, language = '' } = this.props
-    const { baseUrl, docsUrl } = siteConfig
-    const docsPart = `${docsUrl ? `${docsUrl}/` : ''}`
-    const langPart = `${language ? `${language}/` : ''}`
-    const docUrl = doc => `${baseUrl}${docsPart}${langPart}${doc}`
+    const { siteConfig } = this.props
+    const { baseUrl } = siteConfig
+    const docUrl = createLinkGenerator(this.props)
 
     const SplashContainer = props => (
       <div className="homeContainer">
@@ -29,15 +42,12 @@ class HomeSplash extends React.Component {
       </div>
     )
 
-    const Logo = props => (
-      <div className="projectLogo">
-        <img src={props.img_src} alt="Project Logo" />
-      </div>
-    )
+    const Logo = props => <img src={props.img_src} alt="Project Logo" />
 
     const ProjectTitle = () => (
       <h2 className="projectTitle">
-        {siteConfig.title}
+        <Logo img_src={`${baseUrl}img/kafkajs-logo-dark.svg`} />
+        <span className="projectName">{siteConfig.title}</span>
         <small>{siteConfig.tagline}</small>
       </h2>
     )
@@ -50,23 +60,13 @@ class HomeSplash extends React.Component {
       </div>
     )
 
-    const Button = props => (
-      <div className="pluginWrapper buttonWrapper">
-        <a className="button" href={props.href} target={props.target}>
-          {props.children}
-        </a>
-      </div>
-    )
-
     return (
       <SplashContainer>
-        <Logo img_src={`${baseUrl}img/docusaurus.svg`} />
         <div className="inner">
           <ProjectTitle siteConfig={siteConfig} />
           <PromoSection>
-            <Button href="#try">Try It Out</Button>
-            <Button href={docUrl('GettingStarted.html')}>Example Link</Button>
-            <Button href={docUrl('doc2.html')}>Example Link 2</Button>
+            <Button href={docUrl('getting-started')}>Documentation</Button>
+            <Button href={siteConfig.repoUrl}>Github</Button>
           </PromoSection>
         </div>
       </SplashContainer>
@@ -77,7 +77,7 @@ class HomeSplash extends React.Component {
 class Index extends React.Component {
   render() {
     const { config: siteConfig, language = '' } = this.props
-    const { baseUrl } = siteConfig
+    const docUrl = createLinkGenerator({ siteConfig, language })
 
     const Block = props => (
       <Container padding={['bottom', 'top']} id={props.id} background={props.background}>
@@ -85,69 +85,28 @@ class Index extends React.Component {
       </Container>
     )
 
-    const FeatureCallout = () => (
-      <div className="productShowcaseSection paddingBottom" style={{ textAlign: 'center' }}>
-        <h2>Feature Callout</h2>
-        <MarkdownBlock>These are features of this project</MarkdownBlock>
+    const Features = props => (
+      <div id="feature">
+        <Block layout="fourColumn">
+          {[
+            {
+              title: '(Almost) No Dependencies',
+              content:
+                'Committed to staying lean and dependency free. 100% Javascript, with no native addons required.',
+            },
+            {
+              title: 'Well Tested',
+              content:
+                'Every commit is tested against a production-like multi-broker Kafka cluster, ensuring that regressions never make it into production.',
+            },
+            {
+              title: 'Battle Hardened',
+              content:
+                'Dog-fooded by the authors in dozens of high-traffic services with strict uptime requirements.',
+            },
+          ]}
+        </Block>
       </div>
-    )
-
-    const TryOut = () => (
-      <Block id="try">
-        {[
-          {
-            content: 'Talk about trying this out',
-            image: `${baseUrl}img/docusaurus.svg`,
-            imageAlign: 'left',
-            title: 'Try it Out',
-          },
-        ]}
-      </Block>
-    )
-
-    const Description = () => (
-      <Block background="dark">
-        {[
-          {
-            content: 'This is another description of how this project is useful',
-            image: `${baseUrl}img/docusaurus.svg`,
-            imageAlign: 'right',
-            title: 'Description',
-          },
-        ]}
-      </Block>
-    )
-
-    const LearnHow = () => (
-      <Block background="light">
-        {[
-          {
-            content: 'Talk about learning how to use this',
-            image: `${baseUrl}img/docusaurus.svg`,
-            imageAlign: 'right',
-            title: 'Learn How',
-          },
-        ]}
-      </Block>
-    )
-
-    const Features = () => (
-      <Block layout="fourColumn">
-        {[
-          {
-            content: 'This is the content of my feature',
-            image: `${baseUrl}img/docusaurus.svg`,
-            imageAlign: 'top',
-            title: 'Feature One',
-          },
-          {
-            content: 'The content of my second feature',
-            image: `${baseUrl}img/docusaurus.svg`,
-            imageAlign: 'top',
-            title: 'Feature Two',
-          },
-        ]}
-      </Block>
     )
 
     return (
@@ -155,10 +114,6 @@ class Index extends React.Component {
         <HomeSplash siteConfig={siteConfig} language={language} />
         <div className="mainContainer">
           <Features />
-          <FeatureCallout />
-          <LearnHow />
-          <TryOut />
-          <Description />
         </div>
       </div>
     )

@@ -9,6 +9,7 @@
 // site configuration options.
 
 const repoUrl = 'https://github.com/tulios/kafkajs'
+const slackUrl = 'https://kafkajs-slackin.herokuapp.com/'
 
 const siteConfig = {
   title: 'KafkaJS',
@@ -17,7 +18,11 @@ const siteConfig = {
   baseUrl: '/',
   projectName: 'kafkajs',
   organizationName: 'kafkajs',
-  headerLinks: [{ doc: 'getting-started', label: 'Docs' }, { page: 'help', label: 'Help' }],
+  headerLinks: [
+    { doc: 'getting-started', label: 'Docs' },
+    { page: 'help', label: 'Help' },
+    { href: repoUrl, label: 'GitHub' },
+  ],
   headerIcon: 'img/kafkajs-logo.svg',
   footerIcon: 'img/kafkajs-logo.svg',
   favicon: 'img/favicon.png',
@@ -58,6 +63,7 @@ const siteConfig = {
   // You may provide arbitrary config keys to be used as needed by your
   // template.
   repoUrl,
+  slackUrl,
   siteConfigUrl: repoUrl + '/edit/master/website/siteConfig.js',
 }
 

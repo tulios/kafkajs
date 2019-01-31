@@ -14,7 +14,7 @@ const GridBlock = CompLibrary.GridBlock
 
 function Help(props) {
   const { config: siteConfig, language = '' } = props
-  const { baseUrl, docsUrl } = siteConfig
+  const { baseUrl, docsUrl, slackUrl, repoUrl } = siteConfig
   const docsPart = `${docsUrl ? `${docsUrl}/` : ''}`
   const langPart = `${language ? `${language}/` : ''}`
   const docUrl = doc => `${baseUrl}${docsPart}${langPart}${doc}`
@@ -25,7 +25,7 @@ function Help(props) {
       title: 'Browse Docs',
     },
     {
-      content: `Ask questions about the documentation and project in [our Slack channel](https://kafkajs-slackin.herokuapp.com/)`,
+      content: `Ask questions about the documentation and project in [our Slack channel](${slackUrl})`,
       title: 'Join the community',
     },
     {
@@ -45,7 +45,7 @@ function Help(props) {
             This free, open-source project is developed and maintained by a small group of
             volunteers. Please check if your question is answered already on the{' '}
             <a href={docUrl('faq')}>Frequently Asked Questions page</a> or among the{' '}
-            <a href="https://github.com/tulios/kafkajs/issues">Github issues</a>.
+            <a href={repoUrl + '/issues'}>Github issues</a>.
           </p>
           <p>
             If you're still unable to find a solution to your problem, feel free to check out the
