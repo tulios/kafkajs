@@ -6,3 +6,4 @@ coverage/
 yarn-error.log
 .vscode
 .vs
+build/
