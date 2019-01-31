@@ -17,6 +17,7 @@ const siteConfig = {
   url: 'https://tulios.github.io', // Your website URL
   baseUrl: '/kafkajs/',
   projectName: 'kafkajs',
+  organizationName: 'tulios',
   headerLinks: [
     { doc: 'getting-started', label: 'Docs' },
     { page: 'help', label: 'Help' },
