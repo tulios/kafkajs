@@ -13,10 +13,10 @@ const repoUrl = 'https://github.com/tulios/kafkajs'
 const siteConfig = {
   title: 'KafkaJS',
   tagline: 'A modern Apache Kafka client for Node.js',
-  url: 'https://kafkajs.github.io', // Your website URL
-  baseUrl: '/',
+  url: 'https://tulios.github.io', // Your website URL
+  baseUrl: '/kafkajs/',
   projectName: 'kafkajs',
-  organizationName: 'kafkajs',
+  organizationName: 'tulios',
   headerLinks: [{ doc: 'getting-started', label: 'Docs' }, { page: 'help', label: 'Help' }],
   headerIcon: 'img/kafkajs-logo.svg',
   footerIcon: 'img/kafkajs-logo.svg',
