@@ -14,8 +14,8 @@ const slackUrl = 'https://kafkajs-slackin.herokuapp.com/'
 const siteConfig = {
   title: 'KafkaJS',
   tagline: 'A modern Apache Kafka client for Node.js',
-  url: 'https://tulios.github.io', // Your website URL
-  baseUrl: '/kafkajs/',
+  url: 'https://kafka.js.org', // Your website URL
+  baseUrl: '/',
   projectName: 'kafkajs',
   organizationName: 'tulios',
   cname: 'kafka.js.org',
