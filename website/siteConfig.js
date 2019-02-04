@@ -32,6 +32,7 @@ const siteConfig = {
     secondaryColor: '#2f363d',
     linkColor: '#0366d6',
   },
+
   /* Custom fonts for website */
   /*
   fonts: {
@@ -45,8 +46,15 @@ const siteConfig = {
     ]
   },
   */
+
   highlight: {
     theme: 'github',
+  },
+
+  algolia: {
+    apiKey: '7c56b6be30976fce32eb287e2af6cf06',
+    indexName: 'kafka_js',
+    algoliaOptions: {}, // Optional, if provided by Algolia
   },
 
   // Add custom scripts here that would be placed in <script> tags.
