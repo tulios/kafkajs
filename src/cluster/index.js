@@ -236,6 +236,13 @@ module.exports = class Cluster {
           throw e
         }
 
+        if (e.code === 'ECONNREFUSED') {
+          // During maintenance the current coordinator can go down; findBroker will
+          // refresh metadata and re-throw the error. findGroupCoordinator has to re-throw
+          // the error to go through the retry cycle.
+          throw e
+        }
+
         bail(e)
       }
     })

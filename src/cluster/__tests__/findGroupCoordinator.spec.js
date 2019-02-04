@@ -54,4 +54,17 @@ describe('Cluster > findGroupCoordinator', () => {
       cluster.brokerPool.brokers[2]
     )
   })
+
+  test('retry on ECONNREFUSED', async () => {
+    const broker = await cluster.findGroupCoordinator({ groupId })
+    await broker.disconnect()
+
+    jest.spyOn(broker, 'connect').mockImplementationOnce(() => {
+      throw new KafkaJSConnectionError(`Connection error: connect ECONNREFUSED <ip>:<port>`, {
+        code: 'ECONNREFUSED',
+      })
+    })
+
+    await expect(cluster.findGroupCoordinator({ groupId })).resolves.toBeTruthy()
+  })
 })

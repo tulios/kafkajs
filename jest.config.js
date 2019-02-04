@@ -3,7 +3,7 @@ module.exports = {
   moduleNameMapper: {
     testHelpers: '<rootDir>/testHelpers/index.js',
   },
-  setupTestFrameworkScriptFile: '<rootDir>/testHelpers/setup.js',
+  setupFilesAfterEnv: ['<rootDir>/testHelpers/setup.js'],
   testPathIgnorePatterns: ['/node_modules/'],
   testEnvironment: 'node',
   testRegex: '(/__tests__/.*|(\\.|/)spec)\\.jsx?$',
