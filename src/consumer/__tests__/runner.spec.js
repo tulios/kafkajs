@@ -1,6 +1,6 @@
 const Runner = require('../runner')
 const Batch = require('../batch')
-const { KafkaJSProtocolError } = require('../../errors')
+const { KafkaJSProtocolError, KafkaJSNotImplemented } = require('../../errors')
 const { createErrorFromCode } = require('../../protocol/error')
 const InstrumentationEventEmitter = require('../../instrumentation/emitter')
 const { newLogger } = require('testHelpers')
@@ -89,5 +89,15 @@ describe('Consumer > Runner', () => {
     await runner.start()
     expect(runner.scheduleFetch).not.toHaveBeenCalled()
     expect(onCrash).toHaveBeenCalledWith(unknowError)
+  })
+
+  it('crashes on KafkaJSNotImplemented errors', async () => {
+    const notImplementedError = new KafkaJSNotImplemented('not implemented')
+    consumerGroup.fetch.mockImplementationOnce(() => {
+      throw notImplementedError
+    })
+
+    await runner.start()
+    expect(onCrash).toHaveBeenCalledWith(notImplementedError)
   })
 })

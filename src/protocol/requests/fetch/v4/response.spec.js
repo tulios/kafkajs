@@ -1,4 +1,5 @@
 const { decode, parse } = require('./response')
+const { KafkaJSNotImplemented } = require('../../../../errors')
 
 describe('Protocol > Requests > Fetch > v4', () => {
   test('response', async () => {
@@ -260,6 +261,14 @@ describe('Protocol > Requests > Fetch > v4', () => {
       // the fixture is too big, jest deepCheck matcher takes too long to compare the object,
       // and the purpose of the test is to check if the decoder can skip the 0.11 on this request
       expect(new Set(messagesMagicBytes)).toEqual(new Set([1]))
+    })
+  })
+
+  describe('response with an unconfigured compression codec (snappy)', () => {
+    test('throws KafkaJSNotImplemented error', async () => {
+      await expect(
+        decode(Buffer.from(require('../fixtures/v4_response_snappy.json')))
+      ).rejects.toThrow(KafkaJSNotImplemented)
     })
   })
 })
