@@ -50,6 +50,8 @@ const decodeMessages = async decoder => {
         if (e.name === 'KafkaJSPartialMessageError') {
           break
         }
+
+        throw e
       }
     }
 
