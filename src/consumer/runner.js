@@ -314,6 +314,10 @@ module.exports = class Runner {
           return
         }
 
+        if (e.name === 'KafkaJSNotImplemented') {
+          return bail(e)
+        }
+
         this.logger.debug('Error while fetching data, trying again...', {
           groupId: this.consumerGroup.groupId,
           memberId: this.consumerGroup.memberId,
