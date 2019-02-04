@@ -61,6 +61,9 @@ const siteConfig = {
   ogImage: 'img/docusaurus.png',
   twitterImage: 'img/docusaurus.png',
 
+  gaTrackingId: 'UA-133751873-1',
+  gaGtag: true,
+
   // You may provide arbitrary config keys to be used as needed by your
   // template.
   repoUrl,
