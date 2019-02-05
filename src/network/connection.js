@@ -6,6 +6,7 @@ const { KafkaJSConnectionError } = require('../errors')
 const { INT_32_MAX_VALUE } = require('../constants')
 const getEnv = require('../env')
 const RequestQueue = require('./requestQueue')
+const events = require('./instrumentationEvents')
 
 const requestInfo = ({ apiName, apiKey, apiVersion }) =>
   `${apiName}(key: ${apiKey}, version: ${apiVersion})`
@@ -53,6 +54,8 @@ module.exports = class Connection {
     this.broker = `${this.host}:${this.port}`
     this.logger = logger.namespace('Connection')
 
+    this.instrumentationEmitter = instrumentationEmitter
+
     this.ssl = ssl
     this.sasl = sasl
 
@@ -99,6 +102,13 @@ module.exports = class Connection {
       let timeoutId
 
       const onConnect = () => {
+        if(this.instrumentationEmitter)
+          this.instrumentationEmitter.emit(events.BROKER_CONNECTION, {
+            broker: this.broker,
+            clientId: this.clientId,
+            socket: this.socket
+          })
+
         clearTimeout(timeoutId)
         this.connected = true
         resolve(true)

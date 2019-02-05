@@ -9,12 +9,14 @@ const events = {
   REQUEST: producerType(networkEvents.NETWORK_REQUEST),
   REQUEST_TIMEOUT: producerType(networkEvents.NETWORK_REQUEST_TIMEOUT),
   REQUEST_QUEUE_SIZE: producerType(networkEvents.NETWORK_REQUEST_QUEUE_SIZE),
+  BROKER_CONNECTION: producerType(networkEvents.BROKER_CONNECTION)
 }
 
 const wrappedEvents = {
   [events.REQUEST]: networkEvents.NETWORK_REQUEST,
   [events.REQUEST_TIMEOUT]: networkEvents.NETWORK_REQUEST_TIMEOUT,
   [events.REQUEST_QUEUE_SIZE]: networkEvents.NETWORK_REQUEST_QUEUE_SIZE,
+  [events.BROKER_CONNECTION]: networkEvents.BROKER_CONNECTION
 }
 
 const reversedWrappedEvents = swapObject(wrappedEvents)
