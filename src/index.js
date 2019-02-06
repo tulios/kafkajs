@@ -17,152 +17,155 @@ const PRIVATE = {
   OFFSETS: Symbol('private:Kafka:offsets'),
 }
 
-module.exports = class Client {
-  constructor({
-    brokers,
-    ssl,
-    sasl,
-    clientId,
-    connectionTimeout,
-    authenticationTimeout,
-    requestTimeout,
-    retry,
-    logLevel = INFO,
-    logCreator = LoggerConsole,
-    allowExperimentalV011 = true,
-  }) {
-    this[PRIVATE.OFFSETS] = new Map()
-    this[PRIVATE.LOGGER] = createLogger({ level: logLevel, logCreator })
-    this[PRIVATE.CREATE_CLUSTER] = ({
-      metadataMaxAge = 300000,
-      allowAutoTopicCreation = true,
-      maxInFlightRequests = null,
-      instrumentationEmitter = null,
-      isolationLevel,
-    }) =>
-      new Cluster({
-        logger: this[PRIVATE.LOGGER],
-        brokers,
-        ssl,
-        sasl,
-        clientId,
-        connectionTimeout,
-        authenticationTimeout,
-        requestTimeout,
-        metadataMaxAge,
-        instrumentationEmitter,
-        retry,
-        allowAutoTopicCreation,
-        allowExperimentalV011,
-        maxInFlightRequests,
+module.exports = defaultSocketFactory =>
+  class Client {
+    constructor({
+      brokers,
+      ssl,
+      sasl,
+      clientId,
+      connectionTimeout,
+      authenticationTimeout,
+      requestTimeout,
+      retry,
+      socketFactory = defaultSocketFactory,
+      logLevel = INFO,
+      logCreator = LoggerConsole,
+      allowExperimentalV011 = true,
+    }) {
+      this[PRIVATE.OFFSETS] = new Map()
+      this[PRIVATE.LOGGER] = createLogger({ level: logLevel, logCreator })
+      this[PRIVATE.CREATE_CLUSTER] = ({
+        metadataMaxAge = 300000,
+        allowAutoTopicCreation = true,
+        maxInFlightRequests = null,
+        instrumentationEmitter = null,
         isolationLevel,
-        offsets: this[PRIVATE.OFFSETS],
-      })
-  }
+      }) =>
+        new Cluster({
+          logger: this[PRIVATE.LOGGER],
+          socketFactory,
+          brokers,
+          ssl,
+          sasl,
+          clientId,
+          connectionTimeout,
+          authenticationTimeout,
+          requestTimeout,
+          metadataMaxAge,
+          instrumentationEmitter,
+          retry,
+          allowAutoTopicCreation,
+          allowExperimentalV011,
+          maxInFlightRequests,
+          isolationLevel,
+          offsets: this[PRIVATE.OFFSETS],
+        })
+    }
 
-  /**
-   * @public
-   */
-  producer({
-    createPartitioner,
-    retry,
-    metadataMaxAge,
-    allowAutoTopicCreation,
-    idempotent,
-    transactionalId,
-    transactionTimeout,
-    maxInFlightRequests,
-  } = {}) {
-    const instrumentationEmitter = new InstrumentationEventEmitter()
-    const cluster = this[PRIVATE.CREATE_CLUSTER]({
+    /**
+     * @public
+     */
+    producer({
+      createPartitioner,
+      retry,
       metadataMaxAge,
       allowAutoTopicCreation,
-      maxInFlightRequests,
-      instrumentationEmitter,
-    })
-
-    return createProducer({
-      retry: { ...cluster.retry, ...retry },
-      logger: this[PRIVATE.LOGGER],
-      cluster,
-      createPartitioner,
       idempotent,
       transactionalId,
       transactionTimeout,
-      instrumentationEmitter,
-    })
-  }
-
-  /**
-   * @public
-   */
-  consumer({
-    groupId,
-    partitionAssigners,
-    metadataMaxAge,
-    sessionTimeout,
-    heartbeatInterval,
-    maxBytesPerPartition,
-    minBytes,
-    maxBytes,
-    maxWaitTimeInMs,
-    retry,
-    allowAutoTopicCreation,
-    maxInFlightRequests,
-    readUncommitted = false,
-  } = {}) {
-    const isolationLevel = readUncommitted
-      ? ISOLATION_LEVEL.READ_UNCOMMITTED
-      : ISOLATION_LEVEL.READ_COMMITTED
-
-    const instrumentationEmitter = new InstrumentationEventEmitter()
-    const cluster = this[PRIVATE.CREATE_CLUSTER]({
-      metadataMaxAge,
-      allowAutoTopicCreation,
       maxInFlightRequests,
-      isolationLevel,
-      instrumentationEmitter,
-    })
+    } = {}) {
+      const instrumentationEmitter = new InstrumentationEventEmitter()
+      const cluster = this[PRIVATE.CREATE_CLUSTER]({
+        metadataMaxAge,
+        allowAutoTopicCreation,
+        maxInFlightRequests,
+        instrumentationEmitter,
+      })
 
-    return createConsumer({
-      retry: { ...cluster.retry, retry },
-      logger: this[PRIVATE.LOGGER],
-      cluster,
+      return createProducer({
+        retry: { ...cluster.retry, ...retry },
+        logger: this[PRIVATE.LOGGER],
+        cluster,
+        createPartitioner,
+        idempotent,
+        transactionalId,
+        transactionTimeout,
+        instrumentationEmitter,
+      })
+    }
+
+    /**
+     * @public
+     */
+    consumer({
       groupId,
       partitionAssigners,
+      metadataMaxAge,
       sessionTimeout,
       heartbeatInterval,
       maxBytesPerPartition,
       minBytes,
       maxBytes,
       maxWaitTimeInMs,
-      isolationLevel,
-      instrumentationEmitter,
-    })
-  }
+      retry,
+      allowAutoTopicCreation,
+      maxInFlightRequests,
+      readUncommitted = false,
+    } = {}) {
+      const isolationLevel = readUncommitted
+        ? ISOLATION_LEVEL.READ_UNCOMMITTED
+        : ISOLATION_LEVEL.READ_COMMITTED
 
-  /**
-   * @public
-   */
-  admin({ retry } = {}) {
-    const instrumentationEmitter = new InstrumentationEventEmitter()
-    const cluster = this[PRIVATE.CREATE_CLUSTER]({
-      allowAutoTopicCreation: false,
-      instrumentationEmitter,
-    })
+      const instrumentationEmitter = new InstrumentationEventEmitter()
+      const cluster = this[PRIVATE.CREATE_CLUSTER]({
+        metadataMaxAge,
+        allowAutoTopicCreation,
+        maxInFlightRequests,
+        isolationLevel,
+        instrumentationEmitter,
+      })
 
-    return createAdmin({
-      retry: { ...cluster.retry, retry },
-      logger: this[PRIVATE.LOGGER],
-      instrumentationEmitter,
-      cluster,
-    })
-  }
+      return createConsumer({
+        retry: { ...cluster.retry, retry },
+        logger: this[PRIVATE.LOGGER],
+        cluster,
+        groupId,
+        partitionAssigners,
+        sessionTimeout,
+        heartbeatInterval,
+        maxBytesPerPartition,
+        minBytes,
+        maxBytes,
+        maxWaitTimeInMs,
+        isolationLevel,
+        instrumentationEmitter,
+      })
+    }
 
-  /**
-   * @public
-   */
-  logger() {
-    return this[PRIVATE.LOGGER]
+    /**
+     * @public
+     */
+    admin({ retry } = {}) {
+      const instrumentationEmitter = new InstrumentationEventEmitter()
+      const cluster = this[PRIVATE.CREATE_CLUSTER]({
+        allowAutoTopicCreation: false,
+        instrumentationEmitter,
+      })
+
+      return createAdmin({
+        retry: { ...cluster.retry, retry },
+        logger: this[PRIVATE.LOGGER],
+        instrumentationEmitter,
+        cluster,
+      })
+    }
+
+    /**
+     * @public
+     */
+    logger() {
+      return this[PRIVATE.LOGGER]
+    }
   }
-}

@@ -1,6 +1,7 @@
 const Connection = require('../network/connection')
 
 module.exports = ({
+  socketFactory,
   brokers,
   ssl,
   sasl,
@@ -31,6 +32,7 @@ module.exports = ({
         ssl,
         sasl,
         clientId,
+        socketFactory,
         connectionTimeout,
         requestTimeout,
         maxInFlightRequests,
