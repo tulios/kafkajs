@@ -3,6 +3,7 @@ test-report.xml
 junit.xml
 coverage/
 yarn-error.log
+yarn.lock
 **/*.spec.js
 !src/retry/defaults.test.js
 __tests__
@@ -24,3 +25,4 @@ jest.config.js
 *.svg
 logo
 *.tgz
+.vscode/
