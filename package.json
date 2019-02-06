@@ -11,7 +11,7 @@
     "scram"
   ],
   "engines": {
-    "node": ">=8.0.0"
+    "node": ">=8.6.0"
   },
   "repository": {
     "type": "git",
@@ -53,7 +53,7 @@
     "glob": "^7.1.2",
     "husky": "^0.14.3",
     "ip": "^1.1.5",
-    "jest": "^23.5.0",
+    "jest": "^24.0.0",
     "jest-extended": "^0.11.0",
     "jest-junit": "^5.1.0",
     "lint-staged": "^6.0.0",
