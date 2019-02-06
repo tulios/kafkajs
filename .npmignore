@@ -11,6 +11,8 @@ fixtures
 testHelpers/
 scripts/
 examples/
+docs/
+website/
 docker-compose.yml
 docker-compose.*.yml
 jest.config.js

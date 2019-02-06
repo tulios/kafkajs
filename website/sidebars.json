@@ -1,0 +1,22 @@
+{
+  "docs": {
+    "Usage": [
+      "getting-started",
+      "configuration",
+      "producing",
+      "transactions",
+      "consuming",
+      "admin",
+      "instrumentation-events",
+      "custom-logger",
+      "retry-detailed",
+      "faq"
+    ],
+    "Examples": [
+      "running-kafka-in-development",
+      "producer-example",
+      "consumer-example"
+    ],
+    "API Reference": []
+  }
+}

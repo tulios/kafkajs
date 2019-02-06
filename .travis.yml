@@ -13,52 +13,52 @@ env:
     - COMPOSE_FILE=docker-compose.0_11.yml
     - KAFKA_VERSION=0.11
 before_install:
-  - bash ./scripts/isMarkdownOnly.sh && MD_ONLY=true && echo "Only .md files have changed!" || test true
-  - test $MD_ONLY && echo "Skipped!" || sudo rm /usr/local/bin/docker-compose
-  - test $MD_ONLY && echo "Skipped!" || curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
-  - test $MD_ONLY && echo "Skipped!" || chmod +x docker-compose
-  - test $MD_ONLY && echo "Skipped!" || sudo mv docker-compose /usr/local/bin
-  - test $MD_ONLY && echo "Skipped!" || curl -o- -L https://yarnpkg.com/install.sh | bash
-  - test $MD_ONLY && echo "Skipped!" || export PATH=$HOME/.yarn/bin:$PATH
+  - bash ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+  - test $SKIP_TESTS && echo "Skipped!" || sudo rm /usr/local/bin/docker-compose
+  - test $SKIP_TESTS && echo "Skipped!" || curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+  - test $SKIP_TESTS && echo "Skipped!" || chmod +x docker-compose
+  - test $SKIP_TESTS && echo "Skipped!" || sudo mv docker-compose /usr/local/bin
+  - test $SKIP_TESTS && echo "Skipped!" || curl -o- -L https://yarnpkg.com/install.sh | bash
+  - test $SKIP_TESTS && echo "Skipped!" || export PATH=$HOME/.yarn/bin:$PATH
 install:
-  - test $MD_ONLY && echo "Skipped!" || yarn install
+  - test $SKIP_TESTS && echo "Skipped!" || yarn install
 jobs:
   include:
     - stage: test
       name: 'Lint'
       script:
         - env
-        - test $MD_ONLY && echo "Skipped!" || yarn lint
+        - test $SKIP_TESTS && echo "Skipped!" || yarn lint
     - stage: test
       name: 'Broker'
       script:
         - env
-        - test $MD_ONLY && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-        - test $MD_ONLY && echo "Skipped!" || yarn test:group:broker:ci
+        - test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        - test $SKIP_TESTS && echo "Skipped!" || yarn test:group:broker:ci
     - stage: test
       name: 'Admin'
       script:
         - env
-        - test $MD_ONLY && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-        - test $MD_ONLY && echo "Skipped!" || yarn test:group:admin:ci
+        - test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        - test $SKIP_TESTS && echo "Skipped!" || yarn test:group:admin:ci
     - stage: test
       name: 'Producer'
       script:
         - env
-        - test $MD_ONLY && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-        - test $MD_ONLY && echo "Skipped!" || yarn test:group:producer:ci
+        - test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        - test $SKIP_TESTS && echo "Skipped!" || yarn test:group:producer:ci
     - stage: test
       name: 'Consumer'
       script:
         - env
-        - test $MD_ONLY && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-        - test $MD_ONLY && echo "Skipped!" || yarn test:group:consumer:ci
+        - test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        - test $SKIP_TESTS && echo "Skipped!" || yarn test:group:consumer:ci
     - stage: test
       name: 'Others (protocol, cluster, network, etc)'
       script:
         - env
-        - test $MD_ONLY && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-        - test $MD_ONLY && echo "Skipped!" || yarn test:group:others:ci
+        - test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        - test $SKIP_TESTS && echo "Skipped!" || yarn test:group:others:ci
     - stage: NPM release
       sudo: false
       node_js: "8"
