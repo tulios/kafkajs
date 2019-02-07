@@ -59,7 +59,8 @@ jobs:
         - env
         - test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
         - test $SKIP_TESTS && echo "Skipped!" || yarn test:group:others:ci
-    - stage: NPM release
+    - stage: deploy
+      name: NPM release
       sudo: false
       node_js: "8"
       script: skip
@@ -73,3 +74,12 @@ jobs:
         on:
           tags: true
           repo: tulios/kafkajs
+    - stage: deploy
+      name: Website
+      sudo: false
+      script:
+        - '[[ $TRAVIS_PULL_REQUEST == "false" ]] && [[ $TRAVIS_BRANCH == "master" ]] && SHOULD_DEPLOY=true || echo "Skipping deploy"'
+        - 'test $SHOULD_DEPLOY && git config --global user.name "${GH_NAME}" || test true'
+        - 'test $SHOULD_DEPLOY && git config --global user.email "${GH_EMAIL}" || test true'
+        - 'test $SHOULD_DEPLOY && echo "machine github.com login ${GH_NAME} password ${GH_TOKEN}" > ~/.netrc || test true'
+        - 'test $SHOULD_DEPLOY && cd website && yarn install && GIT_USER="${GH_NAME}" yarn run publish-gh-pages || test true'
