@@ -75,11 +75,12 @@ jobs:
           tags: true
           repo: tulios/kafkajs
     - stage: deploy
-      if: branch = master
       name: Website
       sudo: false
       script:
-        - git config --global user.name "${GH_NAME}"
-        - git config --global user.email "${GH_EMAIL}"
-        - echo "machine github.com login ${GH_NAME} password ${GH_TOKEN}" > ~/.netrc
-        - cd website && yarn install && GIT_USER="${GH_NAME}" yarn run publish-gh-pages
+        - '[[ $TRAVIS_PULL_REQUEST == "false" ]] && [[ $TRAVIS_BRANCH == "master" ]] && SHOULD_DEPLOY=true'
+        - 'test $SHOULD_DEPLOY || echo "Skipping website deploy"'
+        - 'test $SHOULD_DEPLOY && git config --global user.name "${GH_NAME}"'
+        - 'test $SHOULD_DEPLOY && git config --global user.email "${GH_EMAIL}"'
+        - 'test $SHOULD_DEPLOY && echo "machine github.com login ${GH_NAME} password ${GH_TOKEN}" > ~/.netrc'
+        - 'test $SHOULD_DEPLOY && cd website && yarn install && GIT_USER="${GH_NAME}" yarn run publish-gh-pages'
