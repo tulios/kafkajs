@@ -129,7 +129,7 @@ class SCRAM {
     const broker = `${host}:${port}`
 
     if (sasl.username == null || sasl.password == null) {
-      throw new KafkaJSSASLAuthenticationError('SASL Plain: Invalid username or password')
+      throw new KafkaJSSASLAuthenticationError(`${this.PREFIX}: Invalid username or password`)
     }
 
     try {
