@@ -202,7 +202,7 @@ module.exports = ({
         groupId,
       })
 
-      if (e.name === 'KafkaJSNumberOfRetriesExceeded') {
+      if (e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true) {
         logger.error(`Restarting the consumer in ${e.retryTime}ms`, {
           retryCount: e.retryCount,
           groupId,
