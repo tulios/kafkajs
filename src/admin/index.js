@@ -145,7 +145,7 @@ module.exports = ({
         const broker = await cluster.findControllerBroker()
         await broker.deleteTopics({ topics, timeout })
 
-        // Remove delete topics
+        // Remove deleted topics
         for (let topic of topics) {
           cluster.targetTopics.delete(topic)
         }
