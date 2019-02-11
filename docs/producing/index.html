@@ -68,6 +68,8 @@
 <tr><td>retry</td><td>Take a look at <a href="#retry">Producer Retry</a> for more information</td><td><code>null</code></td></tr>
 <tr><td>metadataMaxAge</td><td>The period of time in milliseconds after which we force a refresh of metadata even if we haven't seen any partition leadership changes to proactively discover any new brokers or partitions</td><td><code>300000</code> - 5 minutes</td></tr>
 <tr><td>allowAutoTopicCreation</td><td>Allow topic creation when querying metadata for non-existent topics</td><td><code>true</code></td></tr>
+<tr><td>transactionTimeout</td><td>The maximum amount of time in ms that the transaction coordinator will wait for a transaction status update from the producer before proactively aborting the ongoing transaction. If this value is larger than the <code>transaction.max.timeout.ms</code> setting in the <strong>broker</strong>, the request will fail with a <code>InvalidTransactionTimeout</code> error</td><td><code>60000</code></td></tr>
+<tr><td>idempotent</td><td><em>Experimental.</em> If enabled producer will ensure each message is written exactly once. Acks <em>must</em> be set to -1 (&quot;all&quot;). Retries will default to MAX_SAFE_INTEGER.</td><td><code>false</code></td></tr>
 </tbody>
 </table>
 <p>The method <code>send</code> is used to publish messages to the Kafka cluster.</p>
@@ -113,8 +115,6 @@
 <tr><td>acks</td><td>Control the number of required acks. <br> <strong>-1</strong> = all replicas must acknowledge <em>(default)</em> <br> <strong>0</strong> = no acknowledgments <br> <strong>1</strong> = only waits for the leader to acknowledge</td><td><code>-1</code> all replicas must acknowledge</td></tr>
 <tr><td>timeout</td><td>The time to await a response in ms</td><td><code>30000</code></td></tr>
 <tr><td>compression</td><td>Compression codec</td><td><code>CompressionTypes.None</code></td></tr>
-<tr><td>transactionTimeout</td><td>The maximum amount of time in ms that the transaction coordinator will wait for a transaction status update from the producer before proactively aborting the ongoing transaction. If this value is larger than the <code>transaction.max.timeout.ms</code> setting in the <strong>broker</strong>, the request will fail with a <code>InvalidTransactionTimeout</code> error</td><td><code>60000</code></td></tr>
-<tr><td>idempotent</td><td><em>Experimental.</em> If enabled producer will ensure each message is written exactly once. Acks <em>must</em> be set to -1 (&quot;all&quot;). Retries will default to MAX_SAFE_INTEGER.</td><td><code>false</code></td></tr>
 </tbody>
 </table>
 <p>By default, the producer is configured to distribute the messages with the following logic:</p>
