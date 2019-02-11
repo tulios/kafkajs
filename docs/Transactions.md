@@ -12,7 +12,7 @@ KafkaJS provides a a simple interface to support Kafka transactions.
 You initialize a transaction by making an async call to `producer.transaction()`. The returned transaction object has the methods `send` and `sendBatch` with an identical signature to the producer. When you are done you call `transaction.commit()` or `transaction.abort()` to end the transaction. A transactionally aware consumer will only read messages which were committed.
 
 > Note: Kafka requires that the transactional producer have the following configuration to _guarantee_ EoS ("Exactly-once-semantics"):
-> 
+>
 > - The producer must have a max in flight requests of 1
 > - The producer must wait for acknowledgement from all replices (acks=-1)
 > - The producer must have unlimitted retries
@@ -34,7 +34,7 @@ to use unlimitted retries and enforce acks from all replicas
 const producer = client.producer({ idempotent: true })
 ```
 
-Within a transaction, you can produce one or more messages. If `transaction.abort` is called, all messages will be rolled back. 
+Within a transaction, you can produce one or more messages. If `transaction.abort` is called, all messages will be rolled back.
 
 ```javascript
 const  transaction = await producer.transaction()
