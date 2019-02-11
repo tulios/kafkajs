@@ -1,20 +1,22 @@
-const net = require('net')
-const tls = require('tls')
-
 const KEEP_ALIVE_DELAY = 60000 // in ms
 
-module.exports = ({ host, port, ssl, onConnect }) => {
-  const socket = ssl
-    ? tls.connect(
-        Object.assign({ host, port }, ssl),
-        onConnect
-      )
-    : net.connect(
-        { host, port },
-        onConnect
-      )
+module.exports = () => {
+  const net = require('net')
+  const tls = require('tls')
 
-  socket.setKeepAlive(true, KEEP_ALIVE_DELAY)
+  return ({ host, port, ssl, onConnect }) => {
+    const socket = ssl
+      ? tls.connect(
+          Object.assign({ host, port }, ssl),
+          onConnect
+        )
+      : net.connect(
+          { host, port },
+          onConnect
+        )
 
-  return socket
+    socket.setKeepAlive(true, KEEP_ALIVE_DELAY)
+
+    return socket
+  }
 }
