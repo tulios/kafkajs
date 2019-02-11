@@ -124,7 +124,7 @@ module.exports = ({
   }
 
   /**
-   * @param {array<string>} topics
+   * @param {string[]} topics
    * @param {number} [timeout=5000]
    * @return {Promise}
    */
@@ -141,9 +141,16 @@ module.exports = ({
 
     return retrier(async (bail, retryCount, retryTime) => {
       try {
-        await cluster.refreshMetadata(topics)
+        await cluster.refreshMetadata()
         const broker = await cluster.findControllerBroker()
         await broker.deleteTopics({ topics, timeout })
+
+        // Remove deleted topics
+        for (let topic of topics) {
+          cluster.targetTopics.delete(topic)
+        }
+
+        await cluster.refreshMetadata()
       } catch (e) {
         if (e.type === 'NOT_CONTROLLER') {
           logger.warn('Could not delete topics', { error: e.message, retryCount, retryTime })
@@ -431,7 +438,7 @@ module.exports = ({
    * @see https://kafka.apache.org/protocol#The_Messages_Metadata
    *
    * @param {Object} [options]
-   * @param {Array<string>} [options.topics]
+   * @param {string[]} [options.topics]
    * @return {Promise<TopicsMetadata>}
    *
    * @typedef {Object} TopicsMetadata
