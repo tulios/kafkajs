@@ -1,6 +1,7 @@
 {
   "docs": {
     "Usage": [
+      "introduction",
       "getting-started",
       "configuration",
       "producing",
