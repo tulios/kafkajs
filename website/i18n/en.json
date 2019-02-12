@@ -33,6 +33,10 @@
       "instrumentation-events": {
         "title": "Instrumentation Events"
       },
+      "introduction": {
+        "title": "A Brief Intro to Kafka",
+        "sidebar_label": "Intro to Kafka"
+      },
       "producer-example": {
         "title": "Producer"
       },

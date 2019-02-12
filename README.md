@@ -69,6 +69,7 @@ await consumer.run({
 Learn more about using [KafkaJS on the official site!](https://kafka.js.org)
 
 - [Getting Started](https://kafka.js.org/docs/getting-started)
+- [A Brief Intro to Kafka](https://kafka.js.org/docs/introduction)
 - [Configuring KafkaJS](https://kafka.js.org/docs/configuration)
 - [Example Producer](https://kafka.js.org/docs/producer-example)
 - [Example Consumer](https://kafka.js.org/docs/consumer-example)
