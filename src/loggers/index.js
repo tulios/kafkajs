@@ -12,7 +12,7 @@ const createLevel = (label, level, currentLevel, namespace, logFunction) => (
   message,
   extra = {}
 ) => {
-  if (level > currentLevel) return
+  if (level > currentLevel()) return
   logFunction({
     namespace,
     level,
@@ -34,7 +34,7 @@ const evaluateLogLevel = logLevel => {
 }
 
 const createLogger = ({ level = LEVELS.INFO, logCreator = null } = {}) => {
-  const logLevel = evaluateLogLevel(level)
+  let logLevel = evaluateLogLevel(level)
   const logFunction = logCreator(logLevel)
 
   const createNamespace = (namespace, logLevel = null) => {
@@ -43,7 +43,7 @@ const createLogger = ({ level = LEVELS.INFO, logCreator = null } = {}) => {
   }
 
   const createLogFunctions = (namespace, namespaceLogLevel = null) => {
-    const currentLogLevel = namespaceLogLevel == null ? logLevel : namespaceLogLevel
+    const currentLogLevel = () => (namespaceLogLevel == null ? logLevel : namespaceLogLevel)
     const logger = {
       info: createLevel('INFO', LEVELS.INFO, currentLogLevel, namespace, logFunction),
       error: createLevel('ERROR', LEVELS.ERROR, currentLogLevel, namespace, logFunction),
@@ -51,7 +51,12 @@ const createLogger = ({ level = LEVELS.INFO, logCreator = null } = {}) => {
       debug: createLevel('DEBUG', LEVELS.DEBUG, currentLogLevel, namespace, logFunction),
     }
 
-    return assign(logger, { namespace: createNamespace })
+    return assign(logger, {
+      namespace: createNamespace,
+      setLogLevel: newLevel => {
+        logLevel = newLevel
+      },
+    })
   }
 
   return createLogFunctions()

@@ -88,4 +88,24 @@ describe('Loggers', () => {
     newLogger.debug('<test custom logLevel for namespaced logger>')
     expect(myLogger).not.toHaveBeenCalled()
   })
+
+  it('allows overriding the logLevel after instantiation', () => {
+    logger.setLogLevel(LEVELS.INFO)
+
+    logger.debug('Debug message that never gets logged')
+    expect(myLogger).not.toHaveBeenCalled()
+
+    logger.info('Info message', { extra: true })
+    expect(myLogger).toHaveBeenCalledWith(LEVELS.DEBUG, {
+      namespace: 'MyNamespace',
+      level: LEVELS.INFO,
+      label: 'INFO',
+      log: {
+        timestamp: timeNow.toISOString(),
+        logger: 'kafkajs',
+        message: 'Info message',
+        extra: true,
+      },
+    })
+  })
 })
