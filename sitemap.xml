@@ -11,6 +11,7 @@
 <url> <loc>https://kafka.js.org/docs/faq</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/faq" /> </url>
 <url> <loc>https://kafka.js.org/docs/getting-started</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/getting-started" /> </url>
 <url> <loc>https://kafka.js.org/docs/instrumentation-events</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/instrumentation-events" /> </url>
+<url> <loc>https://kafka.js.org/docs/introduction</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/introduction" /> </url>
 <url> <loc>https://kafka.js.org/docs/producer-example</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/producer-example" /> </url>
 <url> <loc>https://kafka.js.org/docs/producing</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/producing" /> </url>
 <url> <loc>https://kafka.js.org/docs/retry-detailed</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/retry-detailed" /> </url>
