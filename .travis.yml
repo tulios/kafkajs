@@ -3,6 +3,8 @@ dist: trusty
 sudo: required
 node_js:
   - '8'
+  - '10'
+  - '11'
 branches:
   only:
     - master
