@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.5.0-beta.2] - 2019-02-13
+
+### Fixed
+  - Handle undefined message key when producing with 0.11 #247
+  - Fix consumer restart on find coordinator errors #253
+  - Crash consumer on codec not implemented error #256
+  - Fix error message on invalid username or password #270
+  - Restart consumer on crashes due to retriable error #269
+  - Remove deleted topics from the cluster target group #273
+
+### Changed
+  - Change Node engine requirement to >=8.6.0 #250
+  - Don't include lockfile and vscode files in package #264
+
+### Added
+  - Allow configuring log level at runtime #278
+
 ## [1.5.0-beta.1] - 2019-01-17
 
 ### Fixed
