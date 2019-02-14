@@ -7,7 +7,7 @@ title: Frequently Asked Questions
 
 **Yes**. KafkaJS is used across hundreds of services running in production across businesses over the world.
 
-> **Note**: If you are using KafkaJS in production, we would love to hear about what you are doing and about your experiences. [Join our Slack community](https://kafkajs-slackin.herokuapp.com) and share.
+> **Note**: If you are using KafkaJS in production, [we would love to hear about what you are doing!](https://github.com/tulios/kafkajs/issues/289)
 
 ## Didn't find what you were looking for?
 
