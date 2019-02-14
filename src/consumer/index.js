@@ -1,5 +1,6 @@
 const Long = require('long')
 const createRetry = require('../retry')
+const { initialRetryTime } = require('../retry/defaults')
 const ConsumerGroup = require('./consumerGroup')
 const Runner = require('./runner')
 const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentationEvents')
@@ -203,11 +204,12 @@ module.exports = ({
       })
 
       if (e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true) {
-        logger.error(`Restarting the consumer in ${e.retryTime}ms`, {
+        const retryTime = e.retryTime || retry.initialRetryTime || initialRetryTime
+        logger.error(`Restarting the consumer in ${retryTime}ms`, {
           retryCount: e.retryCount,
           groupId,
         })
-        setTimeout(() => restart(onCrash), e.retryTime)
+        setTimeout(() => restart(onCrash), retryTime)
       }
     }
 
