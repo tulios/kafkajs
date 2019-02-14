@@ -76,6 +76,26 @@ describe('Producer', () => {
     )
   })
 
+  test('throws an error for messages with keys that cannot be converted to buffers', async () => {
+    producer = createProducer({ cluster: createCluster(), logger: newLogger() })
+
+    await expect(
+      producer.send({ acks: 1, topic: topicName, messages: [{ key: 1, value: 'value' }] })
+    ).rejects.toThrow(
+      `Invalid message for topic "${topicName}". "key" needs to be convertible to Buffer: {"key":1,"value":"value"}`
+    )
+  })
+
+  test('throws an error for messages with values that cannot be converted to buffers', async () => {
+    producer = createProducer({ cluster: createCluster(), logger: newLogger() })
+
+    await expect(
+      producer.send({ acks: 1, topic: topicName, messages: [{ value: 1 }] })
+    ).rejects.toThrow(
+      `Invalid message for topic "${topicName}". "value" needs to be convertible to Buffer: {"value":1}`
+    )
+  })
+
   test('allows messages with a null value to support tombstones', async () => {
     producer = createProducer({ cluster: createCluster(), logger: newLogger() })
     await producer.send({ acks: 1, topic: topicName, messages: [{ foo: 'bar', value: null }] })

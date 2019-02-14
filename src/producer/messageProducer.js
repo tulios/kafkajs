@@ -1,5 +1,6 @@
 const createSendMessages = require('./sendMessages')
 const { KafkaJSNonRetriableError } = require('../errors')
+const convertibleToBuffer = require('../utils/convertibleToBuffer')
 
 module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrier }) => {
   const sendMessages = createSendMessages({
@@ -53,6 +54,24 @@ module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrie
             messageWithoutValue
           )}`
         )
+      }
+
+      for (let message of messages) {
+        if (message.key && !convertibleToBuffer(message.key)) {
+          throw new KafkaJSNonRetriableError(
+            `Invalid message for topic "${topic}". "key" needs to be convertible to Buffer: ${JSON.stringify(
+              message
+            )}`
+          )
+        }
+
+        if (message.value !== null && !convertibleToBuffer(message.value)) {
+          throw new KafkaJSNonRetriableError(
+            `Invalid message for topic "${topic}". "value" needs to be convertible to Buffer: ${JSON.stringify(
+              message
+            )}`
+          )
+        }
       }
     }
 
