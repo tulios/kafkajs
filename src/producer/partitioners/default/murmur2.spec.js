@@ -6,6 +6,14 @@ describe('Producer > Partitioner > Default > murmur2', () => {
       expect(murmur2(key)).toEqual(testData[key])
     })
   })
+
+  test('it handles numeric input', () => {
+    expect(murmur2(0)).toEqual(272173970)
+  })
+
+  test('it handles buffer input', () => {
+    expect(murmur2(Buffer.from('1'))).toEqual(1311020360)
+  })
 })
 
 const testData = {
