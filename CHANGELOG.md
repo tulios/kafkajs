@@ -57,6 +57,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Add network instrumentation events #233
   - Allow users to provide offsets to the `commitOffsetsIfNecessary` #235
 
+## [1.4.8] - 2019-02-18
+
+### Fixed
+  - Handle undefined message key when producing with 0.11 #247
+  - Fix consumer restart on find coordinator errors #253
+  - Crash consumer on codec not implemented error #256
+  - Fix error message on invalid username or password #270
+
 ## [1.4.7] - 2019-01-17
 
 ### Fixed
