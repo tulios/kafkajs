@@ -268,6 +268,32 @@ describe('Producer', () => {
     ])
   })
 
+  testIfKafka011('produce messages for Kafka 0.11 without specifying message key', async () => {
+    const cluster = createCluster(
+      Object.assign(connectionOpts(), {
+        allowExperimentalV011: true,
+        createPartitioner: createModPartitioner,
+      })
+    )
+
+    await createTopic({ topic: topicName })
+
+    producer = createProducer({ cluster, logger: newLogger() })
+    await producer.connect()
+
+    await expect(
+      producer.send({
+        acks: 1,
+        topic: topicName,
+        messages: [
+          {
+            value: 'test-value',
+          },
+        ],
+      })
+    ).resolves.toBeTruthy()
+  })
+
   testIfKafka011('produce messages for Kafka 0.11 with headers', async () => {
     const cluster = createCluster(
       Object.assign(connectionOpts(), {
