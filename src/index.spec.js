@@ -1,10 +1,12 @@
 jest.mock('./producer')
 jest.mock('./consumer')
+jest.mock('./admin')
 jest.mock('./cluster')
 
 const Client = require('./index')
 const createProducer = require('./producer')
 const createConsumer = require('./consumer')
+const createAdmin = require('./admin')
 const Cluster = require('./cluster')
 const ISOLATION_LEVEL = require('./protocol/isolationLevel')
 
@@ -81,6 +83,41 @@ describe('Client', () => {
       expect(createConsumer).toHaveBeenCalledWith(
         expect.objectContaining({
           isolationLevel: ISOLATION_LEVEL.READ_UNCOMMITTED,
+        })
+      )
+    })
+  })
+
+  describe('retry configurations', () => {
+    it('merges local producer options with the client options', () => {
+      const client = new Client({ retry: { initialRetryTime: 100 } })
+      client.producer({ retry: { multiplier: 3 } })
+
+      expect(createProducer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          retry: { initialRetryTime: 100, multiplier: 3 },
+        })
+      )
+    })
+
+    it('merges local consumer options with the client options', () => {
+      const client = new Client({ retry: { initialRetryTime: 100 } })
+      client.consumer({ retry: { multiplier: 3 } })
+
+      expect(createConsumer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          retry: { initialRetryTime: 100, multiplier: 3 },
+        })
+      )
+    })
+
+    it('merges local admin options with the client options', () => {
+      const client = new Client({ retry: { initialRetryTime: 100 } })
+      client.admin({ retry: { multiplier: 3 } })
+
+      expect(createAdmin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          retry: { initialRetryTime: 100, multiplier: 3 },
         })
       )
     })
