@@ -13,6 +13,7 @@ const ISOLATION_LEVEL = require('./protocol/isolationLevel')
 
 const PRIVATE = {
   CREATE_CLUSTER: Symbol('private:Kafka:createCluster'),
+  CLUSTER_RETRY: Symbol('private:Kafka:clusterRetry'),
   LOGGER: Symbol('private:Kafka:logger'),
   OFFSETS: Symbol('private:Kafka:offsets'),
 }
@@ -33,6 +34,7 @@ module.exports = class Client {
   }) {
     this[PRIVATE.OFFSETS] = new Map()
     this[PRIVATE.LOGGER] = createLogger({ level: logLevel, logCreator })
+    this[PRIVATE.CLUSTER_RETRY] = retry
     this[PRIVATE.CREATE_CLUSTER] = ({
       metadataMaxAge = 300000,
       allowAutoTopicCreation = true,
@@ -42,6 +44,7 @@ module.exports = class Client {
     }) =>
       new Cluster({
         logger: this[PRIVATE.LOGGER],
+        retry: this[PRIVATE.CLUSTER_RETRY],
         brokers,
         ssl,
         sasl,
@@ -51,7 +54,6 @@ module.exports = class Client {
         requestTimeout,
         metadataMaxAge,
         instrumentationEmitter,
-        retry,
         allowAutoTopicCreation,
         allowExperimentalV011,
         maxInFlightRequests,
@@ -82,7 +84,7 @@ module.exports = class Client {
     })
 
     return createProducer({
-      retry: { ...cluster.retry, ...retry },
+      retry: { ...this[PRIVATE.CLUSTER_RETRY], ...retry },
       logger: this[PRIVATE.LOGGER],
       cluster,
       createPartitioner,
@@ -125,7 +127,7 @@ module.exports = class Client {
     })
 
     return createConsumer({
-      retry: { ...cluster.retry, retry },
+      retry: { ...this[PRIVATE.CLUSTER_RETRY], ...retry },
       logger: this[PRIVATE.LOGGER],
       cluster,
       groupId,
@@ -152,7 +154,7 @@ module.exports = class Client {
     })
 
     return createAdmin({
-      retry: { ...cluster.retry, retry },
+      retry: { ...this[PRIVATE.CLUSTER_RETRY], ...retry },
       logger: this[PRIVATE.LOGGER],
       instrumentationEmitter,
       cluster,
