@@ -47,19 +47,25 @@ module.exports = class RequestQueue {
    * @property {RequestEntry} entry
    * @property {boolean} expectResponse
    * @property {Function} sendRequest
+   * @property {number} [requestTimeout]
    *
    * @public
    * @param {PushedRequest} pushedRequest
    */
   push(pushedRequest) {
     const { correlationId } = pushedRequest.entry
+    const defaultRequestTimeout = this.requestTimeout
+    const customRequestTimeout = pushedRequest.requestTimeout
+    const requestTimeout =
+      customRequestTimeout == null ? defaultRequestTimeout : customRequestTimeout
+
     const socketRequest = new SocketRequest({
       entry: pushedRequest.entry,
       expectResponse: pushedRequest.expectResponse,
       broker: this.broker,
       clientId: this.clientId,
-      requestTimeout: this.requestTimeout,
       instrumentationEmitter: this.instrumentationEmitter,
+      requestTimeout,
       send: () => {
         this.inflight.set(correlationId, socketRequest)
         pushedRequest.sendRequest()
