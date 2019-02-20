@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.5.0-beta.3] - 2019-02-20
+
+### Fixed
+  - Missing default restart time on crashes due to retriable errors #283
+  - Add custom requestTimeout for JoinGroup v0 #293
+  - Fix propagation of custom retry configs #295 
+
+### Changed
+  - Allow calling `Producer.sendBatch` with empty list #287
+  - Encode non-buffer key as string by default #291
+
 ## [1.5.0-beta.2] - 2019-02-13
 
 ### Fixed
