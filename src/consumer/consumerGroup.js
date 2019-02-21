@@ -1,5 +1,6 @@
 const flatten = require('../utils/flatten')
 const sleep = require('../utils/sleep')
+const websiteUrl = require('../utils/websiteUrl')
 const arrayDiff = require('../utils/arrayDiff')
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
@@ -169,6 +170,10 @@ module.exports = class ConsumerGroup {
         assignedTopics,
         topicsSubscribed,
         topicsNotSubscribed,
+        helpUrl: websiteUrl(
+          'docs/faq',
+          'why-am-i-receiving-messages-for-topics-i-m-not-subscribed-to'
+        ),
       })
 
       // Remove unsubscribed topics from the list
