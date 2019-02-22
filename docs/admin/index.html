@@ -185,24 +185,24 @@ The consumer group must have no running instances when performing the reset. Oth
 }
 </code></pre>
 <p>Returning all configs for a given resource:</p>
-<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { RESOURCE_TYPES } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { ResourceTypes } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
 
 <span class="hljs-keyword">await</span> admin.describeConfigs({
     <span class="hljs-attr">resources</span>: [
         {
-            <span class="hljs-attr">type</span>: RESOURCE_TYPES.TOPIC,
+            <span class="hljs-attr">type</span>: ResourceTypes.TOPIC,
             <span class="hljs-attr">name</span>: <span class="hljs-string">'topic-name'</span>
         }
     ]
 })
 </code></pre>
 <p>Returning specific configs for a given resource:</p>
-<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { RESOURCE_TYPES } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { ResourceTypes } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
 
 <span class="hljs-keyword">await</span> admin.describeConfigs({
     <span class="hljs-attr">resources</span>: [
         {
-            <span class="hljs-attr">type</span>: RESOURCE_TYPES.TOPIC,
+            <span class="hljs-attr">type</span>: ResourceTypes.TOPIC,
             <span class="hljs-attr">name</span>: <span class="hljs-string">'topic-name'</span>,
             <span class="hljs-attr">configNames</span>: [<span class="hljs-string">'cleanup.policy'</span>]
         }
@@ -251,11 +251,11 @@ The consumer group must have no running instances when performing the reset. Oth
 }
 </code></pre>
 <p>Example:</p>
-<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { RESOURCE_TYPES } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { ResourceTypes } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
 
 <span class="hljs-keyword">await</span> admin.alterConfigs({
     <span class="hljs-attr">resources</span>: [{
-        <span class="hljs-attr">type</span>: RESOURCE_TYPES.TOPIC,
+        <span class="hljs-attr">type</span>: ResourceTypes.TOPIC,
         <span class="hljs-attr">name</span>: <span class="hljs-string">'topic-name'</span>,
         <span class="hljs-attr">configEntries</span>: [{ <span class="hljs-attr">name</span>: <span class="hljs-string">'cleanup.policy'</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">'compact'</span> }]
     }]
