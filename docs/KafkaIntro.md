@@ -7,7 +7,7 @@ sidebar_label: Intro to Kafka
 Kafka is a messaging system that safely moves data between systems. Depending on how each component is
 configured, it can act as a transport for real-time event tracking or as a replicated distributed database. Although it is commonly referred to as a queue, it is more accurate to say that it is something in between a queue and a database, with attributes and tradeoffs from both types of systems.
 
-### Glossary
+## Glossary
 
 | Term              | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -26,11 +26,11 @@ configured, it can act as a transport for real-time event tracking or as a repli
 | Heartbeat         | The mechanism by which the cluster knows which consumers are alive. Every now and then ([`heartbeatInterval`](https://kafka.js.org/docs/consuming#a-name-options-a-options)), each consumer has to send a heartbeat request to the cluster leader. If one fails to do so for a certain period ([`sessionTimeout`](https://kafka.js.org/docs/consuming#a-name-options-a-options)), it is considered dead and will be removed from the consumer group, triggering a rebalance. |
 
 
-### Message Formats
+## Message Formats
 
 Although we commonly refer to the data in topics as "messages", there is no uniform shape that messages take. From Kafka's perspective, a message is just a key-value pair, where both key and value are just sequences of bytes. It is up to the data producer and the consumers to agree on a format. Commonly you will find plain-text schemaless messages in for example JSON, or binary formats with an enforced schema such as AVRO.
 
-#### Plain-Text JSON
+### Plain-Text JSON
 
 JSON needs no introduction. It's simple and easy to work with. The only thing we need to do is turn the message `Buffer` into a string and parse it, for example like this:
 
@@ -59,7 +59,7 @@ const eachMessage = async ({ /*topic, partition,*/ message }) => {
 
 The downside of using JSON is that it does not enforce any kind of schema, so after you have parsed the message, you have no way of knowing what fields are available and what types they have. The data producer makes no guarantees that fields will be present or that their types won't change, making it challenging and error-prone to work with.
 
-#### AVRO
+### AVRO
 
 [AVRO](https://avro.apache.org/docs/current/) is a data serialization system that turns your messages into a compact binary format according to a defined schema. This allows the consumer to know exactly what each message contains, and the producer to be aware when they are making potentially breaking changes to the schema.
 
