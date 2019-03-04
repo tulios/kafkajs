@@ -6,7 +6,9 @@
 <url> <loc>https://kafka.js.org/docs/configuration</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/configuration" /> </url>
 <url> <loc>https://kafka.js.org/docs/consumer-example</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/consumer-example" /> </url>
 <url> <loc>https://kafka.js.org/docs/consuming</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/consuming" /> </url>
+<url> <loc>https://kafka.js.org/docs/contribution-guide</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/contribution-guide" /> </url>
 <url> <loc>https://kafka.js.org/docs/custom-logger</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/custom-logger" /> </url>
+<url> <loc>https://kafka.js.org/docs/development-environment</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/development-environment" /> </url>
 <url> <loc>https://kafka.js.org/docs/running-kafka-in-development</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/running-kafka-in-development" /> </url>
 <url> <loc>https://kafka.js.org/docs/faq</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/faq" /> </url>
 <url> <loc>https://kafka.js.org/docs/getting-started</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/getting-started" /> </url>
@@ -14,6 +16,8 @@
 <url> <loc>https://kafka.js.org/docs/introduction</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/introduction" /> </url>
 <url> <loc>https://kafka.js.org/docs/producer-example</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/producer-example" /> </url>
 <url> <loc>https://kafka.js.org/docs/producing</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/producing" /> </url>
+<url> <loc>https://kafka.js.org/docs/development-resources</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/development-resources" /> </url>
 <url> <loc>https://kafka.js.org/docs/retry-detailed</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/retry-detailed" /> </url>
+<url> <loc>https://kafka.js.org/docs/testing</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/testing" /> </url>
 <url> <loc>https://kafka.js.org/docs/transactions</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://kafka.js.org/docs/transactions" /> </url>
 </urlset>
