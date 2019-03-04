@@ -18,6 +18,12 @@
       "producer-example",
       "consumer-example"
     ],
-    "API Reference": []
+    "API Reference": [],
+    "Developing KafkaJS": [
+      "contribution-guide",
+      "development-environment",
+      "testing",
+      "development-resources"
+    ]
   }
 }
