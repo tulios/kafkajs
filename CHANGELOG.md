@@ -5,13 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [1.5.0-beta.4] - 2019-02-28
+## [1.5.0] - 2019-03-05
+### Changed
+  - See `1.5.0-beta.X` versions
 
+## [1.5.0-beta.4] - 2019-02-28
 ### Fixed
   - Abort old transactions on protocol error `CONCURRENT_TRANSACTIONS` #299
 
 ## [1.5.0-beta.3] - 2019-02-20
-
 ### Fixed
   - Missing default restart time on crashes due to retriable errors #283
   - Add custom requestTimeout for JoinGroup v0 #293
@@ -22,7 +24,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Encode non-buffer key as string by default #291
 
 ## [1.5.0-beta.2] - 2019-02-13
-
 ### Fixed
   - Handle undefined message key when producing with 0.11 #247
   - Fix consumer restart on find coordinator errors #253
@@ -39,7 +40,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Allow configuring log level at runtime #278
 
 ## [1.5.0-beta.1] - 2019-01-17
-
 ### Fixed
   - Rolling upgrade from 0.10 to 0.11 causes unknown magic byte errors #246
 
@@ -50,7 +50,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Expose network queue size event to consumers, producers and admin #245
 
 ## [1.5.0-beta.0] - 2019-01-08
-
 ### Changed
   - Add transactional attributes to record batch #199
   - Ignore control records #208
@@ -74,7 +73,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Allow users to provide offsets to the `commitOffsetsIfNecessary` #235
 
 ## [1.4.8] - 2019-02-18
-
 ### Fixed
   - Handle undefined message key when producing with 0.11 #247
   - Fix consumer restart on find coordinator errors #253
@@ -82,17 +80,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Fix error message on invalid username or password #270
 
 ## [1.4.7] - 2019-01-17
-
 ### Fixed
   - Rolling upgrade from 0.10 to 0.11 causes unknown magic byte errors #246
 
 ## [1.4.6] - 2018-12-03
-
 ### Fixed
   - Always assign partitions based on subscribed topics #227
 
 ## [1.4.5] - 2018-11-28
-
 ### Fixed
   - Fix crash in mitigation for receiving metadata for unsubscribed topics #221
 
@@ -100,22 +95,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Add `CRASH` instrumentation event for the consumer #221
 
 ## [1.4.4] - 2018-10-29
-
 ### Fixed
   - Protocol produce v3 wasn't filtering `undefined` timestamps and was sending timestamp 0 (`NaN` converted) for all messages #188
 
 ## [1.4.3] - 2018-10-22
-
 ### Changed
   - Version `1.4.2` without test files
 
 ## [1.4.2] - 2018-10-22
-
 ### Changed
   - Allow messages with a value of `null` to support tombstones #185
 
 ## [1.4.1] - 2018-10-17
-
 ### Fixed
   - Decode multiple RecordBatch on protocol Fetch v4 #179
   - Skip incomplete record batches #182
@@ -130,7 +121,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Add description to lock instances #178
 
 ## [1.4.0] - 2018-10-09
-
 ### Fixed
   - Potential offset loss when updating offsets for resolved partitions #124
   - Refresh metadata on lock timeout #131
