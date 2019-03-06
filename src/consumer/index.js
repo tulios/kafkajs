@@ -161,6 +161,11 @@ module.exports = ({
     eachBatch = null,
     eachMessage = null,
   } = {}) => {
+    if (consumerGroup) {
+      logger.warn('consumer#run was called, but the consumer is already running', { groupId })
+      return
+    }
+
     consumerGroup = createConsumerGroup({
       autoCommitInterval,
       autoCommitThreshold,
@@ -207,8 +212,10 @@ module.exports = ({
         const retryTime = e.retryTime || retry.initialRetryTime || initialRetryTime
         logger.error(`Restarting the consumer in ${retryTime}ms`, {
           retryCount: e.retryCount,
+          retryTime,
           groupId,
         })
+
         setTimeout(() => restart(onCrash), retryTime)
       }
     }
