@@ -63,10 +63,10 @@
 ./scripts/createScramCredentials.sh
 </code></pre>
 <p>This boots the Kafka cluster using the default docker-compose.yml file described in <a href="https://github.com/tulios/kafkajs/blob/master/scripts/dockerComposeUp.sh">scripts/dockerComposeUp.sh</a>. If you want to run a different version of Kafka, specify a different compose file using the <code>COMPOSE_FILE</code> environment variable:</p>
-<pre><code class="hljs css language-sh">COMPOSE_FILE=<span class="hljs-string">"docker-compose.0_11.yml"</span> ./scripts/dockerComposeUp.sh
+<pre><code class="hljs css language-sh">COMPOSE_FILE=<span class="hljs-string">"docker-compose.1_1.yml"</span> ./scripts/dockerComposeUp.sh
 </code></pre>
-<p>If you run <code>docker-compose -f docker-compose.0_11.yml ps</code> (specify whichever compose file you used in the step above), you should see something like:</p>
-<pre><code class="hljs css language-sh">$ docker-compose -f docker-compose.0_11.yml ps
+<p>If you run <code>docker-compose -f docker-compose.1_1.yml ps</code> (specify whichever compose file you used in the step above), you should see something like:</p>
+<pre><code class="hljs css language-sh">$ docker-compose -f docker-compose.1_1.yml ps
 WARNING: The HOST_IP variable is not <span class="hljs-built_in">set</span>. Defaulting to a blank string.
       Name                    Command               State                                   Ports
 ----------------------------------------------------------------------------------------------------------------------------------
