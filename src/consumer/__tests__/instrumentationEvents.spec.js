@@ -390,6 +390,19 @@ describe('Consumer > Instrumentation Events', () => {
         .catch(e => e),
     ])
 
+    // add more concurrent requests to make we increate the requests
+    // on the queue
+    await Promise.all([
+      consumer.describeGroup(),
+      consumer.describeGroup(),
+      consumer.describeGroup(),
+      consumer.describeGroup(),
+      consumer2.describeGroup(),
+      consumer2.describeGroup(),
+      consumer2.describeGroup(),
+      consumer2.describeGroup(),
+    ])
+
     await consumer2.disconnect()
 
     expect(requestListener).toHaveBeenCalledWith({
