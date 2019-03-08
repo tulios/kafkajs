@@ -78,39 +78,7 @@ Learn more about using [KafkaJS on the official site!](https://kafka.js.org)
 
 KafkaJS is an open-source project where development takes place in the open on GitHub. Although the project is maintained by a small group of dedicated volunteers, we are grateful to the community for bugfixes, feature development and other contributions.
 
-### <a name="contributing-resources"></a> Resources
-
-https://cwiki.apache.org/confluence/display/KAFKA/A+Guide+To+The+Kafka+Protocol
-
-https://kafka.apache.org/protocol.html
-
-
-### <a name="contributing-testing"></a> Testing
-
-```sh
-yarn test
-```
-
-or
-
-```sh
-# This will run a kafka cluster configured with your current IP
-./scripts/dockerComposeUp.sh
-./scripts/createScramCredentials.sh
-yarn test:local
-
-# To run with logs
-# KAFKAJS_LOG_LEVEL=debug yarn test:local
-```
-
-Password for test keystore and certificates: `testtest`
-Password for SASL `test:testtest`
-
-### <a name="environment-variables"></a> Environment variables
-
-| variable                       | description                              | default |
-| ------------------------------ | ---------------------------------------- | ------- |
-| KAFKAJS_DEBUG_PROTOCOL_BUFFERS | Output raw protocol buffers in debug log | 0       |
+See [Developing KafkaJS](https://kafka.js.org/docs/contribution-guide) for information on how to run and develop KafkaJS.
 
 ## Acknowledgements
 

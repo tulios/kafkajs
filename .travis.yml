@@ -10,8 +10,8 @@ branches:
 env:
   global:
     - DOCKER_COMPOSE_VERSION=1.22.0
-    - COMPOSE_FILE=docker-compose.0_11.yml
-    - KAFKA_VERSION=0.11
+    - COMPOSE_FILE=docker-compose.1_1.yml
+    - KAFKA_VERSION=1.1
 before_install:
   - bash ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
   - test $SKIP_TESTS && echo "Skipped!" || sudo rm /usr/local/bin/docker-compose
