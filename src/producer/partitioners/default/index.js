@@ -1,4 +1,4 @@
-const crypto = require('crypto')
+const randomBytes = require('./randomBytes')
 const murmur2 = require('./murmur2')
 
 // Based on the java client 0.10.2
@@ -19,7 +19,7 @@ const toPositive = x => x & 0x7fffffff
  *  - If no partition or key is present choose a partition in a round-robin fashion
  */
 module.exports = () => {
-  let counter = crypto.randomBytes(32).readUInt32BE()
+  let counter = randomBytes(32).readUInt32BE(0)
 
   return ({ topic, partitionMetadata, message }) => {
     const numPartitions = partitionMetadata.length
