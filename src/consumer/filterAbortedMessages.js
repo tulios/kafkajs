@@ -2,6 +2,8 @@ const Long = require('long')
 const ABORTED_MESSAGE_KEY = Buffer.from([0, 0, 0, 0])
 
 const isAbortMarker = ({ key }) => {
+  // Handle null/undefined keys.
+  if (!key) return false
   // Cast key to buffer defensively
   return Buffer.from(key).equals(ABORTED_MESSAGE_KEY)
 }
