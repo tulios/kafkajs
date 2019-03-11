@@ -18,7 +18,7 @@ const ISOLATION_LEVEL = require('../../protocol/isolationLevel')
 const minBytes = 1
 const maxBytes = 10485760 // 10MB
 const maxBytesPerPartition = 1048576 // 1MB
-const maxWaitTime = 5
+const maxWaitTime = 100
 const timestamp = 1509827900073
 
 describe('Broker > Fetch', () => {
