@@ -6,6 +6,7 @@ Object {
   "error": [Function],
   "info": [Function],
   "namespace": [Function],
+  "setLogLevel": [Function],
   "warn": [Function],
 }
 `;

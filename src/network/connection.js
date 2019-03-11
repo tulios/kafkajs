@@ -240,11 +240,14 @@ module.exports = class Connection {
    * @param {object} request It is defined by the protocol and consists of an object with "apiKey",
    *                         "apiVersion", "apiName" and an "encode" function. The encode function
    *                         must return an instance of Encoder
+   *
    * @param {object} response It is defined by the protocol and consists of an object with two functions:
    *                          "decode" and "parse"
+   *
+   * @param {number} [requestTimeout=null] Override for the default requestTimeout
    * @returns {Promise<data>} where data is the return of "response#parse"
    */
-  async send({ request, response }) {
+  async send({ request, response, requestTimeout = null }) {
     this.failIfNotConnected()
 
     const expectResponse = !request.expectResponse || request.expectResponse()
@@ -268,6 +271,7 @@ module.exports = class Connection {
           this.requestQueue.push({
             entry,
             expectResponse,
+            requestTimeout,
             sendRequest: () => {
               this.socket.write(requestPayload.buffer, 'binary')
             },

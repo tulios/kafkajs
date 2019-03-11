@@ -128,6 +128,28 @@ const kafka = new Kafka({
 })
 ```
 
+To override the log level after instantiation, call `setLogLevel` on the individual logger.
+
+```javascript
+const { Kafka, logLevel } = require('kafkajs')
+
+const kafka = new Kafka({
+  clientId: 'my-app',
+  brokers: ['kafka1:9092', 'kafka2:9092'],
+  logLevel: logLevel.ERROR
+})
+kafka.logger().setLogLevel(logLevel.WARN)
+
+const producer = kafka.producer(...)
+producer.logger().setLogLevel(logLevel.INFO)
+
+const consumer = kafka.consumer(...)
+consumer.logger().setLogLevel(logLevel.DEBUG)
+
+const amin = kafka.admin(...)
+admin.logger().setLogLevel(logLevel.NOTHING)
+```
+
 The environment variable `KAFKAJS_LOG_LEVEL` can also be used and it has precedence over the configuration in code, example:
 
 ```sh

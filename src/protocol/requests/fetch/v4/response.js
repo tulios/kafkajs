@@ -35,7 +35,7 @@ const decodeMessages = async decoder => {
 
   const messagesBuffer = decoder.readBytes(messagesSize)
   const messagesDecoder = new Decoder(messagesBuffer)
-  const magicByte = messagesBuffer.slice(MAGIC_OFFSET).readInt8()
+  const magicByte = messagesBuffer.slice(MAGIC_OFFSET).readInt8(0)
 
   if (magicByte === MAGIC_BYTE) {
     let records = []

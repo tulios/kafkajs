@@ -190,12 +190,12 @@ await admin.describeConfigs({
 Returning all configs for a given resource:
 
 ```javascript
-const { RESOURCE_TYPES } = require('kafkajs')
+const { ResourceTypes } = require('kafkajs')
 
 await admin.describeConfigs({
     resources: [
         {
-            type: RESOURCE_TYPES.TOPIC,
+            type: ResourceTypes.TOPIC,
             name: 'topic-name'
         }
     ]
@@ -205,12 +205,12 @@ await admin.describeConfigs({
 Returning specific configs for a given resource:
 
 ```javascript
-const { RESOURCE_TYPES } = require('kafkajs')
+const { ResourceTypes } = require('kafkajs')
 
 await admin.describeConfigs({
     resources: [
         {
-            type: RESOURCE_TYPES.TOPIC,
+            type: ResourceTypes.TOPIC,
             name: 'topic-name',
             configNames: ['cleanup.policy']
         }
@@ -276,11 +276,11 @@ await admin.alterConfigs({
 Example:
 
 ```javascript
-const { RESOURCE_TYPES } = require('kafkajs')
+const { ResourceTypes } = require('kafkajs')
 
 await admin.alterConfigs({
     resources: [{
-        type: RESOURCE_TYPES.TOPIC,
+        type: ResourceTypes.TOPIC,
         name: 'topic-name',
         configEntries: [{ name: 'cleanup.policy', value: 'compact' }]
     }]

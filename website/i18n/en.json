@@ -17,14 +17,20 @@
       "consuming": {
         "title": "Consuming Messages"
       },
+      "contribution-guide": {
+        "title": "Contributing"
+      },
       "custom-logger": {
         "title": "Custom Logger"
+      },
+      "development-environment": {
+        "title": "Development Environment"
       },
       "running-kafka-in-development": {
         "title": "Running Kafka in Development"
       },
       "faq": {
-        "title": "Frequently Asked Questions"
+        "title": "FAQ"
       },
       "getting-started": {
         "title": "Getting Started",
@@ -33,14 +39,24 @@
       "instrumentation-events": {
         "title": "Instrumentation Events"
       },
+      "introduction": {
+        "title": "A Brief Intro to Kafka",
+        "sidebar_label": "Intro to Kafka"
+      },
       "producer-example": {
         "title": "Producer"
       },
       "producing": {
         "title": "Producing Messages"
       },
+      "development-resources": {
+        "title": "Resources"
+      },
       "retry-detailed": {
         "title": "Retry Mechanism Explained"
+      },
+      "testing": {
+        "title": "Testing"
       },
       "transactions": {
         "title": "Transactions"
@@ -54,7 +70,8 @@
     "categories": {
       "Usage": "Usage",
       "Examples": "Examples",
-      "API Reference": "API Reference"
+      "API Reference": "API Reference",
+      "Developing KafkaJS": "Developing KafkaJS"
     }
   },
   "pages-strings": {

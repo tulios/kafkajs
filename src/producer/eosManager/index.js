@@ -1,3 +1,4 @@
+const createRetry = require('../../retry')
 const { KafkaJSNonRetriableError } = require('../../errors')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 const createStateMachine = require('./transactionStateMachine')
@@ -7,6 +8,17 @@ const STATES = require('./transactionStates')
 const NO_PRODUCER_ID = -1
 const SEQUENCE_START = 0
 const INT_32_MAX_VALUE = Math.pow(2, 32)
+const INIT_PRODUCER_RETRIABLE_PROTOCOL_ERRORS = [
+  'NOT_COORDINATOR_FOR_GROUP',
+  'GROUP_COORDINATOR_NOT_AVAILABLE',
+  'GROUP_LOAD_IN_PROGRESS',
+  /**
+   * The producer might have crashed and never committed the transaction; retry the
+   * request so Kafka can abort the current transaction
+   * @see https://github.com/apache/kafka/blob/201da0542726472d954080d54bc585b111aaf86f/clients/src/main/java/org/apache/kafka/clients/producer/internals/TransactionManager.java#L1001-L1002
+   */
+  'CONCURRENT_TRANSACTIONS',
+]
 
 /**
  * Manage behavior for an idempotent producer and transactions.
@@ -21,6 +33,8 @@ module.exports = ({
   if (transactional && !transactionalId) {
     throw new KafkaJSNonRetriableError('Cannot manage transactions without a transactionalId')
   }
+
+  const retrier = createRetry(cluster.retry)
 
   /**
    * Current producer ID
@@ -90,25 +104,45 @@ module.exports = ({
        * Initialize the idempotent producer by making an `InitProducerId` request.
        * Overwrites any existing state in this transaction manager
        */
-      initProducerId: async () => {
-        await cluster.refreshMetadataIfNecessary()
+      async initProducerId() {
+        return retrier(async (bail, retryCount, retryTime) => {
+          try {
+            await cluster.refreshMetadataIfNecessary()
 
-        // If non-transactional we can request the PID from any broker
-        const broker = await (transactional
-          ? findTransactionCoordinator()
-          : cluster.findControllerBroker())
+            // If non-transactional we can request the PID from any broker
+            const broker = await (transactional
+              ? findTransactionCoordinator()
+              : cluster.findControllerBroker())
 
-        const result = await broker.initProducerId({
-          transactionalId: transactional ? transactionalId : undefined,
-          transactionTimeout,
+            const result = await broker.initProducerId({
+              transactionalId: transactional ? transactionalId : undefined,
+              transactionTimeout,
+            })
+
+            stateMachine.transitionTo(STATES.READY)
+            producerId = result.producerId
+            producerEpoch = result.producerEpoch
+            producerSequence = {}
+
+            logger.debug('Initialized producer id & epoch', { producerId, producerEpoch })
+          } catch (e) {
+            if (INIT_PRODUCER_RETRIABLE_PROTOCOL_ERRORS.includes(e.type)) {
+              if (e.type === 'CONCURRENT_TRANSACTIONS') {
+                logger.debug('There is an ongoing transaction on this transactionId, retrying', {
+                  error: e.message,
+                  stack: e.stack,
+                  transactionalId,
+                  retryCount,
+                  retryTime,
+                })
+              }
+
+              throw e
+            }
+
+            bail(e)
+          }
         })
-
-        stateMachine.transitionTo(STATES.READY)
-        producerId = result.producerId
-        producerEpoch = result.producerEpoch
-        producerSequence = {}
-
-        logger.debug('Initialized producer id & epoch', { producerId, producerEpoch })
       },
 
       /**
@@ -303,6 +337,7 @@ module.exports = ({
         })
       },
     },
+
     /**
      * Transaction state guards
      */

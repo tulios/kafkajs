@@ -10,8 +10,8 @@ const SEED = 0x9747b28c
 const M = 0x5bd1e995
 const R = 24
 
-module.exports = string => {
-  const data = Buffer.from(string)
+module.exports = key => {
+  const data = Buffer.isBuffer(key) ? key : Buffer.from(String(key))
   const length = data.length
 
   // Initialize the hash to a random value

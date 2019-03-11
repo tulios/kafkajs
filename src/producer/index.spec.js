@@ -421,6 +421,21 @@ describe('Producer', () => {
       ])
     })
 
+    test('it should allow sending an empty list of messages', async () => {
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          createPartitioner: createModPartitioner,
+        })
+      )
+
+      await createTopic({ topic: topicName })
+
+      producer = createProducer({ cluster, logger: newLogger(), idempotent })
+      await producer.connect()
+
+      await expect(producer.send({ acks, topic: topicName, messages: [] })).toResolve()
+    })
+
     test('produce messages to multiple topics', async () => {
       const topics = [`test-topic-${secureRandom()}`, `test-topic-${secureRandom()}`]
 
@@ -491,6 +506,21 @@ describe('Producer', () => {
           },
         ].sort(byTopicName)
       )
+    })
+
+    test('sendBatch should allow sending an empty list of topicMessages', async () => {
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          createPartitioner: createModPartitioner,
+        })
+      )
+
+      await createTopic({ topic: topicName })
+
+      producer = createProducer({ cluster, logger: newLogger(), idempotent })
+      await producer.connect()
+
+      await expect(producer.sendBatch({ acks, topicMessages: [] })).toResolve()
     })
 
     testIfKafka_0_11('produce messages for Kafka 0.11', async () => {

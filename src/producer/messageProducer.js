@@ -29,7 +29,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrie
    * @returns {Promise}
    */
   const sendBatch = async ({ acks = -1, timeout, compression, topicMessages = [] }) => {
-    if (topicMessages.length === 0 || topicMessages.some(({ topic }) => !topic)) {
+    if (topicMessages.some(({ topic }) => !topic)) {
       throw new KafkaJSNonRetriableError(`Invalid topic`)
     }
 
