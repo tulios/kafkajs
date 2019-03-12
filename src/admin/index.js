@@ -177,20 +177,19 @@ module.exports = ({
    * @param {string} topic
    */
 
-  const fetchTopicOffsets = async (topic) => {
+  const fetchTopicOffsets = async topic => {
     if (!topic || typeof topic !== 'string') {
       throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
     }
 
-    const topicPartitions = await findTopicPartitions(cluster, topic);
-    const partitions = topicPartitions.map(partition => ({ partition }));
-    const broker = await cluster.findControllerBroker();
-    const offsets = await broker.listOffsets({ topics: [{ topic, partitions }] });
+    const topicPartitions = await findTopicPartitions(cluster, topic)
+    const partitions = topicPartitions.map(partition => ({ partition }))
+    const broker = await cluster.findControllerBroker()
+    const offsets = await broker.listOffsets({ topics: [{ topic, partitions }] })
 
     return offsets.responses
       .find(response => response.topic === topic)
       .partitions.map(({ partition, offset }) => ({ partition, offset }))
-
   }
 
   /**
