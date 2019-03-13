@@ -1,6 +1,12 @@
 const createAdmin = require('../index')
 const createProducer = require('../../producer')
-const { secureRandom, createCluster, newLogger, createTopic, createModPartitioner} = require('testHelpers')
+const {
+  secureRandom,
+  createCluster,
+  newLogger,
+  createTopic,
+  createModPartitioner,
+} = require('testHelpers')
 
 describe('Admin', () => {
   let topicName, admin, producer, cluster
@@ -44,7 +50,6 @@ describe('Admin', () => {
         })
 
       await producer.send({ acks: 1, topic: topicName, messages })
- 
       const offsets = await admin.fetchTopicOffsets(topicName)
 
       expect(offsets).toEqual([{ partition: 0, offset: '100' }])
