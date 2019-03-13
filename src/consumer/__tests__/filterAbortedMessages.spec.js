@@ -30,6 +30,23 @@ describe('filterAbortedMessages', () => {
     ])
   })
 
+  test('filters out aborted messages with malformed keys', () => {
+    const { messages, abortedTransactions } = abortedBatch
+    const { messages: nontransactionalMessages } = nontransactionalBatch
+    messages[messages.length - 2].key = null
+    expect(
+      filterAbortedMessages({
+        messages: [...messages, ...nontransactionalMessages],
+        abortedTransactions,
+      })
+    ).toStrictEqual([
+      expect.objectContaining({
+        key: Buffer.from([0, 0, 0, 0]),
+      }),
+      ...nontransactionalMessages,
+    ])
+  })
+
   test('returns all committed messages', () => {
     const { messages, abortedTransactions } = committedBatch
     expect(messages).toHaveLength(4)
