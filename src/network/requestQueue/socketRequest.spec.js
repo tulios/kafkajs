@@ -43,6 +43,7 @@ describe('Network > SocketRequest', () => {
       expect(request.pendingDuration).toEqual(null)
       expect(request.timeoutId).toEqual(null)
 
+      request.enforceRequestTimeout = true
       request.send()
 
       expect(sendRequest).toHaveBeenCalled()
@@ -63,6 +64,7 @@ describe('Network > SocketRequest', () => {
 
     it('executes the timeoutHandler when it times out', async () => {
       jest.spyOn(request, 'rejected')
+      request.enforceRequestTimeout = true
       request.send()
 
       await sleep(requestTimeout + 1)
@@ -164,6 +166,7 @@ describe('Network > SocketRequest', () => {
     it('emits NETWORK_REQUEST_TIMEOUT', async () => {
       jest.spyOn(request, 'rejected')
       emitter.addListener(events.NETWORK_REQUEST_TIMEOUT, eventCalled)
+      request.enforceRequestTimeout = true
       request.send()
 
       await sleep(requestTimeout + 1)

@@ -18,6 +18,7 @@ module.exports = class RequestQueue {
     instrumentationEmitter = null,
     maxInFlightRequests,
     requestTimeout,
+    enforceRequestTimeout,
     clientId,
     broker,
     logger,
@@ -25,6 +26,7 @@ module.exports = class RequestQueue {
     this.instrumentationEmitter = instrumentationEmitter
     this.maxInFlightRequests = maxInFlightRequests
     this.requestTimeout = requestTimeout
+    this.enforceRequestTimeout = enforceRequestTimeout
     this.clientId = clientId
     this.broker = broker
     this.logger = logger
@@ -65,6 +67,7 @@ module.exports = class RequestQueue {
       broker: this.broker,
       clientId: this.clientId,
       instrumentationEmitter: this.instrumentationEmitter,
+      enforceRequestTimeout: this.enforceRequestTimeout,
       requestTimeout,
       send: () => {
         this.inflight.set(correlationId, socketRequest)

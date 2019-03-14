@@ -315,7 +315,11 @@ describe('Consumer > Instrumentation Events', () => {
   })
 
   it('emits request timeout events', async () => {
-    cluster = createCluster({ instrumentationEmitter: emitter, requestTimeout: 1 })
+    cluster = createCluster({
+      instrumentationEmitter: emitter,
+      requestTimeout: 1,
+      enforceRequestTimeout: true,
+    })
     consumer = createConsumer({
       cluster,
       groupId,

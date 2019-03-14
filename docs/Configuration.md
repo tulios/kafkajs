@@ -146,7 +146,7 @@ producer.logger().setLogLevel(logLevel.INFO)
 const consumer = kafka.consumer(...)
 consumer.logger().setLogLevel(logLevel.DEBUG)
 
-const amin = kafka.admin(...)
+const admin = kafka.admin(...)
 admin.logger().setLogLevel(logLevel.NOTHING)
 ```
 

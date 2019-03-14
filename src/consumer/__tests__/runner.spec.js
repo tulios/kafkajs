@@ -4,6 +4,7 @@ const { KafkaJSProtocolError, KafkaJSNotImplemented } = require('../../errors')
 const { createErrorFromCode } = require('../../protocol/error')
 const InstrumentationEventEmitter = require('../../instrumentation/emitter')
 const { newLogger } = require('testHelpers')
+const sleep = require('../../utils/sleep')
 
 const UNKNOWN = -1
 const REBALANCE_IN_PROGRESS = 27
@@ -198,6 +199,11 @@ describe('Consumer > Runner', () => {
 
     runner.scheduleFetch = jest.fn()
     await runner.start()
+
+    // scheduleFetch in runner#start is async, and we never wait for it,
+    // so we have to wait a bit to give the callback a chance of being executed
+    await sleep(100)
+
     expect(runner.scheduleFetch).not.toHaveBeenCalled()
     expect(onCrash).toHaveBeenCalledWith(unknowError)
   })
@@ -209,6 +215,11 @@ describe('Consumer > Runner', () => {
     })
 
     await runner.start()
+
+    // scheduleFetch in runner#start is async, and we never wait for it,
+    // so we have to wait a bit to give the callback a chance of being executed
+    await sleep(100)
+
     expect(onCrash).toHaveBeenCalledWith(notImplementedError)
   })
 })

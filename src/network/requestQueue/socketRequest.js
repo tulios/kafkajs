@@ -49,6 +49,7 @@ module.exports = class SocketRequest {
    */
   constructor({
     requestTimeout,
+    enforceRequestTimeout,
     broker,
     clientId,
     entry,
@@ -59,6 +60,7 @@ module.exports = class SocketRequest {
   }) {
     this.createdAt = Date.now()
     this.requestTimeout = requestTimeout
+    this.enforceRequestTimeout = enforceRequestTimeout
     this.broker = broker
     this.clientId = clientId
     this.entry = entry
@@ -110,7 +112,9 @@ module.exports = class SocketRequest {
       })
     }
 
-    this.timeoutId = setTimeout(timeoutCallback, this.requestTimeout)
+    if (this.enforceRequestTimeout) {
+      this.timeoutId = setTimeout(timeoutCallback, this.requestTimeout)
+    }
   }
 
   completed({ size, payload }) {
