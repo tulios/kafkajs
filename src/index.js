@@ -10,6 +10,7 @@ const createProducer = require('./producer')
 const createConsumer = require('./consumer')
 const createAdmin = require('./admin')
 const ISOLATION_LEVEL = require('./protocol/isolationLevel')
+const defaultSocketFactory = require('./network/socketFactory')
 
 const PRIVATE = {
   CREATE_CLUSTER: Symbol('private:Kafka:createCluster'),
@@ -29,6 +30,7 @@ module.exports = class Client {
     requestTimeout,
     enforceRequestTimeout = false,
     retry,
+    socketFactory = defaultSocketFactory(),
     logLevel = INFO,
     logCreator = LoggerConsole,
     allowExperimentalV011 = true,
@@ -46,6 +48,8 @@ module.exports = class Client {
       new Cluster({
         logger: this[PRIVATE.LOGGER],
         retry: this[PRIVATE.CLUSTER_RETRY],
+        offsets: this[PRIVATE.OFFSETS],
+        socketFactory,
         brokers,
         ssl,
         sasl,
@@ -60,7 +64,6 @@ module.exports = class Client {
         allowExperimentalV011,
         maxInFlightRequests,
         isolationLevel,
-        offsets: this[PRIVATE.OFFSETS],
       })
   }
 
