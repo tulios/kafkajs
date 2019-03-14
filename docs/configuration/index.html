@@ -166,7 +166,7 @@ producer.logger().setLogLevel(logLevel.INFO)
 <span class="hljs-keyword">const</span> consumer = kafka.consumer(...)
 consumer.logger().setLogLevel(logLevel.DEBUG)
 
-<span class="hljs-keyword">const</span> amin = kafka.admin(...)
+<span class="hljs-keyword">const</span> admin = kafka.admin(...)
 admin.logger().setLogLevel(logLevel.NOTHING)
 </code></pre>
 <p>The environment variable <code>KAFKAJS_LOG_LEVEL</code> can also be used and it has precedence over the configuration in code, example:</p>
