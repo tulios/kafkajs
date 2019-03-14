@@ -157,3 +157,40 @@ KAFKAJS_LOG_LEVEL=info node code.js
 ```
 
 > Note: for more information on how to customize your logs, take a look at [Custom logging](#custom-logging)
+
+## Custom socket factory
+
+To allow for custom socket configurations, the client accepts an optional `socketFactory` property that will be used to construct
+any socket.
+
+`socketFactory` should be a function that returns an object compatible with [`net.Socket`](https://nodejs.org/api/net.html#net_class_net_socket) (see the [default implementation](https://github.com/tulios/kafkajs/tree/master/src/network/socketFactory.js)).
+
+```javascript
+const { Kafka } = require('kafkajs')
+
+// Example socket factory setting a custom TTL
+const net = require('net')
+const tls = require('tls')
+
+const myCustomSocketFactory = ({ host, port, ssl, onConnect }) => {
+  const socket = ssl
+    ? tls.connect(
+        Object.assign({ host, port }, ssl),
+        onConnect
+      )
+    : net.connect(
+        { host, port },
+        onConnect
+      )
+
+  socket.setKeepAlive(true, 30000)
+
+  return socket
+}
+
+const kafka = new Kafka({
+  clientId: 'my-app',
+  brokers: ['kafka1:9092', 'kafka2:9092'],
+  socketFactory: myCustomSocketFactory,
+})
+```

@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2019-03-14
+### Fixed
+  - Handle `null` keys on isAbortMarker #312
+
+### Changed
+  - Prevent subsequent calls to `consumer#run` to override the running consumer #305
+  - Improve browser compatibility #300
+  - Add custom `requestTimeout` for protocol fetch #310
+  - Make `requestTimeout` optional, the current implementation is behind the flag `enforceRequestTimeout` #313
+
 ## [1.5.0] - 2019-03-05
 ### Changed
   - See `1.5.0-beta.X` versions
