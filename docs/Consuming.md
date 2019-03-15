@@ -82,7 +82,7 @@ await consumer.run({
 ```javascript
 consumer.run({
     eachBatchAutoResolve: false,
-    eachBatch: ({ batch, resolveOffset, heartbeat, isRunning }) => {
+    eachBatch: async ({ batch, resolveOffset, heartbeat, isRunning }) => {
         for (let message of batch.messages) {
             if (!isRunning()) break
             await processMessage(message)
