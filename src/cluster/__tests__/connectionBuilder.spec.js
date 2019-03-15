@@ -12,9 +12,11 @@ describe('Cluster > ConnectionBuilder', () => {
   const connectionTimeout = 30000
   const retry = { retry: true }
   const logger = newLogger()
+  const socketFactory = jest.fn()
 
   beforeEach(() => {
     builder = connectionBuilder({
+      socketFactory,
       brokers,
       ssl,
       sasl,
@@ -36,6 +38,7 @@ describe('Cluster > ConnectionBuilder', () => {
     expect(connection.connectionTimeout).toEqual(connectionTimeout)
     expect(connection.retry).toEqual(retry)
     expect(connection.logger).not.toBeFalsy()
+    expect(connection.socketFactory).toBe(socketFactory)
   })
 
   test('when called without host and port iterates throught the seed brokers', () => {

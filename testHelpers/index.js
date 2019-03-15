@@ -7,6 +7,8 @@ const Cluster = require('../src/cluster')
 const waitFor = require('../src/utils/waitFor')
 const connectionBuilder = require('../src/cluster/connectionBuilder')
 const Connection = require('../src/network/connection')
+const defaultSocketFactory = require('../src/network/socketFactory')
+const socketFactory = defaultSocketFactory()
 
 const {
   createLogger,
@@ -14,7 +16,7 @@ const {
 } = require('../src/loggers')
 
 const LoggerConsole = require('../src/loggers/console')
-const Kafka = require('../src/index')
+const { Kafka } = require('../index')
 
 const isTravis = process.env.TRAVIS === 'true'
 const travisLevel = process.env.VERBOSE ? DEBUG : INFO
@@ -33,6 +35,7 @@ const sslBrokers = (host = getHost()) => [`${host}:9093`, `${host}:9096`, `${hos
 const saslBrokers = (host = getHost()) => [`${host}:9094`, `${host}:9097`, `${host}:9100`]
 
 const connectionOpts = (opts = {}) => ({
+  socketFactory,
   clientId: `test-${secureRandom()}`,
   connectionTimeout: 3000,
   logger: newLogger(),
@@ -86,6 +89,7 @@ const createConnection = (opts = {}) => new Connection(Object.assign(connectionO
 const createConnectionBuilder = (opts = {}, brokers = plainTextBrokers()) => {
   const { ssl, sasl, clientId } = Object.assign(connectionOpts(), opts)
   return connectionBuilder({
+    socketFactory,
     logger: newLogger(),
     brokers,
     ssl,

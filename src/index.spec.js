@@ -3,7 +3,7 @@ jest.mock('./consumer')
 jest.mock('./admin')
 jest.mock('./cluster')
 
-const Client = require('./index')
+const { Kafka: Client } = require('../index')
 const createProducer = require('./producer')
 const createConsumer = require('./consumer')
 const createAdmin = require('./admin')

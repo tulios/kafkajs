@@ -39,6 +39,7 @@ const mergeTopics = (obj, { topic, partitions }) => ({
 module.exports = class Cluster {
   constructor({
     logger: rootLogger,
+    socketFactory,
     brokers,
     ssl,
     sasl,
@@ -62,6 +63,7 @@ module.exports = class Cluster {
     this.connectionBuilder = connectionBuilder({
       logger: rootLogger,
       instrumentationEmitter,
+      socketFactory,
       brokers,
       ssl,
       sasl,

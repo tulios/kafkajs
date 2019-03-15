@@ -109,6 +109,22 @@ of which it is already aware (all the cluster's target topics):
 await admin.getTopicMetadata()
 ```
 
+
+
+## <a name="fetch-topic-offsets"></a> Fetch topic offsets
+
+`fetchTopicOffsets` returns most recent offset for a topic.
+
+```javascript
+await admin.fetchTopicOffsets(topic)
+// [
+//   { partition: 0, offset: '31004' },
+//   { partition: 1, offset: '54312' },
+//   { partition: 2, offset: '32103' },
+//   { partition: 3, offset: '28' },
+// ]
+```
+
 ## <a name="fetch-offsets"></a> Fetch consumer group offsets
 
 `fetchOffsets` returns the consumer group offset for a topic.
