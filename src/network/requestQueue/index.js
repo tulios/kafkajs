@@ -58,8 +58,10 @@ module.exports = class RequestQueue {
     const { correlationId } = pushedRequest.entry
     const defaultRequestTimeout = this.requestTimeout
     const customRequestTimeout = pushedRequest.requestTimeout
-    const requestTimeout =
-      customRequestTimeout == null ? defaultRequestTimeout : customRequestTimeout
+
+    // Some protocol requests have custom request timeouts (e.g JoinGroup, Fetch, etc). The custom
+    // timeouts are influenced by user configurations, which can be lower than the default requestTimeout
+    const requestTimeout = Math.max(defaultRequestTimeout, customRequestTimeout || 0)
 
     const socketRequest = new SocketRequest({
       entry: pushedRequest.entry,
