@@ -182,14 +182,32 @@ module.exports = ({
       throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
     }
 
-    const topicPartitions = await findTopicPartitions(cluster, topic)
-    const partitions = topicPartitions.map(partition => ({ partition }))
-    const broker = await cluster.findControllerBroker()
-    const offsets = await broker.listOffsets({ topics: [{ topic, partitions }] })
+    const retrier = createRetry(retry)
 
-    return offsets.responses
-      .find(response => response.topic === topic)
-      .partitions.map(({ partition, offset }) => ({ partition, offset }))
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.addTargetTopic(topic)
+        await cluster.refreshMetadataIfNecessary()
+
+        const metadata = cluster.findTopicPartitionMetadata(topic)
+        const offsets = await cluster.fetchTopicsOffset([
+          {
+            topic,
+            partitions: metadata.map(p => ({ partition: p.partitionId })),
+          },
+        ])
+
+        const { partitions } = offsets.pop()
+        return partitions.map(({ partition, offset }) => ({ partition, offset }))
+      } catch (e) {
+        if (e.type === 'UNKNOWN_TOPIC_OR_PARTITION') {
+          await cluster.refreshMetadata()
+          throw e
+        }
+
+        bail(e)
+      }
+    })
   }
 
   /**
