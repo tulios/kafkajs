@@ -19,8 +19,10 @@ module.exports = class InstrumentationEventEmitter {
       throw new KafkaJSError('Invalid event name', { retriable: false })
     }
 
-    const event = new InstrumentationEvent(eventName, payload)
-    this.emitter.emit(eventName, event)
+    if (this.emitter.listenerCount(eventName) > 0) {
+      const event = new InstrumentationEvent(eventName, payload)
+      this.emitter.emit(eventName, event)
+    }
   }
 
   /**
