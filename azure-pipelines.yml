@@ -102,7 +102,7 @@ jobs:
   ####### Deploy
   - job: npm_release
     displayName: 'NPM release'
-    condition: succeeded()
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'))
     dependsOn:
       - lint
       - test_broker
@@ -126,7 +126,7 @@ jobs:
 
   - job: website_deploy
     displayName: 'Website'
-    condition: succeeded()
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'))
     dependsOn:
       - lint
       - test_broker
