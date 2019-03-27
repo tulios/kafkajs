@@ -112,13 +112,6 @@ jobs:
       - test_others
     pool:
       vmImage: 'Ubuntu 16.04'
-    trigger:
-      tags:
-        include:
-          - v*
-      branches:
-        include:
-          - master
     steps:
     - task: NodeTool@0
       inputs:
@@ -136,13 +129,6 @@ jobs:
       - test_others
     pool:
       vmImage: 'Ubuntu 16.04'
-    trigger:
-      tags:
-        include:
-          - v*
-      branches:
-        include:
-          - master
     steps:
     - task: NodeTool@0
       inputs:
