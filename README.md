@@ -1,21 +1,19 @@
-[![KafkaJS](https://raw.githubusercontent.com/tulios/kafkajs/master/logo.png)](https://kafka.js.org)
-
-# [KafkaJS](https://kafka.js.org)
-
-[![Build Status](https://travis-ci.org/tulios/kafkajs.svg?branch=master)](https://travis-ci.org/tulios/kafkajs)
-[![npm version](https://badge.fury.io/js/kafkajs.svg)](https://badge.fury.io/js/kafkajs)
-[![Slack Channel](https://kafkajs-slackin.herokuapp.com/badge.svg)](https://kafkajs-slackin.herokuapp.com/)
-
+# <a href='https://kafka.js.org'><img src='./logoV2.png' height='60' alt='KafkaJS Logo' aria-label='kafka.js.org' /></a>
 
 A modern Apache Kafka client for node.js. This library is compatible with Kafka `0.10+`.  
 Native support for Kafka `0.11` features.
 
 KafkaJS is battle-tested and ready for production.
 
+[![Build Status](https://travis-ci.org/tulios/kafkajs.svg?branch=master)](https://travis-ci.org/tulios/kafkajs)
+[![npm version](https://badge.fury.io/js/kafkajs.svg)](https://badge.fury.io/js/kafkajs)
+[![Slack Channel](https://kafkajs-slackin.herokuapp.com/badge.svg)](https://kafkajs-slackin.herokuapp.com/)
+
 ## Features
 
 - Producer
 - Consumer groups with pause, resume, and seek
+- Transactional support for producers and consumers
 - Message headers
 - GZIP compression
 - Snappy and LZ4 compression through plugins
@@ -82,7 +80,9 @@ See [Developing KafkaJS](https://kafka.js.org/docs/contribution-guide) for infor
 
 ## Acknowledgements
 
-Thanks to [Sebastian Norde](https://github.com/sebastiannorde) for the logo ❤️
+Thanks to [Sebastian Norde](https://github.com/sebastiannorde) for the V1 logo ❤️
+
+Thanks to [Tracy (Tan Yun)](https://medium.com/@tanyuntracy) for the V2 logo ❤️
 
 ## License
 

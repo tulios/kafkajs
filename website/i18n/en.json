@@ -3,7 +3,7 @@
   "localized-strings": {
     "next": "Next",
     "previous": "Previous",
-    "tagline": "A modern Apache Kafka client for Node.js",
+    "tagline": "KafkaJS, a modern Apache Kafka client for Node.js",
     "docs": {
       "admin": {
         "title": "Admin Client"
