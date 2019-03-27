@@ -1,4 +1,4 @@
-# <a href='https://kafka.js.org'><img src='./logoV2.png' height='60' alt='KafkaJS Logo' aria-label='kafka.js.org' /></a>
+# <a href='https://kafka.js.org'><img src='https://raw.githubusercontent.com/tulios/kafkajs/master/logoV2.png' height='60' alt='KafkaJS' aria-label='kafka.js.org' /></a>
 
 A modern Apache Kafka client for node.js. This library is compatible with Kafka `0.10+`.  
 Native support for Kafka `0.11` features.
