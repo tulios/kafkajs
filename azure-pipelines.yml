@@ -12,8 +12,11 @@ pr:
       - master
 
 variables:
-  KAFKA_VERSION: 1.1
-  COMPOSE_FILE: docker-compose.1_1.yml
+  - group: website_secrets
+  - name: KAFKA_VERSION
+    value: 1.1
+  - name: COMPOSE_FILE
+    value: docker-compose.1_1.yml
 
 jobs:
   - job: lint
@@ -113,13 +116,13 @@ jobs:
     pool:
       vmImage: 'Ubuntu 16.04'
     steps:
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '8.x'
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '8.x'
 
   - job: website_deploy
     displayName: 'Website'
-    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'))
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/heads/master'))
     dependsOn:
       - lint
       - test_broker
@@ -130,6 +133,10 @@ jobs:
     pool:
       vmImage: 'Ubuntu 16.04'
     steps:
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '8.x'
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '8.x'
+      - script: git config --global user.name "${GH_NAME}" || test true
+      - script: git config --global user.email "${GH_EMAIL}" || test true
+      - script: echo "machine github.com login ${GH_NAME} password ${GH_TOKEN}" > ~/.netrc || test true
+      - script: cd website && yarn install && GIT_USER="${GH_NAME}" yarn run publish-gh-pages || test true
