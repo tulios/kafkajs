@@ -2,7 +2,7 @@
 
 set -e
 
-CHANGED_FILES=`git diff --name-only master...${Build.SourceVersion}`
+CHANGED_FILES=`git diff --name-only master...$(Build.SourceVersion)`
 
 [[ -z $CHANGED_FILES ]] && exit 1
 
