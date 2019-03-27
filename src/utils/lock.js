@@ -1,6 +1,5 @@
 const { format } = require('util')
 const { KafkaJSLockTimeout } = require('../errors')
-const promiseAllInBatches = require('./promiseAllInBatches')
 
 const PRIVATE = {
   LOCKED: Symbol('private:Lock:locked'),
@@ -49,7 +48,10 @@ module.exports = class Lock {
 
   async release() {
     this[PRIVATE.LOCKED] = false
-    const waitingForLock = Array.from(this[PRIVATE.WAITING])
-    return promiseAllInBatches({ batchSize: 20 }, waitingForLock)
+    const waitingLock = this[PRIVATE.WAITING].values().next().value
+
+    if (waitingLock) {
+      return waitingLock()
+    }
   }
 }
