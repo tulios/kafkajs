@@ -42,12 +42,13 @@ class HomeSplash extends React.Component {
       </div>
     )
 
-    const Logo = props => <img src={props.img_src} alt="Project Logo" />
+    const Logo = props => (
+      <img src={props.img_src} alt={siteConfig.title} aria-label="kafka.js.org" />
+    )
 
     const ProjectTitle = () => (
       <h2 className="projectTitle">
-        <Logo img_src={`${baseUrl}img/kafkajs-logo-dark.svg`} />
-        <span className="projectName">{siteConfig.title}</span>
+        <Logo img_src={`${baseUrl}img/kafkajs-logoV2.svg`} />
         <small>{siteConfig.tagline}</small>
       </h2>
     )

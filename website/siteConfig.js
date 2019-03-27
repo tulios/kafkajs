@@ -13,7 +13,7 @@ const slackUrl = 'https://kafkajs-slackin.herokuapp.com/'
 
 const siteConfig = {
   title: 'KafkaJS',
-  tagline: 'A modern Apache Kafka client for Node.js',
+  tagline: 'KafkaJS, a modern Apache Kafka client for Node.js',
   url: 'https://kafka.js.org', // Your website URL
   baseUrl: '/',
   projectName: 'kafkajs',
@@ -24,13 +24,14 @@ const siteConfig = {
     { page: 'help', label: 'Help' },
     { href: repoUrl, label: 'GitHub' },
   ],
-  headerIcon: 'img/kafkajs-logo.svg',
-  footerIcon: 'img/kafkajs-logo.svg',
+  headerIcon: 'img/kafkajs-logoV2.svg',
+  footerIcon: 'img/kafkajs-logoV2.svg',
   favicon: 'img/favicon.png',
   colors: {
-    primaryColor: '#24292e',
-    secondaryColor: '#2f363d',
-    linkColor: '#0366d6',
+    primaryColor: '#121020',
+    secondaryColor: '#121020',
+    accentColor: '#785BA3',
+    actionColor: '#008cf2',
   },
 
   /* Custom fonts for website */
@@ -66,8 +67,8 @@ const siteConfig = {
   editUrl: repoUrl + '/edit/master/docs/',
 
   // Open Graph and Twitter card images.
-  ogImage: 'img/docusaurus.png',
-  twitterImage: 'img/docusaurus.png',
+  ogImage: 'img/kafkajs_circle.png',
+  twitterImage: 'img/kafkajs_circle.png',
 
   gaTrackingId: 'UA-133751873-1',
   gaGtag: true,
