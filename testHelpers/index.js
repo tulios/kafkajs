@@ -18,13 +18,11 @@ const {
 const LoggerConsole = require('../src/loggers/console')
 const { Kafka } = require('../index')
 
-const isTravis = process.env.TRAVIS === 'true'
-const travisLevel = process.env.VERBOSE ? DEBUG : INFO
+const isCI = process.env.TF_BUILD === 'True'
+const ciLevel = process.env.VERBOSE ? DEBUG : INFO
 
 const newLogger = (opts = {}) =>
-  createLogger(
-    Object.assign({ level: isTravis ? travisLevel : NOTHING, logCreator: LoggerConsole }, opts)
-  )
+  createLogger(Object.assign({ level: isCI ? ciLevel : NOTHING, logCreator: LoggerConsole }, opts))
 
 const getHost = () => process.env.HOST_IP || ip.address()
 const secureRandom = (length = 10) =>
