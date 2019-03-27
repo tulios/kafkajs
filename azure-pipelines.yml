@@ -12,8 +12,8 @@ pr:
       - master
 
 variables:
-  - kafka_version: 1.1
-  - compose_file: docker-compose.1_1.yml
+  KAFKA_VERSION: 1.1
+  COMPOSE_FILE: docker-compose.1_1.yml
 
 jobs:
   - job: lint
