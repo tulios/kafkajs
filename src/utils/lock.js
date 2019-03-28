@@ -48,7 +48,10 @@ module.exports = class Lock {
 
   async release() {
     this[PRIVATE.LOCKED] = false
-    const waitingForLock = Array.from(this[PRIVATE.WAITING])
-    return Promise.all(waitingForLock.map(acquireLock => acquireLock()))
+    const waitingLock = this[PRIVATE.WAITING].values().next().value
+
+    if (waitingLock) {
+      return waitingLock()
+    }
   }
 }
