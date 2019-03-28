@@ -28,7 +28,7 @@ jobs:
     - task: NodeTool@0
       inputs:
         versionSpec: '8.x'
-    - bash: COMMIT=$(Build.SourceVersion) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+    - bash: COMMIT=$(git log --format="%H" -n 1) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
       displayName: should skip tests
     - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
       displayName: yarn install
@@ -45,7 +45,7 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - bash: COMMIT=$(Build.SourceVersion) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+      - bash: COMMIT=$(git log --format="%H" -n 1) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
@@ -63,7 +63,7 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - bash: COMMIT=$(Build.SourceVersion) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+      - bash: COMMIT=$(git log --format="%H" -n 1) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
@@ -81,7 +81,7 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - bash: COMMIT=$(Build.SourceVersion) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+      - bash: COMMIT=$(git log --format="%H" -n 1) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
@@ -99,7 +99,7 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - bash: COMMIT=$(Build.SourceVersion) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+      - bash: COMMIT=$(git log --format="%H" -n 1) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
@@ -117,7 +117,7 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - bash: COMMIT=$(Build.SourceVersion) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+      - bash: COMMIT=$(git log --format="%H" -n 1) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
