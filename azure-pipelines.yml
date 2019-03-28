@@ -53,6 +53,11 @@ jobs:
         displayName: docker-compose pull
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:broker:ci
         displayName: test
+      - task: PublishTestResults@2
+        condition: succeededOrFailed()
+        inputs:
+          testRunner: JUnit
+          testResultsFiles: '**/test-report.xml'
 
   - job: test_admin
     displayName: Admin
@@ -71,6 +76,11 @@ jobs:
         displayName: docker-compose pull
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:admin:ci
         displayName: test
+      - task: PublishTestResults@2
+        condition: succeededOrFailed()
+        inputs:
+          testRunner: JUnit
+          testResultsFiles: '**/test-report.xml'
 
   - job: test_producer
     displayName: Producer
@@ -89,6 +99,11 @@ jobs:
         displayName: docker-compose pull
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:producer:ci
         displayName: test
+      - task: PublishTestResults@2
+        condition: succeededOrFailed()
+        inputs:
+          testRunner: JUnit
+          testResultsFiles: '**/test-report.xml'
 
   - job: test_consumer
     displayName: Consumer
@@ -107,6 +122,11 @@ jobs:
         displayName: docker-compose pull
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:consumer:ci
         displayName: test
+      - task: PublishTestResults@2
+        condition: succeededOrFailed()
+        inputs:
+          testRunner: JUnit
+          testResultsFiles: '**/test-report.xml'
 
   - job: test_others
     displayName: 'Others (protocol, cluster, network, etc)'
@@ -125,6 +145,11 @@ jobs:
         displayName: docker-compose pull
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:others:ci
         displayName: test
+      - task: PublishTestResults@2
+        condition: succeededOrFailed()
+        inputs:
+          testRunner: JUnit
+          testResultsFiles: '**/test-report.xml'
 
 ####### Deploy
   - job: npm_release
