@@ -18,6 +18,7 @@ variables:
   - name: COMPOSE_FILE
     value: docker-compose.1_1.yml
 
+####### Linter
 jobs:
   - job: lint
     displayName: Lint
@@ -27,11 +28,14 @@ jobs:
     - task: NodeTool@0
       inputs:
         versionSpec: '8.x'
-    - script: bash ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
-    - script: test $SKIP_TESTS && echo "Skipped!" || yarn install
-    - script: test $SKIP_TESTS && echo "Skipped!" || yarn lint
+    - bash: COMMIT=$(Build.SourceVersion) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+      displayName: should skip tests
+    - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
+      displayName: yarn install
+    - bash: test $SKIP_TESTS && echo "Skipped!" || yarn lint
+      displayName: yarn lint
 
-  ####### Tests
+####### Tests
   - job: test_broker
     displayName: Broker
     dependsOn: lint
@@ -41,10 +45,14 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - script: bash ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
-      - script: test $SKIP_TESTS && echo "Skipped!" || yarn install
-      - script: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-      - script: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:broker:ci
+      - bash: COMMIT=$(Build.SourceVersion) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+        displayName: should skip tests
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
+        displayName: yarn install
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:broker:ci
+        displayName: test
 
   - job: test_admin
     displayName: Admin
@@ -55,10 +63,14 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - script: bash ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
-      - script: test $SKIP_TESTS && echo "Skipped!" || yarn install
-      - script: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-      - script: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:admin:ci
+      - bash: COMMIT=$(Build.SourceVersion) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+        displayName: should skip tests
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
+        displayName: yarn install
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:admin:ci
+        displayName: test
 
   - job: test_producer
     displayName: Producer
@@ -69,10 +81,14 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - script: bash ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
-      - script: test $SKIP_TESTS && echo "Skipped!" || yarn install
-      - script: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-      - script: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:producer:ci
+      - bash: COMMIT=$(Build.SourceVersion) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+        displayName: should skip tests
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
+        displayName: yarn install
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:producer:ci
+        displayName: test
 
   - job: test_consumer
     displayName: Consumer
@@ -83,10 +99,14 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - script: bash ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
-      - script: test $SKIP_TESTS && echo "Skipped!" || yarn install
-      - script: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-      - script: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:consumer:ci
+      - bash: COMMIT=$(Build.SourceVersion) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+        displayName: should skip tests
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
+        displayName: yarn install
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:consumer:ci
+        displayName: test
 
   - job: test_others
     displayName: 'Others (protocol, cluster, network, etc)'
@@ -97,12 +117,16 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - script: bash ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
-      - script: test $SKIP_TESTS && echo "Skipped!" || yarn install
-      - script: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-      - script: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:others:ci
+      - bash: COMMIT=$(Build.SourceVersion) ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+        displayName: should skip tests
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
+        displayName: yarn install
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:others:ci
+        displayName: test
 
-  ####### Deploy
+####### Deploy
   - job: npm_release
     displayName: 'NPM release'
     condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'))
@@ -119,6 +143,10 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
+      - task: Npm@1
+        inputs:
+          command: publish
+          publishEndpoint: npm_registry
 
   - job: website_deploy
     displayName: 'Website'
@@ -136,7 +164,11 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - script: git config --global user.name "${GH_NAME}" || test true
-      - script: git config --global user.email "${GH_EMAIL}" || test true
-      - script: echo "machine github.com login ${GH_NAME} password ${GH_TOKEN}" > ~/.netrc || test true
-      - script: cd website && yarn install && GIT_USER="${GH_NAME}" yarn run publish-gh-pages || test true
+      - bash: git config --global user.name "${GH_NAME}" || test true
+        displayName: git config username
+      - bash: git config --global user.email "${GH_EMAIL}" || test true
+        displayName: git config email
+      - bash: echo "machine github.com login ${GH_NAME} password ${GH_TOKEN}" > ~/.netrc || test true
+        displayName: git config machine
+      - bash: cd website && yarn install && GIT_USER="${GH_NAME}" yarn run publish-gh-pages || test true
+        displayName: publish to gh-pages
