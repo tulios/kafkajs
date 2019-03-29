@@ -18,9 +18,11 @@ docker-compose.yml
 docker-compose.*.yml
 jest.config.js
 .prettierrc
+.prettierignore
 .eslintrc
 .eslintignore
 .travis.yml
+azure-pipelines.yml
 *.png
 *.svg
 logo

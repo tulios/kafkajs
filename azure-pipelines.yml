@@ -1,0 +1,199 @@
+trigger:
+  tags:
+    include:
+      - v*
+  branches:
+    include:
+      - master
+
+pr:
+  branches:
+    include:
+      - master
+
+variables:
+  - group: website_secrets
+  - name: KAFKA_VERSION
+    value: 1.1
+  - name: COMPOSE_FILE
+    value: docker-compose.1_1.yml
+
+####### Linter
+jobs:
+  - job: lint
+    displayName: Lint
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '8.x'
+    - bash: ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+      displayName: should skip tests
+    - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
+      displayName: yarn install
+    - bash: test $SKIP_TESTS && echo "Skipped!" || yarn lint
+      displayName: yarn lint
+
+####### Tests
+  - job: test_broker
+    displayName: Broker
+    dependsOn: lint
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '8.x'
+      - bash: ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+        displayName: should skip tests
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
+        displayName: yarn install
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:broker:ci
+        displayName: test
+      - task: PublishTestResults@2
+        condition: succeededOrFailed()
+        inputs:
+          testRunner: JUnit
+          testResultsFiles: '**/test-report.xml'
+
+  - job: test_admin
+    displayName: Admin
+    dependsOn: lint
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '8.x'
+      - bash: ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+        displayName: should skip tests
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
+        displayName: yarn install
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:admin:ci
+        displayName: test
+      - task: PublishTestResults@2
+        condition: succeededOrFailed()
+        inputs:
+          testRunner: JUnit
+          testResultsFiles: '**/test-report.xml'
+
+  - job: test_producer
+    displayName: Producer
+    dependsOn: lint
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '8.x'
+      - bash: ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+        displayName: should skip tests
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
+        displayName: yarn install
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:producer:ci
+        displayName: test
+      - task: PublishTestResults@2
+        condition: succeededOrFailed()
+        inputs:
+          testRunner: JUnit
+          testResultsFiles: '**/test-report.xml'
+
+  - job: test_consumer
+    displayName: Consumer
+    dependsOn: lint
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '8.x'
+      - bash: ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+        displayName: should skip tests
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
+        displayName: yarn install
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:consumer:ci
+        displayName: test
+      - task: PublishTestResults@2
+        condition: succeededOrFailed()
+        inputs:
+          testRunner: JUnit
+          testResultsFiles: '**/test-report.xml'
+
+  - job: test_others
+    displayName: 'Others (protocol, cluster, network, etc)'
+    dependsOn: lint
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '8.x'
+      - bash: ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+        displayName: should skip tests
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
+        displayName: yarn install
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:others:ci
+        displayName: test
+      - task: PublishTestResults@2
+        condition: succeededOrFailed()
+        inputs:
+          testRunner: JUnit
+          testResultsFiles: '**/test-report.xml'
+
+####### Deploy
+  - job: npm_release
+    displayName: 'NPM release'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'))
+    dependsOn:
+      - lint
+      - test_broker
+      - test_admin
+      - test_producer
+      - test_consumer
+      - test_others
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '8.x'
+      - task: Npm@1
+        inputs:
+          command: publish
+          publishEndpoint: npm_registry
+
+  - job: website_deploy
+    displayName: 'Website'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/heads/master'))
+    dependsOn:
+      - lint
+      - test_broker
+      - test_admin
+      - test_producer
+      - test_consumer
+      - test_others
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '8.x'
+      - bash: git config --global user.name "${GH_NAME}" || test true
+        displayName: git config username
+      - bash: git config --global user.email "${GH_EMAIL}" || test true
+        displayName: git config email
+      - bash: echo "machine github.com login ${GH_NAME} password ${GH_TOKEN}" > ~/.netrc || test true
+        displayName: git config machine
+      - bash: cd website && yarn install && GIT_USER="${GH_NAME}" yarn run publish-gh-pages || test true
+        displayName: publish to gh-pages
