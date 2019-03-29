@@ -66,6 +66,26 @@ module.exports = ({
     instrumentationEmitter.emit(DISCONNECT)
   }
 
+  const listTopics = async () => {
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        const metadata = await broker.metadata()
+        return metadata.topicMetadata.map(({ topic }) => topic)
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not list topics', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
   /**
    * @param {array} topics
    * @param {boolean} [validateOnly=false]
@@ -554,6 +574,7 @@ module.exports = ({
   return {
     connect,
     disconnect,
+    listTopics,
     createTopics,
     deleteTopics,
     getTopicMetadata,

@@ -65,6 +65,14 @@ Topic deletion is disabled by default in Apache Kafka versions prior to `1.0.0`.
 delete.topic.enable=true
 ```
 
+## <a name="list-topics"></a> List topics
+
+Returns an array of all available topics.
+
+```javascript
+await admin.listTopics()
+```
+
 ## <a name="get-topic-metadata"></a> Get topic metadata
 
 ```javascript
