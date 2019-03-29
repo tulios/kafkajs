@@ -26,4 +26,13 @@ describe('Consumer', () => {
       )
     })
   })
+
+  describe('when patternSubscribe', () => {
+    it('throws an error if the topic is invalid', async () => {
+      await expect(consumer.patternSubscribe({ topic: null })).rejects.toHaveProperty(
+        'message',
+        'Invalid topic null'
+      )
+    })
+  })
 })

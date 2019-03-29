@@ -131,7 +131,36 @@ module.exports = ({
 
   /**
    * @param {string} topic
-   * @param {string} [fromBeginning=false]
+   * @param {boolean} [fromBeginning=false]
+   * @return {Promise}
+   */
+  const patternSubscribe = async ({ topic, fromBeginning = false }) => {
+    if (!topic) {
+      throw new KafkaJSNonRetriableError('Please specify a pattern to subscribe to')
+    }
+
+    if (!topic.includes('*')) {
+      return subscribe({ topic, fromBeginning })
+    }
+
+    // transform the pattern into an actual regexp
+    const reStr = topic.replace(/\*/g, '.*')
+    const re = new RegExp(reStr, 'i')
+
+    const metadata = await cluster.metadata()
+    const matchingTopics = metadata.topicMetadata
+      .map(topicMetadata => topicMetadata.topic)
+      .filter(topicName => re.test(topicName))
+
+    await Promise.all(
+      matchingTopics.map(topicName => subscribe({ topic: topicName, fromBeginning }))
+    )
+    return matchingTopics
+  }
+
+  /**
+   * @param {string} topic
+   * @param {boolean} [fromBeginning=false]
    * @return {Promise}
    */
   const subscribe = async ({ topic, fromBeginning = false }) => {
@@ -366,6 +395,7 @@ module.exports = ({
   return {
     connect,
     disconnect,
+    patternSubscribe,
     subscribe,
     stop,
     run,

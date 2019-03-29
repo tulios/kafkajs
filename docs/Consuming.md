@@ -24,7 +24,29 @@ await consumer.subscribe({ topic: 'topic-B' })
 // await consumer.subscribe({ topic: 'topic-C', fromBeginning: true })
 ```
 
-KafkaJS offers you two ways to process your data: `eachMessage` and `eachBatch`
+Alternatively, you can subscribe to multiple topics at once using a pattern string:
+
+```javascript
+await consumer.connect()
+
+await consumer.patternSubscribe({ topic: 'topic-*' })
+```
+
+In the above example you'd subscribe to all topics starting with `topic-`. 
+You can use the wildcard character `*` multiple times:
+
+```javascript
+await consumer.patternSubscribe({ topic: '*pic*' })
+``` 
+
+Note that the pattern is expanded and matched against existing topics only when you call `consumer.patternSubscribe()`.
+No further attempts are made to auto subscribe your consumer to new topics matching the pattern.
+
+If your broker has `topic-A` and `topic-B`, you patternSubscribe to `topic-*`, then `topic-C` is created, your consumer would not be automatically subscribed to `topic-C`.
+You will have to manually call `consumer.patternSubscribe({ topic: 'topic-*' })` or `consumer.subscribe({ topic: 'topic-C' })` again.
+
+
+KafkaJS offers you two ways to process your data: `eachMessage` and `eachBatch`.
 
 ## <a name="each-message"></a> eachMessage
 
