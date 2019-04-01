@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2019-04-01
+### Added
+  - Allow providing a socketFactory on client creation #263
+  - Add fetchTopicOffsets method #314
+
+## [1.5.2] - 2019-04-01
+### Fixed
+  - Process a fixed number of lock releases per iteration on `lock#release` #323
+
+### Changed
+  - Use the max between the default request timeout and the protocol override #318
+  - Only emit events if there are listeners #321
+
 ## [1.5.1] - 2019-03-14
 ### Fixed
   - Handle `null` keys on isAbortMarker #312
