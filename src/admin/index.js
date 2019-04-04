@@ -152,7 +152,7 @@ module.exports = ({
 
         await cluster.refreshMetadata()
       } catch (e) {
-        if (e.type === 'NOT_CONTROLLER') {
+        if (['NOT_CONTROLLER', 'UNKNOWN_TOPIC_OR_PARTITION'].includes(e.type)) {
           logger.warn('Could not delete topics', { error: e.message, retryCount, retryTime })
           throw e
         }
