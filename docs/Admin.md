@@ -67,8 +67,12 @@ delete.topic.enable=true
 
 ## <a name="get-topic-metadata"></a> Get topic metadata
 
+Deprecated, take a look at [Retry](#fetch-topic-metadata)
+
+## <a name="fetch-topic-metadata"></a> Fetch topic metadata
+
 ```javascript
-await admin.getTopicMetadata({ topics: <Array<String> })
+await admin.fetchTopicMetadata({ topics: <Array<String> })
 ```
 
 `TopicsMetadata` structure:
@@ -102,14 +106,11 @@ await admin.getTopicMetadata({ topics: <Array<String> })
 
 The admin client will throw an exception if any of the provided topics do not already exist.
 
-If you omit the `topics` argument the admin client will fetch metadata for all topics
-of which it is already aware (all the cluster's target topics):
+If you omit the `topics` argument the admin client will fetch metadata for all topics:
 
 ```javascript
-await admin.getTopicMetadata()
+await admin.fetchTopicMetadata()
 ```
-
-
 
 ## <a name="fetch-topic-offsets"></a> Fetch topic offsets
 
