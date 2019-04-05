@@ -532,7 +532,7 @@ module.exports = ({
   /**
    * Fetch metadata for provided topics.
    *
-   * If no topics are provided fetch metadata for all topics of which we are aware.
+   * If no topics are provided fetch metadata for all topics.
    * @see https://kafka.apache.org/protocol#The_Messages_Metadata
    *
    * @param {Object} [options]
