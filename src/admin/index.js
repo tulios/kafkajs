@@ -152,7 +152,7 @@ module.exports = ({
 
         await cluster.refreshMetadata()
       } catch (e) {
-        if (e.type === 'NOT_CONTROLLER') {
+        if (['NOT_CONTROLLER', 'UNKNOWN_TOPIC_OR_PARTITION'].includes(e.type)) {
           logger.warn('Could not delete topics', { error: e.message, retryCount, retryTime })
           throw e
         }
@@ -469,6 +469,10 @@ module.exports = ({
   }
 
   /**
+   * @deprecated - This method was replaced by `fetchTopicMetadata`. This implementation
+   * is limited by the topics in the target group, so it can't fetch all topics when
+   * necessary.
+   *
    * Fetch metadata for provided topics.
    *
    * If no topics are provided fetch metadata for all topics of which we are aware.
@@ -526,6 +530,51 @@ module.exports = ({
   }
 
   /**
+   * Fetch metadata for provided topics.
+   *
+   * If no topics are provided fetch metadata for all topics.
+   * @see https://kafka.apache.org/protocol#The_Messages_Metadata
+   *
+   * @param {Object} [options]
+   * @param {string[]} [options.topics]
+   * @return {Promise<TopicsMetadata>}
+   *
+   * @typedef {Object} TopicsMetadata
+   * @property {Array<TopicMetadata>} topics
+   *
+   * @typedef {Object} TopicMetadata
+   * @property {String} name
+   * @property {Array<PartitionMetadata>} partitions
+   *
+   * @typedef {Object} PartitionMetadata
+   * @property {number} partitionErrorCode Response error code
+   * @property {number} partitionId Topic partition id
+   * @property {number} leader  The id of the broker acting as leader for this partition.
+   * @property {Array<number>} replicas The set of all nodes that host this partition.
+   * @property {Array<number>} isr The set of nodes that are in sync with the leader for this partition.
+   */
+  const fetchTopicMetadata = async ({ topics = [] } = {}) => {
+    if (topics) {
+      await Promise.all(
+        topics.map(async topic => {
+          if (!topic) {
+            throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+          }
+        })
+      )
+    }
+
+    const metadata = await cluster.metadata({ topics })
+
+    return {
+      topics: metadata.topicMetadata.map(topicMetadata => ({
+        name: topicMetadata.topic,
+        partitions: topicMetadata.partitionMetadata,
+      })),
+    }
+  }
+
+  /**
    * @param {string} eventName
    * @param {Function} listener
    * @return {Function}
@@ -557,6 +606,7 @@ module.exports = ({
     createTopics,
     deleteTopics,
     getTopicMetadata,
+    fetchTopicMetadata,
     events,
     fetchOffsets,
     fetchTopicOffsets,
