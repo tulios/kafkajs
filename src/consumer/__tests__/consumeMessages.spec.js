@@ -100,13 +100,6 @@ describe('Consumer', () => {
       topic: topicName,
       partitions: partitionsConsumedConcurrently + 1,
     })
-    consumer = createConsumer({
-      cluster,
-      groupId,
-      maxWaitTimeInMs: 100,
-      logger: newLogger(),
-      partitionsConsumedConcurrently,
-    })
     await consumer.connect()
     await producer.connect()
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
@@ -122,6 +115,7 @@ describe('Consumer', () => {
 
     const messagesConsumed = []
     consumer.run({
+      partitionsConsumedConcurrently,
       eachMessage: async event => {
         await sleep(1)
         messagesConsumed.push(event)
