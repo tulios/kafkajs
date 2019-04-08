@@ -1,4 +1,5 @@
 const createRetry = require('../retry')
+const limitConcurrency = require('../utils/concurrency')
 const { KafkaJSError } = require('../errors')
 const {
   events: { GROUP_JOIN, FETCH, START_BATCH_PROCESS, END_BATCH_PROCESS },
@@ -17,6 +18,7 @@ module.exports = class Runner {
     consumerGroup,
     instrumentationEmitter,
     eachBatchAutoResolve = true,
+    partitionsConsumedConcurrently,
     eachBatch,
     eachMessage,
     heartbeatInterval,
@@ -34,6 +36,7 @@ module.exports = class Runner {
     this.retrier = createRetry(Object.assign({}, retry))
     this.onCrash = onCrash
     this.autoCommit = autoCommit
+    this.partitionsConsumedConcurrently = partitionsConsumedConcurrently
 
     this.running = false
     this.consuming = false
@@ -217,15 +220,7 @@ module.exports = class Runner {
       duration: Date.now() - startFetch,
     })
 
-    for (let batch of batches) {
-      if (!this.running) {
-        break
-      }
-
-      if (batch.isEmpty()) {
-        continue
-      }
-
+    const onBatch = async batch => {
       const startBatchProcess = Date.now()
       const payload = {
         topic: batch.topic,
@@ -250,6 +245,23 @@ module.exports = class Runner {
         duration: Date.now() - startBatchProcess,
       })
     }
+
+    const concurrently = limitConcurrency({ limit: this.partitionsConsumedConcurrently })
+    await Promise.all(
+      batches.map(batch =>
+        concurrently(async () => {
+          if (!this.running) {
+            return
+          }
+
+          if (batch.isEmpty()) {
+            return
+          }
+
+          await onBatch(batch)
+        })
+      )
+    )
 
     await this.autoCommitOffsets()
     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })

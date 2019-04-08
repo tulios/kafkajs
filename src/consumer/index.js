@@ -27,6 +27,7 @@ module.exports = ({
   cluster,
   groupId,
   logger: rootLogger,
+  partitionsConsumedConcurrently = 1,
   partitionAssigners = [roundRobin],
   sessionTimeout = 30000,
   heartbeatInterval = 3000,
@@ -90,6 +91,7 @@ module.exports = ({
       heartbeatInterval,
       retry,
       onCrash,
+      partitionsConsumedConcurrently,
     })
   }
 
