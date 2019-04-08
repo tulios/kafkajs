@@ -190,15 +190,36 @@ module.exports = ({
         await cluster.refreshMetadataIfNecessary()
 
         const metadata = cluster.findTopicPartitionMetadata(topic)
-        const offsets = await cluster.fetchTopicsOffset([
+        const high = await cluster.fetchTopicsOffset([
           {
             topic,
+            fromBeginning: false,
             partitions: metadata.map(p => ({ partition: p.partitionId })),
           },
         ])
 
-        const { partitions } = offsets.pop()
-        return partitions.map(({ partition, offset }) => ({ partition, offset }))
+        const low = await cluster.fetchTopicsOffset([
+          {
+            topic,
+            fromBeginning: true,
+            partitions: metadata.map(p => ({ partition: p.partitionId })),
+          },
+        ])
+
+        const { partitions } = high.pop()
+        const offsets = partitions.map(({ partition, offset }) => ({
+          partition,
+          offset,
+          high: offset,
+        }))
+
+        for (const { partition, offset } of low.pop().partitions) {
+          const obj = offsets.find(v => v.partition === partition)
+          if (obj) {
+            obj.low = offset
+          }
+        }
+        return offsets
       } catch (e) {
         if (e.type === 'UNKNOWN_TOPIC_OR_PARTITION') {
           await cluster.refreshMetadata()

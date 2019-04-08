@@ -52,7 +52,7 @@ describe('Admin', () => {
       await producer.send({ acks: 1, topic: topicName, messages })
       const offsets = await admin.fetchTopicOffsets(topicName)
 
-      expect(offsets).toEqual([{ partition: 0, offset: '100' }])
+      expect(offsets).toEqual([{ partition: 0, offset: '100', low: '0', high: '100' }])
     })
   })
 })
