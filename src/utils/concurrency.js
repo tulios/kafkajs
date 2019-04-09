@@ -14,9 +14,9 @@ const concurrency = ({ limit, onChange = NOOP } = {}) => {
   let semaphore = 0
 
   const clear = () => {
-    waiting.forEach(fn => {
-      fn((fn, resolve, reject) => reject(REJECTED_ERROR))
-    })
+    for (let lazyAction of waiting) {
+      lazyAction((_1, _2, reject) => reject(REJECTED_ERROR))
+    }
     waiting = []
     semaphore = 0
   }
@@ -26,16 +26,16 @@ const concurrency = ({ limit, onChange = NOOP } = {}) => {
     onChange(semaphore)
 
     if (waiting.length > 0) {
-      const fn = waiting.pop()
-      fn()
+      const lazyAction = waiting.shift()
+      lazyAction()
     }
   }
 
-  const invoke = (fn, resolve, reject) => {
+  const invoke = (action, resolve, reject) => {
     semaphore++
     onChange(semaphore)
 
-    fn()
+    action()
       .then(result => {
         resolve(result)
         next()
@@ -46,15 +46,18 @@ const concurrency = ({ limit, onChange = NOOP } = {}) => {
       })
   }
 
-  const push = (fn, resolve, reject) => {
+  const push = (action, resolve, reject) => {
     if (semaphore < limit) {
-      invoke(fn, resolve, reject)
+      invoke(action, resolve, reject)
     } else {
-      waiting.push((overrideInvokation = invoke) => overrideInvokation(fn, resolve, reject))
+      waiting.push(override => {
+        const execute = override || invoke
+        execute(action, resolve, reject)
+      })
     }
   }
 
-  return fn => new Promise((resolve, reject) => push(fn, resolve, reject))
+  return action => new Promise((resolve, reject) => push(action, resolve, reject))
 }
 
 module.exports = concurrency

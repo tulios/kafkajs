@@ -29,15 +29,16 @@ describe('Utils > concurrency', () => {
       [jest.fn().mockReturnValue(1), 50],
       [jest.fn().mockReturnValue(2), 100],
       [jest.fn().mockReturnValue(3), 10],
+      [jest.fn().mockReturnValue(4), 10],
     ]
     const result = await Promise.all(
       input.map(([fn, delay]) => sequentially(async () => after(delay, fn)))
     )
 
-    expect(result).toEqual([1, 2, 3])
+    expect(result).toEqual([1, 2, 3, 4])
     expect(input[0][0]).toHaveBeenCalledBefore(input[1][0])
-    expect(input[2][0]).toHaveBeenCalledBefore(input[1][0])
-    expect(onChange.mock.calls).toEqual([[1], [0], [1], [0], [1], [0]])
+    expect(input[2][0]).toHaveBeenCalledBefore(input[3][0])
+    expect(onChange.mock.calls).toEqual([[1], [0], [1], [0], [1], [0], [1], [0]])
   })
 
   it('invokes functions concurrently when the limit allows', async () => {
