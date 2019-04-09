@@ -127,6 +127,25 @@ module.exports = class Cluster {
 
   /**
    * @public
+   * @returns {Promise<Metadata>}
+   */
+  async metadata({ topics = [] } = {}) {
+    return this.retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await this.brokerPool.refreshMetadataIfNecessary(topics)
+        return this.brokerPool.withBroker(async ({ broker }) => broker.metadata(topics))
+      } catch (e) {
+        if (e.type === 'LEADER_NOT_AVAILABLE') {
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
+   * @public
    * @param {string} topic
    * @return {Promise}
    */

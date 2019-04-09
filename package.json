@@ -59,6 +59,7 @@
     "lint-staged": "^6.0.0",
     "mockdate": "^2.0.2",
     "prettier": "^1.15.2",
+    "semver": "^6.0.0",
     "uuid": "^3.3.2"
   },
   "dependencies": {

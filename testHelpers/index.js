@@ -2,6 +2,7 @@ const fs = require('fs')
 const ip = require('ip')
 const execa = require('execa')
 const uuid = require('uuid/v4')
+const semver = require('semver')
 const crypto = require('crypto')
 const Cluster = require('../src/cluster')
 const waitFor = require('../src/utils/waitFor')
@@ -172,8 +173,7 @@ const addPartitions = async ({ topic, partitions }) => {
 }
 
 const testIfKafkaVersion = version => (description, callback, testFn = test) => {
-  const kafkaVersions = process.env.KAFKA_VERSION.split(/\s*,\s*/)
-  return kafkaVersions.includes(version)
+  return semver.gte(semver.coerce(process.env.KAFKA_VERSION), semver.coerce(version))
     ? testFn(description, callback)
     : test.skip(description, callback)
 }

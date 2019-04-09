@@ -12,6 +12,6 @@ module.exports = ({ topics, allowAutoTopicCreation = true }) => ({
   apiVersion: 4,
   apiName: 'Metadata',
   encode: async () => {
-    return new Encoder().writeArray(topics).writeBoolean(allowAutoTopicCreation)
+    return new Encoder().writeNullableArray(topics).writeBoolean(allowAutoTopicCreation)
   },
 })

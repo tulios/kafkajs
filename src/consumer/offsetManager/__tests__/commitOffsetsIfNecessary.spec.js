@@ -54,7 +54,7 @@ describe('Consumer > OffsetMananger > commitOffsetsIfNecessary', () => {
       })
 
       await offsetManager.commitOffsetsIfNecessary()
-      await sleep(30)
+      await sleep(50)
 
       await offsetManager.commitOffsetsIfNecessary()
       await offsetManager.commitOffsetsIfNecessary()
