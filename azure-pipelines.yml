@@ -189,11 +189,22 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
+      - bash: git config core.autocrlf true || test true
+        displayName: git config core.autocrlf
       - bash: git config --global user.name "${GH_NAME}" || test true
         displayName: git config username
+        env:
+          GH_NAME: $(GH_NAME)
       - bash: git config --global user.email "${GH_EMAIL}" || test true
         displayName: git config email
+        env:
+          GH_EMAIL: $(GH_EMAIL)
       - bash: echo "machine github.com login ${GH_NAME} password ${GH_TOKEN}" > ~/.netrc || test true
         displayName: git config machine
+        env:
+          GH_NAME: $(GH_NAME)
+          GH_TOKEN: $(GH_TOKEN)
       - bash: cd website && yarn install && GIT_USER="${GH_NAME}" yarn run publish-gh-pages || test true
         displayName: publish to gh-pages
+        env:
+          GH_NAME: $(GH_NAME)

@@ -13,7 +13,7 @@ const VALID_STATE_TRANSITIONS = {
 module.exports = ({ logger, initialState = STATES.UNINITIALIZED }) => {
   let currentState = initialState
 
-  const guard = (object, method, { legalStates, async = true }) => {
+  const guard = (object, method, { legalStates, async: isAsync = true }) => {
     if (!object[method]) {
       throw new KafkaJSNonRetriableError(`Cannot add guard on missing method "${method}"`)
     }
@@ -26,7 +26,7 @@ module.exports = ({ logger, initialState = STATES.UNINITIALIZED }) => {
           `Transaction state exception: Cannot call "${method}" in state "${currentState}"`
         )
 
-        if (async) {
+        if (isAsync) {
           return Promise.reject(error)
         } else {
           throw error
