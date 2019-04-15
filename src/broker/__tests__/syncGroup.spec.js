@@ -38,6 +38,7 @@ describe('Broker > SyncGroup', () => {
     const { generationId, memberId } = await groupCoordinator.joinGroup({
       groupId,
       sessionTimeout: 30000,
+      rebalanceTimeout: 60000,
       groupProtocols: [
         {
           name: 'AssignerName',
@@ -59,6 +60,6 @@ describe('Broker > SyncGroup', () => {
       groupAssignment,
     })
 
-    expect(response).toEqual({ errorCode: 0, memberAssignment })
+    expect(response).toEqual({ throttleTime: 0, errorCode: 0, memberAssignment })
   })
 })
