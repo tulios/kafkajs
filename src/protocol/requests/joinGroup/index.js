@@ -1,4 +1,10 @@
 const NETWORK_DELAY = 5000
+
+const requestTimeout = ({ rebalanceTimeout, sessionTimeout }) => {
+  const timeout = rebalanceTimeout || sessionTimeout
+  return Number.isSafeInteger(timeout + NETWORK_DELAY) ? timeout + NETWORK_DELAY : timeout
+}
+
 const versions = {
   0: ({ groupId, sessionTimeout, memberId, protocolType, groupProtocols }) => {
     const request = require('./v0/request')
@@ -31,10 +37,22 @@ const versions = {
     const request = require('./v1/request')
     const response = require('./v1/response')
 
-    const timeout = rebalanceTimeout || sessionTimeout
-    const requestTimeout = Number.isSafeInteger(timeout + NETWORK_DELAY)
-      ? timeout + NETWORK_DELAY
-      : timeout
+    return {
+      request: request({
+        groupId,
+        sessionTimeout,
+        rebalanceTimeout,
+        memberId,
+        protocolType,
+        groupProtocols,
+      }),
+      response,
+      requestTimeout: requestTimeout({ rebalanceTimeout, sessionTimeout }),
+    }
+  },
+  2: ({ groupId, sessionTimeout, rebalanceTimeout, memberId, protocolType, groupProtocols }) => {
+    const request = require('./v2/request')
+    const response = require('./v2/response')
 
     return {
       request: request({
@@ -46,7 +64,7 @@ const versions = {
         groupProtocols,
       }),
       response,
-      requestTimeout,
+      requestTimeout: requestTimeout({ rebalanceTimeout, sessionTimeout }),
     }
   },
 }
