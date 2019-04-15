@@ -439,7 +439,7 @@ module.exports = class Broker {
   /**
    * @public
    * @param {string} groupId
-   * @param {object} topics e.g:
+   * @param {object} topics - If the topic array is null fetch offsets for all topics. e.g:
    *                  [
    *                    {
    *                      topic: 'topic-name',
