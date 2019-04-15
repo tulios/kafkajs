@@ -112,7 +112,7 @@ Messages in the same partition are still guaranteed to be processed in order, bu
 
 The same thing applies if you are using [`eachBatch`](Consuming.md#each-batch). Given `partitionsConsumedConcurrently > 1`, you will be able to process multiple batches concurrently.
 
-A guideline for setting `partitionsConsumedConcurrently` would be `partitions < partitionsConsumedConcurrently < CPU cores`.
+A guideline for setting `partitionsConsumedConcurrently` would be that it should not be larger than the number of partitions consumed. Depending on whether or not your workload is CPU bound, it may also not benefit you to set it to a higher number than the number of logical CPU cores. A recommendation is to start with a low number and measure if increasing leads to higher throughput.
 
 ## <a name="auto-commit"></a> autoCommit
 
