@@ -29,6 +29,7 @@ module.exports = ({
   logger: rootLogger,
   partitionAssigners = [roundRobin],
   sessionTimeout = 30000,
+  rebalanceTimeout = 60000,
   heartbeatInterval = 3000,
   maxBytesPerPartition = 1048576, // 1MB
   minBytes = 1,
@@ -67,6 +68,7 @@ module.exports = ({
       groupId,
       assigners,
       sessionTimeout,
+      rebalanceTimeout,
       maxBytesPerPartition,
       minBytes,
       maxBytes,
