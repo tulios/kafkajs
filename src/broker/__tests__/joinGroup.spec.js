@@ -37,6 +37,7 @@ describe('Broker > JoinGroup', () => {
     const response = await broker.joinGroup({
       groupId,
       sessionTimeout: 30000,
+      rebalanceTimeout: 60000,
       groupProtocols: [
         {
           name: 'AssignerName',

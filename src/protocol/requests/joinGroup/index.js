@@ -27,6 +27,28 @@ const versions = {
       requestTimeout,
     }
   },
+  1: ({ groupId, sessionTimeout, rebalanceTimeout, memberId, protocolType, groupProtocols }) => {
+    const request = require('./v1/request')
+    const response = require('./v1/response')
+
+    const timeout = rebalanceTimeout || sessionTimeout
+    const requestTimeout = Number.isSafeInteger(timeout + NETWORK_DELAY)
+      ? timeout + NETWORK_DELAY
+      : timeout
+
+    return {
+      request: request({
+        groupId,
+        sessionTimeout,
+        rebalanceTimeout,
+        memberId,
+        protocolType,
+        groupProtocols,
+      }),
+      response,
+      requestTimeout,
+    }
+  },
 }
 
 module.exports = {
