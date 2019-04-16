@@ -510,11 +510,12 @@ module.exports = class Broker {
    *                                   name: 'topic-name',
    *                                   configNames: ['compression.type', 'retention.ms']
    *                                 }]
+   * @param {boolean} [includeSynonyms=false]
    * @returns {Promise}
    */
-  async describeConfigs({ resources }) {
+  async describeConfigs({ resources, includeSynonyms = false }) {
     const describeConfigs = this.lookupRequest(apiKeys.DescribeConfigs, requests.DescribeConfigs)
-    return await this.connection.send(describeConfigs({ resources }))
+    return await this.connection.send(describeConfigs({ resources, includeSynonyms }))
   }
 
   /**
