@@ -84,6 +84,12 @@ Thanks to [Sebastian Norde](https://github.com/sebastiannorde) for the V1 logo �
 
 Thanks to [Tracy (Tan Yun)](https://medium.com/@tanyuntracy) for the V2 logo ❤️
 
+### Sponsored by:
+
+<a href="https://www.digitalocean.com/?refcode=9ee868b06152&utm_campaign=Referral_Invite&utm_medium=opensource&utm_source=kafkajs">
+  <img src="https://opensource.nyc3.cdn.digitaloceanspaces.com/attribution/assets/SVG/DO_Logo_horizontal_blue.svg" width="201px">
+</a>
+
 ## License
 
 See [LICENSE](https://github.com/tulios/kafkajs/blob/master/LICENSE) for more details.
