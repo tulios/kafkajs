@@ -141,6 +141,7 @@ kafka.consumer({
   groupId: <String>,
   partitionAssigners: <Array>,
   sessionTimeout: <Number>,
+  rebalanceTimeout: <Number>,
   heartbeatInterval: <Number>,
   metadataMaxAge: <Number>,
   allowAutoTopicCreation: <Boolean>,
@@ -156,6 +157,7 @@ kafka.consumer({
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
 | partitionAssigners     | List of partition assigners                                                                                                                                                                                                                                                                                                                        | `[PartitionAssigners.roundRobin]` |
 | sessionTimeout         | Timeout in milliseconds used to detect failures. The consumer sends periodic heartbeats to indicate its liveness to the broker. If no heartbeats are received by the broker before the expiration of this session timeout, then the broker will remove this consumer from the group and initiate a rebalance                                       | `30000`                           |
+| rebalanceTimeout       | The maximum time that the coordinator will wait for each member to rejoin when rebalancing the group | `60000` |
 | heartbeatInterval      | The expected time in milliseconds between heartbeats to the consumer coordinator. Heartbeats are used to ensure that the consumer's session stays active. The value must be set lower than session timeout                                                                                                                                         | `3000`                            |
 | metadataMaxAge         | The period of time in milliseconds after which we force a refresh of metadata even if we haven't seen any partition leadership changes to proactively discover any new brokers or partitions                                                                                                                                                       | `300000` (5 minutes)              |
 | allowAutoTopicCreation | Allow topic creation when querying metadata for non-existent topics                                                                                                                                                                                                                                                                                | `true`                            |

@@ -55,6 +55,7 @@ describe('Broker > DescribeGroups', () => {
     const response = await broker.describeGroups({ groupIds: [groupId] })
 
     expect(response).toEqual({
+      throttleTime: 0,
       groups: [
         {
           errorCode: 0,
