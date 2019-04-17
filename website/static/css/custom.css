@@ -31,10 +31,11 @@ blockquote {
 
 .mainContainer a {
   color: $linkColor;
+  text-decoration: underline;
 }
 
 .mainContainer a:hover {
-  text-decoration: underline;
+  color: $actionColor;
 }
 
 .projectTitle {
@@ -90,7 +91,6 @@ footer.nav-footer {
   background: #121020;
   font-size: 15px;
 }
-
 
 input#search_input_react {
   background-color: #5D5262;
