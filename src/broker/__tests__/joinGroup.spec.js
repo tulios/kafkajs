@@ -37,6 +37,7 @@ describe('Broker > JoinGroup', () => {
     const response = await broker.joinGroup({
       groupId,
       sessionTimeout: 30000,
+      rebalanceTimeout: 60000,
       groupProtocols: [
         {
           name: 'AssignerName',
@@ -46,6 +47,7 @@ describe('Broker > JoinGroup', () => {
     })
 
     expect(response).toEqual({
+      throttleTime: 0,
       errorCode: 0,
       generationId: expect.any(Number),
       groupProtocol: 'AssignerName',

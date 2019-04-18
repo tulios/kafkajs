@@ -190,7 +190,8 @@ Get the configuration for the specified resources.
 
 ```javascript
 await admin.describeConfigs({
-    resources: <ResourceConfigQuery[]>
+  includeSynonyms: <boolean>,
+  resources: <ResourceConfigQuery[]>
 })
 ```
 
@@ -210,12 +211,13 @@ Returning all configs for a given resource:
 const { ResourceTypes } = require('kafkajs')
 
 await admin.describeConfigs({
-    resources: [
-        {
-            type: ResourceTypes.TOPIC,
-            name: 'topic-name'
-        }
-    ]
+  includeSynonyms: false,
+  resources: [
+    {
+      type: ResourceTypes.TOPIC,
+      name: 'topic-name'
+    }
+  ]
 })
 ```
 
@@ -225,13 +227,14 @@ Returning specific configs for a given resource:
 const { ResourceTypes } = require('kafkajs')
 
 await admin.describeConfigs({
-    resources: [
-        {
-            type: ResourceTypes.TOPIC,
-            name: 'topic-name',
-            configNames: ['cleanup.policy']
-        }
-    ]
+  includeSynonyms: false,
+  resources: [
+    {
+      type: ResourceTypes.TOPIC,
+      name: 'topic-name',
+      configNames: ['cleanup.policy']
+    }
+  ]
 })
 ```
 

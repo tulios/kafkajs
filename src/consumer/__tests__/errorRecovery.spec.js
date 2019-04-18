@@ -221,6 +221,7 @@ describe('Consumer', () => {
       })
 
       expect(offsets).toEqual({
+        throttleTime: 0,
         errorCode: 0,
         responses: [
           {
@@ -306,6 +307,7 @@ describe('Consumer', () => {
       })
 
       expect(offsets).toEqual({
+        throttleTime: 0,
         errorCode: 0,
         responses: [
           {

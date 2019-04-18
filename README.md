@@ -36,30 +36,35 @@ const kafka = new Kafka({
   brokers: ['kafka1:9092', 'kafka2:9092']
 })
 
-// Producing
 const producer = kafka.producer()
-
-await producer.connect()
-await producer.send({
-  topic: 'test-topic',
-  messages: [
-    { value: 'Hello KafkaJS user!' },
-  ],
-})
-
-// Consuming
 const consumer = kafka.consumer({ groupId: 'test-group' })
 
-await consumer.connect()
-await consumer.subscribe({ topic: 'test-topic' })
+const run = async () => {
+  // Producing
+  await producer.connect()
+  await producer.send({
+    topic: 'test-topic',
+    messages: [
+      { value: 'Hello KafkaJS user!' },
+    ],
+  })
 
-await consumer.run({
-  eachMessage: async ({ topic, partition, message }) => {
-    console.log({
-      value: message.value.toString(),
-    })
-  },
-})
+  // Consuming
+  await consumer.connect()
+  await consumer.subscribe({ topic: 'test-topic', fromBeginning: true })
+
+  await consumer.run({
+    eachMessage: async ({ topic, partition, message }) => {
+      console.log({
+        partition,
+        offset: message.offset,
+        value: message.value.toString(),
+      })
+    },
+  })
+}
+
+run().catch(console.error)
 ```
 
 ## Documentation
@@ -83,6 +88,12 @@ See [Developing KafkaJS](https://kafka.js.org/docs/contribution-guide) for infor
 Thanks to [Sebastian Norde](https://github.com/sebastiannorde) for the V1 logo ❤️
 
 Thanks to [Tracy (Tan Yun)](https://medium.com/@tanyuntracy) for the V2 logo ❤️
+
+### Sponsored by:
+
+<a href="https://www.digitalocean.com/?refcode=9ee868b06152&utm_campaign=Referral_Invite&utm_medium=opensource&utm_source=kafkajs">
+  <img src="https://opensource.nyc3.cdn.digitaloceanspaces.com/attribution/assets/SVG/DO_Logo_horizontal_blue.svg" width="201px">
+</a>
 
 ## License
 

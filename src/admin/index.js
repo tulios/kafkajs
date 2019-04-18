@@ -343,6 +343,7 @@ module.exports = ({
 
   /**
    * @param {Array<ResourceConfigQuery>} resources
+   * @param {boolean} [includeSynonyms=false]
    * @return {Promise}
    *
    * @typedef {Object} ResourceConfigQuery
@@ -350,7 +351,7 @@ module.exports = ({
    * @property {string} name
    * @property {Array<String>} [configNames=[]]
    */
-  const describeConfigs = async ({ resources }) => {
+  const describeConfigs = async ({ resources, includeSynonyms }) => {
     if (!resources || !Array.isArray(resources)) {
       throw new KafkaJSNonRetriableError(`Invalid resources array ${resources}`)
     }
@@ -393,7 +394,7 @@ module.exports = ({
       try {
         await cluster.refreshMetadata()
         const broker = await cluster.findControllerBroker()
-        const response = await broker.describeConfigs({ resources })
+        const response = await broker.describeConfigs({ resources, includeSynonyms })
         return response
       } catch (e) {
         if (e.type === 'NOT_CONTROLLER') {
