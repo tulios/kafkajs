@@ -34,6 +34,7 @@ describe('Consumer > Runner', () => {
       onCrash,
       logger: newLogger(),
       eachBatch,
+      partitionsConsumedConcurrently: 1,
     })
   })
 
@@ -127,6 +128,7 @@ describe('Consumer > Runner', () => {
         eachBatch,
         onCrash,
         logger: newLogger(),
+        partitionsConsumedConcurrently: 1,
       })
       runner.scheduleFetch = jest.fn(() => runner.fetch())
     })
@@ -162,6 +164,7 @@ describe('Consumer > Runner', () => {
         onCrash,
         autoCommit: false,
         logger: newLogger(),
+        partitionsConsumedConcurrently: 1,
       })
       runner.scheduleFetch = jest.fn(() => runner.fetch())
     })

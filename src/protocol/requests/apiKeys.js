@@ -42,4 +42,5 @@ module.exports = {
   ExpireDelegationToken: 40,
   DescribeDelegationToken: 41,
   DeleteGroups: 42, // ApiVersions v2 on Kafka 1.0
+  ElectPreferredLeaders: 43,
 }

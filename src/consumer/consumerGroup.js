@@ -34,6 +34,7 @@ module.exports = class ConsumerGroup {
     instrumentationEmitter,
     assigners,
     sessionTimeout,
+    rebalanceTimeout,
     maxBytesPerPartition,
     minBytes,
     maxBytes,
@@ -51,6 +52,7 @@ module.exports = class ConsumerGroup {
     this.instrumentationEmitter = instrumentationEmitter
     this.assigners = assigners
     this.sessionTimeout = sessionTimeout
+    this.rebalanceTimeout = rebalanceTimeout
     this.maxBytesPerPartition = maxBytesPerPartition
     this.minBytes = minBytes
     this.maxBytes = maxBytes
@@ -80,13 +82,14 @@ module.exports = class ConsumerGroup {
   }
 
   async join() {
-    const { groupId, sessionTimeout } = this
+    const { groupId, sessionTimeout, rebalanceTimeout } = this
 
     this.coordinator = await this.cluster.findGroupCoordinator({ groupId })
 
     const groupData = await this.coordinator.joinGroup({
       groupId,
       sessionTimeout,
+      rebalanceTimeout,
       memberId: this.memberId || '',
       groupProtocols: this.assigners.map(assigner => assigner.protocol({ topics: this.topics })),
     })

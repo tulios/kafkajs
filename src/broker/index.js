@@ -316,6 +316,8 @@ module.exports = class Broker {
    * @param {string} groupId The unique group id
    * @param {number} sessionTimeout The coordinator considers the consumer dead if it receives
    *                                no heartbeat after this timeout in ms
+   * @param {number} rebalanceTimeout The maximum time that the coordinator will wait for each member
+   *                                  to rejoin when rebalancing the group
    * @param {string} [memberId=""] The assigned consumer id or an empty string for a new consumer
    * @param {string} [protocolType="consumer"] Unique name for class of protocols implemented by group
    * @param {Array} groupProtocols List of protocols that the member supports (assignment strategy)
@@ -325,16 +327,17 @@ module.exports = class Broker {
   async joinGroup({
     groupId,
     sessionTimeout,
+    rebalanceTimeout,
     memberId = '',
     protocolType = 'consumer',
     groupProtocols,
   }) {
-    // TODO: validate groupId and sessionTimeout (maybe default for sessionTimeout)
     const joinGroup = this.lookupRequest(apiKeys.JoinGroup, requests.JoinGroup)
     return await this.connection.send(
       joinGroup({
         groupId,
         sessionTimeout,
+        rebalanceTimeout,
         memberId,
         protocolType,
         groupProtocols,
@@ -439,7 +442,7 @@ module.exports = class Broker {
   /**
    * @public
    * @param {string} groupId
-   * @param {object} topics e.g:
+   * @param {object} topics - If the topic array is null fetch offsets for all topics. e.g:
    *                  [
    *                    {
    *                      topic: 'topic-name',
@@ -507,11 +510,12 @@ module.exports = class Broker {
    *                                   name: 'topic-name',
    *                                   configNames: ['compression.type', 'retention.ms']
    *                                 }]
+   * @param {boolean} [includeSynonyms=false]
    * @returns {Promise}
    */
-  async describeConfigs({ resources }) {
+  async describeConfigs({ resources, includeSynonyms = false }) {
     const describeConfigs = this.lookupRequest(apiKeys.DescribeConfigs, requests.DescribeConfigs)
-    return await this.connection.send(describeConfigs({ resources }))
+    return await this.connection.send(describeConfigs({ resources, includeSynonyms }))
   }
 
   /**

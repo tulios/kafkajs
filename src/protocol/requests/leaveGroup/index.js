@@ -7,6 +7,14 @@ const versions = {
       response,
     }
   },
+  1: ({ groupId, memberId }) => {
+    const request = require('./v1/request')
+    const response = require('./v1/response')
+    return {
+      request: request({ groupId, memberId }),
+      response,
+    }
+  },
 }
 
 module.exports = {
