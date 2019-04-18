@@ -80,7 +80,14 @@ module.exports = ({
     })
   }
 
-  const createRunner = ({ eachBatchAutoResolve, eachBatch, eachMessage, onCrash, autoCommit }) => {
+  const createRunner = ({
+    eachBatchAutoResolve,
+    eachBatch,
+    eachMessage,
+    onCrash,
+    autoCommit,
+    partitionsConsumedConcurrently,
+  }) => {
     return new Runner({
       autoCommit,
       logger: rootLogger,
@@ -92,6 +99,7 @@ module.exports = ({
       heartbeatInterval,
       retry,
       onCrash,
+      partitionsConsumedConcurrently,
     })
   }
 
@@ -151,6 +159,7 @@ module.exports = ({
    * @param {number} [autoCommitThreshold=null]
    * @param {boolean} [eachBatchAutoResolve=true] Automatically resolves the last offset of the batch when the
    *                                              the callback succeeds
+   * @param {number} [partitionsConsumedConcurrently=1]
    * @param {Function} [eachBatch=null]
    * @param {Function} [eachMessage=null]
    * @return {Promise}
@@ -160,6 +169,7 @@ module.exports = ({
     autoCommitInterval = null,
     autoCommitThreshold = null,
     eachBatchAutoResolve = true,
+    partitionsConsumedConcurrently = 1,
     eachBatch = null,
     eachMessage = null,
   } = {}) => {
@@ -181,6 +191,7 @@ module.exports = ({
         eachBatch,
         eachMessage,
         onCrash,
+        partitionsConsumedConcurrently,
       })
 
       await runner.start()

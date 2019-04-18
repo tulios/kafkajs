@@ -2,6 +2,7 @@ const createProducer = require('../../producer')
 const createConsumer = require('../index')
 const { Types } = require('../../protocol/message/compression')
 const ISOLATION_LEVEL = require('../../protocol/isolationLevel')
+const sleep = require('../../utils/sleep')
 
 const {
   secureRandom,
@@ -90,6 +91,50 @@ describe('Consumer', () => {
 
     // check if all offsets are present
     expect(messagesConsumed.map(m => m.message.offset)).toEqual(messages.map((_, i) => `${i}`))
+  })
+
+  it('consumes messages concurrently', async () => {
+    const partitionsConsumedConcurrently = 2
+    topicName = `test-topic-${secureRandom()}`
+    await createTopic({
+      topic: topicName,
+      partitions: partitionsConsumedConcurrently + 1,
+    })
+    await consumer.connect()
+    await producer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    let inProgress = 0
+    let hitConcurrencyLimit = false
+    consumer.on(consumer.events.START_BATCH_PROCESS, () => {
+      inProgress++
+      expect(inProgress).toBeLessThanOrEqual(partitionsConsumedConcurrently)
+      hitConcurrencyLimit = hitConcurrencyLimit || inProgress === partitionsConsumedConcurrently
+    })
+    consumer.on(consumer.events.END_BATCH_PROCESS, () => inProgress--)
+
+    const messagesConsumed = []
+    consumer.run({
+      partitionsConsumedConcurrently,
+      eachMessage: async event => {
+        await sleep(1)
+        messagesConsumed.push(event)
+      },
+    })
+
+    await waitForConsumerToJoinGroup(consumer)
+
+    const messages = Array(100)
+      .fill()
+      .map(() => {
+        const value = secureRandom()
+        return { key: `key-${value}`, value: `value-${value}` }
+      })
+
+    await producer.send({ acks: 1, topic: topicName, messages })
+    await waitForMessages(messagesConsumed, { number: messages.length })
+
+    expect(hitConcurrencyLimit).toBeTrue()
   })
 
   it('consume GZIP messages', async () => {
