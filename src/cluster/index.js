@@ -161,6 +161,24 @@ module.exports = class Cluster {
 
   /**
    * @public
+   * @param {string[]} topics
+   * @return {Promise}
+   */
+  async addMultipleTargetTopics(topics) {
+    const previousSize = this.targetTopics.size
+    for (let topic of topics) {
+      this.targetTopics.add(topic)
+    }
+
+    const hasChanged = previousSize !== this.targetTopics.size || !this.brokerPool.metadata
+
+    if (hasChanged) {
+      await this.refreshMetadata()
+    }
+  }
+
+  /**
+   * @public
    * @param {string} nodeId
    * @returns {Promise<Broker>}
    */
