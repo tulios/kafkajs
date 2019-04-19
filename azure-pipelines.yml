@@ -172,10 +172,6 @@ jobs:
         inputs:
           command: publish
           publishEndpoint: npm_registry
-      - bash: TOKEN=${GH_TOKEN} TAG=$(Build.SourceBranch) ./scripts/updateGithubRelease.js
-        displayName: github release
-        env:
-          GH_TOKEN: $(GH_TOKEN)
 
   - job: website_deploy
     displayName: 'Website'
