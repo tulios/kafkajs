@@ -150,7 +150,7 @@ module.exports = ({
     }
 
     const isRegExp = topic instanceof RegExp
-    if (!(topic instanceof String) && !isRegExp) {
+    if (typeof topic !== 'string' && !isRegExp) {
       throw new KafkaJSNonRetriableError(
         `Invalid topic ${topic} (${typeof topic}), the topic name has to be a String or a RegExp`
       )
