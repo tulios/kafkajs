@@ -46,6 +46,22 @@ const versions = {
       response,
     }
   },
+  5: ({ acks, timeout, compression, topicData, transactionalId, producerId, producerEpoch }) => {
+    const request = require('./v5/request')
+    const response = require('./v5/response')
+    return {
+      request: request({
+        acks,
+        timeout,
+        compression,
+        topicData,
+        transactionalId,
+        producerId,
+        producerEpoch,
+      }),
+      response,
+    }
+  },
 }
 
 module.exports = {

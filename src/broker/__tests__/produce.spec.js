@@ -188,7 +188,15 @@ describe('Broker > Produce', () => {
         topics: [
           {
             topicName,
-            partitions: [{ baseOffset: '0', errorCode: 0, logAppendTime: '-1', partition: 0 }],
+            partitions: [
+              {
+                baseOffset: '0',
+                errorCode: 0,
+                logAppendTime: '-1',
+                logStartOffset: '0',
+                partition: 0,
+              },
+            ],
           },
         ],
         throttleTime: 0,
@@ -199,7 +207,15 @@ describe('Broker > Produce', () => {
         topics: [
           {
             topicName,
-            partitions: [{ baseOffset: '3', errorCode: 0, logAppendTime: '-1', partition: 0 }],
+            partitions: [
+              {
+                baseOffset: '3',
+                errorCode: 0,
+                logAppendTime: '-1',
+                logStartOffset: '0',
+                partition: 0,
+              },
+            ],
           },
         ],
         throttleTime: 0,
@@ -263,7 +279,15 @@ describe('Broker > Produce', () => {
         topics: [
           {
             topicName,
-            partitions: [{ baseOffset: '0', errorCode: 0, logAppendTime: '-1', partition: 0 }],
+            partitions: [
+              {
+                baseOffset: '0',
+                errorCode: 0,
+                logAppendTime: '-1',
+                logStartOffset: '0',
+                partition: 0,
+              },
+            ],
           },
         ],
         throttleTime: 0,
@@ -324,7 +348,15 @@ describe('Broker > Produce', () => {
         topics: [
           {
             topicName,
-            partitions: [{ baseOffset: '0', errorCode: 0, logAppendTime: '-1', partition: 0 }],
+            partitions: [
+              {
+                baseOffset: '0',
+                errorCode: 0,
+                logAppendTime: '-1',
+                logStartOffset: '0',
+                partition: 0,
+              },
+            ],
           },
         ],
         throttleTime: 0,
@@ -335,7 +367,15 @@ describe('Broker > Produce', () => {
         topics: [
           {
             topicName,
-            partitions: [{ baseOffset: '3', errorCode: 0, logAppendTime: '-1', partition: 0 }],
+            partitions: [
+              {
+                baseOffset: '3',
+                errorCode: 0,
+                logAppendTime: '-1',
+                logStartOffset: '0',
+                partition: 0,
+              },
+            ],
           },
         ],
         throttleTime: 0,
@@ -373,7 +413,15 @@ describe('Broker > Produce', () => {
         topics: [
           {
             topicName,
-            partitions: [{ baseOffset: '0', errorCode: 0, logAppendTime: '-1', partition: 0 }],
+            partitions: [
+              {
+                baseOffset: '0',
+                errorCode: 0,
+                logAppendTime: '-1',
+                logStartOffset: '0',
+                partition: 0,
+              },
+            ],
           },
         ],
         throttleTime: 0,
@@ -388,7 +436,15 @@ describe('Broker > Produce', () => {
         topics: [
           {
             topicName,
-            partitions: [{ baseOffset: '3', errorCode: 0, logAppendTime: '-1', partition: 0 }],
+            partitions: [
+              {
+                baseOffset: '3',
+                errorCode: 0,
+                logAppendTime: '-1',
+                logStartOffset: '0',
+                partition: 0,
+              },
+            ],
           },
         ],
         throttleTime: 0,
@@ -444,7 +500,15 @@ describe('Broker > Produce', () => {
         topics: [
           {
             topicName,
-            partitions: [{ baseOffset: '0', errorCode: 0, logAppendTime: '-1', partition: 0 }],
+            partitions: [
+              {
+                baseOffset: '0',
+                errorCode: 0,
+                logAppendTime: '-1',
+                logStartOffset: '0',
+                partition: 0,
+              },
+            ],
           },
         ],
         throttleTime: 0,
