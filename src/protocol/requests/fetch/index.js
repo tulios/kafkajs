@@ -80,6 +80,22 @@ const versions = {
       requestTimeout: requestTimeout(maxWaitTime),
     }
   },
+  6: ({
+    replicaId = REPLICA_ID,
+    isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
+    maxWaitTime,
+    minBytes,
+    maxBytes,
+    topics,
+  }) => {
+    const request = require('./v6/request')
+    const response = require('./v6/response')
+    return {
+      request: request({ replicaId, isolationLevel, maxWaitTime, minBytes, maxBytes, topics }),
+      response,
+      requestTimeout: requestTimeout(maxWaitTime),
+    }
+  },
 }
 
 module.exports = {
