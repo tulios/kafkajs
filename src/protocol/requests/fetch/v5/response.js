@@ -1,22 +1,23 @@
 const Decoder = require('../../../decoder')
 const { parse: parseV1 } = require('../v1/response')
-const decodeMessages = require('./decodeMessages')
+const decodeMessages = require('../v4/decodeMessages')
 
 /**
- * Fetch Response (Version: 4) => throttle_time_ms [responses]
- *   throttle_time_ms => INT32
- *   responses => topic [partition_responses]
- *     topic => STRING
- *     partition_responses => partition_header record_set
- *       partition_header => partition error_code high_watermark last_stable_offset [aborted_transactions]
- *         partition => INT32
- *         error_code => INT16
- *         high_watermark => INT64
- *         last_stable_offset => INT64
- *         aborted_transactions => producer_id first_offset
- *           producer_id => INT64
- *           first_offset => INT64
- *       record_set => RECORDS
+ * Fetch Response (Version: 5) => throttle_time_ms [responses]
+ *  throttle_time_ms => INT32
+ *  responses => topic [partition_responses]
+ *    topic => STRING
+ *    partition_responses => partition_header record_set
+ *      partition_header => partition error_code high_watermark last_stable_offset log_start_offset [aborted_transactions]
+ *        partition => INT32
+ *        error_code => INT16
+ *        high_watermark => INT64
+ *        last_stable_offset => INT64
+ *        log_start_offset => INT64
+ *        aborted_transactions => producer_id first_offset
+ *          producer_id => INT64
+ *          first_offset => INT64
+ *      record_set => RECORDS
  */
 
 const decodeAbortedTransactions = decoder => ({
@@ -29,6 +30,7 @@ const decodePartition = async decoder => ({
   errorCode: decoder.readInt16(),
   highWatermark: decoder.readInt64().toString(),
   lastStableOffset: decoder.readInt64().toString(),
+  lastStartOffset: decoder.readInt64().toString(),
   abortedTransactions: decoder.readArray(decodeAbortedTransactions),
   messages: await decodeMessages(decoder),
 })

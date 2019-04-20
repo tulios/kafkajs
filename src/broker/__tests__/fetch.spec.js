@@ -305,6 +305,7 @@ describe('Broker > Fetch', () => {
                 errorCode: 0,
                 highWatermark: '3',
                 lastStableOffset: '3',
+                lastStartOffset: '0',
                 partition: 0,
                 messages: [
                   {
@@ -384,6 +385,7 @@ describe('Broker > Fetch', () => {
                 errorCode: 0,
                 highWatermark: '3',
                 lastStableOffset: '3',
+                lastStartOffset: '0',
                 partition: 0,
                 messages: [
                   {
@@ -463,6 +465,7 @@ describe('Broker > Fetch', () => {
                 errorCode: 0,
                 highWatermark: '3',
                 lastStableOffset: '3',
+                lastStartOffset: '0',
                 partition: 0,
                 messages: [
                   {
@@ -573,6 +576,7 @@ describe('Broker > Fetch', () => {
                 {
                   abortedTransactions: [],
                   lastStableOffset: '0',
+                  lastStartOffset: '0',
                   errorCode: 0,
                   highWatermark: '3',
                   partition: 0,
@@ -608,6 +612,7 @@ describe('Broker > Fetch', () => {
                     errorCode: 0,
                     highWatermark: '4', // Number of produced messages + 1 control record
                     lastStableOffset: '4',
+                    lastStartOffset: '0',
                     partition: 0,
                     messages: [
                       {
@@ -728,6 +733,7 @@ describe('Broker > Fetch', () => {
                   errorCode: 0,
                   highWatermark: '3', // Number of produced messages
                   lastStableOffset: '-1', // None
+                  lastStartOffset: '0',
                   partition: 0,
                   messages: [
                     {
@@ -810,6 +816,7 @@ describe('Broker > Fetch', () => {
                     errorCode: 0,
                     highWatermark: '4',
                     lastStableOffset: '-1',
+                    lastStartOffset: '0',
                     partition: 0,
                     messages: [
                       // Control record
