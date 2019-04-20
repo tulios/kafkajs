@@ -296,6 +296,8 @@ describe('Broker > Fetch', () => {
       let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse).toEqual({
         throttleTime: 0,
+        errorCode: 0,
+        sessionId: 0,
         responses: [
           {
             topicName,
@@ -376,6 +378,8 @@ describe('Broker > Fetch', () => {
       let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse).toEqual({
         throttleTime: 0,
+        errorCode: 0,
+        sessionId: 0,
         responses: [
           {
             topicName,
@@ -456,6 +460,8 @@ describe('Broker > Fetch', () => {
       let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse).toEqual({
         throttleTime: 0,
+        errorCode: 0,
+        sessionId: 0,
         responses: [
           {
             topicName,
@@ -569,6 +575,8 @@ describe('Broker > Fetch', () => {
         let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
         expect(fetchResponse).toEqual({
           throttleTime: 0,
+          errorCode: 0,
+          sessionId: 0,
           responses: [
             {
               topicName,
@@ -598,6 +606,8 @@ describe('Broker > Fetch', () => {
           fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
           expect(fetchResponse).toEqual({
             throttleTime: 0,
+            errorCode: 0,
+            sessionId: 0,
             responses: [
               {
                 topicName,
@@ -724,6 +734,8 @@ describe('Broker > Fetch', () => {
         })
         expect(fetchResponse).toEqual({
           throttleTime: 0,
+          errorCode: 0,
+          sessionId: 0,
           responses: [
             {
               topicName,
@@ -807,6 +819,8 @@ describe('Broker > Fetch', () => {
           })
           expect(fetchResponse).toEqual({
             throttleTime: 0,
+            errorCode: 0,
+            sessionId: 0,
             responses: [
               {
                 topicName,
