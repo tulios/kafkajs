@@ -317,7 +317,7 @@ describe('Broker > Produce', () => {
 
       const response1 = await retryProtocol(
         'LEADER_NOT_AVAILABLE',
-        async () => await broker2.produce({ topicData: createTopicData(true) })
+        async () => await broker2.produce({ topicData: createTopicData({ headers: true }) })
       )
 
       expect(response1).toEqual({
