@@ -553,6 +553,7 @@ describe('Producer', () => {
           baseOffset: '0',
           errorCode: 0,
           logAppendTime: '-1',
+          logStartOffset: '0',
           partition: 0,
         },
       ])
@@ -563,6 +564,7 @@ describe('Producer', () => {
           baseOffset: '10',
           errorCode: 0,
           logAppendTime: '-1',
+          logStartOffset: '0',
           partition: 0,
         },
       ])
@@ -628,6 +630,7 @@ describe('Producer', () => {
           baseOffset: '0',
           errorCode: 0,
           logAppendTime: '-1',
+          logStartOffset: '0',
           partition: 0,
         },
       ])
@@ -638,6 +641,7 @@ describe('Producer', () => {
           baseOffset: '10',
           errorCode: 0,
           logAppendTime: '-1',
+          logStartOffset: '0',
           partition: 0,
         },
       ])
