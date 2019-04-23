@@ -140,7 +140,7 @@ module.exports = ({
   }
 
   /**
-   * @param {string} topic
+   * @param {string | RegExp} topic
    * @param {string} [fromBeginning=false]
    * @return {Promise}
    */
@@ -149,8 +149,37 @@ module.exports = ({
       throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
     }
 
-    topics[topic] = { fromBeginning }
-    await cluster.addTargetTopic(topic)
+    const isRegExp = topic instanceof RegExp
+    if (typeof topic !== 'string' && !isRegExp) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid topic ${topic} (${typeof topic}), the topic name has to be a String or a RegExp`
+      )
+    }
+
+    const topicsToSubscribe = []
+    if (isRegExp) {
+      const topicRegExp = topic
+      const metadata = await cluster.metadata()
+      const matchedTopics = metadata.topicMetadata
+        .map(({ topic: topicName }) => topicName)
+        .filter(topicName => topicRegExp.test(topicName))
+
+      logger.debug('Subscription based on RegExp', {
+        groupId,
+        topicRegExp: topicRegExp.toString(),
+        matchedTopics,
+      })
+
+      topicsToSubscribe.push(...matchedTopics)
+    } else {
+      topicsToSubscribe.push(topic)
+    }
+
+    for (let t of topicsToSubscribe) {
+      topics[t] = { fromBeginning }
+    }
+
+    await cluster.addMultipleTargetTopics(topicsToSubscribe)
   }
 
   /**
