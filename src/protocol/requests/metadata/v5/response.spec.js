@@ -39,7 +39,7 @@ describe('Protocol > Requests > Metadata > v5', () => {
               leader: 0,
               replicas: [0],
               isr: [0],
-              offlineReplicas: 0,
+              offlineReplicas: [],
             },
           ],
         },
