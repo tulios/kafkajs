@@ -140,7 +140,7 @@ module.exports = ({
   }
 
   /**
-   * @param {string} topic
+   * @param {string | RegExp} topic
    * @param {string} [fromBeginning=false]
    * @return {Promise}
    */
