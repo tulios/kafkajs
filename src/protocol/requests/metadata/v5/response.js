@@ -44,7 +44,7 @@ const partitionMetadata = decoder => ({
   leader: decoder.readInt32(),
   replicas: decoder.readArray(d => d.readInt32()),
   isr: decoder.readArray(d => d.readInt32()),
-  offlineReplicas: decoder.readInt32(),
+  offlineReplicas: decoder.readArray(d => d.readInt32()),
 })
 
 const decode = async rawData => {
