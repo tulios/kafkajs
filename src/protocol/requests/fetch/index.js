@@ -64,6 +64,67 @@ const versions = {
       requestTimeout: requestTimeout(maxWaitTime),
     }
   },
+  5: ({
+    replicaId = REPLICA_ID,
+    isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
+    maxWaitTime,
+    minBytes,
+    maxBytes,
+    topics,
+  }) => {
+    const request = require('./v5/request')
+    const response = require('./v5/response')
+    return {
+      request: request({ replicaId, isolationLevel, maxWaitTime, minBytes, maxBytes, topics }),
+      response,
+      requestTimeout: requestTimeout(maxWaitTime),
+    }
+  },
+  6: ({
+    replicaId = REPLICA_ID,
+    isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
+    maxWaitTime,
+    minBytes,
+    maxBytes,
+    topics,
+  }) => {
+    const request = require('./v6/request')
+    const response = require('./v6/response')
+    return {
+      request: request({ replicaId, isolationLevel, maxWaitTime, minBytes, maxBytes, topics }),
+      response,
+      requestTimeout: requestTimeout(maxWaitTime),
+    }
+  },
+  7: ({
+    replicaId = REPLICA_ID,
+    isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
+    sessionId = 0,
+    sessionEpoch = -1,
+    forgottenTopics = [],
+    maxWaitTime,
+    minBytes,
+    maxBytes,
+    topics,
+  }) => {
+    const request = require('./v7/request')
+    const response = require('./v7/response')
+    return {
+      request: request({
+        replicaId,
+        isolationLevel,
+        sessionId,
+        sessionEpoch,
+        forgottenTopics,
+        maxWaitTime,
+        minBytes,
+        maxBytes,
+        topics,
+      }),
+      response,
+      requestTimeout: requestTimeout(maxWaitTime),
+    }
+  },
 }
 
 module.exports = {
