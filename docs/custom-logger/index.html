@@ -102,7 +102,8 @@
         ]
     })
 
-    <span class="hljs-keyword">return</span> <span class="hljs-function">(<span class="hljs-params">{ namespace, level, { message, ...extra } }</span>) =&gt;</span> {
+    <span class="hljs-keyword">return</span> <span class="hljs-function">(<span class="hljs-params">{ namespace, level, label, log }</span>) =&gt;</span> {
+        <span class="hljs-keyword">const</span> { message, ...extra } = log
         logger.log({
             <span class="hljs-attr">level</span>: toWinstonLogLevel(level),
             message,
