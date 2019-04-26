@@ -57,7 +57,8 @@ const WinstonLogCreator = logLevel => {
         ]
     })
 
-    return ({ namespace, level, { message, ...extra } }) => {
+    return ({ namespace, level, label, log }) => {
+        const { message, ...extra } = log
         logger.log({
             level: toWinstonLogLevel(level),
             message,
