@@ -40,7 +40,7 @@ describe('Broker > Metadata', () => {
       throttleTime: 0,
       brokers: expect.arrayContaining([
         {
-          host: expect.stringMatching(/\d+\.\d+\.\d+\.\d+/),
+          host: 'localhost',
           nodeId: expect.any(Number),
           port: expect.any(Number),
           rack: null,
