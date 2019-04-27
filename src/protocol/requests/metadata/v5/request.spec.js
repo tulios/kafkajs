@@ -2,7 +2,7 @@ const Encoder = require('../../../encoder')
 const apiKeys = require('../../apiKeys')
 const RequestProtocol = require('./request')
 
-describe('Protocol > Requests > Metadata > v5', async () => {
+describe('Protocol > Requests > Metadata > v5', () => {
   let topics
 
   beforeEach(() => {
