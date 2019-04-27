@@ -14,4 +14,4 @@ PARTITIONS=${PARTITIONS:=3}
 
 docker exec \
   $(find_container_id) \
-  bash -c "/opt/kafka/bin/kafka-topics.sh --create --if-not-exists --topic ${TOPIC} --replication-factor 1 --partitions ${PARTITIONS} --zookeeper zookeeper:2181"
+  bash -c "kafka-topics --create --if-not-exists --topic ${TOPIC} --replication-factor 1 --partitions ${PARTITIONS} --zookeeper zookeeper:2181"
