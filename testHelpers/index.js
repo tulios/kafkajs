@@ -1,5 +1,4 @@
 const fs = require('fs')
-const ip = require('ip')
 const execa = require('execa')
 const uuid = require('uuid/v4')
 const semver = require('semver')
