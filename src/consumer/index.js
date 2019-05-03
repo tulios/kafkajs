@@ -141,7 +141,7 @@ module.exports = ({
 
   /**
    * @param {string | RegExp} topic
-   * @param {string} [fromBeginning=false]
+   * @param {boolean} [fromBeginning=false]
    * @return {Promise}
    */
   const subscribe = async ({ topic, fromBeginning = false }) => {
