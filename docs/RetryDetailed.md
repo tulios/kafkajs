@@ -21,12 +21,4 @@ The retry mechanism uses a randomization function that grows exponentially. This
     - Hence, somewhere between `768ms` to `1728ms`
   - And so on...
 
-Table of retry times for default values:
-
-| Retry # | min (ms) | max (ms) |
-| ------- | -------- | -------- |
-| 1       | 300      | 300      |
-| 2       | 480      | 720      |
-| 3       | 768      | 1728     |
-| 4       | 1229     | 4147     |
-| 5       | 1966     | 9953     |
+![Plot with default configuration](assets/retry-plot.svg)
