@@ -14,6 +14,10 @@ describe('Producer > Partitioner > Default > murmur2', () => {
   test('it handles buffer input', () => {
     expect(murmur2(Buffer.from('1'))).toEqual(1311020360)
   })
+
+  test('it matches the Java implementation', () => {
+    expect(murmur2(Buffer.from('100:48069'))).toEqual(1009543857)
+  })
 })
 
 const testData = {
