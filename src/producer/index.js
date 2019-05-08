@@ -1,5 +1,5 @@
 const createRetry = require('../retry')
-const createDefaultPartitioner = require('./partitioners/default')
+const { DefaultPartitioner } = require('./partitioners/')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const createEosManager = require('./eosManager')
 const createMessageProducer = require('./messageProducer')
@@ -17,7 +17,7 @@ const { CONNECT, DISCONNECT } = events
 module.exports = ({
   cluster,
   logger: rootLogger,
-  createPartitioner = createDefaultPartitioner,
+  createPartitioner = DefaultPartitioner,
   retry,
   idempotent = false,
   transactionalId,
