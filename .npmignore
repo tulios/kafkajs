@@ -28,3 +28,4 @@ azure-pipelines.yml
 logo
 *.tgz
 .vscode/
+*.java
