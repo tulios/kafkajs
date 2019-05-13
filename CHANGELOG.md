@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
   - Add partition-aware concurrent mode for `eachMessage` #332
   - Add `JavaCompatiblePartitioner` #358
-  - Add `consumer.subscribe({ topic: RegEx })` #346
-  - Update protocol produce to latest of Kafka 1 #343 #347 #348
+  - Add `consumer.subscribe({ topic: RegExp })` #346
+  - Update supported protocols to latest of Kafka 1 #343 #347 #348
 
 ### Changed
   - Add documentation link to `REBALANCE_IN_PROGRESS` error #341
