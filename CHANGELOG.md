@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2019-05-13
+### Added
+  - Add partition-aware concurrent mode for `eachMessage` #332
+  - Add `JavaCompatiblePartitioner` #358
+  - Add `consumer.subscribe({ topic: RegEx })` #346
+  - Update protocol produce to latest of Kafka 1 #343 #347 #348
+
+### Changed
+  - Add documentation link to `REBALANCE_IN_PROGRESS` error #341
+
+### Fixed
+  - Fix crash on offline replicas in metadata v5 response #350
+
 ## [1.7.0] - 2019-04-12
 ### Fixed
   - Improve compatibility with terserjs #338
