@@ -2,7 +2,7 @@ const createRetry = require('../retry')
 const createSocket = require('./socket')
 const createRequest = require('../protocol/request')
 const Decoder = require('../protocol/decoder')
-const { KafkaJSConnectionError } = require('../errors')
+const { KafkaJSConnectionError, KafkaJSTimeout } = require('../errors')
 const { INT_32_MAX_VALUE } = require('../constants')
 const getEnv = require('../env')
 const RequestQueue = require('./requestQueue')
@@ -195,8 +195,25 @@ module.exports = class Connection {
 
     this.logDebug('disconnecting...')
     this.connected = false
-    this.socket.end()
     this.socket.unref()
+
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(
+        () =>
+          reject(
+            new KafkaJSTimeout(`Failed to close connection within ${this.connectionTimeout}ms`)
+          ),
+        this.connectionTimeout
+      )
+
+      this.socket.end(null, null, () => {
+        clearTimeout(timeout)
+        this.socket.destroy()
+        resolve()
+      })
+    })
+
+    this.socket = null
     this.logDebug('disconnected')
     return true
   }
