@@ -24,7 +24,6 @@ export interface KafkaConfig {
     socketFactory?: ISocketFactory;
     logLevel?: logLevel;
     logCreator?: logCreator;
-    allowExperimentalV011?: boolean;
 }
 
 export type ISocketFactory = (host: string, port: number, ssl: tls.SecureContextOptions, onConnect: () => void) => net.Socket;
@@ -582,9 +581,9 @@ export enum CompressionTypes {
     ZSTD = 4,
 }
 
-export const CompressionCodecs: {
+export var CompressionCodecs: {
     [CompressionTypes.GZIP]: () => any;
-    [CompressionTypes.Snappy]: () => never;
-    [CompressionTypes.LZ4]: () => never;
-    [CompressionTypes.ZSTD]: () => never;
+    [CompressionTypes.Snappy]: () => any;
+    [CompressionTypes.LZ4]: () => any;
+    [CompressionTypes.ZSTD]: () => any;
 };
