@@ -7,3 +7,4 @@ yarn-error.log
 .vscode
 .vs
 build/
+*.class

@@ -173,6 +173,19 @@ To use your custom partitioner, use the option `createPartitioner` when creating
 kafka.producer({ createPartitioner: MyPartitioner })
 ```
 
+### Default Partitioners
+
+KafkaJS ships with 2 partitioners: `DefaultPartitioner` and `JavaCompatiblePartitioner`.
+
+The `JavaCompatiblePartitioner` should be compatible with the default partitioner that ships with the Java Kafka client. This can be important to meet the [co-partitioning requirement](https://docs.confluent.io/current/ksql/docs/developer-guide/partition-data.html#co-partitioning-requirements) when joining multiple topics.
+
+Use the `JavaCompatiblePartitioner` by importing it and providing it to the Producer constructor:
+
+```javascript
+const { Partitioners } = require('kafkajs')
+kafka.producer({ createPartitioner: Partitioners.JavaCompatiblePartitioner })
+```
+
 ## <a name="retry"></a> Retry
 
 The option `retry` can be used to customize the configuration for the producer.
