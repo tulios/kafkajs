@@ -17,20 +17,13 @@ You initialize a transaction by making an async call to `producer.transaction()`
 > - The producer must wait for acknowledgement from all replicas (acks=-1)
 > - The producer must have unlimited retries
 
-Configure the producer client with `maxFlightRequests: 1` to guarantee EOS.
+Configure the producer client with `maxInFlightRequests: 1` and `idempotent: true` to guarantee EOS. Configuring the two options will enable the settings mentioned above.
 
 ```javascript
 const client = new Kafka({
   clientId: 'transactional-client',
   brokers: ['kafka1:9092', 'kafka2:9092'],
 })
-const producer = client.producer({ maxInFlightRequests: 1 });
-```
-
-Setting `idempotent` to `true` will correctly configure the producer
-to use unlimited retries and enforce acks from all replicas
-
-```javascript
 const producer = client.producer({ maxInFlightRequests: 1, idempotent: true })
 ```
 
