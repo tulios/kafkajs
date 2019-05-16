@@ -65,20 +65,16 @@
 <p>Note: Kafka requires that the transactional producer have the following configuration to <em>guarantee</em> EoS (&quot;Exactly-once-semantics&quot;):</p>
 <ul>
 <li>The producer must have a max in flight requests of 1</li>
-<li>The producer must wait for acknowledgement from all replices (acks=-1)</li>
-<li>The producer must have unlimitted retries</li>
+<li>The producer must wait for acknowledgement from all replicas (acks=-1)</li>
+<li>The producer must have unlimited retries</li>
 </ul>
 </blockquote>
-<p>Configure the client with <code>maxFlightRequests: 1</code> to guarantee EOS.</p>
+<p>Configure the producer client with <code>maxInFlightRequests: 1</code> and <code>idempotent: true</code> to guarantee EOS. Configuring the two options will enable the settings mentioned above.</p>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> client = <span class="hljs-keyword">new</span> Kafka({
   <span class="hljs-attr">clientId</span>: <span class="hljs-string">'transactional-client'</span>,
   <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
-  <span class="hljs-attr">maxInFlightRequests</span>: <span class="hljs-number">1</span>,
 })
-</code></pre>
-<p>Setting <code>idempotent</code> to <code>true</code> will correctly configure the producer
-to use unlimitted retries and enforce acks from all replicas</p>
-<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> producer = client.producer({ <span class="hljs-attr">idempotent</span>: <span class="hljs-literal">true</span> })
+<span class="hljs-keyword">const</span> producer = client.producer({ <span class="hljs-attr">maxInFlightRequests</span>: <span class="hljs-number">1</span>, <span class="hljs-attr">idempotent</span>: <span class="hljs-literal">true</span> })
 </code></pre>
 <p>Within a transaction, you can produce one or more messages. If <code>transaction.abort</code> is called, all messages will be rolled back.</p>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span>  transaction = <span class="hljs-keyword">await</span> producer.transaction()
