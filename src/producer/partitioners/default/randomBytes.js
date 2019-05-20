@@ -1,7 +1,16 @@
 const { KafkaJSNonRetriableError } = require('../../../errors')
 
-if (typeof global !== 'undefined' && !global.crypto) {
-  global.crypto = require('crypto')
+const toNodeCompatible = crypto => ({
+  randomBytes: size => crypto.getRandomValues(Buffer.allocUnsafe(size)),
+})
+
+let cryptoImplementation = null
+if (global && global.crypto) {
+  cryptoImplementation = toNodeCompatible(global.crypto)
+} else if (global && global.msCrypto) {
+  cryptoImplementation = toNodeCompatible(global.msCrypto)
+} else if (global && !global.crypto) {
+  cryptoImplementation = require('crypto')
 }
 
 const MAX_BYTES = 65536
@@ -13,20 +22,9 @@ module.exports = size => {
     )
   }
 
-  if (typeof global.crypto !== 'undefined' && global.crypto.randomBytes) {
-    return global.crypto.randomBytes(size)
-  }
-
-  let cryptoImplementation
-  if (typeof global.crypto !== 'undefined') {
-    cryptoImplementation = global.crypto
-  } else if (typeof global.msCrypto !== 'undefined') {
-    cryptoImplementation = global.msCrypto
-  }
-
   if (!cryptoImplementation) {
     throw new KafkaJSNonRetriableError('No available crypto implementation')
   }
 
-  return cryptoImplementation.getRandomValues(Buffer.allocUnsafe(size))
+  return cryptoImplementation.randomBytes(size)
 }
