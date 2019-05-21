@@ -486,4 +486,8 @@ module.exports = class ConsumerGroup {
       }
     }
   }
+
+  hasSeekOffset({ topic, partition }) {
+    return this.seekOffset.has(topic, partition)
+  }
 }
