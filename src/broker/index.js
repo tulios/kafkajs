@@ -40,6 +40,7 @@ module.exports = class Broker {
     this.allowAutoTopicCreation = allowAutoTopicCreation
     this.supportAuthenticationProtocol = supportAuthenticationProtocol
     this.authenticated = false
+    this.apiVersionsRequestTimeout = this.connection.connectionTimeout
 
     const lockTimeout = this.connection.connectionTimeout + this.authenticationTimeout
     this.brokerAddress = `${this.connection.host}:${this.connection.port}`
@@ -138,7 +139,12 @@ module.exports = class Broker {
     for (let candidateVersion of availableVersions) {
       try {
         const apiVersions = requests.ApiVersions.protocol({ version: candidateVersion })
-        response = await this.connection.send(apiVersions())
+        const connectionOptions = Object.assign(
+          {},
+          { requestTimeout: this.apiVersionsRequestTimeout },
+          apiVersions()
+        )
+        response = await this.connection.send(connectionOptions)
         break
       } catch (e) {
         if (e.type !== 'UNSUPPORTED_VERSION') {

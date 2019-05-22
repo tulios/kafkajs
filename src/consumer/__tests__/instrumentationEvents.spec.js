@@ -340,7 +340,7 @@ describe('Consumer > Instrumentation Events', () => {
       timestamp: expect.any(Number),
       type: 'consumer.network.request_timeout',
       payload: {
-        apiKey: 18,
+        apiKey: expect.any(Number),
         apiName: expect.any(String),
         apiVersion: expect.any(Number),
         broker: expect.any(String),
