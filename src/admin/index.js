@@ -229,9 +229,10 @@ module.exports = ({
   /**
    * @param {string} groupId
    * @param {string} topic
+   * @param {boolean} resolveOffsets
    * @return {Promise}
    */
-  const fetchOffsets = async ({ groupId, topic }) => {
+  const fetchOffsets = async ({ groupId, topic, resolveOffsets }) => {
     if (!groupId) {
       throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
     }
@@ -241,6 +242,7 @@ module.exports = ({
     }
 
     const partitions = await findTopicPartitions(cluster, topic)
+    if (resolveOffsets) await cluster.refreshMetadata()
     const coordinator = await cluster.findGroupCoordinator({ groupId })
     const partitionsToFetch = partitions.map(partition => ({ partition }))
 
