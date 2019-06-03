@@ -85,7 +85,7 @@ await consumer.run({
 * `resolveOffset()` is used to mark a message in the batch as processed. In case of errors, the consumer will automatically commit the resolved offsets.
 * `commitOffsetsIfNecessary(offsets?)` is used to commit offsets based on the autoCommit configurations (`autoCommitInterval` and `autoCommitThreshold`). Note that auto commit won't happen in `eachBatch` if `commitOffsetsIfNecessary` is not invoked. Take a look at [autoCommit](#auto-commit) for more information.
 * `uncommittedOffsets()` returns all offsets by topic-partition which have not yet been committed.
-* `isStale()` returns whether the messages in the batch have been rendered stale through some other operation and should be discarded. For example, when calling `[consumer.seek](#seek)` the messages in the batch should be discarded, as they are not at the offset we seeked to.
+* `isStale()` returns whether the messages in the batch have been rendered stale through some other operation and should be discarded. For example, when calling [`consumer.seek`](#seek) the messages in the batch should be discarded, as they are not at the offset we seeked to.
 
 ### Example
 
