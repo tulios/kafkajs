@@ -59,7 +59,7 @@ Some use cases require dealing with batches directly. This handler will feed you
 
 ```javascript
 await consumer.run({
-    eachBatch: async ({ batch, resolveOffset, heartbeat, isRunning }) => {
+    eachBatch: async ({ batch, resolveOffset, heartbeat, isRunning, isStale }) => {
         for (let message of batch.messages) {
             console.log({
                 topic: batch.topic,
@@ -85,15 +85,16 @@ await consumer.run({
 * `resolveOffset()` is used to mark a message in the batch as processed. In case of errors, the consumer will automatically commit the resolved offsets.
 * `commitOffsetsIfNecessary(offsets?)` is used to commit offsets based on the autoCommit configurations (`autoCommitInterval` and `autoCommitThreshold`). Note that auto commit won't happen in `eachBatch` if `commitOffsetsIfNecessary` is not invoked. Take a look at [autoCommit](#auto-commit) for more information.
 * `uncommittedOffsets()` returns all offsets by topic-partition which have not yet been committed.
+* `isStale()` returns whether the messages in the batch have been rendered stale through some other operation and should be discarded. For example, when calling `[consumer.seek](#seek)` the messages in the batch should be discarded, as they are not at the offset we seeked to.
 
 ### Example
 
 ```javascript
 consumer.run({
     eachBatchAutoResolve: false,
-    eachBatch: async ({ batch, resolveOffset, heartbeat, isRunning }) => {
+    eachBatch: async ({ batch, resolveOffset, heartbeat, isRunning, isStale }) => {
         for (let message of batch.messages) {
-            if (!isRunning()) break
+            if (!isRunning() || isStale()) break
             await processMessage(message)
             await resolveOffset(message.offset)
             await heartbeat()
@@ -102,7 +103,7 @@ consumer.run({
 })
 ```
 
-In the example above, if the consumer is shutting down in the middle of the batch, the remaining messages won't be resolved and therefore not committed. This way, you can quickly shut down the consumer without losing/skipping any messages.
+In the example above, if the consumer is shutting down in the middle of the batch, the remaining messages won't be resolved and therefore not committed. This way, you can quickly shut down the consumer without losing/skipping any messages. If the batch goes stale for some other reason (like calling `consumer.seek`) none of the remaining messages are processed either.
 
 ## <a name="concurrent-processing"></a> Partition-aware concurrency
 
@@ -234,6 +235,8 @@ await consumer.subscribe({ topic: 'example' })
 consumer.run({ eachMessage: async ({ topic, message }) => true })
 consumer.seek({ topic: 'example', partition: 0, offset: 12384 })
 ```
+
+Upon seeking to an offset, any messages in active batches are marked as stale and discarded, making sure the next message read for the partition is from the offset sought to. Make sure to check `isStale()` before processing a message using [the `eachBatch` interface](#each-batch) of `consumer.run`.
 
 ## <a name="custom-partition-assigner"></a> Custom partition assigner
 
