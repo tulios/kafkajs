@@ -41,7 +41,9 @@ module.exports = class Broker {
     this.supportAuthenticationProtocol = supportAuthenticationProtocol
     this.authenticated = false
 
-    const lockTimeout = this.connection.connectionTimeout + this.authenticationTimeout
+    // The lock timeout has twice the connectionTimeout because the same timeout is used
+    // for the first apiVersions call
+    const lockTimeout = 2 * this.connection.connectionTimeout + this.authenticationTimeout
     this.brokerAddress = `${this.connection.host}:${this.connection.port}`
 
     this.lock = new Lock({
