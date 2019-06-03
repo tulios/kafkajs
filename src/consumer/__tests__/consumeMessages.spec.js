@@ -469,55 +469,145 @@ describe('Consumer', () => {
     expect(calls).toEqual(1)
   })
 
-  it('skips messages fetched while seek was called', async () => {
-    consumer = createConsumer({
-      cluster: createCluster(),
-      groupId,
-      maxWaitTimeInMs: 1000,
-      logger: newLogger(),
+  describe('discarding messages after seeking', () => {
+    it('stops consuming messages when fetched batch has gone stale', async () => {
+      consumer = createConsumer({
+        cluster: createCluster(),
+        groupId,
+        logger: newLogger(),
+
+        // make sure we fetch a batch of messages
+        minBytes: 1024,
+        maxWaitTimeInMs: 500,
+      })
+
+      const messages = Array(10)
+        .fill()
+        .map(() => {
+          const value = secureRandom()
+          return { key: `key-${value}`, value: `value-${value}` }
+        })
+
+      await consumer.connect()
+      await producer.connect()
+      // console.log(`producing to ${topicName}`)
+      await producer.send({ acks: 1, topic: topicName, messages })
+      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+      let offsetsConsumed = []
+
+      consumer.run({
+        eachMessage: async ({ message }) => {
+          offsetsConsumed.push(message.offset)
+
+          if (offsetsConsumed.length === 1) {
+            consumer.seek({ topic: topicName, partition: 0, offset: message.offset })
+          }
+        },
+      })
+
+      await waitFor(() => offsetsConsumed.length >= 2, { delay: 50 })
+
+      expect(offsetsConsumed[0]).toEqual(offsetsConsumed[1])
     })
 
-    const messages = Array(10)
-      .fill()
-      .map(() => {
-        const value = secureRandom()
-        return { key: `key-${value}`, value: `value-${value}` }
+    it('resolves a batch as stale when seek was called while processing it', async () => {
+      consumer = createConsumer({
+        cluster: createCluster(),
+        groupId,
+        logger: newLogger(),
+
+        // make sure we fetch a batch of messages
+        minBytes: 1024,
+        maxWaitTimeInMs: 500,
       })
-    await producer.connect()
-    await producer.send({ acks: 1, topic: topicName, messages })
 
-    await consumer.connect()
+      const messages = Array(10)
+        .fill()
+        .map(() => {
+          const value = secureRandom()
+          return { key: `key-${value}`, value: `value-${value}` }
+        })
 
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.connect()
+      await producer.connect()
+      await producer.send({ acks: 1, topic: topicName, messages })
+      await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-    const sleep = value => waitFor(delay => delay >= value)
-    let offsetsConsumed = []
+      let offsetsConsumed = []
 
-    const eachBatch = async ({ batch, heartbeat }) => {
-      for (const message of batch.messages) {
-        offsetsConsumed.push(message.offset)
+      consumer.run({
+        eachBatch: async ({ batch, isStale, heartbeat, resolveOffset }) => {
+          for (let message of batch.messages) {
+            if (isStale()) break
+
+            offsetsConsumed.push(message.offset)
+
+            if (offsetsConsumed.length === 1) {
+              consumer.seek({ topic: topicName, partition: 0, offset: message.offset })
+            }
+
+            await resolveOffset(message.offset)
+            await heartbeat()
+          }
+        },
+      })
+
+      await waitFor(() => offsetsConsumed.length >= 2, { delay: 50 })
+
+      expect(offsetsConsumed[0]).toEqual(offsetsConsumed[1])
+    })
+
+    it('skips messages fetched while seek was called', async () => {
+      consumer = createConsumer({
+        cluster: createCluster(),
+        groupId,
+        maxWaitTimeInMs: 1000,
+        logger: newLogger(),
+      })
+
+      const messages = Array(10)
+        .fill()
+        .map(() => {
+          const value = secureRandom()
+          return { key: `key-${value}`, value: `value-${value}` }
+        })
+      await producer.connect()
+      await producer.send({ acks: 1, topic: topicName, messages })
+
+      await consumer.connect()
+
+      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+      const sleep = value => waitFor(delay => delay >= value)
+      let offsetsConsumed = []
+
+      const eachBatch = async ({ batch, heartbeat }) => {
+        for (const message of batch.messages) {
+          offsetsConsumed.push(message.offset)
+        }
+
+        await heartbeat()
       }
 
-      await heartbeat()
-    }
+      consumer.run({
+        eachBatch,
+      })
 
-    consumer.run({
-      eachBatch,
+      await waitForConsumerToJoinGroup(consumer)
+
+      await waitFor(() => offsetsConsumed.length === messages.length, { delay: 50 })
+      await sleep(50)
+
+      // Hope that we're now in an active fetch state? Something like FETCH_START might help
+      const seekedOffset = offsetsConsumed[Math.floor(messages.length / 2)]
+      consumer.seek({ topic: topicName, partition: 0, offset: seekedOffset })
+      await producer.send({ acks: 1, topic: topicName, messages }) // trigger completion of fetch
+
+      await waitFor(() => offsetsConsumed.length > messages.length, { delay: 50 })
+
+      expect(offsetsConsumed[messages.length]).toEqual(seekedOffset)
     })
-
-    await waitForConsumerToJoinGroup(consumer)
-
-    await waitFor(() => offsetsConsumed.length === messages.length, { delay: 50 })
-    await sleep(50)
-
-    // Hope that we're now in an active fetch state? Something like FETCH_START might help
-    const seekedOffset = offsetsConsumed[Math.floor(messages.length / 2)]
-    consumer.seek({ topic: topicName, partition: 0, offset: seekedOffset })
-    await producer.send({ acks: 1, topic: topicName, messages }) // trigger completion of fetch
-
-    await waitFor(() => offsetsConsumed.length > messages.length, { delay: 50 })
-
-    expect(offsetsConsumed[messages.length]).toEqual(seekedOffset)
   })
 
   describe('transactions', () => {

@@ -187,7 +187,7 @@ module.exports = class Runner {
         },
         uncommittedOffsets: () => this.consumerGroup.uncommittedOffsets(),
         isRunning: () => this.running,
-        isStale: ({ topic, partition }) => this.consumerGroup.hasSeekOffset({ topic, partition }),
+        isStale: () => this.consumerGroup.hasSeekOffset({ topic, partition }),
       })
     } catch (e) {
       if (!isKafkaJSError(e)) {
