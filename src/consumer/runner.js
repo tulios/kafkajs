@@ -135,7 +135,7 @@ module.exports = class Runner {
     const { topic, partition } = batch
 
     for (let message of batch.messages) {
-      if (!this.running) {
+      if (!this.running || this.consumerGroup.hasSeekOffset({ topic, partition })) {
         break
       }
 
@@ -187,6 +187,7 @@ module.exports = class Runner {
         },
         uncommittedOffsets: () => this.consumerGroup.uncommittedOffsets(),
         isRunning: () => this.running,
+        isStale: () => this.consumerGroup.hasSeekOffset({ topic, partition }),
       })
     } catch (e) {
       if (!isKafkaJSError(e)) {

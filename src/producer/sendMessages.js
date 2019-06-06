@@ -31,7 +31,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager }) => {
         const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
 
         if (keys(partitionMetadata).length === 0) {
-          logger.error('Producing to topic without metadata', {
+          logger.debug('Producing to topic without metadata', {
             topic,
             targetTopics: Array.from(cluster.targetTopics),
           })
