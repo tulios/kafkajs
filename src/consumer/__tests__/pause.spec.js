@@ -179,7 +179,7 @@ describe('Consumer', () => {
       const [pausedTopic, activeTopic] = topics
       consumer.pause([{ topic: pausedTopic }])
 
-      waitForConsumerToJoinGroup(consumer)
+      await waitForConsumerToJoinGroup(consumer)
 
       for (let topic of topics) {
         await producer.send({ acks: 1, topic, messages: [message] })
