@@ -490,7 +490,6 @@ describe('Consumer', () => {
 
       await consumer.connect()
       await producer.connect()
-      // console.log(`producing to ${topicName}`)
       await producer.send({ acks: 1, topic: topicName, messages })
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
