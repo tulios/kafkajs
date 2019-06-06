@@ -3,6 +3,10 @@ module.exports = class SeekOffsets extends Map {
     super.set([topic, partition], offset)
   }
 
+  has(topic, partition) {
+    return Array.from(this.keys()).some(([t, p]) => t === topic && p === partition)
+  }
+
   pop() {
     if (this.size === 0) {
       return
