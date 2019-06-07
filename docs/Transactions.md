@@ -14,24 +14,17 @@ You initialize a transaction by making an async call to `producer.transaction()`
 > Note: Kafka requires that the transactional producer have the following configuration to _guarantee_ EoS ("Exactly-once-semantics"):
 >
 > - The producer must have a max in flight requests of 1
-> - The producer must wait for acknowledgement from all replices (acks=-1)
-> - The producer must have unlimitted retries
+> - The producer must wait for acknowledgement from all replicas (acks=-1)
+> - The producer must have unlimited retries
 
-Configure the client with `maxFlightRequests: 1` to guarantee EOS.
+Configure the producer client with `maxInFlightRequests: 1` and `idempotent: true` to guarantee EOS. Configuring the two options will enable the settings mentioned above.
 
 ```javascript
 const client = new Kafka({
   clientId: 'transactional-client',
   brokers: ['kafka1:9092', 'kafka2:9092'],
-  maxInFlightRequests: 1,
 })
-```
-
-Setting `idempotent` to `true` will correctly configure the producer
-to use unlimitted retries and enforce acks from all replicas
-
-```javascript
-const producer = client.producer({ idempotent: true })
+const producer = client.producer({ maxInFlightRequests: 1, idempotent: true })
 ```
 
 Within a transaction, you can produce one or more messages. If `transaction.abort` is called, all messages will be rolled back.

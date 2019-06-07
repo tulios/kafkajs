@@ -156,7 +156,7 @@ The environment variable `KAFKAJS_LOG_LEVEL` can also be used and it has precede
 KAFKAJS_LOG_LEVEL=info node code.js
 ```
 
-> Note: for more information on how to customize your logs, take a look at [Custom logging](#custom-logging)
+> Note: for more information on how to customize your logs, take a look at [Custom logging](CustomLogger.md)
 
 ## Custom socket factory
 
