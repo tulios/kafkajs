@@ -1,6 +1,7 @@
 module.exports = class SubscriptionState {
   constructor() {
     this.pausedTopics = new Set()
+    this.resumedTopics = new Set()
   }
 
   /**
@@ -14,6 +15,7 @@ module.exports = class SubscriptionState {
    * @param {Array<string>} topics
    */
   resume(topics = []) {
+    topics.forEach(topic => this.resumedTopics.add(topic))
     topics.forEach(topic => this.pausedTopics.delete(topic))
   }
 
@@ -22,5 +24,16 @@ module.exports = class SubscriptionState {
    */
   paused() {
     return Array.from(this.pausedTopics.values())
+  }
+
+  /**
+   * @returns {Array<string>} resumed topics
+   */
+  resumed() {
+    return Array.from(this.resumedTopics.values())
+  }
+
+  ackResumed() {
+    this.resumedTopics.clear()
   }
 }
