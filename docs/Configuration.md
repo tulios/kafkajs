@@ -38,8 +38,9 @@ Refer to [TLS create secure context](https://nodejs.org/dist/latest-v8.x/docs/ap
 
 ## <a name="sasl"></a> SASL
 
-Kafka has support for using SASL to authenticate clients. The `sasl` option can be used to configure the authentication mechanism. Currently, KafkaJS supports `PLAIN`, `SCRAM-SHA-256`, and `SCRAM-SHA-512` mechanisms.
+Kafka has support for using SASL to authenticate clients. The `sasl` option can be used to configure the authentication mechanism. Currently, KafkaJS supports `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512`, and `AWS` mechanisms.
 
+### PLAIN/SCRAM Example
 ```javascript
 new Kafka({
   clientId: 'my-app',
@@ -53,7 +54,42 @@ new Kafka({
 })
 ```
 
-It is __highly recommended__ that you use SSL for encryption when using `PLAIN`.
+### AWS Example
+
+```javascript
+new Kafka({
+  clientId: 'my-app',
+  brokers: ['kafka1:9092', 'kafka2:9092'],
+  // authenticationTimeout: 1000,
+  sasl: {
+    mechanism: 'aws',
+    authorizationIdentity: 'AIDAIOSFODNN7EXAMPLE', // UserId or RoleId
+    accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+    secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+    sessionToken: 'WHArYt8i5vfQUrIU5ZbMLCbjcAiv/Eww6eL9tgQMJp6QFNEXAMPLETOKEN' // Optional
+  },
+})
+```
+
+Use of this functionality requires
+[STACK's Kafka AWS LoginModule](https://github.com/STACK-Fintech/kafka-auth-aws-iam), or a
+compatible alternative to be installed on all of the target brokers.
+
+In the above example, the `authorizationIdentity` must be the `aws:userid` of the AWS IAM
+identity. Typically, you can retrieve this value using the `aws iam get-user` or `aws iam get-role`
+commands of the [AWS CLI toolkit](https://aws.amazon.com/cli/). The `aws:userid` is usually listed
+as the `UserId` or `RoleId` property of the response.
+
+You can also programmatically retrieve the `aws:userid` for currently available credentials with the
+[AWS SDK's Security Token Service](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/STS.html).
+
+A complete breakdown can be found in the IAM User Guide's
+[Reference on Policy Variables](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html#policy-vars-infotouse).
+
+### Use Encrypted Protocols
+
+It is __highly recommended__ that you use SSL for encryption when using `PLAIN` or `AWS`,
+otherwise credentials will be transmitted in cleartext!
 
 ## Connection Timeout
 
