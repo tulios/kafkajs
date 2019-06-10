@@ -268,9 +268,9 @@ export type Admin = {
         topics: ITopicConfig[];
     }): Promise<boolean>;
     deleteTopics(topics: { topics: string[], timeout: number}): Promise<void>;
-    fetchTopicMetadata(topicMetadata: ITopicMetadata): Promise<void>;
+    fetchTopicMetadata(topics: string[]): Promise<{ topics: Array<ITopicMetadata> }>;
     fetchOffsets(topic: { groupId: string; topic: string }): Promise<Array<{ partition: number; offset: string }>>;
-    fetchTopicOffsets(topic: string): Promise<void>;
+    fetchTopicOffsets(topic: string): Promise<Array<{ partition: number, offset: string, high: string, low: string }>>;
     setOffsets(topic: { groupId: string; topic: string; partitions: SeekEntry[] }): Promise<void>;
     resetOffsets(topic: { groupId: string; topic: string; earliest: boolean }): Promise<void>;
     describeConfigs(configs: {
