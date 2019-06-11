@@ -14,6 +14,9 @@ CA_CERT_FILE="ca-cert"
 KEYSTORE_SIGN_REQUEST="./testHelpers/certs/cert-file"
 KEYSTORE_SIGN_REQUEST_SRL="./testHelpers/certs/ca-cert.srl"
 KEYSTORE_SIGNED_CERT="./testHelpers/certs/cert-signed"
+KEYSTORE_CRED_FILE="./testHelpers/certs/keystore_creds"
+SSLKEY_CRED_FILE="./testHelpers/certs/sslkey_creds"
+TRUSTSTORE_CRED_FILE="./testHelpers/certs/truststore_creds"
 
 function file_exists_and_exit() {
   echo "'$1' cannot exist. Move or delete it before"
@@ -190,6 +193,13 @@ echo
 echo "You will be prompted for the keystore's password."
 keytool -keystore $KEYSTORE_WORKING_DIRECTORY/$KEYSTORE_FILENAME -alias localhost -import \
   -file $KEYSTORE_SIGNED_CERT
+
+echo
+echo "Generating credential files"
+echo
+echo "testtest" > $KEYSTORE_CRED_FILE
+echo "testtest" > $SSLKEY_CRED_FILE
+echo "testtest" > $TRUSTSTORE_CRED_FILE
 
 echo
 echo "All done!"
