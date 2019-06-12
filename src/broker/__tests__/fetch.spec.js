@@ -806,6 +806,8 @@ describe('Broker > Fetch', () => {
 
         await txn.abort()
 
+        // Although the messages are aborted, they will still be there in the log,
+        // so the offset will still increase
         topics[0].partitions[0].fetchOffset = 3
 
         // It appears there can be a delay between the EndTxn response
