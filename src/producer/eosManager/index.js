@@ -19,6 +19,14 @@ const INIT_PRODUCER_RETRIABLE_PROTOCOL_ERRORS = [
    */
   'CONCURRENT_TRANSACTIONS',
 ]
+const TRANSACTION_OFFSET_COMMMIT_RETRIABLE_PROTOCOL_ERRORS = [
+  'UNKNOWN_TOPIC_OR_PARTITION',
+  'COORDINATOR_LOAD_IN_PROGRESS',
+]
+const TRANSACTION_OFFSET_COMMIT_WRONG_COORDINATOR_PROTOCOL_ERRORS = [
+  'COORDINATOR_NOT_AVAILABLE',
+  'NOT_COORDINATOR',
+]
 
 /**
  * Manage behavior for an idempotent producer and transactions.
@@ -323,17 +331,58 @@ module.exports = ({
           groupId: consumerGroupId,
         })
 
-        const groupCoordinator = await cluster.findGroupCoordinator({
+        let groupCoordinator = await cluster.findGroupCoordinator({
           groupId: consumerGroupId,
           coordinatorType: COORDINATOR_TYPES.GROUP,
         })
 
-        await groupCoordinator.txnOffsetCommit({
-          transactionalId,
-          producerId,
-          producerEpoch,
-          groupId: consumerGroupId,
-          topics,
+        return retrier(async (bail, retryCount, retryTime) => {
+          try {
+            await groupCoordinator.txnOffsetCommit({
+              transactionalId,
+              producerId,
+              producerEpoch,
+              groupId: consumerGroupId,
+              topics,
+            })
+          } catch (e) {
+            if (TRANSACTION_OFFSET_COMMMIT_RETRIABLE_PROTOCOL_ERRORS.includes(e.type)) {
+              logger.debug('Group coordinator is not ready yet, retrying', {
+                error: e.message,
+                stack: e.stack,
+                transactionalId,
+                retryCount,
+                retryTime,
+              })
+
+              throw e
+            }
+
+            if (
+              TRANSACTION_OFFSET_COMMIT_WRONG_COORDINATOR_PROTOCOL_ERRORS.includes(e.type) ||
+              e.code === 'ECONNREFUSED'
+            ) {
+              logger.debug(
+                'Invalid group coordinator, finding new group coordinator and retrying',
+                {
+                  error: e.message,
+                  stack: e.stack,
+                  transactionalId,
+                  retryCount,
+                  retryTime,
+                }
+              )
+
+              groupCoordinator = await cluster.findGroupCoordinator({
+                groupId: consumerGroupId,
+                coordinatorType: COORDINATOR_TYPES.GROUP,
+              })
+
+              throw e
+            }
+
+            bail(e)
+          }
         })
       },
     },
