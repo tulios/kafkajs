@@ -860,7 +860,7 @@ describe('Producer', () => {
 
       const markOffsetAsCommittedSpy = jest.spyOn(cluster, 'markOffsetAsCommitted')
 
-      await createTopic({ topic: topicName })
+      await createTopic({ topic: topicName, partitions: 2 })
 
       producer = createProducer({
         cluster,
