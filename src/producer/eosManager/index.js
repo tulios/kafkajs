@@ -19,11 +19,11 @@ const INIT_PRODUCER_RETRIABLE_PROTOCOL_ERRORS = [
    */
   'CONCURRENT_TRANSACTIONS',
 ]
-const TRANSACTION_OFFSET_COMMMIT_RETRIABLE_PROTOCOL_ERRORS = [
+const COMMIT_RETRIABLE_PROTOCOL_ERRORS = [
   'UNKNOWN_TOPIC_OR_PARTITION',
   'COORDINATOR_LOAD_IN_PROGRESS',
 ]
-const TRANSACTION_OFFSET_COMMIT_WRONG_COORDINATOR_PROTOCOL_ERRORS = [
+const COMMIT_STALE_COORDINATOR_PROTOCOL_ERRORS = [
   'COORDINATOR_NOT_AVAILABLE',
   'NOT_COORDINATOR',
 ]
@@ -346,7 +346,7 @@ module.exports = ({
               topics,
             })
           } catch (e) {
-            if (TRANSACTION_OFFSET_COMMMIT_RETRIABLE_PROTOCOL_ERRORS.includes(e.type)) {
+            if (COMMIT_RETRIABLE_PROTOCOL_ERRORS.includes(e.type)) {
               logger.debug('Group coordinator is not ready yet, retrying', {
                 error: e.message,
                 stack: e.stack,
@@ -359,7 +359,7 @@ module.exports = ({
             }
 
             if (
-              TRANSACTION_OFFSET_COMMIT_WRONG_COORDINATOR_PROTOCOL_ERRORS.includes(e.type) ||
+              COMMIT_STALE_COORDINATOR_PROTOCOL_ERRORS.includes(e.type) ||
               e.code === 'ECONNREFUSED'
             ) {
               logger.debug(
