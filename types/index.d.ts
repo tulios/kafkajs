@@ -280,7 +280,7 @@ export type Admin = {
   fetchOffsets(options: {
     groupId: string
     topic: string
-  }): Promise<Array<{ partition: number; offset: string }>>
+  }): Promise<Array<{ partition: number; offset: string; metadata: string | null }>>
   fetchTopicOffsets(
     topic: string
   ): Promise<Array<{ partition: number; offset: string; high: string; low: string }>>
