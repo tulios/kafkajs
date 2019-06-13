@@ -56,7 +56,7 @@ describe('Admin', () => {
         topic: topicName,
       })
 
-      expect(offsets).toEqual([{ partition: 0, offset: '-1' }])
+      expect(offsets).toEqual([{ partition: 0, offset: '-1', metadata: null }])
     })
 
     test('set the consumer group offsets to the earliest offsets', async () => {
@@ -81,7 +81,7 @@ describe('Admin', () => {
         topic: topicName,
       })
 
-      expect(offsets).toEqual([{ partition: 0, offset: '-2' }])
+      expect(offsets).toEqual([{ partition: 0, offset: '-2', metadata: null }])
     })
 
     test('throws an error if the consumer group is runnig', async () => {

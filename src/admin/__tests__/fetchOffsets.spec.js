@@ -43,7 +43,7 @@ describe('Admin', () => {
         topic: topicName,
       })
 
-      expect(offsets).toEqual([{ partition: 0, offset: '-1' }])
+      expect(offsets).toEqual([{ partition: 0, offset: '-1', metadata: null }])
     })
 
     test('returns the current consumer group offset', async () => {
@@ -62,7 +62,7 @@ describe('Admin', () => {
         topic: topicName,
       })
 
-      expect(offsets).toEqual([{ partition: 0, offset: '13' }])
+      expect(offsets).toEqual([{ partition: 0, offset: '13', metadata: null }])
     })
   })
 })
