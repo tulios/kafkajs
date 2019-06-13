@@ -29,3 +29,5 @@ logo
 *.tgz
 .vscode/
 *.java
+types/tests.ts
+types/tsconfig.json
