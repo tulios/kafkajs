@@ -4,7 +4,7 @@
   "description": "A modern Apache Kafka client for node.js",
   "author": "Tulio Ornelas <ornelas.tulio@gmail.com>",
   "main": "index.js",
-  "types": "index.d.ts",
+  "types": "types/index.d.ts",
   "license": "MIT",
   "keywords": [
     "kafka",
@@ -43,6 +43,8 @@
     "test:group:others:ci": "JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:others --ci --maxWorkers=4 --no-watchman\""
   },
   "devDependencies": {
+    "@types/node": "^12.0.8",
+    "@typescript-eslint/typescript-estree": "^1.10.2",
     "eslint": "^5.9.0",
     "eslint-config-prettier": "^3.3.0",
     "eslint-config-standard": "^12.0.0",
@@ -62,6 +64,7 @@
     "mockdate": "^2.0.2",
     "prettier": "^1.15.2",
     "semver": "^6.0.0",
+    "typescript": "^3.5.1",
     "uuid": "^3.3.2"
   },
   "dependencies": {
