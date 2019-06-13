@@ -251,7 +251,13 @@ module.exports = ({
 
     return responses
       .filter(response => response.topic === topic)
-      .map(({ partitions }) => partitions.map(({ partition, offset }) => ({ partition, offset })))
+      .map(({ partitions }) =>
+        partitions.map(({ partition, offset, metadata }) => ({
+          partition,
+          offset,
+          metadata: metadata || null,
+        }))
+      )
       .pop()
   }
 
