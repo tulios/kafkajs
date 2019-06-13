@@ -33,9 +33,9 @@ const encodeTopic = ({ topic, partitions }) => {
   return new Encoder().writeString(topic).writeArray(partitions.map(encodePartition))
 }
 
-const encodePartition = ({ partition, offset }) => {
+const encodePartition = ({ partition, offset, metadata = null }) => {
   return new Encoder()
     .writeInt32(partition)
     .writeInt64(offset)
-    .writeString(null)
+    .writeString(metadata)
 }
