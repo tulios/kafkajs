@@ -58,7 +58,7 @@ describe('Admin', () => {
       })
 
       const offsets = await admin.fetchOffsets({ groupId, topic: topicName })
-      expect(offsets).toEqual([{ partition: 0, offset: '13' }])
+      expect(offsets).toEqual([{ partition: 0, offset: '13', metadata: null }])
     })
 
     test('throws an error if the consumer group is running', async () => {
