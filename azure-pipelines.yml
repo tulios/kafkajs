@@ -35,6 +35,21 @@ jobs:
     - bash: test $SKIP_TESTS && echo "Skipped!" || yarn lint
       displayName: yarn lint
 
+  - job: typescript_types
+    displayName: Typescript types
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '8.x'
+    - bash: ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+      displayName: should skip tests
+    - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
+      displayName: yarn install
+    - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:types
+      displayName: yarn test:types
+
 ####### Tests
   - job: test_broker
     displayName: Broker
