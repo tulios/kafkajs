@@ -317,7 +317,6 @@ module.exports = class ConsumerGroup {
         await this.offsetManager.seek(seekEntry)
       }
 
-      const resumedTopics = this.subscriptionState.resumed()
       const pausedTopics = this.subscriptionState.paused()
       const activeTopics = topics.filter(topic => !pausedTopics.includes(topic))
 
@@ -330,11 +329,6 @@ module.exports = class ConsumerGroup {
 
         await sleep(this.maxWaitTime)
         return []
-      }
-
-      if (resumedTopics.length !== 0) {
-        this.offsetManager.clearTopicOffsets({ topics: resumedTopics })
-        this.subscriptionState.ackResumed()
       }
 
       await this.offsetManager.resolveOffsets()
