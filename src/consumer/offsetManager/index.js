@@ -324,23 +324,6 @@ module.exports = class OffsetManager {
   }
 
   /**
-   * @param {string[]} topics
-   */
-  clearTopicOffsets({ topics }) {
-    const committedOffsets = this.committedOffsets()
-
-    for (let topic of topics) {
-      if (!committedOffsets[topic]) {
-        continue
-      }
-
-      for (let partition of keys(committedOffsets[topic])) {
-        this.clearOffsets({ topic, partition })
-      }
-    }
-  }
-
-  /**
    * @private
    * @param {string} topic
    * @param {number} partition
