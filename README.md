@@ -83,6 +83,16 @@ KafkaJS is an open-source project where development takes place in the open on G
 
 See [Developing KafkaJS](https://kafka.js.org/docs/contribution-guide) for information on how to run and develop KafkaJS.
 
+### <a name="help-wanted"></a> Help wanted 🤝
+
+We welcome contributions to KafkaJS, but we also want to see a thriving third-party ecosystem. If you would like to create an open-source project that builds on top of KafkaJS, [please get in touch](https://kafkajs-slackin.herokuapp.com/) and we'd be happy to provide feedback and support.
+
+Here are some projects that we would like to build, but haven't yet been able to prioritize:
+
+* [Dead Letter Queue](https://eng.uber.com/reliable-reprocessing/) - Automatically reprocess messages
+* [Schema Registry](https://www.confluent.io/confluent-schema-registry/) - Seamless integration with the schema registry to encode and decode AVRO
+* [Metrics](https://prometheus.io/) - Integrate with the [instrumentation events](https://kafka.js.org/docs/instrumentation-events) to expose commonly used metrics
+
 ## Acknowledgements
 
 Thanks to [Sebastian Norde](https://github.com/sebastiannorde) for the V1 logo ❤️
