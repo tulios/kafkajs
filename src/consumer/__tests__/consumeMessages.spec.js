@@ -609,6 +609,57 @@ describe('Consumer', () => {
     })
   })
 
+  it('discards messages received when pausing while fetch is in-flight', async () => {
+    consumer = createConsumer({
+      cluster: createCluster(),
+      groupId,
+      maxWaitTimeInMs: 1000,
+      logger: newLogger(),
+    })
+
+    const messages = Array(10)
+      .fill()
+      .map(() => {
+        const value = secureRandom()
+        return { key: `key-${value}`, value: `value-${value}` }
+      })
+    await producer.connect()
+    await producer.send({ acks: 1, topic: topicName, messages })
+
+    await consumer.connect()
+
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    const sleep = value => waitFor(delay => delay >= value)
+    let offsetsConsumed = []
+
+    const eachBatch = async ({ batch, heartbeat }) => {
+      for (const message of batch.messages) {
+        offsetsConsumed.push(message.offset)
+      }
+
+      await heartbeat()
+    }
+
+    consumer.run({
+      eachBatch,
+    })
+
+    await waitForConsumerToJoinGroup(consumer)
+
+    await waitFor(() => offsetsConsumed.length === messages.length, { delay: 50 })
+    await sleep(50)
+
+    // Hope that we're now in an active fetch state? Something like FETCH_START might help
+    const seekedOffset = offsetsConsumed[Math.floor(messages.length / 2)]
+    consumer.pause([{ topic: topicName }])
+    await producer.send({ acks: 1, topic: topicName, messages }) // trigger completion of fetch
+
+    await sleep(200)
+
+    expect(offsetsConsumed.length).toEqual(messages.length)
+  })
+
   describe('transactions', () => {
     testIfKafka_0_11('accepts messages from an idempotent producer', async () => {
       cluster = createCluster({ allowExperimentalV011: true })
