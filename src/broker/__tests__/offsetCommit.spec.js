@@ -116,4 +116,62 @@ describe('Broker > OffsetCommit', () => {
       responses: [{ partitions: [{ errorCode: 0, partition: 0 }], topic: topicName }],
     })
   })
+
+  test('request with metadata', async () => {
+    const produceData = [
+      {
+        topic: topicName,
+        partitions: [
+          {
+            partition: 0,
+            messages: [{ key: `key-0`, value: `some-value-0` }],
+          },
+        ],
+      },
+    ]
+
+    await broker.produce({ topicData: produceData })
+    const { generationId, memberId } = await groupCoordinator.joinGroup({
+      groupId,
+      sessionTimeout: 30000,
+      groupProtocols: [
+        {
+          name: 'AssignerName',
+          metadata: MemberMetadata.encode({ version: 1, topics: [topicName] }),
+        },
+      ],
+    })
+
+    const memberAssignment = MemberAssignment.encode({
+      version: 1,
+      assignment: { [topicName]: [0] },
+    })
+
+    const groupAssignment = [{ memberId, memberAssignment }]
+    await groupCoordinator.syncGroup({
+      groupId,
+      generationId,
+      memberId,
+      groupAssignment,
+    })
+
+    const topics = [
+      {
+        topic: topicName,
+        partitions: [{ partition: 0, offset: '0', metadata: 'test' }],
+      },
+    ]
+
+    const response = await groupCoordinator.offsetCommit({
+      groupId,
+      groupGenerationId: generationId,
+      memberId,
+      topics,
+    })
+
+    expect(response).toEqual({
+      throttleTime: 0,
+      responses: [{ partitions: [{ errorCode: 0, partition: 0 }], topic: topicName }],
+    })
+  })
 })
