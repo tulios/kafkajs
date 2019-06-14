@@ -176,8 +176,20 @@ module.exports = class Encoder {
     if (value instanceof Encoder !== true) {
       throw new Error('value should be an instance of Encoder')
     }
-
     this.buffer = Buffer.concat([this.buffer, value.buffer])
+    return this
+  }
+
+  writeEncoderArray(value) {
+    if (!Array.isArray(value) || value.some(v => !(v instanceof Encoder))) {
+      throw new Error('all values should be an instance of Encoder[]')
+    }
+
+    const newBuffer = [this.buffer]
+    value.forEach(v => {
+      newBuffer.push(v.buffer)
+    })
+    this.buffer = Buffer.concat(newBuffer)
     return this
   }
 
@@ -200,32 +212,47 @@ module.exports = class Encoder {
   writeArray(array, type, length) {
     const arrayLength = length == null ? array.length : length
     this.writeInt32(arrayLength)
-    array.forEach(value => {
-      switch (type || typeof value) {
+    if (type !== undefined) {
+      switch (type) {
         case 'int32':
         case 'number':
-          this.writeInt32(value)
+          array.forEach(value => this.writeInt32(value))
           break
         case 'string':
-          this.writeString(value)
+          array.forEach(value => this.writeString(value))
           break
         case 'object':
-          this.writeEncoder(value)
+          this.writeEncoderArray(array)
           break
       }
-    })
+    } else {
+      array.forEach(value => {
+        switch (typeof value) {
+          case 'int32':
+          case 'number':
+            this.writeInt32(value)
+            break
+          case 'string':
+            this.writeString(value)
+            break
+          case 'object':
+            this.writeEncoder(value)
+            break
+        }
+      })
+    }
     return this
   }
 
   writeVarIntArray(array, type) {
-    this.writeVarInt(array.length)
-    array.forEach(value => {
-      switch (type || typeof value) {
-        case 'object':
-          this.writeEncoder(value)
-          break
-      }
-    })
+    if (type === 'object') {
+      this.writeVarInt(array.length)
+      this.writeEncoderArray(array)
+    } else {
+      const objectArray = array.filter(v => typeof v === 'object')
+      this.writeVarInt(objectArray.length)
+      this.writeEncoderArray(objectArray)
+    }
     return this
   }
 

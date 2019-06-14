@@ -53,7 +53,11 @@ const RecordBatch = async ({
     .writeInt32(firstSequence)
 
   if (compression === Compression.None) {
-    batchBody.writeArray(records)
+    if (records.every(v => typeof v === typeof records[0])) {
+      batchBody.writeArray(records, typeof records[0])
+    } else {
+      batchBody.writeArray(records)
+    }
   } else {
     const compressedRecords = await compressRecords(compression, records)
     batchBody.writeInt32(records.length).writeBuffer(compressedRecords)
@@ -75,9 +79,7 @@ const compressRecords = async (compression, records) => {
   const codec = lookupCodec(compression)
   const recordsEncoder = new Encoder()
 
-  for (let record of records) {
-    recordsEncoder.writeEncoder(record)
-  }
+  recordsEncoder.writeEncoderArray(records)
 
   return codec.compress(recordsEncoder)
 }
