@@ -72,8 +72,6 @@ module.exports = class BrokerPool {
         await this.seedBroker.connect()
         this.versions = this.seedBroker.versions
       } catch (e) {
-        this.logger.error(e, { retryCount, retryTime })
-
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
           // Connection builder will always rotate the seed broker
           this.seedBroker = this.createBroker({
@@ -84,6 +82,8 @@ module.exports = class BrokerPool {
             `Failed to connect to seed broker, trying another broker from the list: ${e.message}`,
             { retryCount, retryTime }
           )
+        } else {
+          this.logger.error(e.message, { retryCount, retryTime })
         }
 
         if (e.retriable) throw e
