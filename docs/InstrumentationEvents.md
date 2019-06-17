@@ -40,7 +40,10 @@ Instrumentation Event:
 * consumer.events.GROUP_JOIN  
   payload: {`groupId`, `memberId`, `leaderId`, `isLeader`, `memberAssignment`, `duration`}
 
-* consumer.events.FETCH  
+* consumer.events.FETCH_START
+  payload: {}
+
+* consumer.events.FETCH 
   payload: {`numberOfBatches`, `duration`}
 
 * consumer.events.START_BATCH_PROCESS  
