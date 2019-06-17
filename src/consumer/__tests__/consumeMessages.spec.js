@@ -651,7 +651,6 @@ describe('Consumer', () => {
     await sleep(50)
 
     // Hope that we're now in an active fetch state? Something like FETCH_START might help
-    const seekedOffset = offsetsConsumed[Math.floor(messages.length / 2)]
     consumer.pause([{ topic: topicName }])
     await producer.send({ acks: 1, topic: topicName, messages }) // trigger completion of fetch
 
