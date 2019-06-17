@@ -2,7 +2,7 @@ const createRetry = require('../retry')
 const limitConcurrency = require('../utils/concurrency')
 const { KafkaJSError } = require('../errors')
 const {
-  events: { GROUP_JOIN, FETCH, START_BATCH_PROCESS, END_BATCH_PROCESS },
+  events: { GROUP_JOIN, FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS },
 } = require('./instrumentationEvents')
 
 const isTestMode = process.env.NODE_ENV === 'test'
@@ -214,6 +214,9 @@ module.exports = class Runner {
 
   async fetch() {
     const startFetch = Date.now()
+
+    this.instrumentationEmitter.emit(FETCH_START, {})
+
     const batches = await this.consumerGroup.fetch()
 
     this.instrumentationEmitter.emit(FETCH, {

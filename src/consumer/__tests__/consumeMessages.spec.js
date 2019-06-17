@@ -597,7 +597,7 @@ describe('Consumer', () => {
       await waitForConsumerToJoinGroup(consumer)
 
       await waitFor(() => offsetsConsumed.length === messages.length, { delay: 50 })
-      await sleep(50)
+      await waitForNextEvent(consumer, consumer.events.FETCH_START)
 
       // Hope that we're now in an active fetch state? Something like FETCH_START might help
       const seekedOffset = offsetsConsumed[Math.floor(messages.length / 2)]
@@ -614,7 +614,7 @@ describe('Consumer', () => {
     consumer = createConsumer({
       cluster: createCluster(),
       groupId,
-      maxWaitTimeInMs: 1000,
+      maxWaitTimeInMs: 200,
       logger: newLogger(),
     })
 
@@ -647,11 +647,9 @@ describe('Consumer', () => {
     })
 
     await waitForConsumerToJoinGroup(consumer)
-
     await waitFor(() => offsetsConsumed.length === messages.length, { delay: 50 })
-    await sleep(50)
+    await waitForNextEvent(consumer, consumer.events.FETCH_START)
 
-    // Hope that we're now in an active fetch state? Something like FETCH_START might help
     consumer.pause([{ topic: topicName }])
     await producer.send({ acks: 1, topic: topicName, messages }) // trigger completion of fetch
 
