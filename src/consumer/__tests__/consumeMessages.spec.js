@@ -12,6 +12,7 @@ const {
   newLogger,
   waitFor,
   waitForMessages,
+  waitForNextEvent,
   testIfKafka_0_11,
   waitForConsumerToJoinGroup,
   generateMessages,
@@ -654,7 +655,7 @@ describe('Consumer', () => {
     consumer.pause([{ topic: topicName }])
     await producer.send({ acks: 1, topic: topicName, messages }) // trigger completion of fetch
 
-    await sleep(200)
+    await waitForNextEvent(consumer, consumer.events.FETCH)
 
     expect(offsetsConsumed.length).toEqual(messages.length)
   })

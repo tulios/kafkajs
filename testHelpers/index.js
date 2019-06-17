@@ -127,6 +127,19 @@ const retryProtocol = (errorType, fn) =>
 const waitForMessages = (buffer, { number = 1, delay = 50 } = {}) =>
   waitFor(() => (buffer.length >= number ? buffer : false), { delay, ignoreTimeout: true })
 
+const waitForNextEvent = (consumer, eventName, { maxWait = 10000 } = {}) =>
+  new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => reject(new Error(`Timeout waiting for '${event}'`)), maxWait)
+    consumer.on(eventName, event => {
+      clearTimeout(timeoutId)
+      resolve(event)
+    })
+    consumer.on(consumer.events.CRASH, event => {
+      clearTimeout(timeoutId)
+      reject(event.payload.error)
+    })
+  })
+
 const waitForConsumerToJoinGroup = (consumer, { maxWait = 10000 } = {}) =>
   new Promise((resolve, reject) => {
     const timeoutId = setTimeout(() => reject(new Error('Timeout')), maxWait)
@@ -225,6 +238,7 @@ module.exports = {
   createTopic,
   waitFor: testWaitFor,
   waitForMessages,
+  waitForNextEvent,
   waitForConsumerToJoinGroup,
   testIfKafka_0_11,
   testIfKafka_1_1_0,
