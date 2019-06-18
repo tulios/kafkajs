@@ -129,7 +129,10 @@ const waitForMessages = (buffer, { number = 1, delay = 50 } = {}) =>
 
 const waitForNextEvent = (consumer, eventName, { maxWait = 10000 } = {}) =>
   new Promise((resolve, reject) => {
-    const timeoutId = setTimeout(() => reject(new Error(`Timeout waiting for '${event}'`)), maxWait)
+    const timeoutId = setTimeout(
+      () => reject(new Error(`Timeout waiting for '${eventName}'`)),
+      maxWait
+    )
     consumer.on(eventName, event => {
       clearTimeout(timeoutId)
       resolve(event)

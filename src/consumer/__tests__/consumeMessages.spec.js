@@ -579,7 +579,6 @@ describe('Consumer', () => {
 
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-      const sleep = value => waitFor(delay => delay >= value)
       let offsetsConsumed = []
 
       const eachBatch = async ({ batch, heartbeat }) => {
@@ -630,7 +629,6 @@ describe('Consumer', () => {
 
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-    const sleep = value => waitFor(delay => delay >= value)
     let offsetsConsumed = []
 
     const eachBatch = async ({ batch, heartbeat }) => {
