@@ -86,7 +86,9 @@ payload: {<code>groupId</code>, <code>memberId</code>, <code>groupGenerationId</
 payload: {<code>groupId</code>, <code>memberId</code>, <code>groupGenerationId</code>, <code>topics</code>}</p></li>
 <li><p>consumer.events.GROUP_JOIN<br>
 payload: {<code>groupId</code>, <code>memberId</code>, <code>leaderId</code>, <code>isLeader</code>, <code>memberAssignment</code>, <code>duration</code>}</p></li>
-<li><p>consumer.events.FETCH<br>
+<li><p>consumer.events.FETCH_START
+payload: {}</p></li>
+<li><p>consumer.events.FETCH
 payload: {<code>numberOfBatches</code>, <code>duration</code>}</p></li>
 <li><p>consumer.events.START_BATCH_PROCESS<br>
 payload: {<code>topic</code>, <code>partition</code>, <code>highWatermark</code>, <code>offsetLag</code>, <code>batchSize</code>, <code>firstOffset</code>, <code>lastOffset</code>}</p></li>
