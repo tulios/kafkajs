@@ -12,6 +12,7 @@ const {
   newLogger,
   waitFor,
   waitForMessages,
+  waitForNextEvent,
   testIfKafka_0_11,
   waitForConsumerToJoinGroup,
   generateMessages,
@@ -578,7 +579,6 @@ describe('Consumer', () => {
 
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-      const sleep = value => waitFor(delay => delay >= value)
       let offsetsConsumed = []
 
       const eachBatch = async ({ batch, heartbeat }) => {
@@ -596,9 +596,8 @@ describe('Consumer', () => {
       await waitForConsumerToJoinGroup(consumer)
 
       await waitFor(() => offsetsConsumed.length === messages.length, { delay: 50 })
-      await sleep(50)
+      await waitForNextEvent(consumer, consumer.events.FETCH_START)
 
-      // Hope that we're now in an active fetch state? Something like FETCH_START might help
       const seekedOffset = offsetsConsumed[Math.floor(messages.length / 2)]
       consumer.seek({ topic: topicName, partition: 0, offset: seekedOffset })
       await producer.send({ acks: 1, topic: topicName, messages }) // trigger completion of fetch
@@ -607,6 +606,53 @@ describe('Consumer', () => {
 
       expect(offsetsConsumed[messages.length]).toEqual(seekedOffset)
     })
+  })
+
+  it('discards messages received when pausing while fetch is in-flight', async () => {
+    consumer = createConsumer({
+      cluster: createCluster(),
+      groupId,
+      maxWaitTimeInMs: 200,
+      logger: newLogger(),
+    })
+
+    const messages = Array(10)
+      .fill()
+      .map(() => {
+        const value = secureRandom()
+        return { key: `key-${value}`, value: `value-${value}` }
+      })
+    await producer.connect()
+    await producer.send({ acks: 1, topic: topicName, messages })
+
+    await consumer.connect()
+
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    let offsetsConsumed = []
+
+    const eachBatch = async ({ batch, heartbeat }) => {
+      for (const message of batch.messages) {
+        offsetsConsumed.push(message.offset)
+      }
+
+      await heartbeat()
+    }
+
+    consumer.run({
+      eachBatch,
+    })
+
+    await waitForConsumerToJoinGroup(consumer)
+    await waitFor(() => offsetsConsumed.length === messages.length, { delay: 50 })
+    await waitForNextEvent(consumer, consumer.events.FETCH_START)
+
+    consumer.pause([{ topic: topicName }])
+    await producer.send({ acks: 1, topic: topicName, messages }) // trigger completion of fetch
+
+    await waitForNextEvent(consumer, consumer.events.FETCH)
+
+    expect(offsetsConsumed.length).toEqual(messages.length)
   })
 
   describe('transactions', () => {

@@ -369,23 +369,27 @@ module.exports = class ConsumerGroup {
           topics: requestsPerLeader[nodeId],
         })
 
-        const batchesPerPartition = responses.map(({ topicName, partitions }) => {
-          const topicRequestData = requestsPerLeader[nodeId].find(
-            ({ topic }) => topic === topicName
-          )
+        const pausedAtResponse = this.subscriptionState.paused()
 
-          return partitions
-            .filter(partitionData => !this.seekOffset.has(topicName, partitionData.partition))
-            .map(partitionData => {
-              const partitionRequestData = topicRequestData.partitions.find(
-                ({ partition }) => partition === partitionData.partition
-              )
+        const batchesPerPartition = responses
+          .filter(({ topicName }) => !pausedAtResponse.includes(topicName))
+          .map(({ topicName, partitions }) => {
+            const topicRequestData = requestsPerLeader[nodeId].find(
+              ({ topic }) => topic === topicName
+            )
 
-              const fetchedOffset = partitionRequestData.fetchOffset
+            return partitions
+              .filter(partitionData => !this.seekOffset.has(topicName, partitionData.partition))
+              .map(partitionData => {
+                const partitionRequestData = topicRequestData.partitions.find(
+                  ({ partition }) => partition === partitionData.partition
+                )
 
-              return new Batch(topicName, fetchedOffset, partitionData)
-            })
-        })
+                const fetchedOffset = partitionRequestData.fetchOffset
+
+                return new Batch(topicName, fetchedOffset, partitionData)
+              })
+          })
 
         return flatten(batchesPerPartition)
       })

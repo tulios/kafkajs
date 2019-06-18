@@ -8,6 +8,7 @@ const events = {
   COMMIT_OFFSETS: consumerType('commit_offsets'),
   GROUP_JOIN: consumerType('group_join'),
   FETCH: consumerType('fetch'),
+  FETCH_START: consumerType('fetch_start'),
   START_BATCH_PROCESS: consumerType('start_batch_process'),
   END_BATCH_PROCESS: consumerType('end_batch_process'),
   CONNECT: consumerType('connect'),

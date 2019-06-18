@@ -173,6 +173,28 @@ describe('Consumer > Instrumentation Events', () => {
     })
   })
 
+  it('emits fetch start', async () => {
+    const onFetchStart = jest.fn()
+    let fetch = 0
+    consumer.on(consumer.events.FETCH_START, async event => {
+      onFetchStart(event)
+      fetch++
+    })
+
+    await consumer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    await consumer.run({ eachMessage: () => true })
+
+    await waitFor(() => fetch > 0)
+    expect(onFetchStart).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.fetch_start',
+      payload: {},
+    })
+  })
+
   it('emits start batch process', async () => {
     const onStartBatchProcess = jest.fn()
     let startBatchProcess = 0
