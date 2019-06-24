@@ -231,6 +231,14 @@ module.exports = class Runner {
         partition: batch.partition,
         highWatermark: batch.highWatermark,
         offsetLag: batch.offsetLag(),
+        /**
+         * @since 2019-06-24 (>= 1.8.0)
+         *
+         * offsetLag returns the lag based on the latest offset in the batch, to
+         * keep the event backward compatible we just introduced "offsetLagLow"
+         * which calculates the lag based on the first offset in the batch
+         */
+        offsetLagLow: batch.offsetLagLow(),
         batchSize: batch.messages.length,
         firstOffset: batch.firstOffset(),
         lastOffset: batch.lastOffset(),
