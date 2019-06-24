@@ -81,7 +81,8 @@
 </code></pre>
 <p>Refer to <a href="https://nodejs.org/dist/latest-v8.x/docs/api/tls.html#tls_tls_createsecurecontext_options">TLS create secure context</a> for more information. <code>NODE_EXTRA_CA_CERTS</code> can be used to add custom CAs. Use <code>ssl: true</code> if you don't have any extra configurations and want to enable SSL.</p>
 <h2><a class="anchor" aria-hidden="true" id="a-name-sasl-a-sasl"></a><a href="#a-name-sasl-a-sasl" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="sasl"></a> SASL</h2>
-<p>Kafka has support for using SASL to authenticate clients. The <code>sasl</code> option can be used to configure the authentication mechanism. Currently, KafkaJS supports <code>PLAIN</code>, <code>SCRAM-SHA-256</code>, and <code>SCRAM-SHA-512</code> mechanisms.</p>
+<p>Kafka has support for using SASL to authenticate clients. The <code>sasl</code> option can be used to configure the authentication mechanism. Currently, KafkaJS supports <code>PLAIN</code>, <code>SCRAM-SHA-256</code>, <code>SCRAM-SHA-512</code>, and <code>AWS-IAM</code> mechanisms.</p>
+<h3><a class="anchor" aria-hidden="true" id="plain-scram-example"></a><a href="#plain-scram-example" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>PLAIN/SCRAM Example</h3>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">new</span> Kafka({
   <span class="hljs-attr">clientId</span>: <span class="hljs-string">'my-app'</span>,
   <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
@@ -93,7 +94,36 @@
   },
 })
 </code></pre>
-<p>It is <strong>highly recommended</strong> that you use SSL for encryption when using <code>PLAIN</code>.</p>
+<h3><a class="anchor" aria-hidden="true" id="aws-iam-example"></a><a href="#aws-iam-example" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>AWS IAM Example</h3>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">new</span> Kafka({
+  <span class="hljs-attr">clientId</span>: <span class="hljs-string">'my-app'</span>,
+  <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
+  <span class="hljs-comment">// authenticationTimeout: 1000,</span>
+  sasl: {
+    <span class="hljs-attr">mechanism</span>: <span class="hljs-string">'aws-iam'</span>,
+    <span class="hljs-attr">authorizationIdentity</span>: <span class="hljs-string">'AIDAIOSFODNN7EXAMPLE'</span>, <span class="hljs-comment">// UserId or RoleId</span>
+    accessKeyId: <span class="hljs-string">'AKIAIOSFODNN7EXAMPLE'</span>,
+    <span class="hljs-attr">secretAccessKey</span>: <span class="hljs-string">'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'</span>,
+    <span class="hljs-attr">sessionToken</span>: <span class="hljs-string">'WHArYt8i5vfQUrIU5ZbMLCbjcAiv/Eww6eL9tgQMJp6QFNEXAMPLETOKEN'</span> <span class="hljs-comment">// Optional</span>
+  },
+})
+</code></pre>
+<p>For more information on the basics of IAM credentials and authentication, see the
+<a href="https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys">AWS Security Credentials - Access Keys</a> page.</p>
+<p>Use of this functionality requires
+<a href="https://github.com/STACK-Fintech/kafka-auth-aws-iam">STACK's Kafka AWS IAM LoginModule</a>, or a
+compatible alternative to be installed on all of the target brokers.</p>
+<p>In the above example, the <code>authorizationIdentity</code> must be the <code>aws:userid</code> of the AWS IAM
+identity. Typically, you can retrieve this value using the <code>aws iam get-user</code> or <code>aws iam get-role</code>
+commands of the <a href="https://aws.amazon.com/cli/">AWS CLI toolkit</a>. The <code>aws:userid</code> is usually listed
+as the <code>UserId</code> or <code>RoleId</code> property of the response.</p>
+<p>You can also programmatically retrieve the <code>aws:userid</code> for currently available credentials with the
+<a href="https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/STS.html">AWS SDK's Security Token Service</a>.</p>
+<p>A complete breakdown can be found in the IAM User Guide's
+<a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html#policy-vars-infotouse">Reference on Policy Variables</a>.</p>
+<h3><a class="anchor" aria-hidden="true" id="use-encrypted-protocols"></a><a href="#use-encrypted-protocols" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Use Encrypted Protocols</h3>
+<p>It is <strong>highly recommended</strong> that you use SSL for encryption when using <code>PLAIN</code> or <code>AWS</code>,
+otherwise credentials will be transmitted in cleartext!</p>
 <h2><a class="anchor" aria-hidden="true" id="connection-timeout"></a><a href="#connection-timeout" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Connection Timeout</h2>
 <p>Time in milliseconds to wait for a successful connection. The default value is: <code>1000</code>.</p>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">new</span> Kafka({
@@ -207,7 +237,7 @@ any socket.</p>
   <span class="hljs-attr">socketFactory</span>: myCustomSocketFactory,
 })
 </code></pre>
-</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/getting-started"><span class="arrow-prev">← </span><span>Getting Started</span></a><a class="docs-next button" href="/docs/producing"><span>Producing Messages</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#ssl">SSL</a></li><li><a href="#a-name-sasl-a-sasl">SASL</a></li><li><a href="#connection-timeout">Connection Timeout</a></li><li><a href="#request-timeout">Request Timeout</a></li><li><a href="#a-name-retry-a-default-retry">Default Retry</a></li><li><a href="#logging">Logging</a></li><li><a href="#custom-socket-factory">Custom socket factory</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/kafkajs-logoV2.svg" alt="KafkaJS" width="52" height="84"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Usage</a></div><div><h5>Community</h5><a href="https://kafkajs-slackin.herokuapp.com">Slack</a></div><div><h5>More</h5><a href="https://github.com/tulios/kafkajs">GitHub</a><a class="github-button" href="https://github.com/tulios/kafkajs" data-icon="octicon-star" data-count-href="/tulios/kafkajs/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/getting-started"><span class="arrow-prev">← </span><span>Getting Started</span></a><a class="docs-next button" href="/docs/producing"><span>Producing Messages</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#ssl">SSL</a></li><li><a href="#a-name-sasl-a-sasl">SASL</a><ul class="toc-headings"><li><a href="#plain-scram-example">PLAIN/SCRAM Example</a></li><li><a href="#aws-iam-example">AWS IAM Example</a></li><li><a href="#use-encrypted-protocols">Use Encrypted Protocols</a></li></ul></li><li><a href="#connection-timeout">Connection Timeout</a></li><li><a href="#request-timeout">Request Timeout</a></li><li><a href="#a-name-retry-a-default-retry">Default Retry</a></li><li><a href="#logging">Logging</a></li><li><a href="#custom-socket-factory">Custom socket factory</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/kafkajs-logoV2.svg" alt="KafkaJS" width="52" height="84"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Usage</a></div><div><h5>Community</h5><a href="https://kafkajs-slackin.herokuapp.com">Slack</a></div><div><h5>More</h5><a href="https://github.com/tulios/kafkajs">GitHub</a><a class="github-button" href="https://github.com/tulios/kafkajs" data-icon="octicon-star" data-count-href="/tulios/kafkajs/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
                   if (e.target !== document.body) {
                     return;
