@@ -7,7 +7,11 @@ const {
 } = require('testHelpers')
 
 const Broker = require('../../broker')
-const { KafkaJSLockTimeout, KafkaJSConnectionError } = require('../../errors')
+const {
+  KafkaJSLockTimeout,
+  KafkaJSConnectionError,
+  KafkaJSBrokerNotFound,
+} = require('../../errors')
 
 describe('Cluster > findBroker', () => {
   let cluster, topic
@@ -75,6 +79,22 @@ describe('Cluster > findBroker', () => {
     )
 
     await expect(cluster.findBroker({ nodeId })).resolves.toBeInstanceOf(Broker)
+    expect(cluster.refreshMetadata).toHaveBeenCalled()
+  })
+
+  test('refresh metadata on KafkaJSBrokerNotFound', async () => {
+    const nodeId = 0
+    cluster.brokerPool.findBroker = jest.fn(() => {
+      throw new KafkaJSBrokerNotFound('Broker not found')
+    })
+
+    jest.spyOn(cluster, 'refreshMetadata')
+
+    await expect(cluster.findBroker({ nodeId })).rejects.toHaveProperty(
+      'name',
+      'KafkaJSBrokerNotFound'
+    )
+
     expect(cluster.refreshMetadata).toHaveBeenCalled()
   })
 })
