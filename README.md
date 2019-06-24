@@ -19,6 +19,7 @@ KafkaJS is battle-tested and ready for production.
 - Snappy and LZ4 compression through plugins
 - Plain, SSL and SASL_SSL implementations
 - Support for SCRAM-SHA-256 and SCRAM-SHA-512
+- Support for AWS IAM authentication
 - Admin client
 
 ## <a name="getting-started"></a> Getting Started
