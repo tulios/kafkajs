@@ -119,4 +119,26 @@ describe('Consumer > Batch', () => {
       expect(batch.offsetLag()).toEqual('0')
     })
   })
+
+  describe('#offsetLagLow', () => {
+    it('returns the difference between highWatermark - 1 and the first offset', () => {
+      const batch = new Batch(topic, 0, {
+        partition: 0,
+        highWatermark: '100',
+        messages: [{ offset: '3' }, { offset: '4' }],
+      })
+
+      expect(batch.offsetLagLow()).toEqual('96')
+    })
+
+    it('returns 0 when the batch is empty', () => {
+      const batch = new Batch(topic, 0, {
+        partition: 0,
+        highWatermark: '100',
+        messages: [],
+      })
+
+      expect(batch.offsetLagLow()).toEqual('0')
+    })
+  })
 })
