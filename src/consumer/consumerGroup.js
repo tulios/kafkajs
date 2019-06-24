@@ -81,6 +81,11 @@ module.exports = class ConsumerGroup {
     return this.leaderId && this.memberId === this.leaderId
   }
 
+  async connect() {
+    await this.cluster.connect()
+    await this.cluster.refreshMetadataIfNecessary()
+  }
+
   async join() {
     const { groupId, sessionTimeout, rebalanceTimeout } = this
 
