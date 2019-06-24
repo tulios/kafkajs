@@ -71,6 +71,9 @@ new Kafka({
 })
 ```
 
+For more information on the basics of IAM credentials and authentication, see the
+[AWS Security Credentials - Access Keys](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys) page.
+
 Use of this functionality requires
 [STACK's Kafka AWS LoginModule](https://github.com/STACK-Fintech/kafka-auth-aws-iam), or a
 compatible alternative to be installed on all of the target brokers.
