@@ -43,14 +43,14 @@ Instrumentation Event:
 * consumer.events.FETCH_START
   payload: {}
 
-* consumer.events.FETCH 
+* consumer.events.FETCH
   payload: {`numberOfBatches`, `duration`}
 
 * consumer.events.START_BATCH_PROCESS  
-  payload: {`topic`, `partition`, `highWatermark`, `offsetLag`, `batchSize`, `firstOffset`, `lastOffset`}
+  payload: {`topic`, `partition`, `highWatermark`, `offsetLag`, `offsetLagLow`, `batchSize`, `firstOffset`, `lastOffset`}
 
 * consumer.events.END_BATCH_PROCESS  
-  payload: {`topic`, `partition`, `highWatermark`, `offsetLag`, `batchSize`, `firstOffset`, `lastOffset`, `duration`}
+  payload: {`topic`, `partition`, `highWatermark`, `offsetLag`, `offsetLagLow`, `batchSize`, `firstOffset`, `lastOffset`, `duration`}
 
 * consumer.events.CONNECT
 
