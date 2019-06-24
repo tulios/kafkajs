@@ -52,6 +52,9 @@ module.exports = class Batch {
       : this.unfilteredMessages[this.unfilteredMessages.length - 1].offset
   }
 
+  /**
+   * Returns the lag based on the last offset in the batch (also known as "high")
+   */
   offsetLag() {
     if (this.isEmptyIncludingFiltered()) {
       return '0'
@@ -60,5 +63,18 @@ module.exports = class Batch {
     const lastOffsetOfPartition = Long.fromValue(this.highWatermark).add(-1)
     const lastConsumedOffset = Long.fromValue(this.lastOffset())
     return lastOffsetOfPartition.add(lastConsumedOffset.multiply(-1)).toString()
+  }
+
+  /**
+   * Returns the lag based on the first offset in the batch
+   */
+  offsetLagLow() {
+    if (this.isEmptyIncludingFiltered()) {
+      return '0'
+    }
+
+    const lastOffsetOfPartition = Long.fromValue(this.highWatermark).add(-1)
+    const firstConsumedOffset = Long.fromValue(this.firstOffset())
+    return lastOffsetOfPartition.add(firstConsumedOffset.multiply(-1)).toString()
   }
 }
