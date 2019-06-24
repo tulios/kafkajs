@@ -3,12 +3,14 @@ const apiKeys = require('../../protocol/requests/apiKeys')
 const PlainAuthenticator = require('./plain')
 const SCRAM256Authenticator = require('./scram256')
 const SCRAM512Authenticator = require('./scram512')
+const AWSIAMAuthenticator = require('./awsIam')
 const { KafkaJSSASLAuthenticationError } = require('../../errors')
 
 const AUTHENTICATORS = {
   PLAIN: PlainAuthenticator,
   'SCRAM-SHA-256': SCRAM256Authenticator,
   'SCRAM-SHA-512': SCRAM512Authenticator,
+  'AWS-IAM': AWSIAMAuthenticator,
 }
 
 const SUPPORTED_MECHANISMS = Object.keys(AUTHENTICATORS)
