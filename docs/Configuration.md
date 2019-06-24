@@ -38,7 +38,7 @@ Refer to [TLS create secure context](https://nodejs.org/dist/latest-v8.x/docs/ap
 
 ## <a name="sasl"></a> SASL
 
-Kafka has support for using SASL to authenticate clients. The `sasl` option can be used to configure the authentication mechanism. Currently, KafkaJS supports `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512`, and `AWS` mechanisms.
+Kafka has support for using SASL to authenticate clients. The `sasl` option can be used to configure the authentication mechanism. Currently, KafkaJS supports `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512`, and `AWS-IAM` mechanisms.
 
 ### PLAIN/SCRAM Example
 ```javascript
@@ -54,7 +54,7 @@ new Kafka({
 })
 ```
 
-### AWS Example
+### AWS IAM Example
 
 ```javascript
 new Kafka({
@@ -62,7 +62,7 @@ new Kafka({
   brokers: ['kafka1:9092', 'kafka2:9092'],
   // authenticationTimeout: 1000,
   sasl: {
-    mechanism: 'aws',
+    mechanism: 'aws-iam',
     authorizationIdentity: 'AIDAIOSFODNN7EXAMPLE', // UserId or RoleId
     accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
     secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
@@ -75,7 +75,7 @@ For more information on the basics of IAM credentials and authentication, see th
 [AWS Security Credentials - Access Keys](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys) page.
 
 Use of this functionality requires
-[STACK's Kafka AWS LoginModule](https://github.com/STACK-Fintech/kafka-auth-aws-iam), or a
+[STACK's Kafka AWS IAM LoginModule](https://github.com/STACK-Fintech/kafka-auth-aws-iam), or a
 compatible alternative to be installed on all of the target brokers.
 
 In the above example, the `authorizationIdentity` must be the `aws:userid` of the AWS IAM
