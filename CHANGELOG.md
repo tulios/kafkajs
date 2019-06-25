@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [1.9.1] - 2019-06-25
 ### Fixed
-  - Fix typescript types for SSL, SASL and batch #406
+  - Fix typescript types for SSL, SASL and batch #407
 
 ## [1.9.0] - 2019-06-25
 ### Added
