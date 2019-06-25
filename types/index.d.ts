@@ -13,7 +13,7 @@ export class Kafka {
 
 export interface KafkaConfig {
   brokers: string[]
-  ssl?: tls.SecureContextOptions
+  ssl?: tls.ConnectionOptions
   sasl?: SASLOptions
   clientId?: string
   connectionTimeout?: number
