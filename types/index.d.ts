@@ -489,6 +489,7 @@ export type Batch = {
   firstOffset(): string | null
   lastOffset(): string
   offsetLag(): string
+  offsetLagLow(): string
 }
 
 export type ConsumerEvents = {
@@ -544,6 +545,7 @@ interface IBatchProcessEvent {
   partition: number
   highWatermark: string
   offsetLag: string
+  offsetLagLow: string
   batchSize: number
   firstOffset: string
   lastOffset: string
