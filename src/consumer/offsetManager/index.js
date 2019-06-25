@@ -250,20 +250,30 @@ module.exports = class OffsetManager {
       topics,
     }
 
-    const coordinator = await this.getCoordinator()
-    await coordinator.offsetCommit(payload)
-    this.instrumentationEmitter.emit(COMMIT_OFFSETS, payload)
+    try {
+      const coordinator = await this.getCoordinator()
+      await coordinator.offsetCommit(payload)
+      this.instrumentationEmitter.emit(COMMIT_OFFSETS, payload)
 
-    // Update local reference of committed offsets
-    topics.forEach(({ topic, partitions }) => {
-      const updatedOffsets = partitions.reduce(
-        (obj, { partition, offset }) => assign(obj, { [partition]: offset }),
-        {}
-      )
-      assign(this.committedOffsets()[topic], updatedOffsets)
-    })
+      // Update local reference of committed offsets
+      topics.forEach(({ topic, partitions }) => {
+        const updatedOffsets = partitions.reduce(
+          (obj, { partition, offset }) => assign(obj, { [partition]: offset }),
+          {}
+        )
+        assign(this.committedOffsets()[topic], updatedOffsets)
+      })
 
-    this.lastCommit = Date.now()
+      this.lastCommit = Date.now()
+    } catch (e) {
+      // metadata is stale, the coordinator has changed due to a restart or
+      // broker reassignment
+      if (e.type === 'NOT_COORDINATOR_FOR_GROUP') {
+        await this.cluster.refreshMetadata()
+      }
+
+      throw e
+    }
   }
 
   async resolveOffsets() {

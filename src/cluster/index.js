@@ -181,7 +181,11 @@ module.exports = class Cluster {
       return await this.brokerPool.findBroker({ nodeId })
     } catch (e) {
       // The client probably has stale metadata
-      if (e.name === 'KafkaJSLockTimeout' || e.code === 'ECONNREFUSED') {
+      if (
+        e.name === 'KafkaJSBrokerNotFound' ||
+        e.name === 'KafkaJSLockTimeout' ||
+        e.code === 'ECONNREFUSED'
+      ) {
         await this.refreshMetadata()
       }
 

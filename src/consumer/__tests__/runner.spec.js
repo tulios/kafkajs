@@ -17,6 +17,7 @@ describe('Consumer > Runner', () => {
     eachBatch = jest.fn()
     onCrash = jest.fn()
     consumerGroup = {
+      connect: jest.fn(),
       join: jest.fn(),
       sync: jest.fn(),
       fetch: jest.fn(),
