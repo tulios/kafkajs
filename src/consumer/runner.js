@@ -83,6 +83,7 @@ module.exports = class Runner {
     }
 
     try {
+      await this.consumerGroup.connect()
       await this.join()
 
       this.running = true

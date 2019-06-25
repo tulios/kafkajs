@@ -1,11 +1,14 @@
 const OffsetManager = require('../index')
 const InstrumentationEventEmitter = require('../../../instrumentation/emitter')
+const { createErrorFromCode } = require('../../../protocol/error')
+const NOT_COORDINATOR_FOR_GROUP_CODE = 16
 
 describe('Consumer > OffsetMananger > commitOffsets', () => {
   let offsetManager,
     topic1,
     topic2,
     memberAssignment,
+    mockCluster,
     mockCoordinator,
     groupId,
     generationId,
@@ -23,20 +26,24 @@ describe('Consumer > OffsetMananger > commitOffsets', () => {
       [topic2]: [0, 1, 2, 3],
     }
 
+    mockCluster = {
+      committedOffsets: jest.fn(() => ({})),
+      refreshMetadata: jest.fn(() => ({})),
+    }
+
     mockCoordinator = {
       offsetCommit: jest.fn(),
     }
 
     offsetManager = new OffsetManager({
-      cluster: {
-        committedOffsets: jest.fn(() => ({})),
-      },
+      cluster: mockCluster,
       memberAssignment,
       groupId,
       generationId,
       memberId,
       instrumentationEmitter: new InstrumentationEventEmitter(),
     })
+
     offsetManager.getCoordinator = jest.fn(() => mockCoordinator)
   })
 
@@ -110,5 +117,17 @@ describe('Consumer > OffsetMananger > commitOffsets', () => {
         },
       ],
     })
+  })
+
+  it('refreshes metadata on NOT_COORDINATOR_FOR_GROUP protocol error', async () => {
+    mockCoordinator.offsetCommit.mockImplementation(() => {
+      throw createErrorFromCode(NOT_COORDINATOR_FOR_GROUP_CODE)
+    })
+
+    const offset = Math.random().toString()
+    const offsets = { topics: [{ topic: topic1, partitions: [{ partition: '0', offset }] }] }
+
+    await expect(offsetManager.commitOffsets(offsets)).rejects.toThrow()
+    expect(mockCluster.refreshMetadata).toHaveBeenCalled()
   })
 })
