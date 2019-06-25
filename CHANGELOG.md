@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2019-06-25
+### Fixed
+  - Make sure runner has connected brokers and fresh metadata before it starts #404
+
 ## [1.8.0] - 2019-05-13
 ### Added
   - Add partition-aware concurrent mode for `eachMessage` #332
