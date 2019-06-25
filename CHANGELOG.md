@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2019-06-25
+### Added
+  - Add typescript declaration file #362 #385 #390
+  - Add `requestTimeout` to apiVersions #369
+  - Discard messages saw a seek operation during a fetch or batch processing #367
+  - Include fetched offset metadata retrieved with `admin.fetchOffsets` #389
+  - Allow offset metadata to be written as part of OffsetCommit requests #392
+  - Prevent the consumption of messages for topics paused while fetch is in-flight #397
+  - Add `AWS-IAM` SASL mechanism #402 
+  - Add `batch.offsetLagLow` #405
+
+### Changed
+  - Don't modify `global.crypto` #365
+  - Change log level about producer without metadata #382
+  - Update encoder to write arrays as single `Buffer.concat` where possible #394
+
+### Fixed
+  - Log error message on connection errors #400
+  - Make sure runner has connected brokers and fresh metadata before it starts #404
+
+## [1.8.1] - 2019-06-25
+### Fixed
+  - Make sure runner has connected brokers and fresh metadata before it starts #404
+
 ## [1.8.0] - 2019-05-13
 ### Added
   - Add partition-aware concurrent mode for `eachMessage` #332
