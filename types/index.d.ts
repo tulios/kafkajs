@@ -13,7 +13,7 @@ export class Kafka {
 
 export interface KafkaConfig {
   brokers: string[]
-  ssl?: tls.SecureContextOptions
+  ssl?: tls.ConnectionOptions
   sasl?: SASLOptions
   clientId?: string
   connectionTimeout?: number
@@ -34,7 +34,7 @@ export type ISocketFactory = (
 ) => net.Socket
 
 export interface SASLOptions {
-  mechanism: 'plain' | 'scram-sha-256' | 'scram-sha-512'
+  mechanism: 'plain' | 'scram-sha-256' | 'scram-sha-512' | 'aws-iam'
   username: string
   password: string
 }
@@ -489,6 +489,7 @@ export type Batch = {
   firstOffset(): string | null
   lastOffset(): string
   offsetLag(): string
+  offsetLagLow(): string
 }
 
 export type ConsumerEvents = {
@@ -544,6 +545,7 @@ interface IBatchProcessEvent {
   partition: number
   highWatermark: string
   offsetLag: string
+  offsetLagLow: string
   batchSize: number
   firstOffset: string
   lastOffset: string
