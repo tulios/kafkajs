@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.9.1] - 2019-06-25
+### Fixed
+  - Fix typescript types for SSL, SASL and batch #406
+
 ## [1.9.0] - 2019-06-25
 ### Added
   - Add typescript declaration file #362 #385 #390
@@ -13,7 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Include fetched offset metadata retrieved with `admin.fetchOffsets` #389
   - Allow offset metadata to be written as part of OffsetCommit requests #392
   - Prevent the consumption of messages for topics paused while fetch is in-flight #397
-  - Add `AWS-IAM` SASL mechanism #402 
+  - Add `AWS-IAM` SASL mechanism #402
   - Add `batch.offsetLagLow` #405
 
 ### Changed
