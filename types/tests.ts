@@ -13,6 +13,7 @@ const kafka = new Kafka({
   brokers: [`${host}:9094`, `${host}:9097`, `${host}:9100`],
   clientId: 'example-consumer',
   ssl: {
+    rejectUnauthorized: false,
     ca: [fs.readFileSync('./testHelpers/certs/cert-signed', 'utf-8')],
   },
   sasl: {
@@ -52,6 +53,7 @@ const runConsumer = async () => {
       isRunning()
       isStale()
       console.log(batch)
+      console.log(batch.offsetLagLow())
     },
     eachMessage: async ({ topic, partition, message }) => {
       const prefix = `${topic}[${partition} | ${message.offset}] / ${message.timestamp}`
