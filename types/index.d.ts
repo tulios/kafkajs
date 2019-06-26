@@ -29,7 +29,7 @@ export interface KafkaConfig {
 export type ISocketFactory = (
   host: string,
   port: number,
-  ssl: tls.SecureContextOptions,
+  ssl: tls.ConnectionOptions,
   onConnect: () => void
 ) => net.Socket
 
@@ -50,16 +50,27 @@ export interface ProducerConfig {
   maxInFlightRequests?: number
 }
 
-export type ICustomPartitioner = () => (
-  message: { topic: string; partitionMetadata: PartitionMetadata[]; message: Message }
-) => number
+export interface PartitionerArgs {
+  topic: string
+  partitionMetadata: PartitionMetadata[]
+  message: Message
+}
+
+export type ICustomPartitioner = () => (args: PartitionerArgs) => number
+export type DefaultPartitioner = (args: PartitionerArgs) => number
+export type JavaCompatiblePartitioner = (args: PartitionerArgs) => number
+
+export const Partitioners: {
+  DefaultPartitioner: DefaultPartitioner
+  JavaCompatiblePartitioner: JavaCompatiblePartitioner
+}
 
 export interface Message {
-  key?: string | Buffer
-  value: string | Buffer | null
-  partition?: string | number
+  key?: Buffer | null
+  value: Buffer | null
+  partition?: number
   headers?: IHeaders
-  timestamp?: number | string
+  timestamp?: string
 }
 
 export type PartitionMetadata = {
@@ -95,6 +106,15 @@ export interface PartitionAssigner {
   new (config: { cluster: Cluster }): Assigner
 }
 
+export interface CoordinatorMetadata {
+  errorCode: number
+  coordinator: {
+    nodeId: number
+    host: string
+    port: number
+  }
+}
+
 export type Cluster = {
   isConnected(): boolean
   connect(): Promise<void>
@@ -107,9 +127,7 @@ export type Cluster = {
   findTopicPartitionMetadata(topic: string): PartitionMetadata[]
   findLeaderForPartitions(topic: string, partitions: number[]): { [leader: string]: number[] }
   findGroupCoordinator(group: { groupId: string }): Promise<Broker>
-  findGroupCoordinatorMetadata(group: {
-    groupId: string
-  }): Promise<{ errorCode: number; coordinator: { nodeId: number; host: string; port: number } }>
+  findGroupCoordinatorMetadata(group: { groupId: string }): Promise<CoordinatorMetadata>
   defaultOffset(config: { fromBeginning: boolean }): number
   fetchTopicsOffset(
     topics: Array<{
@@ -320,19 +338,6 @@ export const AssignerProtocol: {
   MemberAssignment: ISerializer<MemberAssignment>
 }
 
-export type DefaultPartitioner = (
-  message: { topic: string; partitionMetadata: PartitionMetadata[]; message: Message }
-) => number
-
-export type JavaCompatiblePartitioner = (
-  message: { topic: string; partitionMetadata: PartitionMetadata[]; message: Message }
-) => number
-
-export const Partitioners: {
-  DefaultPartitioner: DefaultPartitioner
-  JavaCompatiblePartitioner: JavaCompatiblePartitioner
-}
-
 export enum logLevel {
   NOTHING = 0,
   ERROR = 1,
@@ -341,13 +346,22 @@ export enum logLevel {
   DEBUG = 5,
 }
 
-export type LogEntry = { namespace: string; level: logLevel; label: string; log: string }
+export interface LogEntry {
+  namespace: string
+  level: logLevel
+  label: string
+  log: LoggerEntryContent
+}
+
+export interface LoggerEntryContent {
+  readonly timestamp: Date
+  readonly message: string
+  [key: string]: any
+}
 
 export type Logger = (entry: LogEntry) => void
 
-export type logCreator = (
-  logLevel: string
-) => (namespace: string, level: string, label: string, log: string) => void
+export type logCreator = (logLevel: string) => (entry: LogEntry) => void
 
 export type Broker = {
   isConnected(): boolean
@@ -563,6 +577,22 @@ export interface OffsetsByTopicPartition {
   topics: TopicOffsets[]
 }
 
+export interface EachMessagePayload {
+  topic: string
+  partition: number
+  message: KafkaMessage
+}
+
+export interface EachBatchPayload {
+  batch: Batch
+  resolveOffset(offset: string): void
+  heartbeat(): Promise<void>
+  commitOffsetsIfNecessary(offsets?: Offsets): Promise<void>
+  uncommittedOffsets(): Promise<OffsetsByTopicPartition>
+  isRunning(): boolean
+  isStale(): boolean
+}
+
 export type Consumer = {
   connect(): Promise<void>
   disconnect(): Promise<void>
@@ -574,25 +604,13 @@ export type Consumer = {
     autoCommitThreshold?: number | null
     eachBatchAutoResolve?: boolean
     partitionsConsumedConcurrently?: number
-    eachBatch?: (
-      batch: {
-        batch: Batch
-        resolveOffset(offset: string): void
-        heartbeat(): Promise<void>
-        commitOffsetsIfNecessary(offsets?: Offsets): Promise<void>
-        uncommittedOffsets(): Promise<OffsetsByTopicPartition>
-        isRunning(): boolean
-        isStale(): boolean
-      }
-    ) => Promise<void>
-    eachMessage?: (
-      message: { topic: string; partition: number; message: KafkaMessage }
-    ) => Promise<void>
+    eachBatch?: (payload: EachBatchPayload) => Promise<void>
+    eachMessage?: (payload: EachMessagePayload) => Promise<void>
   }): Promise<void>
   seek(topicPartition: { topic: string; partition: number; offset: string }): void
   describeGroup(): Promise<GroupDescription>
-  pause(topicPartitions: TopicPartitions[]): void
-  resume(topicPartitions: TopicPartitions[]): void
+  pause(topics: Array<{ topic: string }>): void
+  resume(topics: Array<{ topic: string }>): void
   on(eventName: ValueOf<ConsumerEvents>, listener: (...args: any[]) => void): void
   logger(): Logger
   events: ConsumerEvents

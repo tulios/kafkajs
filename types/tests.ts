@@ -63,15 +63,15 @@ const runConsumer = async () => {
   await consumer.disconnect()
 }
 
-runConsumer().catch(e => console.error(`[example/consumer] ${e.message}`, e))
+runConsumer().catch(console.error)
 
 // PRODUCER
 const producer = kafka.producer({ allowAutoTopicCreation: true })
 
 const getRandomNumber = () => Math.round(Math.random() * 1000)
 const createMessage = (num: number) => ({
-  key: `key-${num}`,
-  value: `value-${num}-${new Date().toISOString()}`,
+  key: Buffer.from(`key-${num}`),
+  value: Buffer.from(`value-${num}-${new Date().toISOString()}`),
 })
 
 const sendMessage = () => {
@@ -84,7 +84,7 @@ const sendMessage = () => {
         .map(_ => createMessage(getRandomNumber())),
     })
     .then(console.log)
-    .catch(e => console.error(`[example/producer] ${e.message}`, e))
+    .catch(console.error)
 }
 
 const runProducer = async () => {
@@ -93,7 +93,7 @@ const runProducer = async () => {
   await producer.disconnect()
 }
 
-runProducer().catch(e => console.error(`[example/producer] ${e.message}`, e))
+runProducer().catch(console.error)
 
 // ADMIN
 const admin = kafka.admin({ retry: { retries: 10 } })
@@ -109,16 +109,18 @@ const runAdmin = async () => {
   await admin.disconnect()
 }
 
-runAdmin().catch(e => console.error(`[example/admin] ${e.message}`, e))
+runAdmin().catch(console.error)
 
 // OTHERS
-;async () => {
+const produceWithGZIP = async () => {
   await producer.send({
     topic: 'topic-name',
     compression: CompressionTypes.GZIP,
-    messages: [{ key: 'key1', value: 'hello world!' }],
+    messages: [{ key: Buffer.from('key1'), value: Buffer.from('hello world!') }],
   })
 }
+
+produceWithGZIP().catch(console.error)
 
 const SnappyCodec: any = undefined
 CompressionCodecs[CompressionTypes.Snappy] = SnappyCodec
