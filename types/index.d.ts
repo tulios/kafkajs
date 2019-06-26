@@ -600,8 +600,8 @@ export type Consumer = {
   }): Promise<void>
   seek(topicPartition: { topic: string; partition: number; offset: string }): void
   describeGroup(): Promise<GroupDescription>
-  pause(topicPartitions: TopicPartitions[]): void
-  resume(topicPartitions: TopicPartitions[]): void
+  pause(topics: Array<{ topic: string }>): void
+  resume(topics: Array<{ topic: string }>): void
   on(eventName: ValueOf<ConsumerEvents>, listener: (...args: any[]) => void): void
   logger(): Logger
   events: ConsumerEvents
