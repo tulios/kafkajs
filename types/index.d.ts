@@ -29,7 +29,7 @@ export interface KafkaConfig {
 export type ISocketFactory = (
   host: string,
   port: number,
-  ssl: tls.SecureContextOptions,
+  ssl: tls.ConnectionOptions,
   onConnect: () => void
 ) => net.Socket
 
@@ -50,16 +50,27 @@ export interface ProducerConfig {
   maxInFlightRequests?: number
 }
 
-export type ICustomPartitioner = () => (
-  message: { topic: string; partitionMetadata: PartitionMetadata[]; message: Message }
-) => number
+export interface PartitionerArgs {
+  topic: string
+  partitionMetadata: PartitionMetadata[]
+  message: Message
+}
+
+export type ICustomPartitioner = () => (args: PartitionerArgs) => number
+export type DefaultPartitioner = (args: PartitionerArgs) => number
+export type JavaCompatiblePartitioner = (args: PartitionerArgs) => number
+
+export const Partitioners: {
+  DefaultPartitioner: DefaultPartitioner
+  JavaCompatiblePartitioner: JavaCompatiblePartitioner
+}
 
 export interface Message {
-  key?: string | Buffer
-  value: string | Buffer | null
-  partition?: string | number
+  key?: Buffer | null
+  value: Buffer | null
+  partition?: number
   headers?: IHeaders
-  timestamp?: number | string
+  timestamp?: string
 }
 
 export type PartitionMetadata = {
@@ -95,6 +106,15 @@ export interface PartitionAssigner {
   new (config: { cluster: Cluster }): Assigner
 }
 
+export interface CoordinatorMetadata {
+  errorCode: number
+  coordinator: {
+    nodeId: number
+    host: string
+    port: number
+  }
+}
+
 export type Cluster = {
   isConnected(): boolean
   connect(): Promise<void>
@@ -107,9 +127,7 @@ export type Cluster = {
   findTopicPartitionMetadata(topic: string): PartitionMetadata[]
   findLeaderForPartitions(topic: string, partitions: number[]): { [leader: string]: number[] }
   findGroupCoordinator(group: { groupId: string }): Promise<Broker>
-  findGroupCoordinatorMetadata(group: {
-    groupId: string
-  }): Promise<{ errorCode: number; coordinator: { nodeId: number; host: string; port: number } }>
+  findGroupCoordinatorMetadata(group: { groupId: string }): Promise<CoordinatorMetadata>
   defaultOffset(config: { fromBeginning: boolean }): number
   fetchTopicsOffset(
     topics: Array<{
@@ -318,19 +336,6 @@ export type MemberAssignment = {
 export const AssignerProtocol: {
   MemberMetadata: ISerializer<MemberMetadata>
   MemberAssignment: ISerializer<MemberAssignment>
-}
-
-export type DefaultPartitioner = (
-  message: { topic: string; partitionMetadata: PartitionMetadata[]; message: Message }
-) => number
-
-export type JavaCompatiblePartitioner = (
-  message: { topic: string; partitionMetadata: PartitionMetadata[]; message: Message }
-) => number
-
-export const Partitioners: {
-  DefaultPartitioner: DefaultPartitioner
-  JavaCompatiblePartitioner: JavaCompatiblePartitioner
 }
 
 export enum logLevel {
