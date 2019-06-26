@@ -572,6 +572,22 @@ export interface OffsetsByTopicPartition {
   topics: TopicOffsets[]
 }
 
+export interface EachMessagePayload {
+  topic: string
+  partition: number
+  message: KafkaMessage
+}
+
+export interface EachBatchPayload {
+  batch: Batch
+  resolveOffset(offset: string): void
+  heartbeat(): Promise<void>
+  commitOffsetsIfNecessary(offsets?: Offsets): Promise<void>
+  uncommittedOffsets(): Promise<OffsetsByTopicPartition>
+  isRunning(): boolean
+  isStale(): boolean
+}
+
 export type Consumer = {
   connect(): Promise<void>
   disconnect(): Promise<void>
@@ -583,20 +599,8 @@ export type Consumer = {
     autoCommitThreshold?: number | null
     eachBatchAutoResolve?: boolean
     partitionsConsumedConcurrently?: number
-    eachBatch?: (
-      batch: {
-        batch: Batch
-        resolveOffset(offset: string): void
-        heartbeat(): Promise<void>
-        commitOffsetsIfNecessary(offsets?: Offsets): Promise<void>
-        uncommittedOffsets(): Promise<OffsetsByTopicPartition>
-        isRunning(): boolean
-        isStale(): boolean
-      }
-    ) => Promise<void>
-    eachMessage?: (
-      message: { topic: string; partition: number; message: KafkaMessage }
-    ) => Promise<void>
+    eachBatch?: (payload: EachBatchPayload) => Promise<void>
+    eachMessage?: (payload: EachMessagePayload) => Promise<void>
   }): Promise<void>
   seek(topicPartition: { topic: string; partition: number; offset: string }): void
   describeGroup(): Promise<GroupDescription>
