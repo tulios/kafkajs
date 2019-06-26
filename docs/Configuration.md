@@ -41,6 +41,7 @@ Refer to [TLS create secure context](https://nodejs.org/dist/latest-v8.x/docs/ap
 Kafka has support for using SASL to authenticate clients. The `sasl` option can be used to configure the authentication mechanism. Currently, KafkaJS supports `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512`, and `AWS-IAM` mechanisms.
 
 ### PLAIN/SCRAM Example
+
 ```javascript
 new Kafka({
   clientId: 'my-app',
@@ -62,7 +63,7 @@ new Kafka({
   brokers: ['kafka1:9092', 'kafka2:9092'],
   // authenticationTimeout: 1000,
   sasl: {
-    mechanism: 'aws-iam',
+    mechanism: 'aws',
     authorizationIdentity: 'AIDAIOSFODNN7EXAMPLE', // UserId or RoleId
     accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
     secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
@@ -91,7 +92,7 @@ A complete breakdown can be found in the IAM User Guide's
 
 ### Use Encrypted Protocols
 
-It is __highly recommended__ that you use SSL for encryption when using `PLAIN` or `AWS`,
+It is **highly recommended** that you use SSL for encryption when using `PLAIN` or `AWS`,
 otherwise credentials will be transmitted in cleartext!
 
 ## Connection Timeout
