@@ -341,13 +341,22 @@ export enum logLevel {
   DEBUG = 5,
 }
 
-export type LogEntry = { namespace: string; level: logLevel; label: string; log: string }
+export interface LogEntry {
+  namespace: string
+  level: logLevel
+  label: string
+  log: LoggerEntryContent
+}
+
+export interface LoggerEntryContent {
+  readonly timestamp: Date
+  readonly message: string
+  [key: string]: any
+}
 
 export type Logger = (entry: LogEntry) => void
 
-export type logCreator = (
-  logLevel: string
-) => (namespace: string, level: string, label: string, log: string) => void
+export type logCreator = (logLevel: string) => (entry: LogEntry) => void
 
 export type Broker = {
   isConnected(): boolean
