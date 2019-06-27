@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [1.9.3] - 2019-06-27
 ### Fixed
   - Fix AWS-IAM mechanism name #411 #412
+  - Fix TypeScript types for topic subscription with RegExp #413 
 
 ## [1.9.2] - 2019-06-26
 ### Fixed
