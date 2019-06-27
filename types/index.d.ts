@@ -596,7 +596,7 @@ export interface EachBatchPayload {
 export type Consumer = {
   connect(): Promise<void>
   disconnect(): Promise<void>
-  subscribe(topic: { topic: string; fromBeginning?: boolean }): Promise<void>
+  subscribe(topic: { topic: string | RegExp; fromBeginning?: boolean }): Promise<void>
   stop(): Promise<void>
   run(config?: {
     autoCommit?: boolean
