@@ -10,7 +10,7 @@ const AUTHENTICATORS = {
   PLAIN: PlainAuthenticator,
   'SCRAM-SHA-256': SCRAM256Authenticator,
   'SCRAM-SHA-512': SCRAM512Authenticator,
-  'AWS-IAM': AWSIAMAuthenticator,
+  AWS: AWSIAMAuthenticator,
 }
 
 const SUPPORTED_MECHANISMS = Object.keys(AUTHENTICATORS)
