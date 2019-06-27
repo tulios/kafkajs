@@ -34,7 +34,7 @@ export type ISocketFactory = (
 ) => net.Socket
 
 export interface SASLOptions {
-  mechanism: 'plain' | 'scram-sha-256' | 'scram-sha-512' | 'aws-iam'
+  mechanism: 'plain' | 'scram-sha-256' | 'scram-sha-512' | 'aws'
   username: string
   password: string
 }
