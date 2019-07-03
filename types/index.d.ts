@@ -50,6 +50,14 @@ export interface ProducerConfig {
   maxInFlightRequests?: number
 }
 
+export interface Message {
+  key?: Buffer | string | null
+  value: Buffer | string | null
+  partition?: number
+  headers?: IHeaders
+  timestamp?: string
+}
+
 export interface PartitionerArgs {
   topic: string
   partitionMetadata: PartitionMetadata[]
@@ -63,14 +71,6 @@ export type JavaCompatiblePartitioner = (args: PartitionerArgs) => number
 export const Partitioners: {
   DefaultPartitioner: DefaultPartitioner
   JavaCompatiblePartitioner: JavaCompatiblePartitioner
-}
-
-export interface Message {
-  key?: Buffer | null
-  value: Buffer | null
-  partition?: number
-  headers?: IHeaders
-  timestamp?: string
 }
 
 export type PartitionMetadata = {
@@ -293,7 +293,7 @@ export type Admin = {
     timeout?: number
     topics: ITopicConfig[]
   }): Promise<boolean>
-  deleteTopics(options: { topics: string[]; timeout: number }): Promise<void>
+  deleteTopics(options: { topics: string[]; timeout?: number }): Promise<void>
   fetchTopicMetadata(options: { topics: string[] }): Promise<{ topics: Array<ITopicMetadata> }>
   fetchOffsets(options: {
     groupId: string
@@ -592,6 +592,18 @@ export interface EachBatchPayload {
   isRunning(): boolean
   isStale(): boolean
 }
+
+/**
+ * Type alias to keep compatibility with @types/kafkajs
+ * @see https://github.com/DefinitelyTyped/DefinitelyTyped/blob/712ad9d59ccca6a3cc92f347fea0d1c7b02f5eeb/types/kafkajs/index.d.ts#L321-L325
+ */
+export type ConsumerEachMessagePayload = EachMessagePayload
+
+/**
+ * Type alias to keep compatibility with @types/kafkajs
+ * @see https://github.com/DefinitelyTyped/DefinitelyTyped/blob/712ad9d59ccca6a3cc92f347fea0d1c7b02f5eeb/types/kafkajs/index.d.ts#L327-L336
+ */
+export type ConsumerEachBatchPayload = EachBatchPayload
 
 export type Consumer = {
   connect(): Promise<void>
