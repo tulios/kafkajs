@@ -415,7 +415,7 @@ module.exports = ({
       )
     }
 
-    consumerGroup.resume(topicPartitions.map(({ topic }) => topic))
+    consumerGroup.resume(topicPartitions)
   }
 
   /**
