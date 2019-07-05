@@ -1,26 +1,47 @@
 module.exports = class SubscriptionState {
   constructor() {
-    this.pausedTopics = new Set()
+    this.pausedPartitionsByTopic = {}
   }
 
   /**
-   * @param {Array<string>} topics
+   * @param {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    */
-  pause(topics = []) {
-    topics.forEach(topic => this.pausedTopics.add(topic))
+  pause(topicPartitions = []) {
+    topicPartitions.forEach(({ topic, partitions }) => {
+      const pausedForTopic = this.pausedPartitionsByTopic[topic] || { topic, partitions: new Set() }
+      partitions.forEach(partition => pausedForTopic.partitions.add(partition))
+      this.pausedPartitionsByTopic[topic] = pausedForTopic
+    })
   }
 
   /**
-   * @param {Array<string>} topics
+   * @param {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    */
-  resume(topics = []) {
-    topics.forEach(topic => this.pausedTopics.delete(topic))
+  resume(topicPartitions = []) {
+    topicPartitions.forEach(({ topic, partitions }) => {
+      const pausedForTopic = this.pausedPartitionsByTopic[topic] || { topic, partitions: new Set() }
+      partitions.forEach(partition => pausedForTopic.partitions.delete(partition))
+      this.pausedPartitionsByTopic[topic] = pausedForTopic
+    })
   }
 
   /**
-   * @returns {Array<string>} paused topics
+   * @returns {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    */
   paused() {
-    return Array.from(this.pausedTopics.values())
+    return Array.from(
+      Object.values(this.topicPartitions).map(({ topic, partitions }) => {
+        return {
+          topic,
+          partitions: Array.from(partitions.values()),
+        }
+      })
+    )
+  }
+
+  isPaused(topic, partition) {
+    let pausedTopicPartition = this.pausedPartitionsByTopic[topic]
+
+    return !pausedTopicPartition || pausedTopicPartition.partitions.includes(partition)
   }
 }

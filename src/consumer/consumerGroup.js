@@ -257,18 +257,18 @@ module.exports = class ConsumerGroup {
     this.seekOffset.set(topic, partition, offset)
   }
 
-  pause(topics) {
-    this.logger.info(`Pausing fetching from ${topics.length} topics`, {
-      topics,
+  pause(topicPartitions) {
+    this.logger.info(`Pausing fetching from ${topicPartitions.length} topics`, {
+      topicPartitions,
     })
-    this.subscriptionState.pause(topics)
+    this.subscriptionState.pause(topicPartitions)
   }
 
-  resume(topics) {
-    this.logger.info(`Resuming fetching from ${topics.length} topics`, {
-      topics,
+  resume(topicPartitions) {
+    this.logger.info(`Resuming fetching from ${topicPartitions.length} topics`, {
+      topicPartitions,
     })
-    this.subscriptionState.resume(topics)
+    this.subscriptionState.resume(topicPartitions)
   }
 
   paused() {
@@ -322,14 +322,28 @@ module.exports = class ConsumerGroup {
         await this.offsetManager.seek(seekEntry)
       }
 
-      const pausedTopics = this.subscriptionState.paused()
-      const activeTopics = topics.filter(topic => !pausedTopics.includes(topic))
+      const pausedTopicPartitions = this.subscriptionState.paused()
+      const activeTopicPartitions = topics.map(topic => {
+        const assignedPartitions = this.memberAssignment[topic]
 
-      if (activeTopics.length === 0) {
-        this.logger.debug(`No active topics, sleeping for ${this.maxWaitTime}ms`, {
+        return {
+          topic,
+          partitions: assignedPartitions.filter(partition =>
+            this.subscriptionState.isPaused(topic, partition)
+          ),
+        }
+      })
+
+      const activePartitions = flatten(activeTopicPartitions.map(({ partitions }) => partitions))
+      const activeTopics = activeTopicPartitions
+        .filter(({ partitions }) => partitions.length > 0)
+        .map(({ topic }) => topic)
+
+      if (activePartitions.length === 0) {
+        this.logger.debug(`No active topic partitions, sleeping for ${this.maxWaitTime}ms`, {
           topics,
-          activeTopics,
-          pausedTopics,
+          activeTopicPartitions,
+          pausedTopicPartitions,
         })
 
         await sleep(this.maxWaitTime)
@@ -338,16 +352,21 @@ module.exports = class ConsumerGroup {
 
       await this.offsetManager.resolveOffsets()
 
-      this.logger.debug(`Fetching from ${activeTopics.length} out of ${topics.length} topics`, {
-        topics,
-        activeTopics,
-        pausedTopics,
-      })
+      this.logger.debug(
+        `Fetching from ${activePartitions.length} partitions for ${activeTopics.length} out of ${
+          topics.length
+        } topics`,
+        {
+          topics,
+          activeTopicPartitions,
+          pausedTopicPartitions,
+        }
+      )
 
-      for (let topic of activeTopics) {
+      for (let topicPartition of activeTopicPartitions) {
         const partitionsPerLeader = this.cluster.findLeaderForPartitions(
-          topic,
-          this.memberAssignment[topic]
+          topicPartition.topic,
+          topicPartition.partitions
         )
 
         const leaders = keys(partitionsPerLeader)
@@ -374,27 +393,27 @@ module.exports = class ConsumerGroup {
           topics: requestsPerLeader[nodeId],
         })
 
-        const pausedAtResponse = this.subscriptionState.paused()
+        const batchesPerPartition = responses.map(({ topicName, partitions }) => {
+          const topicRequestData = requestsPerLeader[nodeId].find(
+            ({ topic }) => topic === topicName
+          )
 
-        const batchesPerPartition = responses
-          .filter(({ topicName }) => !pausedAtResponse.includes(topicName))
-          .map(({ topicName, partitions }) => {
-            const topicRequestData = requestsPerLeader[nodeId].find(
-              ({ topic }) => topic === topicName
+          return partitions
+            .filter(
+              partitionData =>
+                !this.seekOffset.has(topicName, partitionData.partition) &&
+                !this.subscriptionState.isPaused(topicName, partitionData.partition)
             )
+            .map(partitionData => {
+              const partitionRequestData = topicRequestData.partitions.find(
+                ({ partition }) => partition === partitionData.partition
+              )
 
-            return partitions
-              .filter(partitionData => !this.seekOffset.has(topicName, partitionData.partition))
-              .map(partitionData => {
-                const partitionRequestData = topicRequestData.partitions.find(
-                  ({ partition }) => partition === partitionData.partition
-                )
+              const fetchedOffset = partitionRequestData.fetchOffset
 
-                const fetchedOffset = partitionRequestData.fetchOffset
-
-                return new Batch(topicName, fetchedOffset, partitionData)
-              })
-          })
+              return new Batch(topicName, fetchedOffset, partitionData)
+            })
+        })
 
         return flatten(batchesPerPartition)
       })

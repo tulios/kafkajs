@@ -371,7 +371,7 @@ module.exports = ({
       )
     }
 
-    consumerGroup.pause(topicPartitions.map(({ topic }) => topic))
+    consumerGroup.pause(topicPartitions)
   }
 
   /**
