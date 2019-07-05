@@ -22,10 +22,6 @@ module.exports = class SubscriptionState {
       } else if (Array.isArray(partitions)) {
         pausedForTopic.partitions.forEach(partition => pausedForTopic.partitions.add(partition))
         pausedForTopic.all = false
-      } else {
-        throw new KafkaJSNonRetriableError(
-          'Array of partitions required to pause particular partitions of a topic'
-        )
       }
 
       this.pausedPartitionsByTopic[topic] = pausedForTopic
@@ -49,10 +45,6 @@ module.exports = class SubscriptionState {
         // or perhaps a "whitelist" and "blacklist" of either, to allow for pausing toppars we haven't had assigned yet
         throw new KafkaJSNonRetriableError(
           'Can not resume specific partitions of topic when entire topic was paused before'
-        )
-      } else {
-        throw new KafkaJSNonRetriableError(
-          'Array of partitions required to resume particular partitions of a topic'
         )
       }
 
