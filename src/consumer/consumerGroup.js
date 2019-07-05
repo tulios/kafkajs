@@ -328,8 +328,8 @@ module.exports = class ConsumerGroup {
 
         return {
           topic,
-          partitions: assignedPartitions.filter(partition =>
-            this.subscriptionState.isPaused(topic, partition)
+          partitions: assignedPartitions.filter(
+            partition => !this.subscriptionState.isPaused(topic, partition)
           ),
         }
       })
@@ -374,12 +374,12 @@ module.exports = class ConsumerGroup {
         for (let leader of leaders) {
           const partitions = partitionsPerLeader[leader].map(partition => ({
             partition,
-            fetchOffset: this.offsetManager.nextOffset(topic, partition).toString(),
+            fetchOffset: this.offsetManager.nextOffset(topicPartition.topic, partition).toString(),
             maxBytes: maxBytesPerPartition,
           }))
 
           requestsPerLeader[leader] = requestsPerLeader[leader] || []
-          requestsPerLeader[leader].push({ topic, partitions })
+          requestsPerLeader[leader].push({ topic: topicPartition.topic, partitions })
         }
       }
 
