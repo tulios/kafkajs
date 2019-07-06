@@ -37,6 +37,7 @@ module.exports = class ConsumerGroup {
     rebalanceTimeout,
     maxBytesPerPartition,
     minBytes,
+    onReady,
     maxBytes,
     maxWaitTimeInMs,
     autoCommitInterval,
@@ -60,6 +61,7 @@ module.exports = class ConsumerGroup {
     this.autoCommitInterval = autoCommitInterval
     this.autoCommitThreshold = autoCommitThreshold
     this.isolationLevel = isolationLevel
+    this.onReady = onReady
 
     this.seekOffset = new SeekOffsets()
     this.coordinator = null
@@ -99,6 +101,7 @@ module.exports = class ConsumerGroup {
       groupProtocols: this.assigners.map(assigner => assigner.protocol({ topics: this.topics })),
     })
 
+    this.onReady()
     this.generationId = groupData.generationId
     this.leaderId = groupData.leaderId
     this.memberId = groupData.memberId

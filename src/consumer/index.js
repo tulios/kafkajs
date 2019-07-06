@@ -35,6 +35,7 @@ module.exports = ({
   minBytes = 1,
   maxBytes = 10485760, // 10MB
   maxWaitTimeInMs = 5000,
+  onReady = () => {},
   retry = { retries: 10 },
   isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
   instrumentationEmitter: rootInstrumentationEmitter,
@@ -67,6 +68,7 @@ module.exports = ({
       cluster,
       groupId,
       assigners,
+      onReady,
       sessionTimeout,
       rebalanceTimeout,
       maxBytesPerPartition,
