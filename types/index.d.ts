@@ -97,7 +97,7 @@ export interface ConsumerConfig {
   maxBytes?: number
   maxWaitTimeInMs?: number
   retry?: RetryOptions
-  onReady: Function
+  onReady?: Function
   allowAutoTopicCreation?: boolean
   maxInFlightRequests?: number
   readUncommitted?: boolean
