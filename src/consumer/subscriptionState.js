@@ -38,7 +38,7 @@ module.exports = class SubscriptionState {
       if (typeof partitions === 'undefined') {
         pausedForTopic.partitions.clear()
         pausedForTopic.all = false
-      } else if (Array.isAray(partitions) && !pausedForTopic.all) {
+      } else if (Array.isArray(partitions) && !pausedForTopic.all) {
         partitions.forEach(partition => pausedForTopic.partitions.delete(partition))
       } else if (Array.isArray(partitions) && pausedForTopic.all) {
         // TODO: consider whether we should actively track active topics, rather than paused ones, as to avoid this,
