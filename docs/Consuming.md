@@ -223,6 +223,34 @@ await consumer.run({ eachMessage: async ({ topic, message }) => {
 }})
 ```
 
+For finer-grained control, specific partitions of topics can also be paused, rather than the whole topic. The ability to pause and resume on a per-partition basis, means it can be used to isolate the consuming (and processing) of messages. 
+
+Example: in combination with [consuming messages per partition concurrently](#concurrent-processing), it can prevent having to stop processing all partitions because of a slow process in one of the other partitions.
+
+```javascript
+consumer.run({
+    partitionsConsumedConcurrently: 3, // Default: 1
+    eachMessage: async ({ topic, partition, message }) => {
+      // This will be called up to 3 times concurrently
+        try {
+            await sendToDependency(message)
+        } catch (e) {
+            if (e instanceof TooManyRequestsError) {
+                consumer.pause([{ topic, partitions: [partition] }])
+                // Other partitions will keep fetching and processing, until if / when 
+                // they also get throttled
+                setTimeout(() => {
+                    consumer.resume([{ topic, partitions: [partition] }])
+                    // Other partitions that are paused will continue to be paused
+                }, e.retryAfter * 1000)
+            }
+
+            throw e
+        }
+    },
+})
+```
+
 ## <a name="seek"></a> Seek
 
 To move the offset position in a topic/partition the `Consumer` provides the method `seek`. This method has to be called after the consumer is initialized and is running (after consumer#run).
