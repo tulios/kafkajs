@@ -364,7 +364,7 @@ module.exports = ({
         )
       } else if (
         typeof topicPartition.partitions !== 'undefined' &&
-        (!Array.isArray(topicPartition.partitions) || !topicPartition.partitions.every(isNaN))
+        (!Array.isArray(topicPartition.partitions) || topicPartition.partitions.some(isNaN))
       ) {
         throw new KafkaJSNonRetriableError(
           `Array of valid partitions required to pause specific partitions instead of ${
@@ -399,7 +399,7 @@ module.exports = ({
         )
       } else if (
         typeof topicPartition.partitions !== 'undefined' &&
-        (!Array.isArray(topicPartition.partitions) || !topicPartition.partitions.every(isNaN))
+        (!Array.isArray(topicPartition.partitions) || !topicPartition.partitions.some(isNaN))
       ) {
         throw new KafkaJSNonRetriableError(
           `Array of valid partitions required to resume specific partitions instead of ${

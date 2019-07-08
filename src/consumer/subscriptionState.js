@@ -20,7 +20,7 @@ module.exports = class SubscriptionState {
         pausedForTopic.partitions.clear()
         pausedForTopic.all = true
       } else if (Array.isArray(partitions)) {
-        pausedForTopic.partitions.forEach(partition => pausedForTopic.partitions.add(partition))
+        partitions.forEach(partition => pausedForTopic.partitions.add(partition))
         pausedForTopic.all = false
       }
 
@@ -67,6 +67,6 @@ module.exports = class SubscriptionState {
   isPaused(topic, partition) {
     let paused = this.pausedPartitionsByTopic[topic]
 
-    return !!(paused && (paused.all || paused.partitions.includes(partition)))
+    return !!(paused && (paused.all || paused.partitions.has(partition)))
   }
 }
