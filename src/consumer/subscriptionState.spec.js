@@ -54,7 +54,6 @@ describe('Consumer > OffsetMananger > pause / resume', () => {
 
 describe('Consumer > OffsetMananger > isPaused', () => {
   let subscriptionState
-  const byTopic = (a, b) => a.topic - b.topic
 
   beforeEach(() => {
     subscriptionState = new SubscriptionState()
