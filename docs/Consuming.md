@@ -199,7 +199,8 @@ kafka.consumer({
 
 ## <a name="pause-resume"></a> Pause & Resume
 
-In order to pause and resume consuming from one or more topics, the `Consumer` provides the methods `pause` and `resume`. Note that pausing a topic means that it won't be fetched in the next cycle. You may still receive messages for the topic within the current batch.
+In order to pause and resume consuming from one or more topics, the `Consumer` provides the methods `pause` and `resume`. It also provides the `paused` method to get the list of all paused topics. 
+Note that pausing a topic means that it won't be fetched in the next cycle. You may still receive messages for the topic within the current batch.
 
 Calling `pause` with a topic that the consumer is not subscribed to is a no-op, calling `resume` with a topic that is not paused is also a no-op.
 

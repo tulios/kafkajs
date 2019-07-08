@@ -374,6 +374,16 @@ module.exports = ({
     consumerGroup.pause(topicPartitions.map(({ topic }) => topic))
   }
 
+  const paused = () => {
+    if (!consumerGroup) {
+      throw new KafkaJSNonRetriableError(
+        'Consumer group was not initialized, consumer#run must be called first'
+      )
+    }
+
+    return consumerGroup.paused()
+  }
+
   /**
    * @param {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    *
@@ -414,6 +424,7 @@ module.exports = ({
     seek,
     describeGroup,
     pause,
+    paused,
     resume,
     on,
     events,
