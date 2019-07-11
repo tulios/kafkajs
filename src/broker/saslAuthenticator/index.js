@@ -28,7 +28,12 @@ module.exports = class SASLAuthenticator {
   }
 
   async authenticate() {
-    const mechanism = this.connection.sasl.mechanism.toUpperCase()
+    let mechanism
+    if (typeof this.connection.sasl === 'function') {
+      mechanism = this.connection.sasl().mechanism.toUpperCase()
+    } else {
+      mechanism = this.connection.sasl.mechanism.toUpperCase()
+    }
     if (!SUPPORTED_MECHANISMS.includes(mechanism)) {
       throw new KafkaJSSASLAuthenticationError(
         `SASL ${mechanism} mechanism is not supported by the client`
