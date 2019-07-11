@@ -95,6 +95,24 @@ A complete breakdown can be found in the IAM User Guide's
 It is **highly recommended** that you use SSL for encryption when using `PLAIN` or `AWS`,
 otherwise credentials will be transmitted in cleartext!
 
+### SASL Provider Functions
+
+Alternatively, you may set the `sasl` property to a function that returns a compatible configuration
+object, which allows dynamic refresh of credentials at runtime.
+
+```javascript
+function getCredentials() {
+  return credentials // Assume this value is being updated by some other function.
+}
+
+new Kafka({
+  clientId: 'my-app',
+  brokers: ['kafka1:9092', 'kafka2:9092'],
+  // authenticationTimeout: 1000,
+  sasl: getCredentials,
+})
+```
+
 ## Connection Timeout
 
 Time in milliseconds to wait for a successful connection. The default value is: `1000`.

@@ -1,4 +1,8 @@
-const { connectionOpts, sslConnectionOpts } = require('../../testHelpers')
+const {
+  connectionOpts,
+  sslConnectionOpts,
+  saslConnectionDynamicOpts,
+} = require('../../testHelpers')
 const sleep = require('../utils/sleep')
 const { requests } = require('../protocol/requests')
 const Decoder = require('../protocol/decoder')
@@ -61,6 +65,14 @@ describe('Network > Connection', () => {
         const message = 'Failed to connect: error:0906D06C:PEM routines:PEM_read_bio:no start line'
         await expect(connection.connect()).rejects.toHaveProperty('message', message)
         expect(connection.connected).toEqual(false)
+      })
+    })
+
+    describe('SASL with Provider', () => {
+      test('correctly handles a sasl provider function in place of object', async () => {
+        connection = new Connection(saslConnectionDynamicOpts())
+        await expect(connection.connect()).resolves.toEqual(true)
+        expect(connection.connected).toEqual(true)
       })
     })
   })

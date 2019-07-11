@@ -57,7 +57,7 @@ module.exports = class Connection {
 
     this.socketFactory = socketFactory
     this.ssl = ssl
-    this.sasl = sasl
+    this._sasl = sasl
 
     this.retry = retry
     this.retrier = createRetry({ ...this.retry })
@@ -88,6 +88,14 @@ module.exports = class Connection {
     this.logDebug = log('debug')
     this.logError = log('error')
     this.shouldLogBuffers = getEnv().KAFKAJS_DEBUG_PROTOCOL_BUFFERS === '1'
+  }
+
+  get sasl() {
+    return typeof this._sasl === 'function' ? this._sasl() : this._sasl
+  }
+
+  set sasl(val) {
+    this._sasl = val
   }
 
   /**

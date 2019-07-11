@@ -19,10 +19,11 @@ const Encoder = require('../../encoder')
 
 const US_ASCII_NULL_CHAR = '\u0000'
 
-module.exports = ({ authorizationIdentity = null, username, password }) => ({
+module.exports = sasl => ({
   encode: async () => {
+    const props = sasl
     return new Encoder().writeBytes(
-      [authorizationIdentity, username, password].join(US_ASCII_NULL_CHAR)
+      [props.authorizationIdentity, props.username, props.password].join(US_ASCII_NULL_CHAR)
     )
   },
 })

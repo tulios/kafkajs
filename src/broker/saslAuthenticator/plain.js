@@ -10,7 +10,8 @@ module.exports = class PlainAuthenticator {
 
   async authenticate() {
     const { sasl } = this.connection
-    if (sasl.username == null || sasl.password == null) {
+    const props = sasl
+    if (props.username == null || props.password == null) {
       throw new KafkaJSSASLAuthenticationError('SASL Plain: Invalid username or password')
     }
 

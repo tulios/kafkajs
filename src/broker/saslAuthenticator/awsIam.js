@@ -10,17 +10,15 @@ module.exports = class AWSIAMAuthenticator {
 
   async authenticate() {
     const { sasl } = this.connection
-    if (!sasl.authorizationIdentity) {
+    const props = sasl
+    if (!props.authorizationIdentity) {
       throw new KafkaJSSASLAuthenticationError('SASL AWS-IAM: Missing authorizationIdentity')
     }
-    if (!sasl.accessKeyId) {
+    if (!props.accessKeyId) {
       throw new KafkaJSSASLAuthenticationError('SASL AWS-IAM: Missing accessKeyId')
     }
-    if (!sasl.secretAccessKey) {
+    if (!props.secretAccessKey) {
       throw new KafkaJSSASLAuthenticationError('SASL AWS-IAM: Missing secretAccessKey')
-    }
-    if (!sasl.sessionToken) {
-      sasl.sessionToken = ''
     }
 
     const request = awsIam.request(sasl)

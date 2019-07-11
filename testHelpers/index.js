@@ -59,6 +59,17 @@ const saslConnectionOpts = () =>
     },
   })
 
+const saslConnectionDynamicOpts = () =>
+  Object.assign(saslConnectionOpts(), {
+    sasl: () => {
+      return {
+        mechanism: 'plain',
+        username: 'test',
+        password: 'testtest',
+      }
+    },
+  })
+
 const saslSCRAM256ConnectionOpts = () =>
   Object.assign(sslConnectionOpts(), {
     port: 9094,
@@ -224,6 +235,7 @@ module.exports = {
   connectionOpts,
   sslConnectionOpts,
   saslConnectionOpts,
+  saslConnectionDynamicOpts,
   saslSCRAM256ConnectionOpts,
   saslSCRAM512ConnectionOpts,
   createConnection,
