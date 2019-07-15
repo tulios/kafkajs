@@ -1,5 +1,3 @@
-const { KafkaJSNonRetriableError } = require('../errors')
-
 function createState(topic) {
   return {
     topic,
