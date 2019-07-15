@@ -192,7 +192,6 @@ module.exports = class ConsumerGroup {
     }))
 
     // Check if the consumer is aware of all assigned partitions
-    const safeAssignedTopics = currentMemberAssignment.map(({ topic }) => topic)
     for (let assignment of currentMemberAssignment) {
       const { topic, partitions: assignedPartitions } = assignment
       const knownPartitions = this.partitionsPerSubscribedTopic.get(topic)
@@ -219,11 +218,6 @@ module.exports = class ConsumerGroup {
       }
     }
 
-    // TODO: remove this.memberAssignment and maybe this.topics, favouring using subscription state
-    this.memberAssignment = currentMemberAssignment.reduce(
-      (assigned, { topic, partitions }) => ({ ...assigned, [topic]: partitions }),
-      {}
-    )
     this.topics = currentMemberAssignment.map(({ topic }) => topic)
     this.subscriptionState.assign(currentMemberAssignment)
     this.offsetManager = new OffsetManager({
@@ -327,16 +321,7 @@ module.exports = class ConsumerGroup {
       }
 
       const pausedTopicPartitions = this.subscriptionState.paused()
-      const activeTopicPartitions = topics.map(topic => {
-        const assignedPartitions = this.memberAssignment[topic]
-
-        return {
-          topic,
-          partitions: assignedPartitions.filter(
-            partition => !this.subscriptionState.isPaused(topic, partition)
-          ),
-        }
-      })
+      const activeTopicPartitions = this.subscriptionState.active()
 
       const activePartitions = flatten(activeTopicPartitions.map(({ partitions }) => partitions))
       const activeTopics = activeTopicPartitions
