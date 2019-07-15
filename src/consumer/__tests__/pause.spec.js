@@ -111,6 +111,60 @@ describe('Consumer', () => {
         },
       ])
     })
+
+    it('does not fetch messages for the paused partitions', async () => {
+      await consumer.connect()
+      await producer.connect()
+
+      const [topic] = topics
+      const partitions = [0, 1]
+
+      const messages = Array(1)
+        .fill()
+        .map(() => {
+          const value = secureRandom()
+          return { key: `key-${value}`, value: `value-${value}` }
+        })
+      const forPartition = partition => message => ({ ...message, partition })
+
+      for (let partition of partitions) {
+        await producer.send({ acks: 1, topic, messages: messages.map(forPartition(partition)) })
+      }
+      await consumer.subscribe({ topic, fromBeginning: true })
+
+      const messagesConsumed = []
+      consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+
+      await waitForConsumerToJoinGroup(consumer)
+      await waitForMessages(messagesConsumed, { number: messages.length * partitions.length })
+
+      const [pausedPartition, activePartition] = partitions
+      consumer.pause([{ topic, partitions: [pausedPartition] }])
+
+      for (let partition of partitions) {
+        await producer.send({ acks: 1, topic, messages: messages.map(forPartition(partition)) })
+      }
+
+      const consumedMessages = await waitForMessages(messagesConsumed, {
+        number: messages.length * 3,
+      })
+
+      expect(consumedMessages.filter(({ partition }) => partition === pausedPartition)).toEqual(
+        messages.map((message, i) => ({
+          topic,
+          partition: pausedPartition,
+          message: expect.objectContaining({ offset: `${i}` }),
+        }))
+      )
+
+      expect(consumedMessages.filter(({ partition }) => partition !== pausedPartition)).toEqual(
+        messages.concat(messages).map((message, i) => ({
+          topic,
+          partition: activePartition,
+          message: expect.objectContaining({ offset: `${i}` }),
+        }))
+      )
+    })
   })
 
   describe('when all topics are paused', () => {
@@ -201,6 +255,66 @@ describe('Consumer', () => {
           message: expect.objectContaining({ offset: '0' }),
         },
       ])
+    })
+
+    it('resumes fetching from earlier paused partitions', async () => {
+      await consumer.connect()
+      await producer.connect()
+
+      const [topic] = topics
+      const partitions = [0, 1]
+
+      const messages = Array(1)
+        .fill()
+        .map(() => {
+          const value = secureRandom()
+          return { key: `key-${value}`, value: `value-${value}` }
+        })
+      const forPartition = partition => message => ({ ...message, partition })
+
+      for (let partition of partitions) {
+        await producer.send({ acks: 1, topic, messages: messages.map(forPartition(partition)) })
+      }
+      await consumer.subscribe({ topic, fromBeginning: true })
+
+      const messagesConsumed = []
+      consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+
+      await waitForConsumerToJoinGroup(consumer)
+      await waitForMessages(messagesConsumed, { number: messages.length * partitions.length })
+
+      const [pausedPartition, activePartition] = partitions
+      consumer.pause([{ topic, partitions: [pausedPartition] }])
+
+      for (let partition of partitions) {
+        await producer.send({ acks: 1, topic, messages: messages.map(forPartition(partition)) })
+      }
+
+      await waitForMessages(messagesConsumed, {
+        number: messages.length * 3,
+      })
+
+      consumer.resume([{ topic, partitions: [pausedPartition] }])
+
+      const consumedMessages = await waitForMessages(messagesConsumed, {
+        number: messages.length * 4,
+      })
+
+      expect(consumedMessages.filter(({ partition }) => partition === pausedPartition)).toEqual(
+        messages.concat(messages).map((message, i) => ({
+          topic,
+          partition: pausedPartition,
+          message: expect.objectContaining({ offset: `${i}` }),
+        }))
+      )
+
+      expect(consumedMessages.filter(({ partition }) => partition !== pausedPartition)).toEqual(
+        messages.concat(messages).map((message, i) => ({
+          topic,
+          partition: activePartition,
+          message: expect.objectContaining({ offset: `${i}` }),
+        }))
+      )
     })
   })
 })
