@@ -19,9 +19,12 @@ module.exports = class SubscriptionState {
    * @param {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    */
   assign(topicPartitions = []) {
-    this.assignedPartitionsByTopic = topicPartitions.reduce((assigned, { topic, partitions }) => {
-      return { ...assigned, [topic]: { topic, partitions } }
-    }, {})
+    this.assignedPartitionsByTopic = topicPartitions.reduce(
+      (assigned, { topic, partitions = [] }) => {
+        return { ...assigned, [topic]: { topic, partitions } }
+      },
+      {}
+    )
   }
 
   /**
@@ -79,7 +82,7 @@ module.exports = class SubscriptionState {
     return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => {
       return {
         topic,
-        partitions: Array.from(partitions.values()),
+        partitions,
       }
     })
   }

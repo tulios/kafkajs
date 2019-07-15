@@ -51,12 +51,16 @@ module.exports = class Runner {
 
         this.running = true
 
+        const memberAssignment = this.consumerGroup
+          .assigned()
+          .reduce((result, { topic, partitions }) => ({ ...result, [topic]: partitions }), {})
+
         const payload = {
           groupId: this.consumerGroup.groupId,
           memberId: this.consumerGroup.memberId,
           leaderId: this.consumerGroup.leaderId,
           isLeader: this.consumerGroup.isLeader(),
-          memberAssignment: this.consumerGroup.memberAssignment,
+          memberAssignment,
           groupProtocol: this.consumerGroup.groupProtocol,
           duration: Date.now() - startJoin,
         }
