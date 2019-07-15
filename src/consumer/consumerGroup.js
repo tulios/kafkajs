@@ -223,7 +223,13 @@ module.exports = class ConsumerGroup {
       cluster: this.cluster,
       topicConfigurations: this.topicConfigurations,
       instrumentationEmitter: this.instrumentationEmitter,
-      memberAssignment: this.memberAssignment,
+      memberAssignment: currentMemberAssignment.reduce(
+        (partitionsByTopic, { topic, partitions }) => ({
+          ...partitionsByTopic,
+          [topic]: partitions,
+        }),
+        {}
+      ),
       autoCommitInterval: this.autoCommitInterval,
       autoCommitThreshold: this.autoCommitThreshold,
       coordinator,
