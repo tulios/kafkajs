@@ -70,7 +70,6 @@ module.exports = class ConsumerGroup {
     this.groupProtocol = null
 
     this.partitionsPerSubscribedTopic = null
-    this.memberAssignment = null
     this.offsetManager = null
     this.subscriptionState = new SubscriptionState()
 
