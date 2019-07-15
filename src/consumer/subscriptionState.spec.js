@@ -10,45 +10,61 @@ describe('Consumer > SubscriptionState > pause / resume', () => {
 
   it('pauses the selected topics', () => {
     subscriptionState.pause([{ topic: 'topic1' }, { topic: 'topic2' }])
+    expect(subscriptionState.paused().sort(byTopic)).toEqual([])
+
+    subscriptionState.assign([
+      { topic: 'topic1', partitions: [0, 1] },
+      { topic: 'topic2', partitions: [1, 2] },
+    ])
     expect(subscriptionState.paused().sort(byTopic)).toEqual([
-      { topic: 'topic1', partitions: [], all: true },
-      { topic: 'topic2', partitions: [], all: true },
+      { topic: 'topic1', partitions: [0, 1] },
+      { topic: 'topic2', partitions: [1, 2] },
     ])
   })
 
   it('resumes the selected topics', () => {
     subscriptionState.pause([{ topic: 'topic1' }, { topic: 'topic2' }])
+    subscriptionState.assign([
+      { topic: 'topic1', partitions: [0, 1] },
+      { topic: 'topic2', partitions: [1, 2] },
+    ])
     subscriptionState.resume([{ topic: 'topic2' }])
 
     expect(subscriptionState.paused().sort(byTopic)).toEqual([
-      { topic: 'topic1', partitions: [], all: true },
-      { topic: 'topic2', partitions: [], all: false },
+      { topic: 'topic1', partitions: [0, 1] },
+      { topic: 'topic2', partitions: [] },
     ])
   })
 
   it('pauses the selected partitions', () => {
     subscriptionState.pause([{ topic: 'topic1', partitions: [0, 1] }])
+    expect(subscriptionState.paused()).toEqual([])
+
+    subscriptionState.assign([{ topic: 'topic1', partitions: [0, 1, 2, 3] }])
+
     expect(subscriptionState.paused().sort(byTopic)).toEqual([
-      { topic: 'topic1', partitions: [0, 1], all: false },
+      { topic: 'topic1', partitions: [0, 1] },
     ])
 
     subscriptionState.pause([{ topic: 'topic1', partitions: [1, 2] }])
     expect(subscriptionState.paused().sort(byTopic)).toEqual([
-      { topic: 'topic1', partitions: [0, 1, 2], all: false },
+      { topic: 'topic1', partitions: [0, 1, 2] },
+    ])
+
+    subscriptionState.pause([{ topic: 'topic1', partitions: [4] }])
+    expect(subscriptionState.paused().sort(byTopic)).toEqual([
+      { topic: 'topic1', partitions: [0, 1, 2] },
     ])
   })
 
   it('resumes the selected partitions', () => {
     subscriptionState.pause([{ topic: 'topic1', partitions: [0, 1] }])
+    subscriptionState.assign([{ topic: 'topic1', partitions: [0, 1, 2, 3] }])
     subscriptionState.resume([{ topic: 'topic1', partitions: [1] }])
-    expect(subscriptionState.paused().sort(byTopic)).toEqual([
-      { topic: 'topic1', partitions: [0], all: false },
-    ])
+    expect(subscriptionState.paused().sort(byTopic)).toEqual([{ topic: 'topic1', partitions: [0] }])
 
-    subscriptionState.resume([{ topic: 'topic1', partitions: [2] }])
-    expect(subscriptionState.paused().sort(byTopic)).toEqual([
-      { topic: 'topic1', partitions: [0], all: false },
-    ])
+    subscriptionState.resume([{ topic: 'topic1', partitions: [4] }])
+    expect(subscriptionState.paused().sort(byTopic)).toEqual([{ topic: 'topic1', partitions: [0] }])
   })
 })
 

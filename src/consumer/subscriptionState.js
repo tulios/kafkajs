@@ -93,11 +93,10 @@ module.exports = class SubscriptionState {
    * @returns {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    */
   paused() {
-    return Object.values(this.pausedPartitionsByTopic).map(({ topic, partitions, all }) => {
+    return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => {
       return {
         topic,
-        partitions: Array.from(partitions.values()),
-        all,
+        partitions: partitions.filter(partition => this.isPaused(topic, partition)),
       }
     })
   }
