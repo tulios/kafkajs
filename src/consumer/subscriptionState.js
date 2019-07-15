@@ -2,7 +2,19 @@ const { KafkaJSNonRetriableError } = require('../errors')
 
 module.exports = class SubscriptionState {
   constructor() {
+    this.assignedPartitionsByTopic = {}
     this.pausedPartitionsByTopic = {}
+  }
+
+  /**
+   * Replace the current assignment with a new set of assignments
+   *
+   * @param {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
+   */
+  assign(topicPartitions = []) {
+    this.assignedPartitionsByTopic = topicPartitions.reduce((assigned, { topic, partitions }) => {
+      return { ...assigned, [topic]: partitions }
+    }, {})
   }
 
   /**
@@ -50,6 +62,30 @@ module.exports = class SubscriptionState {
       }
 
       this.pausedPartitionsByTopic[topic] = pausedForTopic
+    })
+  }
+
+  /**
+   * @returns {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
+   */
+  assigned() {
+    return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => {
+      return {
+        topic,
+        partitions: Array.from(partitions.values()),
+      }
+    })
+  }
+
+  /**
+   * @returns {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
+   */
+  active() {
+    return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => {
+      return {
+        topic,
+        partitions: partitions.filter(partition => !this.isPaused(topic, partition)),
+      }
     })
   }
 
