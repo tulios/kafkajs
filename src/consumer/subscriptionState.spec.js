@@ -65,6 +65,12 @@ describe('Consumer > SubscriptionState > pause / resume', () => {
 
     subscriptionState.resume([{ topic: 'topic1', partitions: [4] }])
     expect(subscriptionState.paused().sort(byTopic)).toEqual([{ topic: 'topic1', partitions: [0] }])
+
+    subscriptionState.pause([{ topic: 'topic1' }])
+    subscriptionState.resume([{ topic: 'topic1', partitions: [1] }])
+    expect(subscriptionState.paused().sort(byTopic)).toEqual([
+      { topic: 'topic1', partitions: [0, 2, 3] },
+    ])
   })
 })
 
