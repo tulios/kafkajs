@@ -274,6 +274,10 @@ module.exports = class ConsumerGroup {
     this.subscriptionState.resume(topicPartitions)
   }
 
+  assigned() {
+    return this.subscriptionState.assigned()
+  }
+
   paused() {
     return this.subscriptionState.paused()
   }
