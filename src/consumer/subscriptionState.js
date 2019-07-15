@@ -41,8 +41,9 @@ module.exports = class SubscriptionState {
       } else if (Array.isArray(partitions) && !pausedForTopic.all) {
         partitions.forEach(partition => pausedForTopic.partitions.delete(partition))
       } else if (Array.isArray(partitions) && pausedForTopic.all) {
-        // TODO: consider whether we should actively track active topics, rather than paused ones, as to avoid this,
-        // or perhaps a "whitelist" and "blacklist" of either, to allow for pausing toppars we haven't had assigned yet
+        // TODO: Remove this after we've moved member-assignment state into here
+        // (https://github.com/tulios/kafkajs/issues/427) as that should allow us to correctly resume
+        // partitions after pausing an entire topic (by tracking resumed partitions as well as paused).
         throw new KafkaJSNonRetriableError(
           'Can not resume specific partitions of topic when entire topic was paused before'
         )
