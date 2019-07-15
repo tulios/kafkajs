@@ -166,8 +166,7 @@ module.exports = class ConsumerGroup {
       memberAssignment: decodedAssignment,
     })
 
-    let currentMemberAssignment = decodedAssignment
-    const assignedTopics = keys(currentMemberAssignment)
+    const assignedTopics = keys(decodedAssignment)
     const topicsNotSubscribed = arrayDiff(assignedTopics, topicsSubscribed)
 
     if (topicsNotSubscribed.length > 0) {
@@ -183,19 +182,19 @@ module.exports = class ConsumerGroup {
           'why-am-i-receiving-messages-for-topics-i-m-not-subscribed-to'
         ),
       })
-
-      // Remove unsubscribed topics from the list
-      const safeAssignment = arrayDiff(assignedTopics, topicsNotSubscribed)
-      currentMemberAssignment = safeAssignment.reduce(
-        (assignment, topic) => ({ ...assignment, [topic]: decodedAssignment[topic] }),
-        {}
-      )
     }
 
+    // Remove unsubscribed topics from the list
+    const safeAssignment = arrayDiff(assignedTopics, topicsNotSubscribed)
+    const currentMemberAssignment = safeAssignment.map(topic => ({
+      topic,
+      partitions: decodedAssignment[topic],
+    }))
+
     // Check if the consumer is aware of all assigned partitions
-    const safeAssignedTopics = keys(currentMemberAssignment)
-    for (let topic of safeAssignedTopics) {
-      const assignedPartitions = currentMemberAssignment[topic]
+    const safeAssignedTopics = currentMemberAssignment.map(({ topic }) => topic)
+    for (let assignment of currentMemberAssignment) {
+      const { topic, partitions: assignedPartitions } = assignment
       const knownPartitions = this.partitionsPerSubscribedTopic.get(topic)
       const isAwareOfAllAssignedPartitions = assignedPartitions.every(partition =>
         knownPartitions.includes(partition)
@@ -220,8 +219,13 @@ module.exports = class ConsumerGroup {
       }
     }
 
-    this.memberAssignment = currentMemberAssignment
-    this.topics = keys(this.memberAssignment)
+    // TODO: remove this.memberAssignment and maybe this.topics, favouring using subscription state
+    this.memberAssignment = currentMemberAssignment.reduce(
+      (assigned, { topic, partitions }) => ({ ...assigned, [topic]: partitions }),
+      {}
+    )
+    this.topics = currentMemberAssignment.map(({ topic }) => topic)
+    this.subscriptionState.assign(currentMemberAssignment)
     this.offsetManager = new OffsetManager({
       cluster: this.cluster,
       topicConfigurations: this.topicConfigurations,
