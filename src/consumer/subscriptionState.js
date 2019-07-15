@@ -13,7 +13,7 @@ module.exports = class SubscriptionState {
    */
   assign(topicPartitions = []) {
     this.assignedPartitionsByTopic = topicPartitions.reduce((assigned, { topic, partitions }) => {
-      return { ...assigned, [topic]: partitions }
+      return { ...assigned, [topic]: { topic, partitions } }
     }, {})
   }
 
