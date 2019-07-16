@@ -24,6 +24,10 @@ describe('Admin', () => {
         'message',
         'Invalid topic null'
       )
+      await expect(admin.fetchTopicMetadata({ topics: [0] })).rejects.toHaveProperty(
+        'message',
+        'Invalid topic 0'
+      )
     })
 
     test('retrieves metadata for each partition in the topic', async () => {
