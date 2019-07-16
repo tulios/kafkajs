@@ -178,7 +178,7 @@ export interface ITopicConfig {
 }
 
 export interface ITopicMetadata {
-  topic: string
+  name: string
   partitions: PartitionMetadata[]
 }
 
