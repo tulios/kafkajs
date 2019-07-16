@@ -579,7 +579,7 @@ module.exports = ({
   const fetchTopicMetadata = async ({ topics = [] } = {}) => {
     if (topics) {
       topics.forEach(topic => {
-        if (!topic) {
+        if (!topic || typeof topic !== 'string') {
           throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
         }
       })
