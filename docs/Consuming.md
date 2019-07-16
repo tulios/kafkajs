@@ -158,7 +158,7 @@ When disabling [`autoCommit`](#auto-commit) you can still manually commit messag
 
 - By using the `commitOffsetsIfNecessary` method available in the `eachBatch` callback. The `commitOffsetsIfNecessary` method will still respect the other autoCommit options if set.
 - By [sending message offsets in a transaction](Transactions.md#offsets). 
-- By using [the `commitOffsets` method](#commit-offsets) of the consumer.
+- By using the `commitOffsets` method of the consumer (see below).
 
 The `consumer.commitOffsets` is the lowest-level option and will ignore all other auto commit settings, but in doing so allows the committed offset to be set to any offset and committing various offsets at once. This can be useful, for example, for building an processing reset tool. It can only be called after `consumer.run`. Committing offsets does not change what message we'll consume next once we've started consuming, but instead is only used to determine **from which place to start**. To immediately change from what offset you're consuming messages, you'll want to [seek](#seek), instead.
 
@@ -177,7 +177,7 @@ consumer.commitOffsets([
 ])
 ```
 
-Note that you don't *have* to store consumed offsets in Kafka, but instead store it in a storage mechanism of your own choosing. That's an especially useful approach when the results of consuming a message is written to a datastore that allows atomically writing the consumed offset with it, like for example PostgreSQL. When possible it can make the consumption fully atomic and give "exactly once" semantics that are stronger than the default "at-least once" semantics you get with Kafka's offset commit functionality. 
+Note that you don't *have* to store consumed offsets in Kafka, but instead store it in a storage mechanism of your own choosing. That's an especially useful approach when the results of consuming a message are written to a datastore that allows atomically writing the consumed offset with it, like for example a SQL database. When possible it can make the consumption fully atomic and give "exactly once" semantics that are stronger than the default "at-least once" semantics you get with Kafka's offset commit functionality. 
 
 The usual usage pattern for offsets stored outside of Kafka is as follows:
 
