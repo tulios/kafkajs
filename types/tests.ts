@@ -101,6 +101,12 @@ const admin = kafka.admin({ retry: { retries: 10 } })
 const runAdmin = async () => {
   await admin.connect()
   await admin.fetchTopicMetadata({ topics: ['string'] })
+    .then((metadata) => {
+      metadata.topics.forEach(topic => {
+        console.log(topic.name, topic.partitions);
+      })
+    });
+
   await admin.createTopics({
     topics: [{ topic, numPartitions: 10, replicationFactor: 1 }],
     timeout: 30000,
