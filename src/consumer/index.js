@@ -290,7 +290,7 @@ module.exports = ({
    * @param {Array<TopicPartitionOffsetAndMetadata>} topicPartitions
    *   Example: [{ topic: 'topic-name', partition: 0, offset: '1', metadata: 'event-id-3' }]
    */
-  const commitOffsets = (topicPartitions = []) => {
+  const commitOffsets = async (topicPartitions = []) => {
     const commitsByTopic = topicPartitions.reduce(
       (payload, { topic, partition, offset, metadata = null }) => {
         if (!topic) {
@@ -335,7 +335,7 @@ module.exports = ({
       )
     }
 
-    const topics = Object.keyes(commitsByTopic)
+    const topics = Object.keys(commitsByTopic)
 
     return consumerGroup.commitOffsets({
       topics: topics.map(topic => {

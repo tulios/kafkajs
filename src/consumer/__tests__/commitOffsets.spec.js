@@ -41,36 +41,36 @@ describe('Consumer', () => {
   })
 
   describe('when commitOffsets', () => {
-    it('throws an error if any of the topics is invalid', () => {
-      expect(() => consumer.commitOffsets([{ topic: null }])).toThrow(
+    it('throws an error if any of the topics is invalid', async () => {
+      expect(consumer.commitOffsets([{ topic: null }])).rejects.toThrow(
         KafkaJSNonRetriableError,
         'Invalid topic null'
       )
     })
 
-    it('throws an error if anyof the partitions is not a number', () => {
-      expect(() => consumer.commitOffsets([{ topic: topicName, partition: 'ABC' }])).toThrow(
+    it('throws an error if anyof the partitions is not a number', async () => {
+      expect(consumer.commitOffsets([{ topic: topicName, partition: 'ABC' }])).rejects.toThrow(
         KafkaJSNonRetriableError,
         'Invalid partition, expected a number received ABC'
       )
     })
 
-    it('throws an error if any of the offsets is not a number', () => {
-      expect(() =>
+    it('throws an error if any of the offsets is not a number', async () => {
+      expect(
         consumer.commitOffsets([{ topic: topicName, partition: 0, offset: 'ABC' }])
-      ).toThrow(KafkaJSNonRetriableError, 'Invalid offset, expected a long received ABC')
+      ).rejects.toThrow(KafkaJSNonRetriableError, 'Invalid offset, expected a long received ABC')
     })
 
-    it('throws an error if any of the offsets is not an absolute offset', () => {
-      expect(() =>
+    it('throws an error if any of the offsets is not an absolute offset', async () => {
+      expect(
         consumer.commitOffsets([{ topic: topicName, partition: 0, offset: '-1' }])
-      ).toThrow(KafkaJSNonRetriableError, 'Offset must not be a negative number')
+      ).rejects.toThrow(KafkaJSNonRetriableError, 'Offset must not be a negative number')
     })
 
-    it('throws an error if called before consumer run', () => {
-      expect(() =>
+    it('throws an error if called before consumer run', async () => {
+      expect(
         consumer.commitOffsets([{ topic: topicName, partition: 0, offset: '1' }])
-      ).toThrow(
+      ).rejects.toThrow(
         KafkaJSNonRetriableError,
         'Consumer group was not initialized, consumer#run must be called first'
       )
@@ -80,32 +80,38 @@ describe('Consumer', () => {
       await consumer.connect()
       await producer.connect()
 
-      const key1 = secureRandom()
-      const message1 = { key: `key-${key1}`, value: `value-${key1}` }
-      const key2 = secureRandom()
-      const message2 = { key: `key-${key2}`, value: `value-${key2}` }
-      const key3 = secureRandom()
-      const message3 = { key: `key-${key3}`, value: `value-${key3}` }
+      const messages = Array(3)
+        .fill()
+        .map(() => {
+          const value = secureRandom()
+          return { key: `key-${value}`, value: `value-${value}` }
+        })
 
-      await producer.send({ acks: 1, topic: topicName, messages: [message1, message2, message3] })
+      await producer.send({ acks: 1, topic: topicName, messages })
 
-      const messagesConsumed = []
+      const offsetsConsumed = []
 
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
       consumer.run({
         autoCommit: false,
         eachMessage: async event => {
-          messagesConsumed.push(event)
-          if (messagesConsumed.length >= 3) {
-            consumer.commitOffset([
-              { topic: topicName, partition: 0, offset: parseInt(event.offset) + 1 },
-            ])
+          offsetsConsumed.push(event.message.offset)
+          if (offsetsConsumed.length === 1) {
+            await consumer.commitOffsets([{ topic: topicName, partition: 0, offset: '1' }])
           }
         },
       })
 
       await waitForConsumerToJoinGroup(consumer)
-      await waitForMessages(messagesConsumed, { number: 3 })
+      await expect(waitForMessages(offsetsConsumed, { number: 3 })).resolves.toEqual([
+        '0',
+        '1',
+        '2',
+      ])
+
+      await waitForMessages(offsetsConsumed, { number: 3 })
+
+      expect(cluster.committedOffsets({ groupId })[topicName][0].toString()).toEqual('1')
     })
   })
 })
