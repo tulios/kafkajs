@@ -1,11 +1,9 @@
-function createState(topic) {
-  return {
-    topic,
-    paused: new Set(),
-    pauseAll: false,
-    resumed: new Set(),
-  }
-}
+const createState = topic => ({
+  topic,
+  paused: new Set(),
+  pauseAll: false,
+  resumed: new Set(),
+})
 
 module.exports = class SubscriptionState {
   constructor() {
@@ -79,43 +77,42 @@ module.exports = class SubscriptionState {
    * @returns {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    */
   assigned() {
-    return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => {
-      return {
-        topic,
-        partitions,
-      }
-    })
+    return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => ({
+      topic,
+      partitions,
+    }))
   }
 
   /**
    * @returns {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    */
   active() {
-    return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => {
-      return {
-        topic,
-        partitions: partitions.filter(partition => !this.isPaused(topic, partition)),
-      }
-    })
+    return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => ({
+      topic,
+      partitions: partitions.filter(partition => !this.isPaused(topic, partition)),
+    }))
   }
 
   /**
    * @returns {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    */
   paused() {
-    return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => {
-      return {
-        topic,
-        partitions: partitions.filter(partition => this.isPaused(topic, partition)),
-      }
-    })
+    return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => ({
+      topic,
+      partitions: partitions.filter(partition => this.isPaused(topic, partition)),
+    }))
   }
 
   isPaused(topic, partition) {
     let state = this.subscriptionStatesByTopic[topic]
 
-    if (!state) return false
+    if (!state) {
+      return false
+    }
 
-    return (state.pauseAll && !state.resumed.has(partition)) || state.paused.has(partition)
+    const partitionResumed = state.resumed.has(partition)
+    const partitionPaused = state.paused.has(partition)
+
+    return (state.pauseAll && !partitionResumed) || partitionPaused
   }
 }
