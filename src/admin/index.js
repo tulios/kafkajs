@@ -578,13 +578,11 @@ module.exports = ({
    */
   const fetchTopicMetadata = async ({ topics = [] } = {}) => {
     if (topics) {
-      await Promise.all(
-        topics.map(async topic => {
-          if (!topic) {
-            throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
-          }
-        })
-      )
+      topics.forEach(topic => {
+        if (!topic || typeof topic !== 'string') {
+          throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+        }
+      })
     }
 
     const metadata = await cluster.metadata({ topics })
