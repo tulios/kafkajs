@@ -70,7 +70,6 @@ module.exports = class ConsumerGroup {
     this.groupProtocol = null
 
     this.partitionsPerSubscribedTopic = null
-    this.memberAssignment = null
     this.offsetManager = null
     this.subscriptionState = new SubscriptionState()
 
@@ -166,8 +165,7 @@ module.exports = class ConsumerGroup {
       memberAssignment: decodedAssignment,
     })
 
-    let currentMemberAssignment = decodedAssignment
-    const assignedTopics = keys(currentMemberAssignment)
+    const assignedTopics = keys(decodedAssignment)
     const topicsNotSubscribed = arrayDiff(assignedTopics, topicsSubscribed)
 
     if (topicsNotSubscribed.length > 0) {
@@ -183,19 +181,18 @@ module.exports = class ConsumerGroup {
           'why-am-i-receiving-messages-for-topics-i-m-not-subscribed-to'
         ),
       })
-
-      // Remove unsubscribed topics from the list
-      const safeAssignment = arrayDiff(assignedTopics, topicsNotSubscribed)
-      currentMemberAssignment = safeAssignment.reduce(
-        (assignment, topic) => ({ ...assignment, [topic]: decodedAssignment[topic] }),
-        {}
-      )
     }
 
+    // Remove unsubscribed topics from the list
+    const safeAssignment = arrayDiff(assignedTopics, topicsNotSubscribed)
+    const currentMemberAssignment = safeAssignment.map(topic => ({
+      topic,
+      partitions: decodedAssignment[topic],
+    }))
+
     // Check if the consumer is aware of all assigned partitions
-    const safeAssignedTopics = keys(currentMemberAssignment)
-    for (let topic of safeAssignedTopics) {
-      const assignedPartitions = currentMemberAssignment[topic]
+    for (let assignment of currentMemberAssignment) {
+      const { topic, partitions: assignedPartitions } = assignment
       const knownPartitions = this.partitionsPerSubscribedTopic.get(topic)
       const isAwareOfAllAssignedPartitions = assignedPartitions.every(partition =>
         knownPartitions.includes(partition)
@@ -220,13 +217,19 @@ module.exports = class ConsumerGroup {
       }
     }
 
-    this.memberAssignment = currentMemberAssignment
-    this.topics = keys(this.memberAssignment)
+    this.topics = currentMemberAssignment.map(({ topic }) => topic)
+    this.subscriptionState.assign(currentMemberAssignment)
     this.offsetManager = new OffsetManager({
       cluster: this.cluster,
       topicConfigurations: this.topicConfigurations,
       instrumentationEmitter: this.instrumentationEmitter,
-      memberAssignment: this.memberAssignment,
+      memberAssignment: currentMemberAssignment.reduce(
+        (partitionsByTopic, { topic, partitions }) => ({
+          ...partitionsByTopic,
+          [topic]: partitions,
+        }),
+        {}
+      ),
       autoCommitInterval: this.autoCommitInterval,
       autoCommitThreshold: this.autoCommitThreshold,
       coordinator,
@@ -269,6 +272,10 @@ module.exports = class ConsumerGroup {
       topicPartitions,
     })
     this.subscriptionState.resume(topicPartitions)
+  }
+
+  assigned() {
+    return this.subscriptionState.assigned()
   }
 
   paused() {
@@ -323,16 +330,7 @@ module.exports = class ConsumerGroup {
       }
 
       const pausedTopicPartitions = this.subscriptionState.paused()
-      const activeTopicPartitions = topics.map(topic => {
-        const assignedPartitions = this.memberAssignment[topic]
-
-        return {
-          topic,
-          partitions: assignedPartitions.filter(
-            partition => !this.subscriptionState.isPaused(topic, partition)
-          ),
-        }
-      })
+      const activeTopicPartitions = this.subscriptionState.active()
 
       const activePartitions = flatten(activeTopicPartitions.map(({ partitions }) => partitions))
       const activeTopics = activeTopicPartitions

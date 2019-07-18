@@ -1,8 +1,28 @@
-const { KafkaJSNonRetriableError } = require('../errors')
+const createState = topic => ({
+  topic,
+  paused: new Set(),
+  pauseAll: false,
+  resumed: new Set(),
+})
 
 module.exports = class SubscriptionState {
   constructor() {
-    this.pausedPartitionsByTopic = {}
+    this.assignedPartitionsByTopic = {}
+    this.subscriptionStatesByTopic = {}
+  }
+
+  /**
+   * Replace the current assignment with a new set of assignments
+   *
+   * @param {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
+   */
+  assign(topicPartitions = []) {
+    this.assignedPartitionsByTopic = topicPartitions.reduce(
+      (assigned, { topic, partitions = [] }) => {
+        return { ...assigned, [topic]: { topic, partitions } }
+      },
+      {}
+    )
   }
 
   /**
@@ -10,21 +30,21 @@ module.exports = class SubscriptionState {
    */
   pause(topicPartitions = []) {
     topicPartitions.forEach(({ topic, partitions }) => {
-      const pausedForTopic = this.pausedPartitionsByTopic[topic] || {
-        topic,
-        partitions: new Set(),
-        all: false,
-      }
+      const state = this.subscriptionStatesByTopic[topic] || createState(topic)
 
       if (typeof partitions === 'undefined') {
-        pausedForTopic.partitions.clear()
-        pausedForTopic.all = true
+        state.paused.clear()
+        state.resumed.clear()
+        state.pauseAll = true
       } else if (Array.isArray(partitions)) {
-        partitions.forEach(partition => pausedForTopic.partitions.add(partition))
-        pausedForTopic.all = false
+        partitions.forEach(partition => {
+          state.paused.add(partition)
+          state.resumed.delete(partition)
+        })
+        state.pauseAll = false
       }
 
-      this.pausedPartitionsByTopic[topic] = pausedForTopic
+      this.subscriptionStatesByTopic[topic] = state
     })
   }
 
@@ -33,42 +53,66 @@ module.exports = class SubscriptionState {
    */
   resume(topicPartitions = []) {
     topicPartitions.forEach(({ topic, partitions }) => {
-      const pausedForTopic = this.pausedPartitionsByTopic[topic] || { topic, partitions: new Set() }
+      const state = this.subscriptionStatesByTopic[topic] || createState(topic)
 
       if (typeof partitions === 'undefined') {
-        pausedForTopic.partitions.clear()
-        pausedForTopic.all = false
-      } else if (Array.isArray(partitions) && !pausedForTopic.all) {
-        partitions.forEach(partition => pausedForTopic.partitions.delete(partition))
-      } else if (Array.isArray(partitions) && pausedForTopic.all) {
-        // TODO: Remove this after we've moved member-assignment state into here
-        // (https://github.com/tulios/kafkajs/issues/427) as that should allow us to correctly resume
-        // partitions after pausing an entire topic (by tracking resumed partitions as well as paused).
-        throw new KafkaJSNonRetriableError(
-          'Can not resume specific partitions of topic when entire topic was paused before'
-        )
+        state.paused.clear()
+        state.resumed.clear()
+        state.pauseAll = false
+      } else if (Array.isArray(partitions)) {
+        partitions.forEach(partition => {
+          state.paused.delete(partition)
+
+          if (state.pauseAll) {
+            state.resumed.add(partition)
+          }
+        })
       }
 
-      this.pausedPartitionsByTopic[topic] = pausedForTopic
+      this.subscriptionStatesByTopic[topic] = state
     })
   }
 
   /**
    * @returns {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    */
+  assigned() {
+    return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => ({
+      topic,
+      partitions,
+    }))
+  }
+
+  /**
+   * @returns {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
+   */
+  active() {
+    return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => ({
+      topic,
+      partitions: partitions.filter(partition => !this.isPaused(topic, partition)),
+    }))
+  }
+
+  /**
+   * @returns {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
+   */
   paused() {
-    return Object.values(this.pausedPartitionsByTopic).map(({ topic, partitions, all }) => {
-      return {
-        topic,
-        partitions: Array.from(partitions.values()),
-        all,
-      }
-    })
+    return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => ({
+      topic,
+      partitions: partitions.filter(partition => this.isPaused(topic, partition)),
+    }))
   }
 
   isPaused(topic, partition) {
-    let paused = this.pausedPartitionsByTopic[topic]
+    let state = this.subscriptionStatesByTopic[topic]
 
-    return !!(paused && (paused.all || paused.partitions.has(partition)))
+    if (!state) {
+      return false
+    }
+
+    const partitionResumed = state.resumed.has(partition)
+    const partitionPaused = state.paused.has(partition)
+
+    return (state.pauseAll && !partitionResumed) || partitionPaused
   }
 }
