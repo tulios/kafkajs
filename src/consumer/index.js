@@ -337,7 +337,7 @@ module.exports = ({
 
     const topics = Object.keys(commitsByTopic)
 
-    return consumerGroup.commitOffsets({
+    return runner.commitOffsets({
       topics: topics.map(topic => {
         return {
           topic,
