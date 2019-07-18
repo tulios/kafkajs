@@ -60,6 +60,10 @@ const runConsumer = async () => {
       console.log(`- ${prefix} ${message.key}#${message.value}`)
     },
   })
+  consumer.pause([{ topic: 'topic1' }])
+  consumer.pause([{ topic: 'topic2', partitions: [1, 2] }])
+  consumer.resume([{ topic: 'topic1' }])
+  consumer.resume([{ topic: 'topic1', partitions: [2] }])
   await consumer.disconnect()
 }
 
@@ -100,12 +104,11 @@ const admin = kafka.admin({ retry: { retries: 10 } })
 
 const runAdmin = async () => {
   await admin.connect()
-  await admin.fetchTopicMetadata({ topics: ['string'] })
-    .then((metadata) => {
-      metadata.topics.forEach(topic => {
-        console.log(topic.name, topic.partitions);
-      })
-    });
+  await admin.fetchTopicMetadata({ topics: ['string'] }).then(metadata => {
+    metadata.topics.forEach(topic => {
+      console.log(topic.name, topic.partitions)
+    })
+  })
 
   await admin.createTopics({
     topics: [{ topic, numPartitions: 10, replicationFactor: 1 }],

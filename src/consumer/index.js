@@ -410,12 +410,12 @@ module.exports = ({
   }
 
   /**
-   * @param {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
+   * @param {Array<TopicPartitions>} topicPartitions
+   *   Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    *
    * @typedef {Object} TopicPartitions
    * @property {string} topic
-   * @property {Array<{number}>} [partitions] Not used at the moment. The entire topic will be paused,
-   *                                          regardless of the partitions passed in
+   * @property {Array<{number}>} [partitions]
    */
   const pause = (topicPartitions = []) => {
     for (let topicPartition of topicPartitions) {
@@ -445,12 +445,12 @@ module.exports = ({
   }
 
   /**
-   * @param {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
+   * @param {Array<TopicPartitions>} topicPartitions
+   *  Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    *
    * @typedef {Object} TopicPartitions
    * @property {string} topic
-   * @property {Array<{number}>} [partitions] Not used at the moment. All partitions will be consumed regardless
-   *                                          of the partitions passed in.
+   * @property {Array<{number}>} [partitions]
    */
   const resume = (topicPartitions = []) => {
     for (let topicPartition of topicPartitions) {

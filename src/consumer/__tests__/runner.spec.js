@@ -26,6 +26,7 @@ describe('Consumer > Runner', () => {
       commitOffsetsIfNecessary: jest.fn(),
       uncommittedOffsets: jest.fn(),
       heartbeat: jest.fn(),
+      assigned: jest.fn(() => []),
       isLeader: jest.fn(() => true),
     }
     const instrumentationEmitter = new InstrumentationEventEmitter()
