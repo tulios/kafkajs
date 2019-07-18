@@ -81,6 +81,18 @@ module.exports = class Runner {
     })
   }
 
+  async scheduleJoin() {
+    if (!this.running) {
+      this.logger.debug('consumer not running, exiting', {
+        groupId: this.consumerGroup.groupId,
+        memberId: this.consumerGroup.memberId,
+      })
+      return
+    }
+
+    return this.join().catch(this.onCrash)
+  }
+
   async start() {
     if (this.running) {
       return
@@ -408,9 +420,9 @@ module.exports = class Runner {
             retryTime,
           })
 
-          await this.join()
+          setImmediate(() => this.scheduleJoin())
 
-          throw new KafkaJSError('The group is rebalancing') // retry
+          bail(new KafkaJSError('The group is rebalancing'))
         }
 
         if (e.type === 'UNKNOWN_MEMBER_ID') {
@@ -423,27 +435,26 @@ module.exports = class Runner {
           })
 
           this.consumerGroup.memberId = null
-          await this.join()
+          setImmediate(() => this.scheduleJoin())
 
-          throw new KafkaJSError('The group is rebalancing') // retry
+          bail(new KafkaJSError('The group is rebalancing'))
         }
 
         if (e.name === 'KafkaJSNotImplemented') {
           return bail(e)
         }
 
-        this.logger.debug('Error while fetching data, trying again...', {
+        this.logger.debug('Error while committing offsets, trying again...', {
           groupId: this.consumerGroup.groupId,
           memberId: this.consumerGroup.memberId,
           error: e.message,
           stack: e.stack,
           retryCount,
           retryTime,
+          offsets,
         })
 
         throw e
-      } finally {
-        this.consuming = false
       }
     })
   }

@@ -227,4 +227,55 @@ describe('Consumer > Runner', () => {
 
     expect(onCrash).toHaveBeenCalledWith(notImplementedError)
   })
+
+  describe('commitOffsets', () => {
+    let offsets
+
+    beforeEach(async () => {
+      offsets = { topics: [{ topic: 'foobar', partitions: [{ offset: '1', partition: 0 }] }] }
+      await runner.start()
+    })
+
+    it('should commit offsets while running', async () => {
+      // Clear state
+      consumerGroup.commitOffsetsIfNecessary.mockClear()
+      consumerGroup.commitOffsets.mockClear()
+
+      await runner.commitOffsets(offsets)
+      expect(consumerGroup.commitOffsetsIfNecessary).toHaveBeenCalledTimes(0)
+      expect(consumerGroup.commitOffsets).toHaveBeenCalledTimes(1)
+      expect(consumerGroup.commitOffsets).toHaveBeenCalledWith(offsets)
+    })
+
+    it('should throw when group is rebalancing, while triggering another join', async () => {
+      consumerGroup.join.mockClear()
+      consumerGroup.commitOffsets.mockClear()
+      consumerGroup.commitOffsets.mockImplementationOnce(() => {
+        throw rebalancingError()
+      })
+
+      expect(runner.commitOffsets(offsets)).rejects.toThrow('The group is rebalancing')
+      expect(consumerGroup.join).toHaveBeenCalledTimes(0)
+
+      await sleep(100)
+
+      expect(consumerGroup.join).toHaveBeenCalledTimes(1)
+    })
+
+    it('a triggered rejoin failing should cause a crash', async () => {
+      const unknowError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
+      consumerGroup.join.mockImplementationOnce(() => {
+        throw unknowError
+      })
+      consumerGroup.commitOffsets.mockImplementationOnce(() => {
+        throw rebalancingError()
+      })
+
+      expect(runner.commitOffsets(offsets)).rejects.toThrow('The group is rebalancing')
+
+      await sleep(100)
+
+      expect(onCrash).toHaveBeenCalledWith(unknowError)
+    })
+  })
 })
