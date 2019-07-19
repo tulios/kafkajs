@@ -493,6 +493,12 @@ export type GroupDescription = {
 }
 
 export type TopicPartitions = { topic: string; partitions: number[] }
+export type TopicPartitionOffsetAndMedata = {
+  topic: string
+  partition: number
+  offset: string
+  metadata?: string | null
+}
 
 export type Batch = {
   topic: string
@@ -619,6 +625,7 @@ export type Consumer = {
     eachBatch?: (payload: EachBatchPayload) => Promise<void>
     eachMessage?: (payload: EachMessagePayload) => Promise<void>
   }): Promise<void>
+  commitOffsets(topicPartitions: Array<TopicPartitionOffsetAndMedata>): Promise<void>
   seek(topicPartition: { topic: string; partition: number; offset: string }): void
   describeGroup(): Promise<GroupDescription>
   pause(topics: Array<{ topic: string; partitions?: number[] }>): void
