@@ -39,7 +39,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrie
       )
     }
 
-    for (let { topic, messages } of topicMessages) {
+    for (const { topic, messages } of topicMessages) {
       if (!messages) {
         throw new KafkaJSNonRetriableError(
           `Invalid messages array [${messages}] for topic "${topic}"`

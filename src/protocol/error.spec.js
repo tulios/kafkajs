@@ -3,7 +3,7 @@ const { errorCodes, createErrorFromCode } = require('./error')
 describe('Protocol > error', () => {
   describe('#createErrorFromCode', () => {
     it('creates enhanced errors based on kafka error codes', () => {
-      for (let errorCode of errorCodes) {
+      for (const errorCode of errorCodes) {
         const error = createErrorFromCode(errorCode.code)
         expect(error).toHaveProperty('message', errorCode.message)
         expect(error).toHaveProperty('type', errorCode.type)

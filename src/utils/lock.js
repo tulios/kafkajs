@@ -28,7 +28,7 @@ module.exports = class Lock {
         return resolve()
       }
 
-      let timeoutId
+      let timeoutId = null
       const tryToAcquire = async () => {
         if (!this[PRIVATE.LOCKED]) {
           this[PRIVATE.LOCKED] = true

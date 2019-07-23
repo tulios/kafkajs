@@ -137,7 +137,7 @@ module.exports = class Broker {
       .reverse()
 
     // Find the best version implemented by the server
-    for (let candidateVersion of availableVersions) {
+    for (const candidateVersion of availableVersions) {
       try {
         const apiVersions = requests.ApiVersions.protocol({ version: candidateVersion })
         response = await this.connection.send({
@@ -404,7 +404,7 @@ module.exports = class Broker {
 
     // ListOffsets >= v1 will return a single `offset` rather than an array of `offsets` (ListOffsets V0).
     // Normalize to just return `offset`.
-    for (let response of result.responses) {
+    for (const response of result.responses) {
       response.partitions = response.partitions.map(({ offsets, ...partitionData }) => {
         return offsets ? { ...partitionData, offset: offsets.pop() } : partitionData
       })

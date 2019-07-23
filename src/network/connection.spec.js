@@ -97,7 +97,7 @@ describe('Network > Connection', () => {
     })
 
     test('rejects the Promise in case of a non-retriable error', async () => {
-      let protocol = {
+      const protocol = {
         ...apiVersions(),
         response: {
           ...apiVersions().response,

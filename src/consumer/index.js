@@ -175,7 +175,7 @@ module.exports = ({
       topicsToSubscribe.push(topic)
     }
 
-    for (let t of topicsToSubscribe) {
+    for (const t of topicsToSubscribe) {
       topics[t] = { fromBeginning }
     }
 
@@ -418,7 +418,7 @@ module.exports = ({
    * @property {Array<{number}>} [partitions]
    */
   const pause = (topicPartitions = []) => {
-    for (let topicPartition of topicPartitions) {
+    for (const topicPartition of topicPartitions) {
       if (!topicPartition || !topicPartition.topic) {
         throw new KafkaJSNonRetriableError(
           `Invalid topic ${(topicPartition && topicPartition.topic) || topicPartition}`
@@ -428,9 +428,7 @@ module.exports = ({
         (!Array.isArray(topicPartition.partitions) || topicPartition.partitions.some(isNaN))
       ) {
         throw new KafkaJSNonRetriableError(
-          `Array of valid partitions required to pause specific partitions instead of ${
-            topicPartition.partitions
-          }`
+          `Array of valid partitions required to pause specific partitions instead of ${topicPartition.partitions}`
         )
       }
     }
@@ -453,7 +451,7 @@ module.exports = ({
    * @property {Array<{number}>} [partitions]
    */
   const resume = (topicPartitions = []) => {
-    for (let topicPartition of topicPartitions) {
+    for (const topicPartition of topicPartitions) {
       if (!topicPartition || !topicPartition.topic) {
         throw new KafkaJSNonRetriableError(
           `Invalid topic ${(topicPartition && topicPartition.topic) || topicPartition}`
@@ -463,9 +461,7 @@ module.exports = ({
         (!Array.isArray(topicPartition.partitions) || topicPartition.partitions.some(isNaN))
       ) {
         throw new KafkaJSNonRetriableError(
-          `Array of valid partitions required to resume specific partitions instead of ${
-            topicPartition.partitions
-          }`
+          `Array of valid partitions required to resume specific partitions instead of ${topicPartition.partitions}`
         )
       }
     }

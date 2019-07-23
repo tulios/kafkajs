@@ -208,7 +208,7 @@ module.exports = class BrokerPool {
       throw new KafkaJSBrokerNotFound('No brokers in the broker pool')
     }
 
-    for (let nodeId of brokers) {
+    for (const nodeId of brokers) {
       const broker = await this.findBroker({ nodeId })
       try {
         return await callback({ nodeId, broker })
@@ -224,7 +224,7 @@ module.exports = class BrokerPool {
    */
   async findConnectedBroker() {
     const nodeIds = shuffle(keys(this.brokers))
-    let connectedBrokerId = nodeIds.find(nodeId => this.brokers[nodeId].isConnected())
+    const connectedBrokerId = nodeIds.find(nodeId => this.brokers[nodeId].isConnected())
 
     if (connectedBrokerId) {
       return await this.findBroker({ nodeId: connectedBrokerId })

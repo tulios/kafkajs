@@ -15,7 +15,7 @@ module.exports = ({ acks, timeout, compression = Types.None, topicData }) => ({
     const encodeTopic = topicEncoder(compression)
     const encodedTopicData = []
 
-    for (let data of topicData) {
+    for (const data of topicData) {
       encodedTopicData.push(await encodeTopic(data))
     }
 
@@ -32,7 +32,7 @@ const topicEncoder = compression => {
   return async ({ topic, partitions }) => {
     const encodedPartitions = []
 
-    for (let data of partitions) {
+    for (const data of partitions) {
       encodedPartitions.push(await encodePartitions(data))
     }
 

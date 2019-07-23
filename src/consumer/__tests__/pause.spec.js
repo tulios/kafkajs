@@ -18,7 +18,7 @@ describe('Consumer', () => {
     topics = [`test-topic-${secureRandom()}`, `test-topic-${secureRandom()}`]
     groupId = `consumer-group-id-${secureRandom()}`
 
-    for (let topic of topics) {
+    for (const topic of topics) {
       await createTopic({ topic, partitions: 2 })
     }
 
@@ -67,7 +67,7 @@ describe('Consumer', () => {
       const key2 = secureRandom()
       const message2 = { key: `key-${key2}`, value: `value-${key2}`, partition: 1 }
 
-      for (let topic of topics) {
+      for (const topic of topics) {
         await producer.send({ acks: 1, topic, messages: [message1] })
         await consumer.subscribe({ topic, fromBeginning: true })
       }
@@ -81,7 +81,7 @@ describe('Consumer', () => {
       const [pausedTopic, activeTopic] = topics
       consumer.pause([{ topic: pausedTopic }])
 
-      for (let topic of topics) {
+      for (const topic of topics) {
         await producer.send({ acks: 1, topic, messages: [message2] })
       }
 
@@ -127,7 +127,7 @@ describe('Consumer', () => {
         })
       const forPartition = partition => message => ({ ...message, partition })
 
-      for (let partition of partitions) {
+      for (const partition of partitions) {
         await producer.send({ acks: 1, topic, messages: messages.map(forPartition(partition)) })
       }
       await consumer.subscribe({ topic, fromBeginning: true })
@@ -141,7 +141,7 @@ describe('Consumer', () => {
       const [pausedPartition, activePartition] = partitions
       consumer.pause([{ topic, partitions: [pausedPartition] }])
 
-      for (let partition of partitions) {
+      for (const partition of partitions) {
         await producer.send({ acks: 1, topic, messages: messages.map(forPartition(partition)) })
       }
 
@@ -223,7 +223,7 @@ describe('Consumer', () => {
       const key = secureRandom()
       const message = { key: `key-${key}`, value: `value-${key}`, partition: 0 }
 
-      for (let topic of topics) {
+      for (const topic of topics) {
         await consumer.subscribe({ topic, fromBeginning: true })
       }
 
@@ -235,7 +235,7 @@ describe('Consumer', () => {
 
       await waitForConsumerToJoinGroup(consumer)
 
-      for (let topic of topics) {
+      for (const topic of topics) {
         await producer.send({ acks: 1, topic, messages: [message] })
       }
 
@@ -272,7 +272,7 @@ describe('Consumer', () => {
         })
       const forPartition = partition => message => ({ ...message, partition })
 
-      for (let partition of partitions) {
+      for (const partition of partitions) {
         await producer.send({ acks: 1, topic, messages: messages.map(forPartition(partition)) })
       }
       await consumer.subscribe({ topic, fromBeginning: true })
@@ -286,7 +286,7 @@ describe('Consumer', () => {
       const [pausedPartition, activePartition] = partitions
       consumer.pause([{ topic, partitions: [pausedPartition] }])
 
-      for (let partition of partitions) {
+      for (const partition of partitions) {
         await producer.send({ acks: 1, topic, messages: messages.map(forPartition(partition)) })
       }
 

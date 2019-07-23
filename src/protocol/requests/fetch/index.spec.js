@@ -1,7 +1,7 @@
 const FetchVersions = require('./index')
 
 describe('Protocol > Requests > Fetch', () => {
-  for (let version of FetchVersions.versions) {
+  for (const version of FetchVersions.versions) {
     describe(version, () => {
       const Fetch = FetchVersions.protocol({ version })
       const maxBytes = 1048576 // 1MB

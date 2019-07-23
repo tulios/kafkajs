@@ -175,7 +175,7 @@ const addPartitions = async ({ topic, partitions }) => {
   await cluster.connect()
   await cluster.addTargetTopic(topic)
 
-  execa.shellSync(cmd)
+  execa.commandSync(cmd, { shell: true })
 
   waitFor(async () => {
     await cluster.refreshMetadata()

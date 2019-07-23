@@ -207,6 +207,12 @@ module.exports = class Connection {
    */
   authenticate({ authExpectResponse = false, request, response }) {
     this.authExpectResponse = authExpectResponse
+
+    /**
+     * TODO: rewrite removing the async promise executor
+     */
+
+    /* eslint-disable no-async-promise-executor */
     return new Promise(async (resolve, reject) => {
       this.authHandlers = {
         onSuccess: rawData => {
@@ -217,6 +223,7 @@ module.exports = class Connection {
             .decode(rawData)
             .then(data => response.parse(data))
             .then(resolve)
+            .catch(reject)
         },
         onError: () => {
           this.authHandlers = null
@@ -230,10 +237,14 @@ module.exports = class Connection {
         },
       }
 
-      const requestPayload = await request.encode()
+      try {
+        const requestPayload = await request.encode()
 
-      this.failIfNotConnected()
-      this.socket.write(requestPayload.buffer, 'binary')
+        this.failIfNotConnected()
+        this.socket.write(requestPayload.buffer, 'binary')
+      } catch (e) {
+        reject(e)
+      }
     })
   }
 

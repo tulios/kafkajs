@@ -115,7 +115,7 @@ describe('Consumer', () => {
     await producer.connect()
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-    let messages = []
+    const messages = []
     consumer.run({
       eachMessage: async ({ message }) => {
         messages.push(message)

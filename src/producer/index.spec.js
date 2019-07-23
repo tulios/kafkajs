@@ -14,7 +14,7 @@ jest.mock('./eosManager', () => {
 })
 
 jest.mock('../retry', () => {
-  let spy = jest.fn().mockImplementation(jest.requireActual('../retry'))
+  const spy = jest.fn().mockImplementation(jest.requireActual('../retry'))
   retrySpy = spy
   return spy
 })

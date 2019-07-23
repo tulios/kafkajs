@@ -18,7 +18,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager }) => {
   return async ({ acks, timeout, compression, topicMessages }) => {
     const responsePerBroker = new Map()
 
-    for (let { topic } of topicMessages) {
+    for (const { topic } of topicMessages) {
       await cluster.addTargetTopic(topic)
     }
 
@@ -27,7 +27,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager }) => {
 
       await cluster.refreshMetadataIfNecessary()
 
-      for (let { topic, messages } of topicMessages) {
+      for (const { topic, messages } of topicMessages) {
         const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
 
         if (keys(partitionMetadata).length === 0) {
@@ -61,7 +61,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager }) => {
           sequencePerPartition,
         })
 
-        for (let nodeId of leaders) {
+        for (const nodeId of leaders) {
           const broker = await cluster.findBroker({ nodeId })
           if (!responsePerBroker.has(broker)) {
             responsePerBroker.set(broker, null)

@@ -160,7 +160,7 @@ module.exports = class Cluster {
    */
   async addMultipleTargetTopics(topics) {
     const previousSize = this.targetTopics.size
-    for (let topic of topics) {
+    for (const topic of topics) {
       this.targetTopics.add(topic)
     }
 
@@ -391,7 +391,7 @@ module.exports = class Cluster {
     }
 
     // Index all topics and partitions per leader (nodeId)
-    for (let topicData of topics) {
+    for (const topicData of topics) {
       const { topic, partitions, fromBeginning } = topicData
       const partitionsPerLeader = this.findLeaderForPartitions(
         topic,

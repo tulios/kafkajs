@@ -14,7 +14,7 @@ const concurrency = ({ limit, onChange = NOOP } = {}) => {
   let semaphore = 0
 
   const clear = () => {
-    for (let lazyAction of waiting) {
+    for (const lazyAction of waiting) {
       lazyAction((_1, _2, reject) => reject(REJECTED_ERROR))
     }
     waiting = []

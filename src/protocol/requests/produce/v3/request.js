@@ -41,7 +41,7 @@ module.exports = ({
     const encodeTopic = topicEncoder(compression)
     const encodedTopicData = []
 
-    for (let data of topicData) {
+    for (const data of topicData) {
       encodedTopicData.push(
         await encodeTopic({ ...data, transactionalId, producerId, producerEpoch })
       )
@@ -65,7 +65,7 @@ const topicEncoder = compression => async ({
   const encodePartitions = partitionsEncoder(compression)
   const encodedPartitions = []
 
-  for (let data of partitions) {
+  for (const data of partitions) {
     encodedPartitions.push(
       await encodePartitions({ ...data, transactionalId, producerId, producerEpoch })
     )

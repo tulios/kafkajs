@@ -283,7 +283,7 @@ describe('Consumer', () => {
       let raisedError = false
       consumer.run({
         eachBatch: async ({ batch, resolveOffset }) => {
-          for (let message of batch.messages) {
+          for (const message of batch.messages) {
             if (message.key.toString() === `key-${key3}`) {
               raisedError = true
               throw new Error('some error')

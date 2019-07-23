@@ -49,7 +49,7 @@ module.exports = ({ offsetDelta = 0, timestampDelta = 0, key, value, headers = {
 const sizeOfHeaders = headersArray => {
   let size = Encoder.sizeOfVarInt(headersArray.length)
 
-  for (let header of headersArray) {
+  for (const header of headersArray) {
     const keySize = Buffer.byteLength(header.key)
     const valueSize = Buffer.byteLength(header.value)
 

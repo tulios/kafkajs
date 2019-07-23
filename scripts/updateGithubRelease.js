@@ -34,7 +34,7 @@ let buffer = []
 
 const getVersionNumber = () => buffer[0].match(/\[(.*)\]/)[1]
 
-for (let line of lines) {
+for (const line of lines) {
   if (RELEASE_HEADER.test(line)) {
     if (buffer.length !== 0) {
       releases[`v${getVersionNumber()}`] = buffer.join('\n')

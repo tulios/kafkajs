@@ -151,7 +151,7 @@ module.exports = class Runner {
   async processEachMessage(batch) {
     const { topic, partition } = batch
 
-    for (let message of batch.messages) {
+    for (const message of batch.messages) {
       if (!this.running || this.consumerGroup.hasSeekOffset({ topic, partition })) {
         break
       }

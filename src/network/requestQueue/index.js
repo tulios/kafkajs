@@ -160,7 +160,7 @@ module.exports = class RequestQueue {
   rejectAll(error) {
     const requests = [...this.inflight.values(), ...this.pending]
 
-    for (let socketRequest of requests) {
+    for (const socketRequest of requests) {
       socketRequest.rejected(error)
       this.inflight.delete(socketRequest.correlationId)
     }
