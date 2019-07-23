@@ -223,6 +223,7 @@ module.exports = class Connection {
             .decode(rawData)
             .then(data => response.parse(data))
             .then(resolve)
+            .catch(reject)
         },
         onError: () => {
           this.authHandlers = null
