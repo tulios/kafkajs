@@ -33,7 +33,7 @@ describe('Producer', () => {
     { name: 'zstd', codec: Compression.Types.ZSTD },
   ]
 
-  for (let entry of codecsUsingExternalLibraries) {
+  for (const entry of codecsUsingExternalLibraries) {
     describe(`${entry.name} compression not configured`, () => {
       it('throws an error', async () => {
         await expect(

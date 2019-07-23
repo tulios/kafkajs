@@ -146,7 +146,7 @@ module.exports = ({
         await broker.deleteTopics({ topics, timeout })
 
         // Remove deleted topics
-        for (let topic of topics) {
+        for (const topic of topics) {
           cluster.targetTopics.delete(topic)
         }
 
@@ -341,7 +341,7 @@ module.exports = ({
       // This consumer doesn't need to consume any data
       consumer.pause([{ topic }])
 
-      for (let seekData of partitions) {
+      for (const seekData of partitions) {
         consumer.seek({ topic, ...seekData })
       }
     })

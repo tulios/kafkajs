@@ -189,7 +189,7 @@ describe('Network > RequestQueue', () => {
       expect(requestQueue.inflight.size).toEqual(0)
       expect(requestQueue.pending.length).toEqual(0)
 
-      for (let request of allRequests) {
+      for (const request of allRequests) {
         expect(request.entry.reject).toHaveBeenCalledWith(error)
       }
     })

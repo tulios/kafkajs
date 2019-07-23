@@ -109,14 +109,14 @@ describe('Cluster > BrokerPool', () => {
       await brokerPool.refreshMetadata([topicName])
       const brokers = Object.values(brokerPool.brokers)
 
-      for (let broker of brokers) {
+      for (const broker of brokers) {
         await brokerPool.connectBroker(broker)
       }
 
       expect(brokerPool.hasConnectedBrokers()).toEqual(true)
       await brokerPool.disconnect()
 
-      for (let broker of brokers) {
+      for (const broker of brokers) {
         expect(broker.isConnected()).toEqual(false)
       }
     })
@@ -354,7 +354,7 @@ describe('Cluster > BrokerPool', () => {
     })
 
     it('returns a known broker connecting it in the process', async () => {
-      for (let broker of Object.values(brokerPool.brokers)) {
+      for (const broker of Object.values(brokerPool.brokers)) {
         await broker.disconnect()
       }
 

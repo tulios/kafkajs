@@ -207,6 +207,12 @@ module.exports = class Connection {
    */
   authenticate({ authExpectResponse = false, request, response }) {
     this.authExpectResponse = authExpectResponse
+
+    /**
+     * TODO: rewrite removing the async promise executor
+     */
+
+    /* eslint-disable no-async-promise-executor */
     return new Promise(async (resolve, reject) => {
       this.authHandlers = {
         onSuccess: rawData => {

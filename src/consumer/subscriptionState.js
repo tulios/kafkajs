@@ -104,7 +104,7 @@ module.exports = class SubscriptionState {
   }
 
   isPaused(topic, partition) {
-    let state = this.subscriptionStatesByTopic[topic]
+    const state = this.subscriptionStatesByTopic[topic]
 
     if (!state) {
       return false

@@ -61,7 +61,7 @@ const EntriesDecoder = (decoder, compressedMessage) => {
     const lastMessageOffset = Long.fromValue(messages[messages.length - 1].offset)
     const baseOffset = compressedOffset - lastMessageOffset
 
-    for (let message of messages) {
+    for (const message of messages) {
       message.offset = Long.fromValue(message.offset)
         .add(baseOffset)
         .toString()

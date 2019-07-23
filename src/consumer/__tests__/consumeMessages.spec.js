@@ -494,7 +494,7 @@ describe('Consumer', () => {
       await producer.send({ acks: 1, topic: topicName, messages })
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-      let offsetsConsumed = []
+      const offsetsConsumed = []
 
       consumer.run({
         eachMessage: async ({ message }) => {
@@ -534,11 +534,11 @@ describe('Consumer', () => {
       await producer.send({ acks: 1, topic: topicName, messages })
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-      let offsetsConsumed = []
+      const offsetsConsumed = []
 
       consumer.run({
         eachBatch: async ({ batch, isStale, heartbeat, resolveOffset }) => {
-          for (let message of batch.messages) {
+          for (const message of batch.messages) {
             if (isStale()) break
 
             offsetsConsumed.push(message.offset)
@@ -579,7 +579,7 @@ describe('Consumer', () => {
 
       await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-      let offsetsConsumed = []
+      const offsetsConsumed = []
 
       const eachBatch = async ({ batch, heartbeat }) => {
         for (const message of batch.messages) {
@@ -629,7 +629,7 @@ describe('Consumer', () => {
 
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-    let offsetsConsumed = []
+    const offsetsConsumed = []
 
     const eachBatch = async ({ batch, heartbeat }) => {
       for (const message of batch.messages) {

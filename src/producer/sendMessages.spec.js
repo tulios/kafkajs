@@ -129,7 +129,7 @@ describe('Producer > sendMessages', () => {
     'NOT_LEADER_FOR_PARTITION',
   ]
 
-  for (let errorType of PRODUCE_ERRORS) {
+  for (const errorType of PRODUCE_ERRORS) {
     test(`refresh stale metadata on ${errorType}`, async () => {
       class FakeError extends Error {
         constructor() {

@@ -191,7 +191,7 @@ module.exports = class ConsumerGroup {
     }))
 
     // Check if the consumer is aware of all assigned partitions
-    for (let assignment of currentMemberAssignment) {
+    for (const assignment of currentMemberAssignment) {
       const { topic, partitions: assignedPartitions } = assignment
       const knownPartitions = this.partitionsPerSubscribedTopic.get(topic)
       const isAwareOfAllAssignedPartitions = assignedPartitions.every(partition =>
@@ -351,9 +351,7 @@ module.exports = class ConsumerGroup {
       await this.offsetManager.resolveOffsets()
 
       this.logger.debug(
-        `Fetching from ${activePartitions.length} partitions for ${activeTopics.length} out of ${
-          topics.length
-        } topics`,
+        `Fetching from ${activePartitions.length} partitions for ${activeTopics.length} out of ${topics.length} topics`,
         {
           topics,
           activeTopicPartitions,
@@ -361,7 +359,7 @@ module.exports = class ConsumerGroup {
         }
       )
 
-      for (let topicPartition of activeTopicPartitions) {
+      for (const topicPartition of activeTopicPartitions) {
         const partitionsPerLeader = this.cluster.findLeaderForPartitions(
           topicPartition.topic,
           topicPartition.partitions
@@ -369,7 +367,7 @@ module.exports = class ConsumerGroup {
 
         const leaders = keys(partitionsPerLeader)
 
-        for (let leader of leaders) {
+        for (const leader of leaders) {
           const partitions = partitionsPerLeader[leader].map(partition => ({
             partition,
             fetchOffset: this.offsetManager.nextOffset(topicPartition.topic, partition).toString(),
@@ -482,7 +480,7 @@ module.exports = class ConsumerGroup {
   generatePartitionsPerSubscribedTopic() {
     const map = new Map()
 
-    for (let topic of this.topicsSubscribed) {
+    for (const topic of this.topicsSubscribed) {
       const partitions = this.cluster
         .findTopicPartitionMetadata(topic)
         .map(m => m.partitionId)
@@ -501,7 +499,7 @@ module.exports = class ConsumerGroup {
 
     const newPartitionsPerSubscribedTopic = this.generatePartitionsPerSubscribedTopic()
 
-    for (let [topic, partitions] of newPartitionsPerSubscribedTopic) {
+    for (const [topic, partitions] of newPartitionsPerSubscribedTopic) {
       const diff = arrayDiff(partitions, this.partitionsPerSubscribedTopic.get(topic))
 
       if (diff.length > 0) {
