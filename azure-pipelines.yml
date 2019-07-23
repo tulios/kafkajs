@@ -192,7 +192,7 @@ jobs:
         env:
           GH_TOKEN: $(GH_TOKEN)
 
-  - job: npm_release
+  - job: npm_beta_release
     displayName: 'NPM beta release'
     condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/heads/master'))
     dependsOn:
