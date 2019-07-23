@@ -28,7 +28,7 @@ jobs:
     - task: NodeTool@0
       inputs:
         versionSpec: '8.x'
-    - bash: ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+    - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
       displayName: should skip tests
     - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
       displayName: yarn install
@@ -43,7 +43,7 @@ jobs:
     - task: NodeTool@0
       inputs:
         versionSpec: '8.x'
-    - bash: ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+    - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
       displayName: should skip tests
     - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
       displayName: yarn install
@@ -60,7 +60,7 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - bash: ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+      - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
@@ -83,7 +83,7 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - bash: ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+      - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
@@ -106,7 +106,7 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - bash: ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+      - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
@@ -129,7 +129,7 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - bash: ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+      - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
@@ -152,7 +152,7 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - bash: ./scripts/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+      - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
@@ -187,7 +187,7 @@ jobs:
         inputs:
           command: publish
           publishEndpoint: npm_registry
-      - bash: TOKEN=${GH_TOKEN} TAG=$(Build.SourceBranch) ./scripts/updateGithubRelease.js
+      - bash: TOKEN=${GH_TOKEN} TAG=$(Build.SourceBranch) ./scripts/pipeline/updateGithubRelease.js
         displayName: github release
         env:
           GH_TOKEN: $(GH_TOKEN)
@@ -208,14 +208,14 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - bash: ./scripts/generateBetaReleaseVersion.js
+      - bash: ./scripts/pipeline/generateBetaReleaseVersion.js
         displayName: build beta release
       - task: Npm@1
         inputs:
           command: custom
           customCommand: publish --tag beta
           publishEndpoint: npm_registry
-      - bash: TOKEN=${GH_TOKEN} ./scripts/commentBackOnPR.js
+      - bash: TOKEN=${GH_TOKEN} ./scripts/pipeline/commentBackOnPR.js
         displayName: 'Comment on PR'
         env:
           GH_TOKEN: $(GH_TOKEN)
