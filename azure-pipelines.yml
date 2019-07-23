@@ -208,7 +208,7 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
-      - bash: ./scripts/betaRelease.js
+      - bash: ./scripts/generateBetaReleaseVersion.js
         displayName: build beta release
       - task: Npm@1
         inputs:
