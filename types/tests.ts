@@ -64,6 +64,13 @@ const runConsumer = async () => {
   consumer.pause([{ topic: 'topic2', partitions: [1, 2] }])
   consumer.resume([{ topic: 'topic1' }])
   consumer.resume([{ topic: 'topic1', partitions: [2] }])
+  await consumer.commitOffsets([{ topic: 'topic-name', partition: 0, offset: '500' }])
+  await consumer.commitOffsets([
+    { topic: 'topic-name', partition: 0, offset: '501', metadata: null },
+  ])
+  await consumer.commitOffsets([
+    { topic: 'topic-name', partition: 0, offset: '501', metadata: 'some-metadata' },
+  ])
   await consumer.disconnect()
 }
 

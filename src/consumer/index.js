@@ -287,6 +287,67 @@ module.exports = ({
   }
 
   /**
+   * @param {Array<TopicPartitionOffsetAndMetadata>} topicPartitions
+   *   Example: [{ topic: 'topic-name', partition: 0, offset: '1', metadata: 'event-id-3' }]
+   */
+  const commitOffsets = async (topicPartitions = []) => {
+    const commitsByTopic = topicPartitions.reduce(
+      (payload, { topic, partition, offset, metadata = null }) => {
+        if (!topic) {
+          throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+        }
+
+        if (isNaN(partition)) {
+          throw new KafkaJSNonRetriableError(
+            `Invalid partition, expected a number received ${partition}`
+          )
+        }
+
+        let commitOffset
+        try {
+          commitOffset = Long.fromValue(offset)
+        } catch (_) {
+          throw new KafkaJSNonRetriableError(`Invalid offset, expected a long received ${offset}`)
+        }
+
+        if (commitOffset.lessThan(0)) {
+          throw new KafkaJSNonRetriableError('Offset must not be a negative number')
+        }
+
+        if (metadata !== null && typeof metadata !== 'string') {
+          throw new KafkaJSNonRetriableError(
+            `Invalid offset metatadta, expected string or null, received ${metadata}`
+          )
+        }
+
+        const topicCommits = payload[topic] || []
+
+        topicCommits.push({ partition, offset: commitOffset, metadata })
+
+        return { ...payload, [topic]: topicCommits }
+      },
+      {}
+    )
+
+    if (!consumerGroup) {
+      throw new KafkaJSNonRetriableError(
+        'Consumer group was not initialized, consumer#run must be called first'
+      )
+    }
+
+    const topics = Object.keys(commitsByTopic)
+
+    return runner.commitOffsets({
+      topics: topics.map(topic => {
+        return {
+          topic,
+          partitions: commitsByTopic[topic],
+        }
+      }),
+    })
+  }
+
+  /**
    * @param {string} topic
    * @param {number} partition
    * @param {string} offset
@@ -429,6 +490,7 @@ module.exports = ({
     subscribe,
     stop,
     run,
+    commitOffsets,
     seek,
     describeGroup,
     pause,
