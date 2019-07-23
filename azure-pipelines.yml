@@ -192,6 +192,32 @@ jobs:
         env:
           GH_TOKEN: $(GH_TOKEN)
 
+  - job: npm_release
+    displayName: 'NPM beta release'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/heads/master'))
+    dependsOn:
+      - lint
+      - test_broker
+      - test_admin
+      - test_producer
+      - test_consumer
+      - test_others
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '8.x'
+      - bash: ./scripts/betaRelease.js
+        displayName: build beta release
+      - task: Npm@1
+        inputs:
+          command: custom
+          customCommand: publish --tag beta
+          publishEndpoint: npm_registry
+        env:
+          GH_TOKEN: $(GH_TOKEN)
+
   - job: website_deploy
     displayName: 'Website'
     condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/heads/master'))
