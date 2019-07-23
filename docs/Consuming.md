@@ -150,11 +150,44 @@ consumer.run({
 
 Having both flavors at the same time is also possible, the consumer will commit the offsets if any of the use cases (interval or number of messages) happens.
 
-`autoCommit`: Advanced option to disable auto committing altogether. If auto committing is disabled you must manually commit message offsets, either by using the `commitOffsetsIfNecessary` method available in the `eachBatch` callback, or by [sending message offsets in a transaction](Transactions.md#offsets). The `commitOffsetsIfNecessary` method will still respect the other autoCommit options if set. Default: `true`
+`autoCommit`: Advanced option to disable auto committing altogether. Instead, you can [manually commit offsets](#manual-commits). Default: `true`
+
+## <a name="manual-commits"></a> Manual committing
+
+When disabling [`autoCommit`](#auto-commit) you can still manually commit message offsets, in a couple of different ways:
+
+- By using the `commitOffsetsIfNecessary` method available in the `eachBatch` callback. The `commitOffsetsIfNecessary` method will still respect the other autoCommit options if set.
+- By [sending message offsets in a transaction](Transactions.md#offsets). 
+- By using the `commitOffsets` method of the consumer (see below).
+
+The `consumer.commitOffsets` is the lowest-level option and will ignore all other auto commit settings, but in doing so allows the committed offset to be set to any offset and committing various offsets at once. This can be useful, for example, for building an processing reset tool. It can only be called after `consumer.run`. Committing offsets does not change what message we'll consume next once we've started consuming, but instead is only used to determine **from which place to start**. To immediately change from what offset you're consuming messages, you'll want to [seek](#seek), instead.
+
+```javascript
+consumer.run({
+    autoCommit: false,
+    eachMessage: async ({ topic, partition, message }) => {
+        // Process the message somehow
+    },
+})
+
+consumer.commitOffsets([
+  { topic: 'topic-A', partition: 0, offset: '1' },
+  { topic: 'topic-A', partition: 1, offset: '3' },
+  { topic: 'topic-B', partition: 0, offset: '2' }
+])
+```
+
+Note that you don't *have* to store consumed offsets in Kafka, but instead store it in a storage mechanism of your own choosing. That's an especially useful approach when the results of consuming a message are written to a datastore that allows atomically writing the consumed offset with it, like for example a SQL database. When possible it can make the consumption fully atomic and give "exactly once" semantics that are stronger than the default "at-least once" semantics you get with Kafka's offset commit functionality. 
+
+The usual usage pattern for offsets stored outside of Kafka is as follows:
+
+- Run the consumer with `autoCommit` disabled.
+- Store a message's `offset + 1` in the store together with the results of processing. `1` is added to prevent that same message from being consumed again.
+- Use the externally stored offset on restart to [seek](#seek) the consumer to it.
 
 ## <a name="from-beginning"></a> fromBeginning
 
-The consumer group will use the latest committed offset when fetching messages. If the offset is invalid or not defined, `fromBeginning` defines the behavior of the consumer group. This can be configured when subscribing to a topic:
+The consumer group will use the latest committed offset when starting to fetch messages. If the offset is invalid or not defined, `fromBeginning` defines the behavior of the consumer group. This can be configured when subscribing to a topic:
 
 ```javascript
 await consumer.subscribe({ topic: 'test-topic', fromBeginning: true })

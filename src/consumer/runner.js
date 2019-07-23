@@ -81,6 +81,18 @@ module.exports = class Runner {
     })
   }
 
+  async scheduleJoin() {
+    if (!this.running) {
+      this.logger.debug('consumer not running, exiting', {
+        groupId: this.consumerGroup.groupId,
+        memberId: this.consumerGroup.memberId,
+      })
+      return
+    }
+
+    return this.join().catch(this.onCrash)
+  }
+
   async start() {
     if (this.running) {
       return
@@ -373,5 +385,77 @@ module.exports = class Runner {
     if (this.autoCommit) {
       return this.consumerGroup.commitOffsetsIfNecessary()
     }
+  }
+
+  commitOffsets(offsets) {
+    if (!this.running) {
+      this.logger.debug('consumer not running, exiting', {
+        groupId: this.consumerGroup.groupId,
+        memberId: this.consumerGroup.memberId,
+        offsets,
+      })
+      return
+    }
+
+    return this.retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await this.consumerGroup.commitOffsets(offsets)
+      } catch (e) {
+        if (!this.running) {
+          this.logger.debug('consumer not running, exiting', {
+            error: e.message,
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+            offsets,
+          })
+          return
+        }
+
+        if (isRebalancing(e)) {
+          this.logger.error('The group is rebalancing, re-joining', {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+            error: e.message,
+            retryCount,
+            retryTime,
+          })
+
+          setImmediate(() => this.scheduleJoin())
+
+          bail(new KafkaJSError('The group is rebalancing'))
+        }
+
+        if (e.type === 'UNKNOWN_MEMBER_ID') {
+          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+            error: e.message,
+            retryCount,
+            retryTime,
+          })
+
+          this.consumerGroup.memberId = null
+          setImmediate(() => this.scheduleJoin())
+
+          bail(new KafkaJSError('The group is rebalancing'))
+        }
+
+        if (e.name === 'KafkaJSNotImplemented') {
+          return bail(e)
+        }
+
+        this.logger.debug('Error while committing offsets, trying again...', {
+          groupId: this.consumerGroup.groupId,
+          memberId: this.consumerGroup.memberId,
+          error: e.message,
+          stack: e.stack,
+          retryCount,
+          retryTime,
+          offsets,
+        })
+
+        throw e
+      }
+    })
   }
 }
