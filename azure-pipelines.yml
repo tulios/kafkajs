@@ -215,6 +215,8 @@ jobs:
           command: custom
           customCommand: publish --tag beta
           publishEndpoint: npm_registry
+      - bash: TOKEN=${GH_TOKEN} ./scripts/commentBackOnPR.js
+        displayName: 'Comment on PR'
         env:
           GH_TOKEN: $(GH_TOKEN)
 
