@@ -32,7 +32,6 @@ describe('Consumer > SubscriptionState > pause / resume', () => {
 
     expect(subscriptionState.paused().sort(byTopic)).toEqual([
       { topic: 'topic1', partitions: [0, 1] },
-      { topic: 'topic2', partitions: [] },
     ])
   })
 
