@@ -251,7 +251,7 @@ jobs:
       - task: GithubRelease@0
         displayName: github beta release
         inputs:
-          gitHubConnection: tulios
+          gitHubConnection: github
           repositoryName: tulios/kafkajs
           tagSource: manual
           tag: v$(beta_version.PRE_RELEASE_VERSION)
