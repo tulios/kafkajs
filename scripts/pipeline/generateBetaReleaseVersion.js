@@ -3,6 +3,7 @@
 const https = require('https')
 const path = require('path')
 const fs = require('fs')
+const execa = require('execa')
 const { coerce, prerelease, parse } = require('semver')
 
 const getCurrentVersion = async () =>
@@ -57,8 +58,19 @@ getCurrentVersion()
   })
   .then(newVersion => {
     const packageJson = require('../../package.json')
+    const commitSha = execa
+      .commandSync('git rev-parse --verify HEAD', { shell: true })
+      .stdout.toString('utf-8')
+      .trim()
+
     packageJson.version = newVersion
-    const filePath = path.resolve(__dirname, '../package.json')
+    packageJson.kafkajs = {
+      sha: commitSha,
+      compare: `https://github.com/tulios/kafkajs/compare/master...${commitSha}`,
+    }
+
+    console.log(packageJson.kafkajs)
+    const filePath = path.resolve(__dirname, '../../package.json')
     fs.writeFileSync(filePath, JSON.stringify(packageJson, null, 2))
     console.log('Package.json patched')
   })
