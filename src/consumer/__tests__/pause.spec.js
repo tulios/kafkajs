@@ -43,6 +43,12 @@ describe('Consumer', () => {
     producer && (await producer.disconnect())
   })
 
+  describe('#paused', () => {
+    it('returns an empty array if consumer#run has not been called', () => {
+      expect(consumer.paused()).toEqual([])
+    })
+  })
+
   describe('when pausing', () => {
     it('throws an error if the topic is invalid', () => {
       expect(() => consumer.pause([{ topic: null, partitions: [0] }])).toThrow(
@@ -78,6 +84,7 @@ describe('Consumer', () => {
       await waitForConsumerToJoinGroup(consumer)
       await waitForMessages(messagesConsumed, { number: 2 })
 
+      expect(consumer.paused()).toEqual([])
       const [pausedTopic, activeTopic] = topics
       consumer.pause([{ topic: pausedTopic }])
 
@@ -110,6 +117,13 @@ describe('Consumer', () => {
           message: expect.objectContaining({ offset: '0' }),
         },
       ])
+
+      expect(consumer.paused()).toEqual([
+        {
+          topic: pausedTopic,
+          partitions: [0, 1],
+        },
+      ])
     })
 
     it('does not fetch messages for the paused partitions', async () => {
@@ -138,6 +152,7 @@ describe('Consumer', () => {
       await waitForConsumerToJoinGroup(consumer)
       await waitForMessages(messagesConsumed, { number: messages.length * partitions.length })
 
+      expect(consumer.paused()).toEqual([])
       const [pausedPartition, activePartition] = partitions
       consumer.pause([{ topic, partitions: [pausedPartition] }])
 
@@ -164,6 +179,13 @@ describe('Consumer', () => {
           message: expect.objectContaining({ offset: `${i}` }),
         }))
       )
+
+      expect(consumer.paused()).toEqual([
+        {
+          topic,
+          partitions: [pausedPartition],
+        },
+      ])
     })
   })
 
@@ -255,6 +277,8 @@ describe('Consumer', () => {
           message: expect.objectContaining({ offset: '0' }),
         },
       ])
+
+      expect(consumer.paused()).toEqual([])
     })
 
     it('resumes fetching from earlier paused partitions', async () => {
@@ -315,6 +339,8 @@ describe('Consumer', () => {
           message: expect.objectContaining({ offset: `${i}` }),
         }))
       )
+
+      expect(consumer.paused()).toEqual([])
     })
   })
 })
