@@ -94,13 +94,16 @@ module.exports = class SubscriptionState {
   }
 
   /**
-   * @returns {Array<TopicPartitions>} topicPartitions Example: [{ topic: 'topic-name', partitions: [1, 2] }]
+   * @returns {Array<TopicPartitions>} topicPartitions
+   * Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    */
   paused() {
-    return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => ({
-      topic,
-      partitions: partitions.filter(partition => this.isPaused(topic, partition)),
-    }))
+    return Object.values(this.assignedPartitionsByTopic)
+      .map(({ topic, partitions }) => ({
+        topic,
+        partitions: partitions.filter(partition => this.isPaused(topic, partition)).sort(),
+      }))
+      .filter(({ partitions }) => partitions.length !== 0)
   }
 
   isPaused(topic, partition) {
