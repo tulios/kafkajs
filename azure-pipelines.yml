@@ -4,7 +4,7 @@ trigger:
       - 'v*'
     exclude:
       - '*.beta.*'
-      
+
   branches:
     include:
       - master
@@ -195,8 +195,8 @@ jobs:
         env:
           GH_TOKEN: $(GH_TOKEN)
 
-  - job: npm_beta_release
-    displayName: 'NPM beta release'
+  - job: beta_release_check
+    displayName: 'Beta release check'
     condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/heads/master'))
     dependsOn:
       - lint
@@ -211,8 +211,50 @@ jobs:
       - task: NodeTool@0
         inputs:
           versionSpec: '8.x'
+      - bash: yarn install
+        displayName: yarn install
+      - bash: ./scripts/pipeline/checkBetaEligibility.js
+        name: beta_check
+        displayName: Check beta eligibility
+
+  - job: npm_beta_release
+    displayName: 'NPM beta release'
+    condition: |
+      and(
+        succeeded(),
+        contains(variables['Build.SourceBranch'], 'refs/heads/master'),
+        eq(dependencies.beta_release_check.outputs['beta_check.SKIP_PRE_RELEASE'], 'true')
+      )
+    dependsOn:
+      - lint
+      - test_broker
+      - test_admin
+      - test_producer
+      - test_consumer
+      - test_others
+      - beta_release_check
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '8.x'
+      - bash: yarn install
+        displayName: yarn install
       - bash: ./scripts/pipeline/generateBetaReleaseVersion.js
-        displayName: build beta release
+        name: beta_version
+        displayName: generate beta release version
+      - bash: ./scripts/pipeline/updatePackageJsonForPreRelease.js
+        displayName: update package.json for beta release
+        env:
+          PRE_RELEASE_VERSION: $(beta_version.PRE_RELEASE_VERSION)
+      - task: GithubRelease@0
+        displayName: github beta release
+        inputs:
+          gitHubConnection: tulios
+          repositoryName: tulios/kafkajs
+          tagSource: manual
+          tag: v$(beta_version.PRE_RELEASE_VERSION)
       - task: Npm@1
         inputs:
           command: custom

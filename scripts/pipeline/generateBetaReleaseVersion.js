@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 
 const https = require('https')
-const path = require('path')
-const fs = require('fs')
 const execa = require('execa')
 const { coerce, prerelease, parse } = require('semver')
 
@@ -45,33 +43,16 @@ const getCurrentVersion = async () =>
 
 const sameStableVersion = (stable, beta) => coerce(stable).version === coerce(beta).version
 
-getCurrentVersion()
-  .then(({ latest, beta }) => {
-    console.log(`Current Latest: ${latest}, Beta: ${beta}`)
-    const { major, minor } = parse(latest)
-    const [tag, currentBeta] = prerelease(beta)
-    const newStable = `${major}.${minor + 1}.0`
-    const newBeta = sameStableVersion(newStable, beta) ? currentBeta + 1 : 0
-    const newBetaVersion = `${newStable}-${tag}.${newBeta}`
-    console.log(`New beta: ${newBetaVersion}`)
-    return newBetaVersion
-  })
-  .then(newVersion => {
-    const packageJson = require('../../package.json')
-    const commitSha = execa
-      .commandSync('git rev-parse --verify HEAD', { shell: true })
-      .stdout.toString('utf-8')
-      .trim()
-
-    packageJson.version = newVersion
-    packageJson.kafkajs = {
-      sha: commitSha,
-      compare: `https://github.com/tulios/kafkajs/compare/master...${commitSha}`,
-    }
-
-    console.log(packageJson.kafkajs)
-    const filePath = path.resolve(__dirname, '../../package.json')
-    fs.writeFileSync(filePath, JSON.stringify(packageJson, null, 2))
-    console.log('Package.json patched')
-  })
-  .catch(console.error)
+getCurrentVersion().then(({ latest, beta }) => {
+  console.log(`Current Latest: ${latest}, Beta: ${beta}`)
+  const { major, minor } = parse(latest)
+  const [tag, currentBeta] = prerelease(beta)
+  const newStable = `${major}.${minor + 1}.0`
+  const newBeta = sameStableVersion(newStable, beta) ? currentBeta + 1 : 0
+  const newBetaVersion = `${newStable}-${tag}.${newBeta}`
+  console.log(`New beta: ${newBetaVersion}`)
+  execa.commandSync(
+    `echo "##vso[task.setvariable variable=PRE_RELEASE_VERSION;isOutput=true]${newBetaVersion}"`,
+    { shell: true }
+  )
+})
