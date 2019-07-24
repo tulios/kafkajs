@@ -1,7 +1,10 @@
 trigger:
   tags:
     include:
-      - v*
+      - 'v*'
+    exclude:
+      - '*.beta.*'
+      
   branches:
     include:
       - master
