@@ -56,7 +56,7 @@ getCurrentVersion()
     return newBetaVersion
   })
   .then(newVersion => {
-    const packageJson = require('../package.json')
+    const packageJson = require('../../package.json')
     packageJson.version = newVersion
     const filePath = path.resolve(__dirname, '../package.json')
     fs.writeFileSync(filePath, JSON.stringify(packageJson, null, 2))

@@ -87,7 +87,7 @@ const commentOnPR = async () => {
 
   const subjectId = data.repository.pullRequest.id
   console.log(`subjectId: ${subjectId}`)
-  const { version } = require('../package.json')
+  const { version } = require('../../package.json')
 
   const { errors: errorsOnCommentOnPR } = await githubApi({
     payload: {
