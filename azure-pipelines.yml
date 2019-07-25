@@ -246,23 +246,23 @@ jobs:
       - bash: ./scripts/pipeline/generateBetaReleaseVersion.js
         name: beta_version
         displayName: generate beta release version
-      - bash: ./scripts/pipeline/updatePackageJsonForPreRelease.js
+      - bash: PRE_RELEASE_VERSION=$(beta_version.PRE_RELEASE_VERSION) ./scripts/pipeline/updatePackageJsonForPreRelease.js
         displayName: update package.json for beta release
-        env:
-          PRE_RELEASE_VERSION: $(beta_version.PRE_RELEASE_VERSION)
+      - task: Npm@1
+        inputs:
+          command: custom
+          customCommand: publish --tag beta
+          publishEndpoint: npm_registry
+      - bash: echo "##vso[task.setvariable variable=RELEASE_TAG]v$PRE_RELEASE_VERSION"
+        displayName: Set tag name
       - task: GithubRelease@0
         displayName: github beta release
         inputs:
           gitHubConnection: github
           repositoryName: tulios/kafkajs
           tagSource: manual
-          tag: v$(beta_version.PRE_RELEASE_VERSION)
-      - task: Npm@1
-        inputs:
-          command: custom
-          customCommand: publish --tag beta
-          publishEndpoint: npm_registry
-      - bash: TOKEN=${GH_TOKEN} ./scripts/pipeline/commentBackOnPR.js
+          tag: '$(RELEASE_TAG)'
+      - bash: TOKEN=${GH_TOKEN} GITHUB_PR_NUMBER=${GITHUB_PR_NUMBER} ./scripts/pipeline/commentBackOnPR.js
         displayName: 'Comment on PR'
         env:
           GH_TOKEN: $(GH_TOKEN)
