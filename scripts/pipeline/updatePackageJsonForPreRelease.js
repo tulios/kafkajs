@@ -10,6 +10,10 @@ if (!PRE_RELEASE_VERSION) {
   throw new Error('Missing PRE_RELEASE_VERSION env variable')
 }
 
+if (!/\d+\.\d+\.\d+-beta\.\d+/.test(PRE_RELEASE_VERSION)) {
+  throw new Error(`Invalid PRE_RELEASE_VERSION: ${PRE_RELEASE_VERSION}`)
+}
+
 const packageJson = require('../../package.json')
 const commitSha = execa
   .commandSync('git rev-parse --verify HEAD', { shell: true })
@@ -25,4 +29,4 @@ packageJson.kafkajs = {
 console.log(packageJson.kafkajs)
 const filePath = path.resolve(__dirname, '../../package.json')
 fs.writeFileSync(filePath, JSON.stringify(packageJson, null, 2))
-console.log('Package.json patched')
+console.log(`Package.json patched with pre-release version ${PRE_RELEASE_VERSION}`)
