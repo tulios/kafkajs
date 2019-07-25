@@ -9,6 +9,9 @@ const changedFiles = execa
   .trim()
   .split('\n')
 
+console.log('Changes:')
+console.log(changedFiles.join('\n'))
+
 const eligible = filePath =>
   ['index.js', 'package.json'].includes(filePath) || /^(src|types)\//.test(filePath)
 
