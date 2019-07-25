@@ -3,7 +3,7 @@
 const https = require('https')
 const execa = require('execa')
 
-const { TOKEN } = process.env
+const { TOKEN, GITHUB_PR_NUMBER } = process.env
 
 if (!TOKEN) {
   throw new Error('Missing TOKEN env variable')
@@ -56,13 +56,15 @@ const commentOnPR = async () => {
   const PR_NUMBER_REGEXP = /^Merge pull request #(?<prNumber>[^\s]+)/
   const result = commitMessage.match(PR_NUMBER_REGEXP)
 
-  if (!result || !(result.groups && result.groups.prNumber)) {
+  if (!GITHUB_PR_NUMBER || !result || !(result.groups && result.groups.prNumber)) {
     console.warn('PR number not found!')
     return
   }
 
-  const { groups } = result
-  const prNumber = parseInt(groups.prNumber, 10)
+  const prNumber = GITHUB_PR_NUMBER
+    ? parseInt(GITHUB_PR_NUMBER, 10)
+    : parseInt(result.groups.prNumber, 10)
+
   console.log(`PR number: ${prNumber}`)
 
   const { data, errors: errorsOnGetPrId } = await githubApi({
