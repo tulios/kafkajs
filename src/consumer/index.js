@@ -443,6 +443,19 @@ module.exports = ({
   }
 
   /**
+   * Returns the list of topic partitions paused on this consumer
+   *
+   * @returns {Array<TopicPartitions>}
+   */
+  const paused = () => {
+    if (!consumerGroup) {
+      return []
+    }
+
+    return consumerGroup.paused()
+  }
+
+  /**
    * @param {Array<TopicPartitions>} topicPartitions
    *  Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    *
@@ -490,6 +503,7 @@ module.exports = ({
     seek,
     describeGroup,
     pause,
+    paused,
     resume,
     on,
     events,

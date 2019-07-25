@@ -60,10 +60,18 @@ const runConsumer = async () => {
       console.log(`- ${prefix} ${message.key}#${message.value}`)
     },
   })
+
   consumer.pause([{ topic: 'topic1' }])
   consumer.pause([{ topic: 'topic2', partitions: [1, 2] }])
+
   consumer.resume([{ topic: 'topic1' }])
   consumer.resume([{ topic: 'topic1', partitions: [2] }])
+
+  consumer.paused()
+  consumer.paused().length
+  consumer.paused()[0].topic
+  consumer.paused()[0].partitions
+
   await consumer.commitOffsets([{ topic: 'topic-name', partition: 0, offset: '500' }])
   await consumer.commitOffsets([
     { topic: 'topic-name', partition: 0, offset: '501', metadata: null },
