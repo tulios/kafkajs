@@ -58,18 +58,15 @@ const commentOnPR = async () => {
     .stdout.toString('utf-8')
     .trim()
 
-  const PR_NUMBER_REGEXP = /^Merge pull request #(?<prNumber>[^\s]+)/
+  const PR_NUMBER_REGEXP = /^Merge pull request #([^\s]+)/
   const result = commitMessage.match(PR_NUMBER_REGEXP)
 
-  if (!GITHUB_PR_NUMBER || !result || !(result.groups && result.groups.prNumber)) {
+  if (!GITHUB_PR_NUMBER || !result || !result[1]) {
     console.warn('PR number not found!')
     return
   }
 
-  const prNumber = GITHUB_PR_NUMBER
-    ? parseInt(GITHUB_PR_NUMBER, 10)
-    : parseInt(result.groups.prNumber, 10)
-
+  const prNumber = GITHUB_PR_NUMBER ? parseInt(GITHUB_PR_NUMBER, 10) : parseInt(result[1], 10)
   console.log(`PR number: ${prNumber}`)
 
   const { data, errors: errorsOnGetPrId } = await githubApi({
