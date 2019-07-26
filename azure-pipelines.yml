@@ -243,7 +243,7 @@ jobs:
         displayName: yarn install
       - bash: ./scripts/pipeline/generateBetaReleaseVersion.js
         displayName: generate beta release version
-      - bash: PRE_RELEASE_VERSION=$(PRE_RELEASE_VERSION) ./scripts/pipeline/updatePackageJsonForPreRelease.js
+      - bash: echo "PRE_RELEASE_VERSION: ${PRE_RELEASE_VERSION}" && ./scripts/pipeline/updatePackageJsonForPreRelease.js
         displayName: update package.json for beta release
       - task: Npm@1
         inputs:
