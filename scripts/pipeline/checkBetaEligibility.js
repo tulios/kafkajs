@@ -9,6 +9,11 @@ const changedFiles = execa
   .trim()
   .split('\n')
 
+console.log('Env:')
+for (const env of Object.keys(process.env)) {
+  console.log(`${env}=${process.env[env]}`)
+}
+
 console.log(`SKIP_BETA_ELIGIBILITY: "${SKIP_BETA_ELIGIBILITY}"`)
 
 const eligible = filePath =>

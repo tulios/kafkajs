@@ -4,6 +4,11 @@ const path = require('path')
 const fs = require('fs')
 const execa = require('execa')
 
+console.log('Env:')
+for (const env of Object.keys(process.env)) {
+  console.log(`${env}=${process.env[env]}`)
+}
+
 const { PRE_RELEASE_VERSION } = process.env
 
 if (!PRE_RELEASE_VERSION) {

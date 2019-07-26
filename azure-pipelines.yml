@@ -216,8 +216,6 @@ jobs:
       - bash: ./scripts/pipeline/checkBetaEligibility.js
         name: beta_check
         displayName: Check beta eligibility
-        env:
-          SKIP_BETA_ELIGIBILITY: $(SKIP_BETA_ELIGIBILITY)
 
   - job: npm_beta_release
     displayName: 'NPM beta release'
@@ -225,7 +223,7 @@ jobs:
       and(
         succeeded(),
         contains(variables['Build.SourceBranch'], 'refs/heads/master'),
-        ne(dependencies.beta_release_check.outputs['beta_check.SKIP_PRE_RELEASE'], 'true')
+        ne(dependencies.beta_release_check.outputs['SKIP_PRE_RELEASE'], 'true')
       )
     dependsOn:
       - lint
@@ -261,11 +259,10 @@ jobs:
           repositoryName: tulios/kafkajs
           tagSource: manual
           tag: '$(RELEASE_TAG)'
-      - bash: TOKEN=${GH_TOKEN} GITHUB_PR_NUMBER=${GITHUB_PR_NUMBER} ./scripts/pipeline/commentBackOnPR.js
+      - bash: TOKEN=${GH_TOKEN} GITHUB_PR_NUMBER=$(GITHUB_PR_NUMBER) ./scripts/pipeline/commentBackOnPR.js
         displayName: 'Comment on PR'
         env:
           GH_TOKEN: $(GH_TOKEN)
-          GITHUB_PR_NUMBER: $(GITHUB_PR_NUMBER)
 
   - job: website_deploy
     displayName: 'Website'
