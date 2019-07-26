@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 const https = require('https')
-const execa = require('execa')
 const { coerce, prerelease, parse } = require('semver')
 
 const getCurrentVersion = async () =>
@@ -51,8 +50,5 @@ getCurrentVersion().then(({ latest, beta }) => {
   const newBeta = sameStableVersion(newStable, beta) ? currentBeta + 1 : 0
   const newBetaVersion = `${newStable}-${tag}.${newBeta}`
   console.log(`New beta: ${newBetaVersion}`)
-  execa.commandSync(
-    `echo "##vso[task.setvariable variable=PRE_RELEASE_VERSION;isOutput=true]${newBetaVersion}"`,
-    { shell: true }
-  )
+  console.log(`##vso[task.setvariable variable=PRE_RELEASE_VERSION;isOutput=true]${newBetaVersion}`)
 })

@@ -244,16 +244,15 @@ jobs:
       - bash: yarn install
         displayName: yarn install
       - bash: ./scripts/pipeline/generateBetaReleaseVersion.js
-        name: beta_version
         displayName: generate beta release version
-      - bash: PRE_RELEASE_VERSION=$(beta_version.PRE_RELEASE_VERSION) ./scripts/pipeline/updatePackageJsonForPreRelease.js
+      - bash: PRE_RELEASE_VERSION=$(PRE_RELEASE_VERSION) ./scripts/pipeline/updatePackageJsonForPreRelease.js
         displayName: update package.json for beta release
       - task: Npm@1
         inputs:
           command: custom
           customCommand: publish --tag beta
           publishEndpoint: npm_registry
-      - bash: echo "##vso[task.setvariable variable=RELEASE_TAG]v$PRE_RELEASE_VERSION"
+      - bash: echo "##vso[task.setvariable variable=RELEASE_TAG;isOutput=true]v$PRE_RELEASE_VERSION"
         displayName: Set tag name
       - task: GithubRelease@0
         displayName: github beta release
