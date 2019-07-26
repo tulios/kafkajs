@@ -22,8 +22,8 @@ KafkaJS is battle-tested and ready for production.
 - Support for AWS IAM authentication
 - Admin client
 
-_You read something on the website, but it didn't work on the latest stable version?_  
-[check the pre-release versions](https://kafka.js.org/docs/pre-releases); the website is generated on every merge to master
+_Read something on the website that didn't work with the latest stable version?_  
+[Check the pre-release versions](https://kafka.js.org/docs/pre-releases) - the website is updated on every merge to master.
 
 ## <a name="getting-started"></a> Getting Started
 
