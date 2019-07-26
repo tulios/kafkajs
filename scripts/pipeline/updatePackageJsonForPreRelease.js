@@ -3,6 +3,7 @@
 const path = require('path')
 const fs = require('fs')
 const execa = require('execa')
+const getCurrentVersion = require('./getCurrentNPMVersion')
 
 console.log('Env:')
 for (const env of Object.keys(process.env)) {
@@ -26,13 +27,15 @@ const commitSha = execa
   .stdout.toString('utf-8')
   .trim()
 
-packageJson.version = PRE_RELEASE_VERSION
-packageJson.kafkajs = {
-  sha: commitSha,
-  compare: `https://github.com/tulios/kafkajs/compare/master...${commitSha}`,
-}
+getCurrentVersion().then(({ latest }) => {
+  packageJson.version = PRE_RELEASE_VERSION
+  packageJson.kafkajs = {
+    sha: commitSha,
+    compare: `https://github.com/tulios/kafkajs/compare/v${latest}...${commitSha}`,
+  }
 
-console.log(packageJson.kafkajs)
-const filePath = path.resolve(__dirname, '../../package.json')
-fs.writeFileSync(filePath, JSON.stringify(packageJson, null, 2))
-console.log(`Package.json updated with pre-release version ${PRE_RELEASE_VERSION}`)
+  console.log(packageJson.kafkajs)
+  const filePath = path.resolve(__dirname, '../../package.json')
+  fs.writeFileSync(filePath, JSON.stringify(packageJson, null, 2))
+  console.log(`Package.json updated with pre-release version ${PRE_RELEASE_VERSION}`)
+})

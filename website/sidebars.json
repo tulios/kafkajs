@@ -11,7 +11,8 @@
       "instrumentation-events",
       "custom-logger",
       "retry-detailed",
-      "faq"
+      "faq",
+      "pre-releases"
     ],
     "Examples": [
       "running-kafka-in-development",

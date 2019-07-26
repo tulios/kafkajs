@@ -43,6 +43,9 @@
         "title": "A Brief Intro to Kafka",
         "sidebar_label": "Intro to Kafka"
       },
+      "pre-releases": {
+        "title": "Pre-releases"
+      },
       "producer-example": {
         "title": "Producer"
       },
