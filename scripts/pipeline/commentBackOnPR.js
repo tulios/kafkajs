@@ -3,6 +3,11 @@
 const https = require('https')
 const execa = require('execa')
 
+console.log('Env:')
+for (const env of Object.keys(process.env)) {
+  console.log(`${env}=${process.env[env]}`)
+}
+
 const { TOKEN, GITHUB_PR_NUMBER } = process.env
 
 if (!TOKEN) {
