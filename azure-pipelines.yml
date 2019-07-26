@@ -249,8 +249,8 @@ jobs:
         inputs:
           command: custom
           customCommand: publish --tag beta
-          customRegistry: 'useNpmrc'
           customEndpoint: npm_registry
+          publishEndpoint: npm_registry
       - bash: TOKEN=${GH_TOKEN} ./scripts/pipeline/commentBackOnPR.js
         displayName: 'Comment on PR'
         env:

@@ -19,13 +19,6 @@ if (!/\d+\.\d+\.\d+-beta\.\d+/.test(PRE_RELEASE_VERSION)) {
   throw new Error(`Invalid PRE_RELEASE_VERSION: ${PRE_RELEASE_VERSION}`)
 }
 
-/**
- * @see https://github.com/MicrosoftDocs/vsts-docs/issues/3970
- */
-console.log('Create .npmrc')
-const npmrcPath = path.resolve(__dirname, '../../.npmrc')
-fs.writeFileSync(npmrcPath, 'registry=https://registry.npmjs.com')
-
 console.log('Update package.json')
 const packageJson = require('../../package.json')
 const commitSha = execa
