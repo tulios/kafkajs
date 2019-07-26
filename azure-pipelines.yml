@@ -223,7 +223,7 @@ jobs:
       and(
         succeeded(),
         contains(variables['Build.SourceBranch'], 'refs/heads/master'),
-        ne(dependencies.beta_release_check.outputs['SKIP_PRE_RELEASE'], 'true')
+        ne(dependencies.beta_release_check.outputs['beta_check.SKIP_PRE_RELEASE'], 'true')
       )
     dependsOn:
       - lint

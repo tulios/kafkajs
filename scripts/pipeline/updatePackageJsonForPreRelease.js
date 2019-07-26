@@ -9,7 +9,7 @@ for (const env of Object.keys(process.env)) {
   console.log(`${env}=${process.env[env]}`)
 }
 
-const { PRE_RELEASE_VERSION } = process.env
+const PRE_RELEASE_VERSION = process.env.PRE_RELEASE_VERSION || process.env.BASH2_PRE_RELEASE_VERSION
 
 if (!PRE_RELEASE_VERSION) {
   throw new Error('Missing PRE_RELEASE_VERSION env variable')
