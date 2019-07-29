@@ -59,6 +59,7 @@ const saslConnectionOpts = () =>
     },
   })
 
+let callCount = 0
 const saslConnectionDynamicOpts = () =>
   Object.assign(saslConnectionOpts(), {
     sasl: () => {
@@ -66,6 +67,7 @@ const saslConnectionDynamicOpts = () =>
         mechanism: 'plain',
         username: 'test',
         password: 'testtest',
+        callCount: ++callCount,
       }
     },
   })

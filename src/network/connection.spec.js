@@ -73,6 +73,14 @@ describe('Network > Connection', () => {
         connection = new Connection(saslConnectionDynamicOpts())
         await expect(connection.connect()).resolves.toEqual(true)
         expect(connection.connected).toEqual(true)
+
+        const apiVersions = requests.ApiVersions.protocol({ version: 0 })
+        const protocol = apiVersions()
+        await connection.send(protocol)
+
+        const { sasl } = saslConnectionDynamicOpts()
+        const saslOpts = sasl()
+        expect(saslOpts.callCount).toEqual(2)
       })
     })
   })
