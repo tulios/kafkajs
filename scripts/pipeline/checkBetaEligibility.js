@@ -31,9 +31,14 @@ const hasEligibleFiles = changedFiles.some(filePath => {
   return isEligigle
 })
 
-if (hasEligibleFiles) {
+const isBumpVersionCommit = changedFiles.every(filePath =>
+  ['package.json', 'CHANGELOG.md'].includes(filePath)
+)
+
+if (hasEligibleFiles && !isBumpVersionCommit) {
   console.log('Build has eligible files, continue to pre-release')
 } else {
   console.log('Skip pre-release, no changes in relevant files')
+  console.log(`isBumpVersionCommit: ${isBumpVersionCommit}`)
   console.log('##vso[task.setvariable variable=SKIP_PRE_RELEASE;isOutput=true]true')
 }
