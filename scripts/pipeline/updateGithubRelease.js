@@ -20,10 +20,10 @@ if (TAG.startsWith('refs/tags/')) {
 
 console.log(`-> Updating release ${TAG}`)
 
-const changelog = fs.readFileSync(path.join(__dirname, '../CHANGELOG.md'), 'utf-8')
+const changelog = fs.readFileSync(path.join(__dirname, '../../CHANGELOG.md'), 'utf-8')
 const lines = changelog.split('\n')
 
-const RELEASE_HEADER = /^\s*##\s*\[\d\.\d\.\d(-beta\.\d)?\]\s*-\s*\d{4}-\d{2}-\d{2}\s*$/
+const RELEASE_HEADER = /^\s*##\s*\[\d+\.\d+\.\d+(-beta\.\d)?\]\s*-\s*\d{4}-\d{2}-\d{2}\s*$/
 
 while (!RELEASE_HEADER.test(lines[0])) {
   lines.shift()
