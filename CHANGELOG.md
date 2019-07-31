@@ -5,10 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2019-07-31
+### Added
+  - Allow the consumer to pause and resume individual partitions #417
+  - Add `consumer.commitOffsets` for manual committing #436
+  - Expose consumer paused partitions #444
+
+### Changed
+  - Removed unnecessary async code #434
+  - Use SubscriptionState to track member assignment #429
+
+### Fixed
+  - Improve type compatibility with @types/kafkajs #416
+  - Fix `fetchTopicMetadata` return type #433
+
 ## [1.9.3] - 2019-06-27
 ### Fixed
   - Fix AWS-IAM mechanism name #411 #412
-  - Fix TypeScript types for topic subscription with RegExp #413 
+  - Fix TypeScript types for topic subscription with RegExp #413
 
 ## [1.9.2] - 2019-06-26
 ### Fixed
