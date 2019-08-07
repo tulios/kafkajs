@@ -1,4 +1,11 @@
 const Connection = require('../network/connection')
+const { KafkaJSConnectionError } = require('../errors')
+
+const validateBrokers = brokers => {
+  if (!brokers || brokers.length === 0) {
+    throw new KafkaJSConnectionError(`Failed to connect: expected brokers array and got nothing`)
+  }
+}
 
 module.exports = ({
   socketFactory,
@@ -14,6 +21,8 @@ module.exports = ({
   logger,
   instrumentationEmitter = null,
 }) => {
+  validateBrokers(brokers)
+
   const size = brokers.length
   let index = 0
 
