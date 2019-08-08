@@ -1,4 +1,5 @@
 const Connection = require('../network/connection')
+const { KafkaJSNonRetriableError } = require('../errors')
 
 module.exports = ({
   socketFactory,
@@ -16,6 +17,10 @@ module.exports = ({
 }) => {
   const size = brokers.length
   let index = 0
+
+  if (size === 0) {
+    throw new KafkaJSNonRetriableError('Brokers list cannot be empty')
+  }
 
   return {
     build: ({ host, port, rack } = {}) => {
