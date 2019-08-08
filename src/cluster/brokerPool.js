@@ -5,6 +5,10 @@ const arrayDiff = require('../utils/arrayDiff')
 const { KafkaJSBrokerNotFound } = require('../errors')
 
 const { keys, assign, values } = Object
+const hasBrokerBeenReplaced = (broker, { host, port, rack }) =>
+  broker.connection.host !== host ||
+  broker.connection.port !== port ||
+  broker.connection.rack !== rack
 
 module.exports = class BrokerPool {
   /**
@@ -120,13 +124,19 @@ module.exports = class BrokerPool {
         this.metadata = await broker.metadata(topics)
         this.metadataExpireAt = Date.now() + this.metadataMaxAge
 
+        const replacedBrokers = []
         this.brokers = this.metadata.brokers.reduce((result, { nodeId, host, port, rack }) => {
           if (result[nodeId]) {
-            return result
+            if (!hasBrokerBeenReplaced(result[nodeId], { host, port, rack })) {
+              return result
+            }
+
+            replacedBrokers.push(result[nodeId])
           }
 
           if (host === seedHost && port === seedPort) {
             this.seedBroker.nodeId = nodeId
+            this.seedBroker.connection.rack = rack
             return assign(result, {
               [nodeId]: this.seedBroker,
             })
@@ -154,7 +164,8 @@ module.exports = class BrokerPool {
           })
         })
 
-        await Promise.all(brokerDisconnects)
+        const replacedBrokersDisconnects = replacedBrokers.map(broker => broker.disconnect())
+        await Promise.all([...brokerDisconnects, ...replacedBrokersDisconnects])
       } catch (e) {
         if (e.type === 'LEADER_NOT_AVAILABLE') {
           throw e
