@@ -65,8 +65,8 @@ export interface PartitionerArgs {
 }
 
 export type ICustomPartitioner = () => (args: PartitionerArgs) => number
-export type DefaultPartitioner = (args: PartitionerArgs) => number
-export type JavaCompatiblePartitioner = (args: PartitionerArgs) => number
+export type DefaultPartitioner = ICustomPartitioner
+export type JavaCompatiblePartitioner = ICustomPartitioner
 
 export const Partitioners: {
   DefaultPartitioner: DefaultPartitioner
