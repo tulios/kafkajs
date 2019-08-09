@@ -1,9 +1,9 @@
 const Connection = require('../network/connection')
-const { KafkaJSConnectionError } = require('../errors')
+const { KafkaJSNonRetriableError } = require('../errors')
 
 const validateBrokers = brokers => {
   if (!brokers || brokers.length === 0) {
-    throw new KafkaJSConnectionError(`Failed to connect: expected brokers array and got nothing`)
+    throw new KafkaJSNonRetriableError(`Failed to connect: expected brokers array and got nothing`)
   }
 }
 
