@@ -72,7 +72,7 @@ Deprecated, see [Fetch topic metadata](#fetch-topic-metadata)
 ## <a name="fetch-topic-metadata"></a> Fetch topic metadata
 
 ```javascript
-await admin.fetchTopicMetadata({ topics: <Array<String> })
+await admin.fetchTopicMetadata({ topics: <Array<String>> })
 ```
 
 `TopicsMetadata` structure:
