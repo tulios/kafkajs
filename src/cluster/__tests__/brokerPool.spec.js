@@ -229,6 +229,52 @@ describe('Cluster > BrokerPool', () => {
       await brokerPool.refreshMetadata([topicName])
       expect(brokerPool.metadata).not.toEqual(null)
     })
+
+    describe('when replacing nodeIds with different host/port/rack', () => {
+      let lastBroker
+
+      beforeEach(async () => {
+        await brokerPool.refreshMetadata([topicName])
+        lastBroker = brokerPool.brokers[Object.keys(brokerPool.brokers).length - 1]
+        jest.spyOn(brokerPool, 'findConnectedBroker').mockImplementation(() => lastBroker)
+      })
+
+      it('replaces the broker when the host change', async () => {
+        jest.spyOn(lastBroker, 'metadata').mockImplementationOnce(() => ({
+          ...brokerPool.metadata,
+          brokers: brokerPool.metadata.brokers.map(broker =>
+            broker.nodeId === 0 ? { ...broker, host: '0.0.0.0' } : broker
+          ),
+        }))
+
+        await brokerPool.refreshMetadata([topicName])
+        expect(brokerPool.brokers[0].connection.host).toEqual('0.0.0.0')
+      })
+
+      it('replaces the broker when the port change', async () => {
+        jest.spyOn(lastBroker, 'metadata').mockImplementationOnce(() => ({
+          ...brokerPool.metadata,
+          brokers: brokerPool.metadata.brokers.map(broker =>
+            broker.nodeId === 0 ? { ...broker, port: 4321 } : broker
+          ),
+        }))
+
+        await brokerPool.refreshMetadata([topicName])
+        expect(brokerPool.brokers[0].connection.port).toEqual(4321)
+      })
+
+      it('replaces the broker when the rack change', async () => {
+        jest.spyOn(lastBroker, 'metadata').mockImplementationOnce(() => ({
+          ...brokerPool.metadata,
+          brokers: brokerPool.metadata.brokers.map(broker =>
+            broker.nodeId === 0 ? { ...broker, rack: 'south-1' } : broker
+          ),
+        }))
+
+        await brokerPool.refreshMetadata([topicName])
+        expect(brokerPool.brokers[0].connection.rack).toEqual('south-1')
+      })
+    })
   })
 
   describe('#refreshMetadataIfNecessary', () => {
