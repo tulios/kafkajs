@@ -1,6 +1,7 @@
 const { newLogger } = require('testHelpers')
 const connectionBuilder = require('../connectionBuilder')
 const Connection = require('../../network/connection')
+const { KafkaJSNonRetriableError } = require('../../errors')
 
 describe('Cluster > ConnectionBuilder', () => {
   let builder
@@ -58,5 +59,41 @@ describe('Cluster > ConnectionBuilder', () => {
     expect(connection.host).toEqual('host.another')
     expect(connection.port).toEqual(8888)
     expect(connection.rack).toEqual('rack')
+  })
+
+  it('throws an exception if brokers list is empty', () => {
+    expect(() => {
+      builder = connectionBuilder({
+        socketFactory,
+        brokers: [],
+        ssl,
+        sasl,
+        clientId,
+        connectionTimeout,
+        retry,
+        logger,
+      })
+    }).toThrow(
+      KafkaJSNonRetriableError,
+      'Failed to connect: expected brokers array and got nothing'
+    )
+  })
+
+  it('throws an exception if brokers is null', () => {
+    expect(() => {
+      builder = connectionBuilder({
+        socketFactory,
+        brokers: null,
+        ssl,
+        sasl,
+        clientId,
+        connectionTimeout,
+        retry,
+        logger,
+      })
+    }).toThrow(
+      KafkaJSNonRetriableError,
+      'Failed to connect: expected brokers array and got nothing'
+    )
   })
 })
