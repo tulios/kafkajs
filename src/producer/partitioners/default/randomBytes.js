@@ -6,7 +6,8 @@ const toNodeCompatible = crypto => ({
 
 let cryptoImplementation = null
 if (global && global.crypto) {
-  cryptoImplementation = toNodeCompatible(global.crypto)
+  cryptoImplementation =
+    global.crypto.randomBytes === undefined ? toNodeCompatible(global.crypto) : global.crypto
 } else if (global && global.msCrypto) {
   cryptoImplementation = toNodeCompatible(global.msCrypto)
 } else if (global && !global.crypto) {
