@@ -74,6 +74,6 @@ protocol SimpleProto {
 }
 ```
 
-In order to encode or decode a message, the producer or consumer needs to have access to the correct schema. This can be read directly from a file, or fetched from a central schema-registry. If so, the message contains the id of the schema used to encode it, which can be used to find the corresponding schema.
+In order to encode or decode a message, the producer or consumer needs to have access to the correct schema. This can be read directly from a file, or fetched from a central schema registry. If so, the message contains the id of the schema used to encode it, which can be used to find the corresponding schema.
 
-[kafkajs-avro](https://github.com/ivosequeros/kafkajs-avro) is a third-party package that provides AVRO encoding/decoding complete with schema-registry integration.
+For NodeJS, this is commonly done using [avro-schema-registry](https://www.npmjs.com/package/avro-schema-registry) and [avsc](https://www.npmjs.com/package/avsc).
