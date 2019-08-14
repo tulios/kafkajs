@@ -182,7 +182,7 @@ export interface ITopicMetadata {
   partitions: PartitionMetadata[]
 }
 
-export enum ResourceType {
+export enum ResourceTypes {
   UNKNOWN = 0,
   ANY = 1,
   TOPIC = 2,
@@ -193,7 +193,7 @@ export enum ResourceType {
 }
 
 export interface ResourceConfigQuery {
-  type: ResourceType
+  type: ResourceTypes
   name: string
   configNames: string[]
 }
@@ -219,13 +219,13 @@ export interface DescribeConfigResponse {
     errorCode: number
     errorMessage: string
     resourceName: string
-    resourceType: ResourceType
+    resourceType: ResourceTypes
   }[]
   throttleTime: number
 }
 
 export interface IResourceConfig {
-  type: ResourceType
+  type: ResourceTypes
   name: string
   configEntries: { name: string; value: string }[]
 }
