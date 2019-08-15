@@ -192,8 +192,18 @@ export enum ResourceTypes {
   DELEGATION_TOKEN = 6,
 }
 
+export enum ResourceType {
+  UNKNOWN = 0,
+  ANY = 1,
+  TOPIC = 2,
+  GROUP = 3,
+  CLUSTER = 4,
+  TRANSACTIONAL_ID = 5,
+  DELEGATION_TOKEN = 6,
+}
+
 export interface ResourceConfigQuery {
-  type: ResourceTypes
+  type: ResourceType
   name: string
   configNames: string[]
 }
@@ -219,13 +229,13 @@ export interface DescribeConfigResponse {
     errorCode: number
     errorMessage: string
     resourceName: string
-    resourceType: ResourceTypes
+    resourceType: ResourceType
   }[]
   throttleTime: number
 }
 
 export interface IResourceConfig {
-  type: ResourceTypes
+  type: ResourceType
   name: string
   configEntries: { name: string; value: string }[]
 }
