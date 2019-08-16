@@ -149,6 +149,10 @@ module.exports = ({
       throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
     }
 
+    if (consumerGroup) {
+      throw new KafkaJSNonRetriableError(`Cannot change subscription for running consumer`)
+    }
+
     const isRegExp = topic instanceof RegExp
     if (typeof topic !== 'string' && !isRegExp) {
       throw new KafkaJSNonRetriableError(
