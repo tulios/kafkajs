@@ -625,6 +625,7 @@ export type Consumer = {
     eachBatch?: (payload: EachBatchPayload) => Promise<void>
     eachMessage?: (payload: EachMessagePayload) => Promise<void>
   }): Promise<void>
+  heartbeat(): Promise<void>
   commitOffsets(topicPartitions: Array<TopicPartitionOffsetAndMedata>): Promise<void>
   seek(topicPartition: { topic: string; partition: number; offset: string }): void
   describeGroup(): Promise<GroupDescription>

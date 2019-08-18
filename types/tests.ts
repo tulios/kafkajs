@@ -56,6 +56,7 @@ const runConsumer = async () => {
       console.log(batch.offsetLagLow())
     },
     eachMessage: async ({ topic, partition, message }) => {
+      await consumer.heartbeat()
       const prefix = `${topic}[${partition} | ${message.offset}] / ${message.timestamp}`
       console.log(`- ${prefix} ${message.key}#${message.value}`)
     },
