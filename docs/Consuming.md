@@ -185,6 +185,22 @@ The usual usage pattern for offsets stored outside of Kafka is as follows:
 - Store a message's `offset + 1` in the store together with the results of processing. `1` is added to prevent that same message from being consumed again.
 - Use the externally stored offset on restart to [seek](#seek) the consumer to it.
 
+## <a name="manual-heatbeat"></a> Manual heartbeat
+
+In some circumstances, it may be necessary to heartbeat outside of the `eachBatch` callback, such as for example while restoring some external state before starting to process messages, or even from within `eachMessage` if processing a single message can sometimes take longer than the configured `sessionTimeout`.
+
+To manually commit, use `consumer.heartbeat()`:
+
+```js
+// To heartbeat, the consumer must have been initialized and be running
+await consumer.connect()
+consumer.run({ eachMessage: async () => {} })
+
+await consumer.heartbeat()
+```
+
+> Note: Heartbeating is how the brokers know the state of your consumer. Be careful to only heartbeat when your consumer is healthy.
+
 ## <a name="from-beginning"></a> fromBeginning
 
 The consumer group will use the latest committed offset when starting to fetch messages. If the offset is invalid or not defined, `fromBeginning` defines the behavior of the consumer group. This can be configured when subscribing to a topic:
@@ -219,14 +235,14 @@ kafka.consumer({
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
 | partitionAssigners     | List of partition assigners                                                                                                                                                                                                                                                                                                                        | `[PartitionAssigners.roundRobin]` |
 | sessionTimeout         | Timeout in milliseconds used to detect failures. The consumer sends periodic heartbeats to indicate its liveness to the broker. If no heartbeats are received by the broker before the expiration of this session timeout, then the broker will remove this consumer from the group and initiate a rebalance                                       | `30000`                           |
-| rebalanceTimeout       | The maximum time that the coordinator will wait for each member to rejoin when rebalancing the group | `60000` |
+| rebalanceTimeout       | The maximum time that the coordinator will wait for each member to rejoin when rebalancing the group                                                                                                                                                                                                                                               | `60000`                           |
 | heartbeatInterval      | The expected time in milliseconds between heartbeats to the consumer coordinator. Heartbeats are used to ensure that the consumer's session stays active. The value must be set lower than session timeout                                                                                                                                         | `3000`                            |
 | metadataMaxAge         | The period of time in milliseconds after which we force a refresh of metadata even if we haven't seen any partition leadership changes to proactively discover any new brokers or partitions                                                                                                                                                       | `300000` (5 minutes)              |
 | allowAutoTopicCreation | Allow topic creation when querying metadata for non-existent topics                                                                                                                                                                                                                                                                                | `true`                            |
 | maxBytesPerPartition   | The maximum amount of data per-partition the server will return. This size must be at least as large as the maximum message size the server allows or else it is possible for the producer to send messages larger than the consumer can fetch. If that happens, the consumer can get stuck trying to fetch a large message on a certain partition | `1048576` (1MB)                   |
 | minBytes               | Minimum amount of data the server should return for a fetch request, otherwise wait up to `maxWaitTimeInMs` for more data to accumulate. default: `1`                                                                                                                                                                                              |
 | maxBytes               | Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0`                                                                                                                                                                                                                                                            | `10485760` (10MB)                 |
-| maxWaitTimeInMs        | The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes`                                                                                                                                                     | `5000`                            |
+| maxWaitTimeInMs        | The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes`                                                                                                                                                      | `5000`                            |
 | retry                  | See [retry](Configuration.md#retry) for more information                                                                                                                                                                                                                                                                                           | `{ retries: 10 }`                 |
 | readUncommitted        | Configures the consumer isolation level. If `false` (default), the consumer will not return any transactional messages which were not committed.                                                                                                                                                                                                   | `false`                           |
 
