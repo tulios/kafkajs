@@ -117,11 +117,9 @@ module.exports = class Decoder {
   }
 
   readAll() {
-    const currentSize = Buffer.byteLength(this.buffer)
-    const remainingBytes = currentSize - this.offset
-    const newBuffer = Buffer.alloc(remainingBytes)
-    this.buffer.copy(newBuffer, 0, this.offset, currentSize)
-    return newBuffer
+    const result = this.buffer.slice(this.offset)
+    this.offset += Buffer.byteLength(this.buffer)
+    return result
   }
 
   readArray(reader) {
