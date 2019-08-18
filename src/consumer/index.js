@@ -145,12 +145,12 @@ module.exports = ({
    * @return {Promise}
    */
   const subscribe = async ({ topic, fromBeginning = false }) => {
-    if (!topic) {
-      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    if (consumerGroup) {
+      throw new KafkaJSNonRetriableError('Cannot subscribe to topic while consumer is running')
     }
 
-    if (consumerGroup) {
-      throw new KafkaJSNonRetriableError(`Cannot change subscription for running consumer`)
+    if (!topic) {
+      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
     }
 
     const isRegExp = topic instanceof RegExp
