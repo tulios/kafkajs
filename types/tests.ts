@@ -1,6 +1,13 @@
 import * as fs from 'fs'
 
-import { Kafka, PartitionAssigners, logLevel, CompressionTypes, CompressionCodecs } from './index'
+import {
+  Kafka,
+  PartitionAssigners,
+  logLevel,
+  CompressionTypes,
+  CompressionCodecs,
+  ResourceType,
+} from './index'
 
 const { roundRobin } = PartitionAssigners
 
@@ -130,6 +137,17 @@ const runAdmin = async () => {
     timeout: 30000,
     waitForLeaders: true,
   })
+
+  await admin.describeConfigs({
+    includeSynonyms: false,
+    resources: [
+      {
+        type: ResourceType.TOPIC,
+        name: topic,
+      },
+    ],
+  })
+
   await admin.disconnect()
 }
 

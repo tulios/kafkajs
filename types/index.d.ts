@@ -195,7 +195,7 @@ export enum ResourceType {
 export interface ResourceConfigQuery {
   type: ResourceType
   name: string
-  configNames: string[]
+  configNames?: string[]
 }
 
 export interface ConfigEntries {
