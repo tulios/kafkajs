@@ -441,9 +441,7 @@ module.exports = ({
         (!Array.isArray(topicPartition.partitions) || topicPartition.partitions.some(isNaN))
       ) {
         throw new KafkaJSNonRetriableError(
-          `Array of valid partitions required to pause specific partitions instead of ${
-            topicPartition.partitions
-          }`
+          `Array of valid partitions required to pause specific partitions instead of ${topicPartition.partitions}`
         )
       }
     }
@@ -489,9 +487,7 @@ module.exports = ({
         (!Array.isArray(topicPartition.partitions) || topicPartition.partitions.some(isNaN))
       ) {
         throw new KafkaJSNonRetriableError(
-          `Array of valid partitions required to resume specific partitions instead of ${
-            topicPartition.partitions
-          }`
+          `Array of valid partitions required to resume specific partitions instead of ${topicPartition.partitions}`
         )
       }
     }

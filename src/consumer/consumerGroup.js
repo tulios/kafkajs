@@ -351,9 +351,7 @@ module.exports = class ConsumerGroup {
       await this.offsetManager.resolveOffsets()
 
       this.logger.debug(
-        `Fetching from ${activePartitions.length} partitions for ${activeTopics.length} out of ${
-          topics.length
-        } topics`,
+        `Fetching from ${activePartitions.length} partitions for ${activeTopics.length} out of ${topics.length} topics`,
         {
           topics,
           activeTopicPartitions,

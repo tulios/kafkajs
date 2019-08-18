@@ -5,29 +5,18 @@ const sleep = require('../../utils/sleep')
 const {
   secureRandom,
   createCluster,
-  createTopic,
   newLogger,
-  waitFor,
-  waitForMessages,
-  waitForNextEvent,
-  testIfKafka_0_11,
   waitForConsumerToJoinGroup,
-  generateMessages,
 } = require('testHelpers')
 
 describe('Consumer > Heartbeat', () => {
-  let topicName, groupId, cluster, consumer
+  let consumer
   beforeEach(async () => {
-    topicName = `test-topic-${secureRandom()}`
-    groupId = `consumer-group-id-${secureRandom()}`
-
-    // await createTopic({ topic: topicName })
-
-    cluster = createCluster()
+    const cluster = createCluster()
 
     consumer = createConsumer({
       cluster,
-      groupId,
+      groupId: `consumer-group-id-${secureRandom()}`,
       maxWaitTimeInMs: 100,
       heartbeatInterval: 0,
       logger: newLogger(),
