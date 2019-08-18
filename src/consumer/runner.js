@@ -375,6 +375,71 @@ module.exports = class Runner {
     }).catch(this.onCrash)
   }
 
+  async heartbeat() {
+    if (!this.running) {
+      this.logger.debug('consumer not running, exiting', {
+        groupId: this.consumerGroup.groupId,
+        memberId: this.consumerGroup.memberId,
+      })
+      return
+    }
+
+    return this.retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+      } catch (e) {
+        if (!this.running) {
+          this.logger.debug('consumer not running, exiting', {
+            error: e.message,
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+          })
+          return
+        }
+
+        if (isRebalancing(e)) {
+          this.logger.error('The group is rebalancing, re-joining', {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+            error: e.message,
+            retryCount,
+            retryTime,
+          })
+
+          setImmediate(() => this.scheduleJoin())
+
+          bail(new KafkaJSError('The group is rebalancing'))
+        }
+
+        if (e.type === 'UNKNOWN_MEMBER_ID') {
+          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+            error: e.message,
+            retryCount,
+            retryTime,
+          })
+
+          this.consumerGroup.memberId = null
+          setImmediate(() => this.scheduleJoin())
+
+          bail(new KafkaJSError('The group is rebalancing'))
+        }
+
+        this.logger.debug('Error while manually heartbeating, trying again...', {
+          groupId: this.consumerGroup.groupId,
+          memberId: this.consumerGroup.memberId,
+          error: e.message,
+          stack: e.stack,
+          retryCount,
+          retryTime,
+        })
+
+        throw e
+      }
+    })
+  }
+
   autoCommitOffsets() {
     if (this.autoCommit) {
       return this.consumerGroup.commitOffsets()

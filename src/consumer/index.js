@@ -287,6 +287,19 @@ module.exports = ({
   }
 
   /**
+   * @returns Promise
+   */
+  const heartbeat = async () => {
+    if (!consumerGroup) {
+      throw new KafkaJSNonRetriableError(
+        'Consumer group was not initialized, consumer#run must be called first'
+      )
+    }
+
+    return runner.heartbeat()
+  }
+
+  /**
    * @param {Array<TopicPartitionOffsetAndMetadata>} topicPartitions
    *   Example: [{ topic: 'topic-name', partition: 0, offset: '1', metadata: 'event-id-3' }]
    */
@@ -428,7 +441,9 @@ module.exports = ({
         (!Array.isArray(topicPartition.partitions) || topicPartition.partitions.some(isNaN))
       ) {
         throw new KafkaJSNonRetriableError(
-          `Array of valid partitions required to pause specific partitions instead of ${topicPartition.partitions}`
+          `Array of valid partitions required to pause specific partitions instead of ${
+            topicPartition.partitions
+          }`
         )
       }
     }
@@ -474,7 +489,9 @@ module.exports = ({
         (!Array.isArray(topicPartition.partitions) || topicPartition.partitions.some(isNaN))
       ) {
         throw new KafkaJSNonRetriableError(
-          `Array of valid partitions required to resume specific partitions instead of ${topicPartition.partitions}`
+          `Array of valid partitions required to resume specific partitions instead of ${
+            topicPartition.partitions
+          }`
         )
       }
     }
@@ -499,6 +516,7 @@ module.exports = ({
     subscribe,
     stop,
     run,
+    heartbeat,
     commitOffsets,
     seek,
     describeGroup,

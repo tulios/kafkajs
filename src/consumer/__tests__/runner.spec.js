@@ -263,9 +263,9 @@ describe('Consumer > Runner', () => {
     })
 
     it('a triggered rejoin failing should cause a crash', async () => {
-      const unknowError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
+      const unknownError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
       consumerGroup.join.mockImplementationOnce(() => {
-        throw unknowError
+        throw unknownError
       })
       consumerGroup.commitOffsets.mockImplementationOnce(() => {
         throw rebalancingError()
@@ -275,7 +275,51 @@ describe('Consumer > Runner', () => {
 
       await sleep(100)
 
-      expect(onCrash).toHaveBeenCalledWith(unknowError)
+      expect(onCrash).toHaveBeenCalledWith(unknownError)
+    })
+  })
+
+  describe('heartbeat', () => {
+    beforeEach(async () => {
+      await runner.start()
+      consumerGroup.heartbeat.mockClear()
+    })
+
+    it('should heartbeat while running', async () => {
+      expect(consumerGroup.heartbeat).not.toHaveBeenCalled()
+      await runner.heartbeat()
+
+      expect(consumerGroup.heartbeat).toHaveBeenCalled()
+    })
+
+    it('should throw when group is rebalancing, while triggering another join', async () => {
+      consumerGroup.join.mockClear()
+      consumerGroup.heartbeat.mockImplementationOnce(() => {
+        throw rebalancingError()
+      })
+
+      expect(runner.heartbeat()).rejects.toThrow('The group is rebalancing')
+      expect(consumerGroup.join).not.toHaveBeenCalled()
+
+      await sleep(100)
+
+      expect(consumerGroup.join).toHaveBeenCalled()
+    })
+
+    it('a triggered rejoin failing should cause a crash', async () => {
+      const unknownError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
+      consumerGroup.join.mockImplementationOnce(() => {
+        throw unknownError
+      })
+      consumerGroup.heartbeat.mockImplementationOnce(() => {
+        throw rebalancingError()
+      })
+
+      expect(runner.heartbeat()).rejects.toThrow('The group is rebalancing')
+
+      await sleep(100)
+
+      expect(onCrash).toHaveBeenCalledWith(unknownError)
     })
   })
 })
