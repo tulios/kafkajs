@@ -145,6 +145,10 @@ module.exports = ({
    * @return {Promise}
    */
   const subscribe = async ({ topic, fromBeginning = false }) => {
+    if (consumerGroup) {
+      throw new KafkaJSNonRetriableError('Cannot subscribe to topic while consumer is running')
+    }
+
     if (!topic) {
       throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
     }
