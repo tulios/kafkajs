@@ -6,7 +6,7 @@ import {
   logLevel,
   CompressionTypes,
   CompressionCodecs,
-  ResourceType,
+  ResourceTypes,
 } from './index'
 
 const { roundRobin } = PartitionAssigners
@@ -142,7 +142,7 @@ const runAdmin = async () => {
     includeSynonyms: false,
     resources: [
       {
-        type: ResourceType.TOPIC,
+        type: ResourceTypes.TOPIC,
         name: topic,
       },
     ],
