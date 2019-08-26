@@ -46,7 +46,6 @@
   "devDependencies": {
     "@types/node": "^12.0.8",
     "@typescript-eslint/typescript-estree": "^1.10.2",
-    "benchmark": "^2.1.4",
     "eslint": "^6.1.0",
     "eslint-config-prettier": "^6.0.0",
     "eslint-config-standard": "^13.0.1",
@@ -63,7 +62,6 @@
     "jest-extended": "^0.11.2",
     "jest-junit": "^6.4.0",
     "lint-staged": "^9.2.0",
-    "microtime": "^3.0.0",
     "mockdate": "^2.0.3",
     "prettier": "^1.18.2",
     "semver": "^6.2.0",
