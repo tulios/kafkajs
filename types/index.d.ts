@@ -33,8 +33,10 @@ export type ISocketFactory = (
   onConnect: () => void
 ) => net.Socket
 
+export type SASLMechanism = 'plain' | 'scram-sha-256' | 'scram-sha-512' | 'aws'
+
 export interface SASLOptions {
-  mechanism: 'plain' | 'scram-sha-256' | 'scram-sha-512' | 'aws'
+  mechanism: SASLMechanism
   username: string
   password: string
 }
@@ -182,7 +184,7 @@ export interface ITopicMetadata {
   partitions: PartitionMetadata[]
 }
 
-export enum ResourceType {
+export enum ResourceTypes {
   UNKNOWN = 0,
   ANY = 1,
   TOPIC = 2,
@@ -193,9 +195,9 @@ export enum ResourceType {
 }
 
 export interface ResourceConfigQuery {
-  type: ResourceType
+  type: ResourceTypes
   name: string
-  configNames: string[]
+  configNames?: string[]
 }
 
 export interface ConfigEntries {
@@ -219,13 +221,13 @@ export interface DescribeConfigResponse {
     errorCode: number
     errorMessage: string
     resourceName: string
-    resourceType: ResourceType
+    resourceType: ResourceTypes
   }[]
   throttleTime: number
 }
 
 export interface IResourceConfig {
-  type: ResourceType
+  type: ResourceTypes
   name: string
   configEntries: { name: string; value: string }[]
 }

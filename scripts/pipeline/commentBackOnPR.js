@@ -8,7 +8,7 @@ for (const env of Object.keys(process.env)) {
   console.log(`${env}=${process.env[env]}`)
 }
 
-const { TOKEN, GITHUB_PR_NUMBER } = process.env
+const { TOKEN, GITHUB_PR_NUMBER, BUILD_SOURCEVERSIONMESSAGE } = process.env
 
 if (!TOKEN) {
   throw new Error('Missing TOKEN env variable')
@@ -53,12 +53,14 @@ const githubApi = async ({ payload }) =>
   })
 
 const commentOnPR = async () => {
-  const commitMessage = execa
-    .commandSync('git log -1 --pretty=%B', { shell: true })
-    .stdout.toString('utf-8')
-    .trim()
+  const commitMessage =
+    BUILD_SOURCEVERSIONMESSAGE ||
+    execa
+      .commandSync('git log -1 --pretty=%B', { shell: true })
+      .stdout.toString('utf-8')
+      .trim()
 
-  const PR_NUMBER_REGEXP = /^Merge pull request #([^\s]+)/
+  const PR_NUMBER_REGEXP = /^Merge pull request #([^\s]+)/gm
   const result = commitMessage.match(PR_NUMBER_REGEXP)
 
   if (!GITHUB_PR_NUMBER || !result || !result[1]) {
