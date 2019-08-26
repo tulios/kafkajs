@@ -1,9 +1,5 @@
 const Long = require('long')
-
-const INT8_SIZE = 1
-const INT16_SIZE = 2
-const INT32_SIZE = 4
-const INT64_SIZE = 8
+const ExpandableBuffer = require('../utils/expandableBuffer')
 
 const MOST_SIGNIFICANT_BIT = 0x80 // 128
 const OTHER_BITS = 0x7f // 127
@@ -55,43 +51,35 @@ module.exports = class Encoder {
   }
 
   constructor() {
-    this.buffer = Buffer.alloc(0)
+    this._buffer = new ExpandableBuffer()
+  }
+
+  get buffer() {
+    return this._buffer.toBuffer()
   }
 
   writeInt8(value) {
-    const tempBuffer = Buffer.alloc(INT8_SIZE)
-    tempBuffer.writeInt8(value)
-    this.buffer = Buffer.concat([this.buffer, tempBuffer])
+    this._buffer.writeInt8(value)
     return this
   }
 
   writeInt16(value) {
-    const tempBuffer = Buffer.alloc(INT16_SIZE)
-    tempBuffer.writeInt16BE(value)
-    this.buffer = Buffer.concat([this.buffer, tempBuffer])
+    this._buffer.writeInt16(value)
     return this
   }
 
   writeInt32(value) {
-    const tempBuffer = Buffer.alloc(INT32_SIZE)
-    tempBuffer.writeInt32BE(value)
-    this.buffer = Buffer.concat([this.buffer, tempBuffer])
+    this._buffer.writeInt32(value)
     return this
   }
 
   writeUInt32(value) {
-    const tempBuffer = Buffer.alloc(INT32_SIZE)
-    tempBuffer.writeUInt32BE(value)
-    this.buffer = Buffer.concat([this.buffer, tempBuffer])
+    this._buffer.writeUInt32(value)
     return this
   }
 
   writeInt64(value) {
-    const tempBuffer = Buffer.alloc(INT64_SIZE)
-    const longValue = Long.fromValue(value)
-    tempBuffer.writeInt32BE(longValue.getHighBits(), 0)
-    tempBuffer.writeInt32BE(longValue.getLowBits(), 4)
-    this.buffer = Buffer.concat([this.buffer, tempBuffer])
+    this._buffer.writeInt64(value)
     return this
   }
 
@@ -108,9 +96,7 @@ module.exports = class Encoder {
 
     const byteLength = Buffer.byteLength(value, 'utf8')
     this.writeInt16(byteLength)
-    const tempBuffer = Buffer.alloc(byteLength)
-    tempBuffer.write(value, 0, byteLength, 'utf8')
-    this.buffer = Buffer.concat([this.buffer, tempBuffer])
+    this._buffer.writeString(value, 'utf8')
     return this
   }
 
@@ -122,9 +108,7 @@ module.exports = class Encoder {
 
     const byteLength = Buffer.byteLength(value, 'utf8')
     this.writeVarInt(byteLength)
-    const tempBuffer = Buffer.alloc(byteLength)
-    tempBuffer.write(value, 0, byteLength, 'utf8')
-    this.buffer = Buffer.concat([this.buffer, tempBuffer])
+    this._buffer.writeString(value, 'utf8')
     return this
   }
 
@@ -137,14 +121,12 @@ module.exports = class Encoder {
     if (Buffer.isBuffer(value)) {
       // raw bytes
       this.writeInt32(value.length)
-      this.buffer = Buffer.concat([this.buffer, value])
+      this.writeBuffer(value)
     } else {
       const valueToWrite = String(value)
       const byteLength = Buffer.byteLength(valueToWrite, 'utf8')
       this.writeInt32(byteLength)
-      const tempBuffer = Buffer.alloc(byteLength)
-      tempBuffer.write(valueToWrite, 0, byteLength, 'utf8')
-      this.buffer = Buffer.concat([this.buffer, tempBuffer])
+      this.writeString(valueToWrite)
     }
 
     return this
@@ -159,14 +141,12 @@ module.exports = class Encoder {
     if (Buffer.isBuffer(value)) {
       // raw bytes
       this.writeVarInt(value.length)
-      this.buffer = Buffer.concat([this.buffer, value])
+      this.writeBuffer(value)
     } else {
       const valueToWrite = String(value)
       const byteLength = Buffer.byteLength(valueToWrite, 'utf8')
       this.writeVarInt(byteLength)
-      const tempBuffer = Buffer.alloc(byteLength)
-      tempBuffer.write(valueToWrite, 0, byteLength, 'utf8')
-      this.buffer = Buffer.concat([this.buffer, tempBuffer])
+      this.writeString(valueToWrite)
     }
 
     return this
@@ -174,22 +154,20 @@ module.exports = class Encoder {
 
   writeEncoder(value) {
     if (value instanceof Encoder !== true) {
-      throw new Error('value should be an instance of Encoder')
+      throw new Error('value should be an instance of SmartEncoder')
     }
-    this.buffer = Buffer.concat([this.buffer, value.buffer])
+    this.writeBuffer(value.buffer)
     return this
   }
 
   writeEncoderArray(value) {
     if (!Array.isArray(value) || value.some(v => !(v instanceof Encoder))) {
-      throw new Error('all values should be an instance of Encoder[]')
+      throw new Error('all values should be an instance of SmartEncoder[]')
     }
 
-    const newBuffer = [this.buffer]
-    value.forEach(v => {
-      newBuffer.push(v.buffer)
+    value.forEach(encoder => {
+      this.writeBuffer(encoder.buffer)
     })
-    this.buffer = Buffer.concat(newBuffer)
     return this
   }
 
@@ -198,7 +176,7 @@ module.exports = class Encoder {
       throw new Error('value should be an instance of Buffer')
     }
 
-    this.buffer = Buffer.concat([this.buffer, value])
+    this._buffer.writeBuffer(value)
     return this
   }
 
@@ -268,7 +246,7 @@ module.exports = class Encoder {
     }
 
     byteArray.push(encodedValue & OTHER_BITS)
-    this.buffer = Buffer.concat([this.buffer, Buffer.from(byteArray)])
+    this.writeBuffer(Buffer.from(byteArray))
     return this
   }
 
@@ -288,15 +266,15 @@ module.exports = class Encoder {
 
     byteArray.push(longValue.toInt())
 
-    this.buffer = Buffer.concat([this.buffer, Buffer.from(byteArray)])
+    this._buffer.writeBuffer(Buffer.from(byteArray))
     return this
   }
 
   size() {
-    return Buffer.byteLength(this.buffer)
+    return this._buffer.length
   }
 
   toJSON() {
-    return this.buffer.toJSON()
+    return this._buffer.toBuffer().toJSON()
   }
 }
