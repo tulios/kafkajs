@@ -49,7 +49,7 @@ describe('Protocol > Requests > ApiVersions > v1', () => {
   })
 
   // https://github.com/tulios/kafkajs/issues/491
-  test.only('defaults throttle_time_ms if it is not provided in the response', async () => {
+  test('defaults throttle_time_ms if it is not provided in the response', async () => {
     const data = await decode(
       Buffer.from(require('../fixtures/v1_response_missing_throttle_time.json'))
     )
