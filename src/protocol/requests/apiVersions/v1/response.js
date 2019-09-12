@@ -24,10 +24,13 @@ const decode = async rawData => {
 
   failIfVersionNotSupported(errorCode)
 
+  const apiVersions = decoder.readArray(apiVersion)
+  const throttleTime = decoder.canReadInt32() ? decoder.readInt32() : 0
+
   return {
     errorCode,
-    apiVersions: decoder.readArray(apiVersion),
-    throttleTime: decoder.readInt32(),
+    apiVersions,
+    throttleTime,
   }
 }
 
