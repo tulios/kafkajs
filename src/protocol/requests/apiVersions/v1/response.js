@@ -25,6 +25,15 @@ const decode = async rawData => {
   failIfVersionNotSupported(errorCode)
 
   const apiVersions = decoder.readArray(apiVersion)
+
+  /**
+   * The Java client defaults this value to 0 if not present,
+   * even though it is required in the protocol. This is to
+   * work around https://github.com/tulios/kafkajs/issues/491
+   *
+   * See:
+   * https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/common/protocol/CommonFields.java#L23-L25
+   */
   const throttleTime = decoder.canReadInt32() ? decoder.readInt32() : 0
 
   return {
