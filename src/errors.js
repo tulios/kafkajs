@@ -5,6 +5,7 @@ class KafkaJSError extends Error {
     this.message = e.message || e
     this.name = this.constructor.name
     this.retriable = retriable
+    this.transient = e.transient
     this.helpUrl = e.helpUrl
   }
 }

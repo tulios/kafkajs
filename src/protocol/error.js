@@ -37,6 +37,7 @@ const errorCodes = [
     type: 'LEADER_NOT_AVAILABLE',
     code: 5,
     retriable: true,
+    transient: true,
     message:
       'There is no leader for this topic-partition as we are in the middle of a leadership election',
   },
@@ -50,12 +51,14 @@ const errorCodes = [
     type: 'REQUEST_TIMED_OUT',
     code: 7,
     retriable: true,
+    transient: true,
     message: 'The request timed out',
   },
   {
     type: 'BROKER_NOT_AVAILABLE',
     code: 8,
     retriable: false,
+    transient: true,
     message: 'The broker is not available',
   },
   {
@@ -87,12 +90,14 @@ const errorCodes = [
     type: 'NETWORK_EXCEPTION',
     code: 13,
     retriable: true,
+    transient: true,
     message: 'The server disconnected before a response was received',
   },
   {
     type: 'GROUP_LOAD_IN_PROGRESS',
     code: 14,
     retriable: true,
+    transient: true,
     message: "The coordinator is loading and hence can't process requests for this group",
   },
   {
@@ -167,6 +172,7 @@ const errorCodes = [
     type: 'INVALID_SESSION_TIMEOUT',
     code: 26,
     retriable: false,
+    transient: true,
     message:
       'The session timeout is not within the range allowed by the broker (as configured by group.min.session.timeout.ms and group.max.session.timeout.ms)',
   },
@@ -174,6 +180,7 @@ const errorCodes = [
     type: 'REBALANCE_IN_PROGRESS',
     code: 27,
     retriable: false,
+    transient: true,
     message: 'The group is rebalancing, so a rejoin is needed',
     helpUrl: websiteUrl('docs/faq', 'what-does-it-mean-to-get-rebalance-in-progress-errors'),
   },
@@ -386,6 +393,7 @@ const errorCodes = [
     type: 'REASSIGNMENT_IN_PROGRESS',
     code: 60,
     retriable: false,
+    transient: true,
     message: 'A partition reassignment is in progress',
   },
   {
