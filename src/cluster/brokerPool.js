@@ -82,7 +82,7 @@ module.exports = class BrokerPool {
             connection: this.connectionBuilder.build(),
             logger: this.rootLogger,
           })
-          this.logger.error(
+          this.logger.warn(
             `Failed to connect to seed broker, trying another broker from the list: ${e.message}`,
             { retryCount, retryTime }
           )
@@ -283,7 +283,7 @@ module.exports = class BrokerPool {
             rack: broker.connection.rack,
           })
 
-          this.logger.error(`Failed to connect to broker, reconnecting`, { retryCount, retryTime })
+          this.logger.warn(`Failed to connect to broker, reconnecting`, { retryCount, retryTime })
         }
 
         if (e.retriable) throw e
