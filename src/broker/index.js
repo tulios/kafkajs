@@ -665,7 +665,7 @@ module.exports = class Broker {
    * @private
    */
   [PRIVATE.SHOULD_REAUTHENTICATE]() {
-    if (this.sessionLifetime === Long.ZERO) {
+    if (this.sessionLifetime.equals(Long.ZERO)) {
       return false
     }
 
