@@ -1,4 +1,3 @@
-const Long = require('long')
 const { decode, parse } = require('./response')
 
 describe('Protocol > Requests > SaslAuthenticate > v1', () => {
@@ -9,7 +8,7 @@ describe('Protocol > Requests > SaslAuthenticate > v1', () => {
         authBytes: Buffer.from({ data: [0, 0, 0, 0], type: 'Buffer' }),
         errorCode: 0,
         errorMessage: null,
-        sessionLifetimeMs: Long.fromValue(360000),
+        sessionLifetimeMs: '360000',
       })
 
       await expect(parse(data)).resolves.toBeTruthy()
@@ -23,7 +22,7 @@ describe('Protocol > Requests > SaslAuthenticate > v1', () => {
         authBytes: Buffer.from(require('../fixtures/scram256_firstRequest_response_v1.json')),
         errorCode: 0,
         errorMessage: null,
-        sessionLifetimeMs: Long.fromValue(360000),
+        sessionLifetimeMs: '360000',
       })
 
       await expect(parse(data)).resolves.toBeTruthy()

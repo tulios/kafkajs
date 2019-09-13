@@ -22,7 +22,7 @@ const decode = async rawData => {
   // the size
   const authBytesEncoder = new Encoder().writeBytes(decoder.readBytes())
   const authBytes = authBytesEncoder.buffer
-  const sessionLifetimeMs = decoder.readInt64()
+  const sessionLifetimeMs = decoder.readInt64().toString()
 
   return {
     errorCode,
