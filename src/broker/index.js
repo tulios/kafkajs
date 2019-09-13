@@ -1,9 +1,14 @@
+const Long = require('long')
 const Lock = require('../utils/lock')
 const { Types: Compression } = require('../protocol/message/compression')
 const { requests, lookup } = require('../protocol/requests')
 const { KafkaJSNonRetriableError } = require('../errors')
 const apiKeys = require('../protocol/requests/apiKeys')
 const SASLAuthenticator = require('./saslAuthenticator')
+
+const PRIVATE = {
+  SHOULD_REAUTHENTICATE: Symbol('private:Broker:shouldReauthenticate'),
+}
 
 /**
  * Each node in a Kafka cluster is called broker. This class contains
@@ -27,6 +32,7 @@ module.exports = class Broker {
     nodeId = null,
     versions = null,
     authenticationTimeout = 1000,
+    reauthenticationThreshold = 10000,
     allowAutoTopicCreation = true,
     supportAuthenticationProtocol = null,
   }) {
@@ -37,9 +43,12 @@ module.exports = class Broker {
     this.versions = versions
     this.allowExperimentalV011 = allowExperimentalV011
     this.authenticationTimeout = authenticationTimeout
+    this.reauthenticationThreshold = reauthenticationThreshold
     this.allowAutoTopicCreation = allowAutoTopicCreation
     this.supportAuthenticationProtocol = supportAuthenticationProtocol
-    this.authenticated = false
+
+    this.authenticatedAt = null
+    this.sessionLifetime = Long.ZERO
 
     // The lock timeout has twice the connectionTimeout because the same timeout is used
     // for the first apiVersions call
@@ -62,7 +71,8 @@ module.exports = class Broker {
    */
   isConnected() {
     const { connected, sasl } = this.connection
-    return sasl ? connected && this.authenticated : connected
+    const isAuthenticated = this.authenticatedAt != null && !this[PRIVATE.SHOULD_REAUTHENTICATE]()
+    return sasl ? connected && isAuthenticated : connected
   }
 
   /**
@@ -72,12 +82,11 @@ module.exports = class Broker {
   async connect() {
     try {
       await this.lock.acquire()
-
       if (this.isConnected()) {
         return
       }
 
-      this.authenticated = false
+      this.authenticatedAt = null
       await this.connection.connect()
 
       if (!this.versions) {
@@ -109,7 +118,8 @@ module.exports = class Broker {
         )
 
         await authenticator.authenticate()
-        this.authenticated = true
+        this.authenticatedAt = process.hrtime()
+        this.sessionLifetime = Long.fromValue(authenticator.sessionLifetime)
       }
     } finally {
       await this.lock.release()
@@ -121,7 +131,7 @@ module.exports = class Broker {
    * @returns {Promise}
    */
   async disconnect() {
-    this.authenticated = false
+    this.authenticatedAt = null
     await this.connection.disconnect()
   }
 
@@ -649,5 +659,26 @@ module.exports = class Broker {
     return await this.connection.send(
       endTxn({ transactionalId, producerId, producerEpoch, transactionResult })
     )
+  }
+
+  /***
+   * @private
+   */
+  [PRIVATE.SHOULD_REAUTHENTICATE]() {
+    if (this.sessionLifetime === Long.ZERO) {
+      return false
+    }
+
+    if (this.authenticatedAt == null) {
+      return true
+    }
+
+    const [secondsSince, remainingNanosSince] = process.hrtime(this.authenticatedAt)
+    const millisSince = Long.fromValue(secondsSince)
+      .multiply(1000)
+      .add(Long.fromValue(remainingNanosSince).divide(1000000))
+
+    const reauthenticateAt = millisSince.add(this.reauthenticationThreshold)
+    return reauthenticateAt.greaterThanOrEqual(this.sessionLifetime)
   }
 }
