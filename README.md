@@ -94,6 +94,7 @@ We welcome contributions to KafkaJS, but we also want to see a thriving third-pa
 Here are some projects that we would like to build, but haven't yet been able to prioritize:
 
 * [Dead Letter Queue](https://eng.uber.com/reliable-reprocessing/) - Automatically reprocess messages
+* [Schema Registry](https://www.confluent.io/confluent-schema-registry/) - ~~Seamless integration with the schema registry to encode and decode AVRO~~ **[Now available!](https://www.npmjs.com/package/@kafkajs/confluent-schema-registry)** thanks to [@erikengervall](https://github.com/erikengervall)
 * [Metrics](https://prometheus.io/) - Integrate with the [instrumentation events](https://kafka.js.org/docs/instrumentation-events) to expose commonly used metrics
 
 ## Acknowledgements
