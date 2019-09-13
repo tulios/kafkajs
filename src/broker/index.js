@@ -109,7 +109,7 @@ module.exports = class Broker {
         })
       }
 
-      if (!this.authenticated && this.connection.sasl) {
+      if (this.authenticatedAt == null && this.connection.sasl) {
         const authenticator = new SASLAuthenticator(
           this.connection,
           this.rootLogger,
