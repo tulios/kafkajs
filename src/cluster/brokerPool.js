@@ -16,6 +16,7 @@ module.exports = class BrokerPool {
    * @param {Logger} logger
    * @param {Object} retry
    * @param {number} authenticationTimeout
+   * @param {number} reauthenticationThreshold
    * @param {number} metadataMaxAge
    */
   constructor({
@@ -25,6 +26,7 @@ module.exports = class BrokerPool {
     allowExperimentalV011,
     allowAutoTopicCreation,
     authenticationTimeout,
+    reauthenticationThreshold,
     metadataMaxAge,
   }) {
     this.rootLogger = logger
@@ -38,6 +40,7 @@ module.exports = class BrokerPool {
         allowExperimentalV011,
         allowAutoTopicCreation,
         authenticationTimeout,
+        reauthenticationThreshold,
         ...options,
       })
 
