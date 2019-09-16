@@ -18,6 +18,7 @@ export interface KafkaConfig {
   clientId?: string
   connectionTimeout?: number
   authenticationTimeout?: number
+  reauthenticationThreshold?: number
   requestTimeout?: number
   enforceRequestTimeout?: boolean
   retry?: RetryOptions
