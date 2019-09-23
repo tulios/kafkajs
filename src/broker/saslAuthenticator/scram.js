@@ -296,7 +296,7 @@ class SCRAM {
    */
   encodedPassword() {
     const { password } = this.connection.sasl
-    return SCRAM.sanitizeString(password).toString('utf-8')
+    return password.toString('utf-8')
   }
 
   /**
