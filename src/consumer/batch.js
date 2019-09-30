@@ -40,6 +40,10 @@ module.exports = class Batch {
     return this.unfilteredMessages.length === 0
   }
 
+  isEmptyControlRecord() {
+    return this.isEmpty() && this.unfilteredMessages.some(({ isControlRecord }) => isControlRecord)
+  }
+
   firstOffset() {
     return this.isEmptyIncludingFiltered() ? null : this.unfilteredMessages[0].offset
   }
