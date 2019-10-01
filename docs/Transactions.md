@@ -30,7 +30,7 @@ const producer = client.producer({ maxInFlightRequests: 1, idempotent: true })
 Within a transaction, you can produce one or more messages. If `transaction.abort` is called, all messages will be rolled back.
 
 ```javascript
-const  transaction = await producer.transaction()
+const transaction = await producer.transaction()
 
 try {
   await transaction.send({ topic, messages })

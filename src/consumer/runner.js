@@ -1,3 +1,4 @@
+const Long = require('long')
 const createRetry = require('../retry')
 const limitConcurrency = require('../utils/concurrency')
 const { KafkaJSError } = require('../errors')
@@ -11,6 +12,7 @@ const isRebalancing = e =>
   e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
 
 const isKafkaJSError = e => e instanceof KafkaJSError
+const isSameOffset = (offsetA, offsetB) => Long.fromValue(offsetA).equals(Long.fromValue(offsetB))
 
 module.exports = class Runner {
   constructor({
@@ -181,12 +183,31 @@ module.exports = class Runner {
 
   async processEachBatch(batch) {
     const { topic, partition } = batch
+    const lastFilteredMessage = batch.messages[batch.messages.length - 1]
 
     try {
       await this.eachBatch({
         batch,
         resolveOffset: offset => {
-          this.consumerGroup.resolveOffset({ topic, partition, offset })
+          /**
+           * The transactional producer generates a control record after committing the transaction.
+           * The control record is the last record on the RecordBatch, and it is filtered before it
+           * reaches the eachBatch callback. When disabling auto-resolve, the user-land code won't
+           * be able to resolve the control record offset, since it never reaches the callback,
+           * causing stuck consumers as the consumer will never move the offset marker.
+           *
+           * When the last offset of the batch is resolved, we should automatically resolve
+           * the control record offset as this entry doesn't have any meaning to the user-land code,
+           * and won't interfere with the stream processing.
+           *
+           * @see https://github.com/apache/kafka/blob/9aa660786e46c1efbf5605a6a69136a1dac6edb9/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L1499-L1505
+           */
+          const offsetToResolve =
+            lastFilteredMessage && isSameOffset(offset, lastFilteredMessage.offset)
+              ? batch.lastOffset()
+              : offset
+
+          this.consumerGroup.resolveOffset({ topic, partition, offset: offsetToResolve })
         },
         heartbeat: async () => {
           await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
