@@ -41,6 +41,7 @@ describe('Consumer', () => {
       cluster,
       groupId,
       maxWaitTimeInMs: 100,
+      maxBytes: 170,
       logger: newLogger(),
     })
   })
@@ -80,5 +81,8 @@ describe('Consumer', () => {
 
     await transaction.commit()
     await waitForMessages(messagesConsumed, { number: 20 })
+
+    producer.send({ topic: topicName, messages: generateMessages({ number: 2 }) })
+    await waitForMessages(messagesConsumed, { number: 22 })
   })
 })
