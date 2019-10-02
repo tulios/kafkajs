@@ -1,4 +1,4 @@
-jest.setTimeout(5000)
+jest.setTimeout(15000)
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
 
