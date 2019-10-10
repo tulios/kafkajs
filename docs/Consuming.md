@@ -35,6 +35,8 @@ The consumer will not match topics created after the subscription. If your broke
 
 KafkaJS offers you two ways to process your data: `eachMessage` and `eachBatch`
 
+The consumer will be ready to process incoming messages to the topic after joining the consumer group, when it sends the `GROUP_JOIN` event.
+
 ## <a name="each-message"></a> eachMessage
 
 The `eachMessage` handler provides a convenient and easy to use API, feeding your function one message at a time. It is implemented on top of `eachBatch`, and it will automatically commit your offsets and heartbeat at the configured interval for you. If you are just looking to get started with Kafka consumers this a good place to start.
