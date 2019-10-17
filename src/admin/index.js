@@ -177,9 +177,13 @@ module.exports = ({
    * @param {string} topic
    */
 
-  const fetchTopicOffsets = async topic => {
+  const fetchTopicOffsets = async (topic, timestamp) => {
     if (!topic || typeof topic !== 'string') {
       throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    }
+
+    if (timestamp !== undefined && typeof timestamp !== 'number') {
+      throw new KafkaJSNonRetriableError(`Invalid timestamp ${timestamp}`)
     }
 
     const retrier = createRetry(retry)
@@ -190,30 +194,43 @@ module.exports = ({
         await cluster.refreshMetadataIfNecessary()
 
         const metadata = cluster.findTopicPartitionMetadata(topic)
-        const high = await cluster.fetchTopicsOffset([
+
+        const highPartitions = (await cluster.fetchTopicsOffset([
           {
             topic,
             fromBeginning: false,
             partitions: metadata.map(p => ({ partition: p.partitionId })),
           },
-        ])
+        ])).pop().partitions
 
-        const low = await cluster.fetchTopicsOffset([
+        const lowPartitions = (await cluster.fetchTopicsOffset([
           {
             topic,
             fromBeginning: true,
             partitions: metadata.map(p => ({ partition: p.partitionId })),
           },
-        ])
+        ])).pop().partitions
 
-        const { partitions: highPartitions } = high.pop()
-        const { partitions: lowPartitions } = low.pop()
+        const timePartitions =
+          timestamp &&
+          (await cluster.fetchTopicsOffset([
+            {
+              topic,
+              fromBeginning: true,
+              partitions: metadata.map(p => ({ partition: p.partitionId, timestamp })),
+            },
+          ])).pop().partitions
+
         return highPartitions.map(({ partition, offset }) => ({
           partition,
           offset,
           high: offset,
           low: lowPartitions.find(({ partition: lowPartition }) => lowPartition === partition)
             .offset,
+          time:
+            timePartitions &&
+            timePartitions.find(({ partition: timePartition }) => timePartition === partition)
+              .offset,
         }))
       } catch (e) {
         if (e.type === 'UNKNOWN_TOPIC_OR_PARTITION') {

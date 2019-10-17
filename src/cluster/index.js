@@ -390,7 +390,11 @@ module.exports = class Cluster {
 
     const addDefaultOffset = topic => partition => {
       const { fromBeginning } = topicConfigurations[topic]
-      return { ...partition, timestamp: this.defaultOffset({ fromBeginning }) }
+      const added = { ...partition }
+      if (!('timestamp' in added)) {
+        added.timestamp = this.defaultOffset({ fromBeginning })
+      }
+      return added
     }
 
     // Index all topics and partitions per leader (nodeId)
