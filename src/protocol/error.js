@@ -166,6 +166,7 @@ const errorCodes = [
     type: 'UNKNOWN_MEMBER_ID',
     code: 25,
     retriable: false,
+    transient: true,
     message: 'The coordinator is not aware of this member',
   },
   {
