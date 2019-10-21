@@ -40,6 +40,13 @@ Refer to [TLS create secure context](https://nodejs.org/dist/latest-v8.x/docs/ap
 
 Kafka has support for using SASL to authenticate clients. The `sasl` option can be used to configure the authentication mechanism. Currently, KafkaJS supports `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512`, and `AWS` mechanisms.
 
+### Options
+
+| option                    | description                                                                                                                                                                             | default |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| authenticationTimeout     | Timeout in ms for authentication requests                                                                                                                                               | `1000`  |
+| reauthenticationThreshold | When periodic reauthentication (`connections.max.reauth.ms`) is configured on the broker side, reauthenticate when `reauthenticationThreshold` milliseconds remain of session lifetime. | `10000` |
+
 ### PLAIN/SCRAM Example
 
 ```javascript
@@ -47,6 +54,7 @@ new Kafka({
   clientId: 'my-app',
   brokers: ['kafka1:9092', 'kafka2:9092'],
   // authenticationTimeout: 1000,
+  // reauthenticationThreshold: 10000,
   sasl: {
     mechanism: 'plain', // scram-sha-256 or scram-sha-512
     username: 'my-username',
@@ -62,6 +70,7 @@ new Kafka({
   clientId: 'my-app',
   brokers: ['kafka1:9092', 'kafka2:9092'],
   // authenticationTimeout: 1000,
+  // reauthenticationThreshold: 10000,
   sasl: {
     mechanism: 'aws',
     authorizationIdentity: 'AIDAIOSFODNN7EXAMPLE', // UserId or RoleId

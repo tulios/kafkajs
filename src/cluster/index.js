@@ -26,6 +26,7 @@ const mergeTopics = (obj, { topic, partitions }) => ({
  * @param {string} clientId
  * @param {number} connectionTimeout - in milliseconds
  * @param {number} authenticationTimeout - in milliseconds
+ * @param {number} reauthenticationThreshold - in milliseconds
  * @param {number} requestTimeout - in milliseconds
  * @param {number} metadataMaxAge - in milliseconds
  * @param {boolean} allowAutoTopicCreation
@@ -46,6 +47,7 @@ module.exports = class Cluster {
     clientId,
     connectionTimeout,
     authenticationTimeout,
+    reauthenticationThreshold,
     requestTimeout,
     enforceRequestTimeout,
     metadataMaxAge,
@@ -84,6 +86,7 @@ module.exports = class Cluster {
       allowExperimentalV011,
       allowAutoTopicCreation,
       authenticationTimeout,
+      reauthenticationThreshold,
       metadataMaxAge,
     })
     this.committedOffsetsByGroup = offsets

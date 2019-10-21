@@ -58,8 +58,8 @@ describe('Network > Connection', () => {
 
       test('rejects the Promise in case of errors', async () => {
         connection.ssl.cert = 'invalid'
-        const message = 'Failed to connect: error:0906D06C:PEM routines:PEM_read_bio:no start line'
-        await expect(connection.connect()).rejects.toHaveProperty('message', message)
+        const messagePattern = /Failed to connect/
+        await expect(connection.connect()).rejects.toThrow(messagePattern)
         expect(connection.connected).toEqual(false)
       })
     })

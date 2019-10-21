@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2019-09-30
+### Added
+  - Add Typescript SASLMechanism type to definitions #477
+  - Allow SASL Connections to Periodically Re-Authenticate #496
+
+### Changed
+  - Throw validation error when the broker list is empty #460
+  - Improve the encoder to avoid copying unnecessary bytes #471
+  - Throw an error on subscription changes for running consumers #470
+  - Default `throttle_time_ms` to 0 if missing in `ApiVersions` response #495
+  - Remove normalisation of the password when using SCRAM mechanism #505
+
+### Fixed
+  - Fix built-in partitioners type definition error #455
+  - Detect replaced brokers on refresh metadata #457
+  - Make NodeJS REPL get correct `randomBytes()` #462
+  - Fix `IHeaders` type definition (from string to Buffer) #467
+  - Rename Typescript definitions from `ResourceType` to `ResourceTypes` #468
+  - Update Typescript definitions to make `configNames` optional in `ResourceTypes` #474
+  - Fix `transactionState.ABORTING` value #478
+
 ## [1.10.0] - 2019-07-31
 ### Added
   - Allow the consumer to pause and resume individual partitions #417

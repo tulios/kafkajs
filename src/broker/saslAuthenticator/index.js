@@ -14,11 +14,13 @@ const AUTHENTICATORS = {
 }
 
 const SUPPORTED_MECHANISMS = Object.keys(AUTHENTICATORS)
+const UNLIMITED_SESSION_LIFETIME = '0'
 
 module.exports = class SASLAuthenticator {
   constructor(connection, logger, versions, supportAuthenticationProtocol) {
     this.connection = connection
     this.logger = logger
+    this.sessionLifetime = UNLIMITED_SESSION_LIFETIME
 
     const lookupRequest = lookup(versions)
     this.saslHandshake = lookupRequest(apiKeys.SaslHandshake, requests.SaslHandshake)
@@ -48,6 +50,10 @@ module.exports = class SASLAuthenticator {
         const authResponse = await this.connection.send(
           this.protocolAuthentication({ authBytes: requestAuthBytes })
         )
+
+        // `0` is a string because `sessionLifetimeMs` is an int64 encoded as string.
+        // This is not present in SaslAuthenticateV0, so we default to `"0"`
+        this.sessionLifetime = authResponse.sessionLifetimeMs || UNLIMITED_SESSION_LIFETIME
 
         if (!authExpectResponse) {
           return

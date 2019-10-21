@@ -10,8 +10,8 @@ find_container_id() {
 }
 
 USERNAME=${USERNAME:='testscram'}
-PASSWORD_256=${PASSWORD_256:='testtestscram256'}
-PASSWORD_512=${PASSWORD_512:='testtestscram512'}
+PASSWORD_256=${PASSWORD_256:='testtestscram=256'}
+PASSWORD_512=${PASSWORD_512:='testtestscram=512'}
 
 docker exec \
   $(find_container_id) \
