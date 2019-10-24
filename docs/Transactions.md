@@ -7,7 +7,7 @@ KafkaJS provides a a simple interface to support Kafka transactions.
 
 > Note: Transactions require Kafka version >= v0.11.
 
-## <a name="transaction-messages"></a> Sending Messages within a Transaction
+## Sending Messages within a Transaction
 
 You initialize a transaction by making an async call to `producer.transaction()`. The returned transaction object has the methods `send` and `sendBatch` with an identical signature to the producer. When you are done you call `transaction.commit()` or `transaction.abort()` to end the transaction. A transactionally aware consumer will only read messages which were committed.
 
@@ -41,7 +41,7 @@ try {
 }
 ```
 
-#### <a name="offsets"></a> Sending Offsets
+#### Sending Offsets
 
 To send offsets as part of a transaction, meaning they will be committed only if the transaction succeeds, use the `transaction.sendOffsets()` method. This is necessary whenever we want a transaction to produce messages derived from a consumer, in a "consume-transform-produce" loop.
 

@@ -65,7 +65,7 @@ signalTraps.map(type => {
 })
 ```
 
-## <a name="ssl-and-sasl-authentication"></a> SSL & SASL Authentication
+## SSL & SASL Authentication
 
 The following example assumes a valid SSL certificate and SASL authentication using the `scram-sha-256` mechanism. Other mechanisms are also available (see [Client Configuration](Configuration.md#sasl)).
 

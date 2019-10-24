@@ -35,7 +35,7 @@ The consumer will not match topics created after the subscription. If your broke
 
 KafkaJS offers you two ways to process your data: `eachMessage` and `eachBatch`
 
-## <a name="each-message"></a> eachMessage
+## eachMessage
 
 The `eachMessage` handler provides a convenient and easy to use API, feeding your function one message at a time. It is implemented on top of `eachBatch`, and it will automatically commit your offsets and heartbeat at the configured interval for you. If you are just looking to get started with Kafka consumers this a good place to start.
 
@@ -51,7 +51,7 @@ await consumer.run({
 })
 ```
 
-## <a name="each-batch"></a> eachBatch
+## eachBatch
 
 Some use cases require dealing with batches directly. This handler will feed your function batches and provide some utility functions to give your code more flexibility: `resolveOffset`, `heartbeat`, `isRunning`, and `commitOffsetsIfNecessary`. All resolved offsets will be automatically committed after the function is executed.
 
@@ -105,7 +105,7 @@ consumer.run({
 
 In the example above, if the consumer is shutting down in the middle of the batch, the remaining messages won't be resolved and therefore not committed. This way, you can quickly shut down the consumer without losing/skipping any messages. If the batch goes stale for some other reason (like calling `consumer.seek`) none of the remaining messages are processed either.
 
-## <a name="concurrent-processing"></a> Partition-aware concurrency
+## Partition-aware concurrency
 
 By default, [`eachMessage`](Consuming.md#each-message) is invoked sequentially for each message in each partition. In order to concurrently process several messages per once, you can increase the `partitionsConsumedConcurrently` option:
 
@@ -124,7 +124,7 @@ The same thing applies if you are using [`eachBatch`](Consuming.md#each-batch). 
 
 A guideline for setting `partitionsConsumedConcurrently` would be that it should not be larger than the number of partitions consumed. Depending on whether or not your workload is CPU bound, it may also not benefit you to set it to a higher number than the number of logical CPU cores. A recommendation is to start with a low number and measure if increasing leads to higher throughput.
 
-## <a name="auto-commit"></a> autoCommit
+## autoCommit
 
 The messages are always fetched in batches from Kafka, even when using the `eachMessage` handler. All resolved offsets will be committed to Kafka after processing the whole batch.
 
@@ -152,7 +152,7 @@ Having both flavors at the same time is also possible, the consumer will commit 
 
 `autoCommit`: Advanced option to disable auto committing altogether. Instead, you can [manually commit offsets](#manual-commits). Default: `true`
 
-## <a name="manual-commits"></a> Manual committing
+## Manual committing
 
 When disabling [`autoCommit`](#auto-commit) you can still manually commit message offsets, in a couple of different ways:
 
@@ -185,7 +185,7 @@ The usual usage pattern for offsets stored outside of Kafka is as follows:
 - Store a message's `offset + 1` in the store together with the results of processing. `1` is added to prevent that same message from being consumed again.
 - Use the externally stored offset on restart to [seek](#seek) the consumer to it.
 
-## <a name="from-beginning"></a> fromBeginning
+## fromBeginning
 
 The consumer group will use the latest committed offset when starting to fetch messages. If the offset is invalid or not defined, `fromBeginning` defines the behavior of the consumer group. This can be configured when subscribing to a topic:
 
@@ -196,7 +196,7 @@ await consumer.subscribe({ topic: 'other-topic', fromBeginning: false })
 
 When `fromBeginning` is `true`, the group will use the earliest offset. If set to `false`, it will use the latest offset. The default is `false`.
 
-## <a name="options"></a> Options
+## Options
 
 ```javascript
 kafka.consumer({
@@ -230,7 +230,7 @@ kafka.consumer({
 | retry                  | See [retry](Configuration.md#retry) for more information                                                                                                                                                                                                                                                                                           | `{ retries: 10 }`                 |
 | readUncommitted        | Configures the consumer isolation level. If `false` (default), the consumer will not return any transactional messages which were not committed.                                                                                                                                                                                                   | `false`                           |
 
-## <a name="pause-resume"></a> Pause & Resume
+##  Pause & Resume
 
 In order to pause and resume consuming from one or more topics, the `Consumer` provides the methods `pause` and `resume`. It also provides the `paused` method to get the list of all paused topics. Note that pausing a topic means that it won't be fetched in the next cycle. You may still receive messages for the topic within the current batch.
 
@@ -295,7 +295,7 @@ for (const topicPartitions of pausedTopicPartitions) {
 }
 ```
 
-## <a name="seek"></a> Seek
+## Seek
 
 To move the offset position in a topic/partition the `Consumer` provides the method `seek`. This method has to be called after the consumer is initialized and is running (after consumer#run).
 
@@ -310,7 +310,7 @@ consumer.seek({ topic: 'example', partition: 0, offset: 12384 })
 
 Upon seeking to an offset, any messages in active batches are marked as stale and discarded, making sure the next message read for the partition is from the offset sought to. Make sure to check `isStale()` before processing a message using [the `eachBatch` interface](#each-batch) of `consumer.run`.
 
-## <a name="custom-partition-assigner"></a> Custom partition assigner
+## Custom partition assigner
 
 It's possible to configure the strategy the consumer will use to distribute partitions amongst the consumer group. KafkaJS has a round robin assigner configured by default.
 
@@ -381,7 +381,7 @@ kafka.consumer({
 })
 ```
 
-## <a name="describe-group"></a> Describe group
+## Describe group
 
 > **Experimental** - This feature may be removed or changed in new versions of KafkaJS
 
@@ -407,6 +407,6 @@ const data = await consumer.describeGroup()
 // },
 ```
 
-## <a name="compression"></a> Compression
+## Compression
 
 KafkaJS only support GZIP natively, but [other codecs can be supported](Producing.md#compression-other).

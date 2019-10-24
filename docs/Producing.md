@@ -139,7 +139,7 @@ await producer.sendBatch({
 | ------------- | ---------------------------------------------------------------------------------------------------------- |
 | topicMessages | An array of objects with `topic` and `messages`.<br>`messages` is an array of the same type as for `send`. |
 
-## <a name="custom-partitioner"></a> Custom partitioner
+## Custom partitioner
 
 It's possible to assign a custom partitioner to the producer. A partitioner is a function which returns another function responsible for the partition selection, something like this:
 
@@ -186,17 +186,17 @@ const { Partitioners } = require('kafkajs')
 kafka.producer({ createPartitioner: Partitioners.JavaCompatiblePartitioner })
 ```
 
-## <a name="retry"></a> Retry
+## Retry
 
 The option `retry` can be used to customize the configuration for the producer.
 
 Take a look at [Retry](Configuration.md#retry) for more information.
 
-## <a name="compression"></a> Compression
+## Compression
 
 Since KafkaJS aims to have as small footprint and as few dependencies as possible, only the GZIP codec is part of the core functionality. Providing plugins supporting other codecs might be considered in the future.
 
-### <a name="compression-gzip"></a> GZIP
+### GZIP
 
 ```javascript
 const { CompressionTypes } = require('kafkajs')
@@ -215,7 +215,7 @@ async () => {
 
 The consumers know how to decompress GZIP, so no further work is necessary.
 
-### <a name="compression-snappy"></a> Snappy
+### Snappy
 
 Snappy support is provided by the package `kafkajs-snappy`
 
@@ -233,7 +233,7 @@ CompressionCodecs[CompressionTypes.Snappy] = SnappyCodec
 
 Take a look at the official [readme](https://github.com/tulios/kafkajs-snappy) for more information
 
-### <a name="compression-lz4"></a> LZ4
+### LZ4
 
 LZ4 support is provided by the package `kafkajs-lz4`
 
@@ -251,7 +251,7 @@ CompressionCodecs[CompressionTypes.LZ4] = new LZ4().codec
 
 The package also accepts options to granularly control LZ4 compression & decompression. Take a look at the official [readme](https://github.com/indix/kafkajs-lz4) for more information.
 
-### <a name="compression-other"></a> Other
+### Other
 
 Any other codec than GZIP can be easily implemented using existing libraries.
 

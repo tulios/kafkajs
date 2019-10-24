@@ -27,9 +27,9 @@ Instrumentation Event:
 }
 ```
 
-## <a name="list"> List of available events:
+## <List of available events:
 
-### <a name="consumer"></a> Consumer
+### Consumer
 
 * consumer.events.HEARTBEAT  
   payload: {`groupId`, `memberId`, `groupGenerationId`}
@@ -96,7 +96,7 @@ Instrumentation Event:
     `queueSize`
   }
 
-### <a name="producer"></a> Producer
+### Producer
 
 * producer.events.CONNECT
 
@@ -137,7 +137,7 @@ Instrumentation Event:
     `queueSize`
   }
 
-### <a name="admin"></a> Admin
+### Admin
 
 * admin.events.CONNECT
 

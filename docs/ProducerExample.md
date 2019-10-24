@@ -74,6 +74,6 @@ signalTraps.map(type => {
 })
 ```
 
-## <a name="ssl-and-sasl-authentication"></a> SSL & SASL Authentication
+## SSL & SASL Authentication
 
 See the [Consumer Example](ConsumerExample.md#ssl-and-sasl-authentication).

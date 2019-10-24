@@ -18,7 +18,7 @@ The option `retry` can be used to customize the configuration for the admin.
 
 Take a look at [Retry](Configuration.md#default-retry) for more information.
 
-## <a name="create-topics"></a> Create topics
+## Create topics
 
 `createTopics` will resolve to `true` if the topic was created successfully or `false` if it already exists. The method will throw exceptions in case of errors.
 
@@ -50,7 +50,7 @@ await admin.createTopics({
 | timeout        | The time in ms to wait for a topic to be completely created on the controller node                    | 5000    |
 | waitForLeaders | If this is `true` it will wait until metadata for the new topics doesn't throw `LEADER_NOT_AVAILABLE` | true    |
 
-## <a name="delete-topics"></a> Delete topics
+## Delete topics
 
 ```javascript
 await admin.deleteTopics({
@@ -65,11 +65,11 @@ Topic deletion is disabled by default in Apache Kafka versions prior to `1.0.0`.
 delete.topic.enable=true
 ```
 
-## <a name="get-topic-metadata"></a> Get topic metadata
+## Get topic metadata
 
 Deprecated, see [Fetch topic metadata](#fetch-topic-metadata)
 
-## <a name="fetch-topic-metadata"></a> Fetch topic metadata
+## Fetch topic metadata
 
 ```javascript
 await admin.fetchTopicMetadata({ topics: <Array<String>> })
@@ -112,7 +112,7 @@ If you omit the `topics` argument the admin client will fetch metadata for all t
 await admin.fetchTopicMetadata()
 ```
 
-## <a name="fetch-topic-offsets"></a> Fetch topic offsets
+## Fetch topic offsets
 
 `fetchTopicOffsets` returns most recent offset for a topic.
 
@@ -126,7 +126,7 @@ await admin.fetchTopicOffsets(topic)
 // ]
 ```
 
-## <a name="fetch-offsets"></a> Fetch consumer group offsets
+## Fetch consumer group offsets
 
 `fetchOffsets` returns the consumer group offset for a topic.
 
@@ -140,7 +140,7 @@ await admin.fetchOffsets({ groupId, topic })
 // ]
 ```
 
-## <a name="reset-offsets"></a> Reset consumer group offsets
+## Reset consumer group offsets
 
 `resetOffsets` resets the consumer group offset to the earliest or latest offset (latest by default).
 The consumer group must have no running instances when performing the reset. Otherwise, the command will be rejected.
@@ -150,7 +150,7 @@ await admin.resetOffsets({ groupId, topic }) // latest by default
 // await admin.resetOffsets({ groupId, topic, earliest: true })
 ```
 
-## <a name="set-offsets"></a> Set consumer group offsets
+## Set consumer group offsets
 
 `setOffsets` allows you to set the consumer group offset to any value.
 
@@ -184,7 +184,7 @@ await admin.setOffsets({
 })
 ```
 
-## <a name="describe-configs"></a> Describe configs
+## Describe configs
 
 Get the configuration for the specified resources.
 
@@ -263,7 +263,7 @@ Example response:
 }
 ```
 
-## <a name="alter-configs"></a> Alter configs
+## Alter configs
 
 Update the configuration for the specified resources.
 
