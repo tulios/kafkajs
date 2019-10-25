@@ -55,6 +55,7 @@ new Kafka({
   brokers: ['kafka1:9092', 'kafka2:9092'],
   // authenticationTimeout: 1000,
   // reauthenticationThreshold: 10000,
+  ssl: true,
   sasl: {
     mechanism: 'plain', // scram-sha-256 or scram-sha-512
     username: 'my-username',
@@ -71,6 +72,7 @@ new Kafka({
   brokers: ['kafka1:9092', 'kafka2:9092'],
   // authenticationTimeout: 1000,
   // reauthenticationThreshold: 10000,
+  ssl: true,
   sasl: {
     mechanism: 'aws',
     authorizationIdentity: 'AIDAIOSFODNN7EXAMPLE', // UserId or RoleId
