@@ -7,6 +7,13 @@ const validateBrokers = brokers => {
   }
 }
 
+const splitBrokersIfNeeded = brokers => {
+  if (Array.isArray(brokers)) {
+    return brokers
+  }
+  return brokers.split(',')
+}
+
 module.exports = ({
   socketFactory,
   brokers,
@@ -22,15 +29,16 @@ module.exports = ({
   instrumentationEmitter = null,
 }) => {
   validateBrokers(brokers)
+  const splittedBrokers = splitBrokersIfNeeded(brokers)
 
-  const size = brokers.length
+  const size = splittedBrokers.length
   let index = 0
 
   return {
     build: ({ host, port, rack } = {}) => {
       if (!host) {
         // Always rotate the seed broker
-        const [seedHost, seedPort] = brokers[index++ % size].split(':')
+        const [seedHost, seedPort] = splittedBrokers[index++ % size].split(':')
         host = seedHost
         port = Number(seedPort)
       }
