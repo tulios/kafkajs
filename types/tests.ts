@@ -29,7 +29,7 @@ const kafka = new Kafka({
     username: 'test',
     password: 'testtest',
   },
-  logCreator: (logLevel: number) => (entry: LogEntry) => { },
+  logCreator: (logLevel: logLevel) => (entry: LogEntry) => { },
 })
 
 // CONSUMER

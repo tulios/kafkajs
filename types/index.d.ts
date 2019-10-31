@@ -364,7 +364,7 @@ export interface LoggerEntryContent {
 
 export type Logger = (entry: LogEntry) => void
 
-export type logCreator = (logLevel: number) => (entry: LogEntry) => void
+export type logCreator = (logLevel: logLevel) => (entry: LogEntry) => void
 
 export type Broker = {
   isConnected(): boolean
