@@ -7,6 +7,7 @@ import {
   CompressionTypes,
   CompressionCodecs,
   ResourceTypes,
+  LogEntry,
 } from './index'
 
 const { roundRobin } = PartitionAssigners
@@ -28,6 +29,7 @@ const kafka = new Kafka({
     username: 'test',
     password: 'testtest',
   },
+  logCreator: (logLevel: number) => (entry: LogEntry) => { },
 })
 
 // CONSUMER
