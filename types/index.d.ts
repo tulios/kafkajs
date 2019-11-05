@@ -143,7 +143,7 @@ export type Cluster = {
 
 export type Assignment = { [topic: string]: number[] }
 
-export type GroupMember = { memberId: string }
+export type GroupMember = { memberId: string, memberMetadata: Buffer }
 
 export type GroupMemberAssignment = { memberId: string; memberAssignment: Buffer }
 
@@ -155,9 +155,8 @@ export type Assigner = {
   assign(group: {
     members: GroupMember[]
     topics: string[]
-    userData: Buffer
   }): Promise<GroupMemberAssignment[]>
-  protocol(subscription: { topics: string[]; userData: Buffer }): GroupState
+  protocol(subscription: { topics: string[] }): GroupState
 }
 
 export interface RetryOptions {
