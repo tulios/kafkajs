@@ -30,10 +30,8 @@ describe('Network > Connection', () => {
 
       test('rejects the Promise in case of errors', async () => {
         connection.host = invalidHost
-        await expect(connection.connect()).rejects.toHaveProperty(
-          'message',
-          'Connection error: getaddrinfo ENOTFOUND kafkajs.test kafkajs.test:9092'
-        )
+        const messagePattern = /Connection error: getaddrinfo ENOTFOUND kafkajs.test/
+        await expect(connection.connect()).rejects.toThrow(messagePattern)
         expect(connection.connected).toEqual(false)
       })
     })
