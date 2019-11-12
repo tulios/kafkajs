@@ -66,7 +66,6 @@ module.exports = class OffsetManager {
       offset = '0'
     }
 
-
     if (Long.fromValue(offset).equals(-1)) {
       offset = '0'
     }
