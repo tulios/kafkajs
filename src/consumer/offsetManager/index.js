@@ -59,7 +59,14 @@ module.exports = class OffsetManager {
       this.resolvedOffsets[topic][partition] = this.committedOffsets()[topic][partition]
     }
 
-    let offset = this.resolvedOffsets[topic][partition]
+    let offset = this.resolvedOffsets[topic][partition];
+
+    if (offset == null) {
+      console.warn(`Couldn't determine offset. Using 0`);
+      offset = '0';
+    }
+
+
     if (Long.fromValue(offset).equals(-1)) {
       offset = '0'
     }
