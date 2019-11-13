@@ -281,7 +281,9 @@ describe('Cluster > BrokerPool', () => {
     beforeEach(() => {
       brokerPool.refreshMetadata = jest.fn()
       brokerPool.metadataMaxAge = 1
-      brokerPool.metadata = {}
+      brokerPool.metadata = {
+        topicMetadata: [],
+      }
     })
 
     it('calls refreshMetadata if metadataExpireAt is not defined', async () => {
@@ -290,7 +292,7 @@ describe('Cluster > BrokerPool', () => {
       expect(brokerPool.refreshMetadata).toHaveBeenCalledWith([topicName])
     })
 
-    it('calls refreshMetadata if metadata is not present', async () => {
+    it('calls refreshMetadata if metadata is not initialized', async () => {
       brokerPool.metadataExpireAt = Date.now() + 1000
       brokerPool.metadata = null
       await brokerPool.refreshMetadataIfNecessary([topicName])
@@ -303,8 +305,21 @@ describe('Cluster > BrokerPool', () => {
       expect(brokerPool.refreshMetadata).toHaveBeenCalledWith([topicName])
     })
 
+    it('calls refreshMetadata if metadata is not present', async () => {
+      brokerPool.metadataExpireAt = Date.now() + 1000
+      await brokerPool.refreshMetadataIfNecessary([topicName])
+      expect(brokerPool.refreshMetadata).toHaveBeenCalledWith([topicName])
+    })
+
     it('does not call refreshMetadata if metadata is valid and up to date', async () => {
       brokerPool.metadataExpireAt = Date.now() + 1000
+      brokerPool.metadata = {
+        topicMetadata: [
+          {
+            topic: topicName,
+          },
+        ],
+      }
       await brokerPool.refreshMetadataIfNecessary([topicName])
       expect(brokerPool.refreshMetadata).not.toHaveBeenCalled()
     })
