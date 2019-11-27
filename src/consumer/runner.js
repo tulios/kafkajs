@@ -343,7 +343,7 @@ module.exports = class Runner {
         }
 
         if (isRebalancing(e)) {
-          this.logger.error('The group is rebalancing, re-joining', {
+          this.logger.warn('The group is rebalancing, re-joining', {
             groupId: this.consumerGroup.groupId,
             memberId: this.consumerGroup.memberId,
             error: e.message,
@@ -357,7 +357,7 @@ module.exports = class Runner {
         }
 
         if (e.type === 'UNKNOWN_MEMBER_ID') {
-          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
+          this.logger.warn('The coordinator is not aware of this member, re-joining the group', {
             groupId: this.consumerGroup.groupId,
             memberId: this.consumerGroup.memberId,
             error: e.message,
@@ -433,7 +433,7 @@ module.exports = class Runner {
         }
 
         if (isRebalancing(e)) {
-          this.logger.error('The group is rebalancing, re-joining', {
+          this.logger.warn('The group is rebalancing, re-joining', {
             groupId: this.consumerGroup.groupId,
             memberId: this.consumerGroup.memberId,
             error: e.message,
@@ -447,7 +447,7 @@ module.exports = class Runner {
         }
 
         if (e.type === 'UNKNOWN_MEMBER_ID') {
-          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
+          this.logger.warn('The coordinator is not aware of this member, re-joining the group', {
             groupId: this.consumerGroup.groupId,
             memberId: this.consumerGroup.memberId,
             error: e.message,
