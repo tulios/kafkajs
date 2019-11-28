@@ -68,6 +68,10 @@ const MemberAssignment = {
     const indexAssignment = (obj, { topic, partitions }) =>
       Object.assign(obj, { [topic]: partitions })
 
+    if (!decoder.canReadInt16()) {
+      return null
+    }
+
     return {
       version: decoder.readInt16(),
       assignment: decoder.readArray(decodeAssignment).reduce(indexAssignment, {}),
