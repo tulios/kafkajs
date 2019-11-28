@@ -56,7 +56,7 @@ const MemberAssignment = {
 
   /**
    * @param {Buffer} buffer
-   * @returns {Object}
+   * @returns {Object|null}
    */
   decode(buffer) {
     const decoder = new Decoder(buffer)
