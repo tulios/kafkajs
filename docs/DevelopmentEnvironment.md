@@ -5,6 +5,8 @@ title: Development Environment
 
 When developing KafkaJS, we run a Kafka cluster in a similar way to what is described in [Running Kafka in Development](DockerLocal.md), using [`docker`](https://docs.docker.com/) and [`docker-compose`](https://docs.docker.com/compose/install/). Before you proceed, make sure that you have both `docker` and `docker-compose` available.
 
+KafkaJS is assuming that [`yarn`](https://yarnpkg.com/) is available globally, so if you haven't installed it yet: `npm install --global yarn`.
+
 ## Running Kafka
 
 For testing KafkaJS we use a multi-broker Kafka cluster as well as Zookeeper for authentication. To start the cluster and generate credentials, run the following from the root of the repository:
