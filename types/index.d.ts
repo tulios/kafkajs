@@ -321,7 +321,7 @@ export const PartitionAssigners: { roundRobin: PartitionAssigner }
 
 export interface ISerializer<T> {
   encode(value: T): Buffer
-  decode(buffer: Buffer): T
+  decode(buffer: Buffer): T | null
 }
 
 export type MemberMetadata = {
@@ -338,7 +338,7 @@ export type MemberAssignment = {
 
 export const AssignerProtocol: {
   MemberMetadata: ISerializer<MemberMetadata>
-  MemberAssignment: ISerializer<MemberAssignment | null>
+  MemberAssignment: ISerializer<MemberAssignment>
 }
 
 export enum logLevel {
