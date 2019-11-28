@@ -338,7 +338,7 @@ export type MemberAssignment = {
 
 export const AssignerProtocol: {
   MemberMetadata: ISerializer<MemberMetadata>
-  MemberAssignment: ISerializer<MemberAssignment>
+  MemberAssignment: ISerializer<MemberAssignment | null>
 }
 
 export enum logLevel {
