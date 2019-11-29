@@ -1,6 +1,7 @@
 const InstrumentationEventEmitter = require('../../instrumentation/emitter')
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
+const sleep = require('../../utils/sleep')
 
 const {
   secureRandom,
@@ -12,7 +13,7 @@ const {
 } = require('testHelpers')
 
 describe('Consumer > Instrumentation Events', () => {
-  let topicName, groupId, cluster, producer, consumer, message, emitter
+  let topicName, groupId, cluster, producer, consumer, message, emitter, heartbeatInterval
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
@@ -28,11 +29,12 @@ describe('Consumer > Instrumentation Events', () => {
       logger: newLogger(),
     })
 
+    heartbeatInterval = 100
     consumer = createConsumer({
       cluster,
       groupId,
       logger: newLogger(),
-      heartbeatInterval: 100,
+      heartbeatInterval,
       maxWaitTimeInMs: 1,
       maxBytesPerPartition: 180,
       instrumentationEmitter: emitter,
@@ -67,6 +69,7 @@ describe('Consumer > Instrumentation Events', () => {
     await consumer.run({ eachMessage: () => true })
     await producer.send({ acks: 1, topic: topicName, messages: [message] })
 
+    await sleep(heartbeatInterval + 15)
     await waitFor(() => heartbeats > 0)
     expect(onHeartbeat).toHaveBeenCalledWith({
       id: expect.any(Number),

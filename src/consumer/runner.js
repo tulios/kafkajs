@@ -260,7 +260,15 @@ module.exports = class Runner {
     const iterator = await this.consumerGroup.fetch()
 
     this.instrumentationEmitter.emit(FETCH, {
-      // numberOfBatches: batches.length,
+      /**
+       * PR #570 removed support for the number of batches in this instrumentation event;
+       * The new implementation uses an async generation to deliver the batches, which makes
+       * this number impossible to get. The number is set to 0 to keep the event backward
+       * compatible until we bump KafkaJS to version 2, following the end of node 8 LTS.
+       *
+       * @since 2019-11-29
+       */
+      numberOfBatches: 0,
       duration: Date.now() - startFetch,
     })
 
