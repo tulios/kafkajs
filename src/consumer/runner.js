@@ -305,7 +305,7 @@ module.exports = class Runner {
     }
 
     const enqueuedTasks = []
-    let expectednumberOfExecutions = 0
+    let expectedNumberOfExecutions = 0
     let numberOfExecutions = 0
     const { lock, unlock, unlockWithError } = barrier()
 
@@ -321,7 +321,7 @@ module.exports = class Runner {
         }
 
         const batches = await result.value
-        expectednumberOfExecutions += batches.length
+        expectedNumberOfExecutions += batches.length
 
         batches.map(batch =>
           concurrently(async () => {
@@ -341,7 +341,7 @@ module.exports = class Runner {
               unlockWithError(e)
             } finally {
               numberOfExecutions++
-              if (numberOfExecutions === expectednumberOfExecutions) {
+              if (numberOfExecutions === expectedNumberOfExecutions) {
                 unlock()
               }
             }
