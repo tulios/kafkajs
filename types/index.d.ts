@@ -321,7 +321,7 @@ export const PartitionAssigners: { roundRobin: PartitionAssigner }
 
 export interface ISerializer<T> {
   encode(value: T): Buffer
-  decode(buffer: Buffer): T
+  decode(buffer: Buffer): T | null
 }
 
 export type MemberMetadata = {
