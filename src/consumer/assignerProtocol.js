@@ -3,9 +3,10 @@ const Decoder = require('../protocol/decoder')
 
 const MemberMetadata = {
   /**
-   * @param {number} version
-   * @param {Array<string>} topics
-   * @param {Buffer} [userData=Buffer.alloc(0)]
+   * @param {Object} metadata
+   * @param {number} metadata.version
+   * @param {Array<string>} metadata.topics
+   * @param {Buffer} [metadata.userData=Buffer.alloc(0)]
    *
    * @returns Buffer
    */

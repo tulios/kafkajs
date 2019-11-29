@@ -175,6 +175,7 @@ module.exports = class Connection {
           onTimeout,
         })
       } catch (e) {
+        clearTimeout(timeoutId)
         reject(
           new KafkaJSConnectionError(`Failed to connect: ${e.message}`, {
             broker: `${this.host}:${this.port}`,
