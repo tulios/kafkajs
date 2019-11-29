@@ -53,4 +53,31 @@ describe('Utils > BufferedAsyncIterator', () => {
 
     expect(testResults).toEqual([2, 1, 3])
   })
+
+  it('allows errors to be handled on the creator context', async () => {
+    const promises = [
+      sleep(300).then(() => {
+        throw new Error(`Error-1`)
+      }),
+      sleep(100).then(() => {
+        throw new Error(`Error-2`)
+      }),
+      sleep(500).then(() => {
+        throw new Error(`Error-3`)
+      }),
+    ]
+
+    let hasRecovered = false
+    const handleError = jest.fn()
+    const recover = async e => {
+      hasRecovered = true
+      throw e
+    }
+    const iterator = BufferedAsyncIterator(promises, recover)
+    await Promise.all([iterator.next().value, iterator.next().value, iterator.next().value]).catch(
+      handleError
+    )
+    expect(handleError).toHaveBeenCalledWith(new Error('Error-2'))
+    expect(hasRecovered).toEqual(true)
+  })
 })

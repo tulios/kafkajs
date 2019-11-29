@@ -1,13 +1,22 @@
 const EventEmitter = require('events')
 
-const createPromiseNotifier = (emitter, results) => (promise, i) => {
-  return promise.then(result => {
-    if (emitter.listenerCount('data') > 0) {
-      emitter.emit('data', { result, id: i })
-    } else {
-      results.push(result)
-    }
-  })
+const createPromiseNotifier = (emitter, results, handleError) => (promise, i) => {
+  return promise
+    .then(result => {
+      if (emitter.listenerCount('data') > 0) {
+        emitter.emit('data', { result, id: i })
+      } else {
+        results.push(result)
+      }
+    })
+    .catch(async e => {
+      try {
+        await handleError(e)
+        emitter.emit('error', e)
+      } catch (newError) {
+        emitter.emit('error', newError)
+      }
+    })
 }
 
 const createGetResolvedPromise = (emitter, results) => {
@@ -16,7 +25,7 @@ const createGetResolvedPromise = (emitter, results) => {
 
   return () => {
     runningPromises++
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
       if (results.length > 0) {
         return resolve(results.shift())
       }
@@ -60,14 +69,18 @@ const createGetResolvedPromise = (emitter, results) => {
       }
 
       emitter.on('data', handler)
+      emitter.on('error', reject)
     })
   }
 }
+const defaultErrorHandler = e => {
+  throw e
+}
 
-function* BufferedAsyncIterator(promises) {
+function* BufferedAsyncIterator(promises, handleError = defaultErrorHandler) {
   const results = []
   const emitter = new EventEmitter()
-  const wrap = createPromiseNotifier(emitter, results)
+  const wrap = createPromiseNotifier(emitter, results, handleError)
   const getResolvedPromise = createGetResolvedPromise(emitter, results)
   const wrappedPromises = promises.map(wrap)
 
