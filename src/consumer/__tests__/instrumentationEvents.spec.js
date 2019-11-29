@@ -1,7 +1,6 @@
 const InstrumentationEventEmitter = require('../../instrumentation/emitter')
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
-const sleep = require('../../utils/sleep')
 
 const {
   secureRandom,
@@ -13,7 +12,19 @@ const {
 } = require('testHelpers')
 
 describe('Consumer > Instrumentation Events', () => {
-  let topicName, groupId, cluster, producer, consumer, message, emitter, heartbeatInterval
+  let topicName, groupId, cluster, producer, consumer, consumer2, message, emitter
+
+  const createTestConsumer = ({ heartbeatInterval = 100, ...otherOps } = {}) =>
+    createConsumer({
+      cluster,
+      groupId,
+      logger: newLogger(),
+      heartbeatInterval,
+      maxWaitTimeInMs: 1,
+      maxBytesPerPartition: 180,
+      instrumentationEmitter: emitter,
+      ...otherOps,
+    })
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
@@ -29,26 +40,17 @@ describe('Consumer > Instrumentation Events', () => {
       logger: newLogger(),
     })
 
-    heartbeatInterval = 100
-    consumer = createConsumer({
-      cluster,
-      groupId,
-      logger: newLogger(),
-      heartbeatInterval,
-      maxWaitTimeInMs: 1,
-      maxBytesPerPartition: 180,
-      instrumentationEmitter: emitter,
-    })
-
     message = { key: `key-${secureRandom()}`, value: `value-${secureRandom()}` }
   })
 
   afterEach(async () => {
     consumer && (await consumer.disconnect())
+    consumer2 && (await consumer2.disconnect())
     producer && (await producer.disconnect())
   })
 
   test('on throws an error when provided with an invalid event name', () => {
+    consumer = createTestConsumer()
     expect(() => consumer.on('NON_EXISTENT_EVENT', () => {})).toThrow(
       /Event name should be one of consumer.events./
     )
@@ -57,6 +59,8 @@ describe('Consumer > Instrumentation Events', () => {
   it('emits heartbeat', async () => {
     const onHeartbeat = jest.fn()
     let heartbeats = 0
+
+    consumer = createTestConsumer({ heartbeatInterval: 0 })
     consumer.on(consumer.events.HEARTBEAT, async event => {
       onHeartbeat(event)
       heartbeats++
@@ -69,7 +73,6 @@ describe('Consumer > Instrumentation Events', () => {
     await consumer.run({ eachMessage: () => true })
     await producer.send({ acks: 1, topic: topicName, messages: [message] })
 
-    await sleep(heartbeatInterval + 15)
     await waitFor(() => heartbeats > 0)
     expect(onHeartbeat).toHaveBeenCalledWith({
       id: expect.any(Number),
@@ -86,6 +89,8 @@ describe('Consumer > Instrumentation Events', () => {
   it('emits commit offsets', async () => {
     const onCommitOffsets = jest.fn()
     let commitOffsets = 0
+
+    consumer = createTestConsumer()
     consumer.on(consumer.events.COMMIT_OFFSETS, async event => {
       onCommitOffsets(event)
       commitOffsets++
@@ -124,6 +129,8 @@ describe('Consumer > Instrumentation Events', () => {
   it('emits group join', async () => {
     const onGroupJoin = jest.fn()
     let groupJoin = 0
+
+    consumer = createTestConsumer()
     consumer.on(consumer.events.GROUP_JOIN, async event => {
       onGroupJoin(event)
       groupJoin++
@@ -154,6 +161,8 @@ describe('Consumer > Instrumentation Events', () => {
   it('emits fetch', async () => {
     const onFetch = jest.fn()
     let fetch = 0
+
+    consumer = createTestConsumer()
     consumer.on(consumer.events.FETCH, async event => {
       onFetch(event)
       fetch++
@@ -179,6 +188,8 @@ describe('Consumer > Instrumentation Events', () => {
   it('emits fetch start', async () => {
     const onFetchStart = jest.fn()
     let fetch = 0
+
+    consumer = createTestConsumer()
     consumer.on(consumer.events.FETCH_START, async event => {
       onFetchStart(event)
       fetch++
@@ -201,6 +212,8 @@ describe('Consumer > Instrumentation Events', () => {
   it('emits start batch process', async () => {
     const onStartBatchProcess = jest.fn()
     let startBatchProcess = 0
+
+    consumer = createTestConsumer()
     consumer.on(consumer.events.START_BATCH_PROCESS, async event => {
       onStartBatchProcess(event)
       startBatchProcess++
@@ -233,6 +246,8 @@ describe('Consumer > Instrumentation Events', () => {
   it('emits end batch process', async () => {
     const onEndBatchProcess = jest.fn()
     let endBatchProcess = 0
+
+    consumer = createTestConsumer()
     consumer.on(consumer.events.END_BATCH_PROCESS, async event => {
       onEndBatchProcess(event)
       endBatchProcess++
@@ -267,6 +282,8 @@ describe('Consumer > Instrumentation Events', () => {
     const connectListener = jest.fn().mockName('connect')
     const disconnectListener = jest.fn().mockName('disconnect')
     const stopListener = jest.fn().mockName('stop')
+
+    consumer = createTestConsumer()
     consumer.on(consumer.events.CONNECT, connectListener)
     consumer.on(consumer.events.DISCONNECT, disconnectListener)
     consumer.on(consumer.events.STOP, stopListener)
@@ -282,32 +299,23 @@ describe('Consumer > Instrumentation Events', () => {
   })
 
   it('emits crash events', async () => {
-    consumer = createConsumer({
-      cluster,
-      groupId,
-      logger: newLogger(),
-      heartbeatInterval: 100,
-      maxWaitTimeInMs: 1,
-      maxBytesPerPartition: 180,
-      retry: {
-        retries: 0,
-      },
-    })
     const crashListener = jest.fn()
-    consumer.on(consumer.events.CRASH, crashListener)
     const error = new Error('💣')
+    const eachMessage = jest.fn().mockImplementationOnce(() => {
+      throw error
+    })
+
+    consumer = createTestConsumer({ retry: { retries: 0 } })
+    consumer.on(consumer.events.CRASH, crashListener)
 
     await consumer.connect()
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
-    await consumer.run({
-      eachMessage: async () => {
-        throw error
-      },
-    })
+    await consumer.run({ eachMessage })
 
     await producer.send({ acks: 1, topic: topicName, messages: [message] })
 
     await waitFor(() => crashListener.mock.calls.length > 0)
+
     expect(crashListener).toHaveBeenCalledWith({
       id: expect.any(Number),
       timestamp: expect.any(Number),
@@ -318,6 +326,8 @@ describe('Consumer > Instrumentation Events', () => {
 
   it('emits request events', async () => {
     const requestListener = jest.fn().mockName('request')
+
+    consumer = createTestConsumer()
     consumer.on(consumer.events.REQUEST, requestListener)
 
     await consumer.connect()
@@ -347,14 +357,9 @@ describe('Consumer > Instrumentation Events', () => {
       requestTimeout: 1,
       enforceRequestTimeout: true,
     })
-    consumer = createConsumer({
-      cluster,
-      groupId,
-      logger: newLogger(),
-      instrumentationEmitter: emitter,
-    })
-
     const requestListener = jest.fn().mockName('request_timeout')
+
+    consumer = createTestConsumer({ cluster })
     consumer.on(consumer.events.REQUEST_TIMEOUT, requestListener)
 
     await consumer
@@ -386,28 +391,12 @@ describe('Consumer > Instrumentation Events', () => {
       maxInFlightRequests: 1,
     })
 
-    consumer = createConsumer({
-      groupId,
-      cluster,
-      logger: newLogger(),
-      heartbeatInterval: 100,
-      maxWaitTimeInMs: 1,
-      maxBytesPerPartition: 180,
-      instrumentationEmitter: emitter,
-    })
-
-    const consumer2 = createConsumer({
-      groupId,
-      cluster,
-      logger: newLogger(),
-      heartbeatInterval: 100,
-      maxWaitTimeInMs: 1,
-      maxBytesPerPartition: 180,
-      instrumentationEmitter: emitter,
-    })
-
     const requestListener = jest.fn().mockName('request_queue_size')
+
+    consumer = createTestConsumer({ cluster })
     consumer.on(consumer.events.REQUEST_QUEUE_SIZE, requestListener)
+
+    consumer2 = createTestConsumer({ cluster })
     consumer2.on(consumer2.events.REQUEST_QUEUE_SIZE, requestListener)
 
     await Promise.all([
