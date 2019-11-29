@@ -188,7 +188,12 @@ module.exports = class BrokerPool {
    */
   async refreshMetadataIfNecessary(topics) {
     const shouldRefresh =
-      this.metadata == null || this.metadataExpireAt == null || Date.now() > this.metadataExpireAt
+      this.metadata == null ||
+      this.metadataExpireAt == null ||
+      Date.now() > this.metadataExpireAt ||
+      !topics.every(topic =>
+        this.metadata.topicMetadata.some(topicMetadata => topicMetadata.topic === topic)
+      )
 
     if (shouldRefresh) {
       return this.refreshMetadata(topics)

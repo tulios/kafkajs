@@ -157,7 +157,9 @@ module.exports = class ConsumerGroup {
       groupAssignment: assignment,
     })
 
-    const decodedAssignment = MemberAssignment.decode(memberAssignment).assignment
+    const decodedMemberAssignment = MemberAssignment.decode(memberAssignment)
+    const decodedAssignment =
+      decodedMemberAssignment != null ? decodedMemberAssignment.assignment : {}
     this.logger.debug('Received assignment', {
       groupId,
       generationId,

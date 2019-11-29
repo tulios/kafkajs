@@ -32,6 +32,10 @@ module.exports = class Decoder {
     return value
   }
 
+  canReadInt16() {
+    return this.canReadBytes(INT16_SIZE)
+  }
+
   readInt16() {
     const value = this.buffer.readInt16BE(this.offset)
     this.offset += INT16_SIZE
@@ -39,7 +43,7 @@ module.exports = class Decoder {
   }
 
   canReadInt32() {
-    return Buffer.byteLength(this.buffer) - this.offset >= INT32_SIZE
+    return this.canReadBytes(INT32_SIZE)
   }
 
   readInt32() {
@@ -49,7 +53,7 @@ module.exports = class Decoder {
   }
 
   canReadInt64() {
-    return Buffer.byteLength(this.buffer) - this.offset >= INT64_SIZE
+    return this.canReadBytes(INT64_SIZE)
   }
 
   readInt64() {

@@ -11,7 +11,7 @@ Issues are tracked in [Github](https://github.com/tulios/kafkajs/issues). For fi
 
 The following chapters will get you set up with a working development environment and teach you how to run the tests. If you are already familiar with the project setup, here's the gist:
 
-With `docker` and `docker-compose` available.
+With `docker`, `docker-compose` and `yarn` available:
 
 ```sh
 yarn test
