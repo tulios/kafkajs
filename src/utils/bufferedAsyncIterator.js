@@ -1,22 +1,21 @@
 const EventEmitter = require('events')
 
-const createPromiseNotifier = (emitter, results, handleError) => (promise, i) => {
-  return promise
-    .then(result => {
-      if (emitter.listenerCount('data') > 0) {
-        emitter.emit('data', { result, id: i })
-      } else {
-        results.push(result)
-      }
-    })
-    .catch(async e => {
-      try {
-        await handleError(e)
-        emitter.emit('error', e)
-      } catch (newError) {
-        emitter.emit('error', newError)
-      }
-    })
+const createPromiseNotifier = (emitter, results, handleError) => async (promise, i) => {
+  try {
+    const result = await promise
+    if (emitter.listenerCount('data') > 0) {
+      emitter.emit('data', { result, id: i })
+    } else {
+      results.push(result)
+    }
+  } catch (e) {
+    try {
+      await handleError(e)
+      emitter.emit('error', e)
+    } catch (newError) {
+      emitter.emit('error', newError)
+    }
+  }
 }
 
 const createGetResolvedPromise = (emitter, results) => {
