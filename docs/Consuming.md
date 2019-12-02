@@ -73,7 +73,7 @@ await consumer.run({
                 }
             })
 
-            await resolveOffset(message.offset)
+            resolveOffset(message.offset)
             await heartbeat()
         }
     },
@@ -96,7 +96,7 @@ consumer.run({
         for (let message of batch.messages) {
             if (!isRunning() || isStale()) break
             await processMessage(message)
-            await resolveOffset(message.offset)
+            resolveOffset(message.offset)
             await heartbeat()
         }
     }
