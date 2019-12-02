@@ -343,7 +343,6 @@ module.exports = class Runner {
               }
 
               await onBatch(batch)
-              await this.autoCommitOffsets()
               await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
             } catch (e) {
               unlockWithError(e)
@@ -364,6 +363,8 @@ module.exports = class Runner {
 
     await Promise.all(enqueuedTasks.map(fn => fn()))
     await lock
+    await this.autoCommitOffsets()
+    await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
   }
 
   async scheduleFetch() {

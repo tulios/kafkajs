@@ -15,13 +15,14 @@ describe('Consumer', () => {
     topicNames = [`test-topic-${secureRandom()}`, `test-topic-${secureRandom()}`]
     groupId = `consumer-group-id-${secureRandom()}`
 
-    await Promise.all(topicNames.map(topicName => createTopic({ topic: topicName })))
+    await Promise.all(topicNames.map(topicName => createTopic({ topic: topicName, partitions: 2 })))
 
     consumer1 = createConsumer({
       cluster: createCluster({ metadataMaxAge: 50 }),
       groupId,
       heartbeatInterval: 100,
       maxWaitTimeInMs: 100,
+      rebalanceTimeout: 1000,
       logger: newLogger(),
     })
   })
@@ -38,28 +39,35 @@ describe('Consumer', () => {
     )
 
     consumer1.run({ eachMessage: () => {} })
-    await waitForConsumerToJoinGroup(consumer1)
+    await waitForConsumerToJoinGroup(consumer1, { label: 'consumer1' })
 
     // Second consumer re-uses group id but only subscribes to one of the topics
     consumer2 = createConsumer({
       cluster: createCluster({ metadataMaxAge: 50 }),
       groupId,
       heartbeatInterval: 100,
-      maxWaitTimeInMs: 100,
+      maxWaitTimeInMs: 1000,
+      rebalanceTimeout: 1000,
       logger: newLogger(),
     })
+
+    await consumer2.connect()
     await consumer2.subscribe({ topic: topicNames[0], fromBeginning: true })
 
     consumer2.run({ eachMessage: () => {} })
-    await waitForConsumerToJoinGroup(consumer2)
+    const event = await waitForConsumerToJoinGroup(consumer2, { label: 'consumer2' })
+
+    // verify that the assigment does not contain the unsubscribed topic
+    expect(event.payload.memberAssignment[topicNames[1]]).toBeUndefined()
   })
 
-  it('Starts consuming from new topics after already having assignments', async () => {
+  it('starts consuming from new topics after already having assignments', async () => {
     consumer2 = createConsumer({
       cluster: createCluster({ metadataMaxAge: 50 }),
       groupId,
       heartbeatInterval: 100,
       maxWaitTimeInMs: 100,
+      rebalanceTimeout: 1000,
       logger: newLogger(),
     })
 
@@ -84,8 +92,10 @@ describe('Consumer', () => {
       groupId,
       heartbeatInterval: 100,
       maxWaitTimeInMs: 100,
+      rebalanceTimeout: 1000,
       logger: newLogger(),
     })
+
     await consumer1.connect()
     await Promise.all(topicNames.map(topic => consumer1.subscribe({ topic })))
     consumer1.run({ eachMessage: () => {} })
@@ -98,6 +108,7 @@ describe('Consumer', () => {
       groupId,
       heartbeatInterval: 100,
       maxWaitTimeInMs: 100,
+      rebalanceTimeout: 1000,
       logger: newLogger(),
     })
 
