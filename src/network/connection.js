@@ -88,6 +88,8 @@ module.exports = class Connection {
     this.logDebug = log('debug')
     this.logError = log('error')
     this.shouldLogBuffers = getEnv().KAFKAJS_DEBUG_PROTOCOL_BUFFERS === '1'
+    this.shouldLogFetchBuffer =
+      this.shouldLogBuffers && getEnv().KAFKAJS_DEBUG_EXTENDED_PROTOCOL_BUFFERS === '1'
   }
 
   /**
@@ -309,7 +311,7 @@ module.exports = class Connection {
       this.logDebug(`Response ${requestInfo(entry)}`, {
         correlationId,
         size,
-        data: isFetchApi ? '[filtered]' : data,
+        data: isFetchApi && !this.shouldLogFetchBuffer ? '[filtered]' : data,
       })
 
       return data
