@@ -111,7 +111,7 @@
                 }
             })
 
-            <span class="hljs-keyword">await</span> resolveOffset(message.offset)
+            resolveOffset(message.offset)
             <span class="hljs-keyword">await</span> heartbeat()
         }
     },
@@ -132,7 +132,7 @@
         <span class="hljs-keyword">for</span> (<span class="hljs-keyword">let</span> message <span class="hljs-keyword">of</span> batch.messages) {
             <span class="hljs-keyword">if</span> (!isRunning() || isStale()) <span class="hljs-keyword">break</span>
             <span class="hljs-keyword">await</span> processMessage(message)
-            <span class="hljs-keyword">await</span> resolveOffset(message.offset)
+            resolveOffset(message.offset)
             <span class="hljs-keyword">await</span> heartbeat()
         }
     }
