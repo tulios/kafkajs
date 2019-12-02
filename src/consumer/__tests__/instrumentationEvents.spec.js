@@ -385,7 +385,11 @@ describe('Consumer > Instrumentation Events', () => {
     })
   })
 
-  it('emits request queue size events', async () => {
+  /**
+   * This test is too flaky, we need to think about a better way of testing this.
+   * Skipping until we have a better plan
+   */
+  it.skip('emits request queue size events', async () => {
     const cluster = createCluster({
       instrumentationEmitter: emitter,
       maxInFlightRequests: 1,
