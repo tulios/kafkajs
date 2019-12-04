@@ -19,6 +19,12 @@ In order to avoid overloading the terminal with huge logs, we filter any buffers
 KAFKAJS_LOG_LEVEL=debug KAFKAJS_DEBUG_PROTOCOL_BUFFERS=1 yarn test:local:watch
 ```
 
+Because the `Fetch` response log can be extremely large, we always filter the `Fetch` response payload, unless the `KAFKAJS_DEBUG_EXTENDED_PROTOCOL_BUFFERS` environment variable is *also*  set. To see the full `Fetch` response buffer values, run with both flags set:
+
+```sh
+KAFKAJS_LOG_LEVEL=debug KAFKAJS_DEBUG_PROTOCOL_BUFFERS=1 KAFKAJS_DEBUG_EXTENDED_PROTOCOL_BUFFERS=1 yarn test:local:watch
+```
+
 ## Helpers
 
 [`testHelpers/index.js`](https://github.com/tulios/kafkajs/blob/master/testHelpers/index.js) provides several helpers for connecting to your cluster and asserting upon its state. Tests are typically co-located with the code that they are testing. See [`src/consumer/__tests__/consumeMessages.spec.js`](https://github.com/tulios/kafkajs/blob/master/src/consumer/__tests__/consumeMessages.spec.js) for an example that makes use of the helpers to implement an integration test.
