@@ -2,6 +2,7 @@ const Long = require('long')
 const flatten = require('../../utils/flatten')
 const isInvalidOffset = require('./isInvalidOffset')
 const initializeConsumerOffsets = require('./initializeConsumerOffsets')
+const Lock = require('../../utils/lock')
 const {
   events: { COMMIT_OFFSETS },
 } = require('../instrumentationEvents')
@@ -47,6 +48,9 @@ module.exports = class OffsetManager {
 
     this.topics = keys(memberAssignment)
     this.clearAllOffsets()
+    this.lock = new Lock({
+      description: `offsetManager-${groupId}-${generationId}-${memberId}`,
+    })
   }
 
   /**
@@ -128,23 +132,28 @@ module.exports = class OffsetManager {
    * @param {number} partition
    */
   async setDefaultOffset({ topic, partition }) {
-    const { groupId, generationId, memberId } = this
-    const defaultOffset = this.cluster.defaultOffset(this.topicConfigurations[topic])
-    const coordinator = await this.getCoordinator()
+    try {
+      await this.lock.acquire()
+      const { groupId, generationId, memberId } = this
+      const defaultOffset = this.cluster.defaultOffset(this.topicConfigurations[topic])
+      const coordinator = await this.getCoordinator()
 
-    await coordinator.offsetCommit({
-      groupId,
-      memberId,
-      groupGenerationId: generationId,
-      topics: [
-        {
-          topic,
-          partitions: [{ partition, offset: defaultOffset }],
-        },
-      ],
-    })
+      await coordinator.offsetCommit({
+        groupId,
+        memberId,
+        groupGenerationId: generationId,
+        topics: [
+          {
+            topic,
+            partitions: [{ partition, offset: defaultOffset }],
+          },
+        ],
+      })
 
-    this.clearOffsets({ topic, partition })
+      this.clearOffsets({ topic, partition })
+    } finally {
+      await this.lock.release()
+    }
   }
 
   /**
@@ -156,26 +165,31 @@ module.exports = class OffsetManager {
    * @param {string} offset
    */
   async seek({ topic, partition, offset }) {
-    if (!this.memberAssignment[topic] || !this.memberAssignment[topic].includes(partition)) {
-      return
+    try {
+      await this.lock.acquire()
+      if (!this.memberAssignment[topic] || !this.memberAssignment[topic].includes(partition)) {
+        return
+      }
+
+      const { groupId, generationId, memberId } = this
+      const coordinator = await this.getCoordinator()
+
+      await coordinator.offsetCommit({
+        groupId,
+        memberId,
+        groupGenerationId: generationId,
+        topics: [
+          {
+            topic,
+            partitions: [{ partition, offset }],
+          },
+        ],
+      })
+
+      this.clearOffsets({ topic, partition })
+    } finally {
+      await this.lock.release()
     }
-
-    const { groupId, generationId, memberId } = this
-    const coordinator = await this.getCoordinator()
-
-    await coordinator.offsetCommit({
-      groupId,
-      memberId,
-      groupGenerationId: generationId,
-      topics: [
-        {
-          topic,
-          partitions: [{ partition, offset }],
-        },
-      ],
-    })
-
-    this.clearOffsets({ topic, partition })
   }
 
   async commitOffsetsIfNecessary() {
@@ -277,60 +291,67 @@ module.exports = class OffsetManager {
   }
 
   async resolveOffsets() {
-    const { groupId } = this
-    const invalidOffset = topic => partition => {
-      return isInvalidOffset(this.committedOffsets()[topic][partition])
-    }
+    try {
+      await this.lock.acquire()
 
-    const pendingPartitions = this.topics
-      .map(topic => ({
-        topic,
-        partitions: this.memberAssignment[topic]
-          .filter(invalidOffset(topic))
-          .map(partition => ({ partition })),
-      }))
-      .filter(t => t.partitions.length > 0)
+      const { groupId } = this
+      const invalidOffset = topic => partition => {
+        return isInvalidOffset(this.committedOffsets()[topic][partition])
+      }
 
-    if (pendingPartitions.length === 0) {
-      return
-    }
-
-    const coordinator = await this.getCoordinator()
-    const { responses: consumerOffsets } = await coordinator.offsetFetch({
-      groupId,
-      topics: pendingPartitions,
-    })
-
-    const unresolvedPartitions = consumerOffsets.map(({ topic, partitions }) =>
-      assign(
-        {
+      const pendingPartitions = this.topics
+        .map(topic => ({
           topic,
-          partitions: partitions
-            .filter(({ offset }) => isInvalidOffset(offset))
-            .map(({ partition }) => assign({ partition })),
-        },
-        this.topicConfigurations[topic]
-      )
-    )
+          partitions: this.memberAssignment[topic]
+            .filter(invalidOffset(topic))
+            .map(partition => ({ partition })),
+        }))
+        .filter(t => t.partitions.length > 0)
 
-    const indexPartitions = (obj, { partition, offset }) => {
-      return assign(obj, { [partition]: offset })
-    }
+      if (pendingPartitions.length === 0) {
+        return
+      }
 
-    const hasUnresolvedPartitions = () =>
-      unresolvedPartitions.filter(t => t.partitions.length > 0).length > 0
-
-    let offsets = consumerOffsets
-    if (hasUnresolvedPartitions()) {
-      const topicOffsets = await this.cluster.fetchTopicsOffset(unresolvedPartitions)
-      offsets = initializeConsumerOffsets(consumerOffsets, topicOffsets)
-    }
-
-    offsets.forEach(({ topic, partitions }) => {
-      this.committedOffsets()[topic] = partitions.reduce(indexPartitions, {
-        ...this.committedOffsets()[topic],
+      const coordinator = await this.getCoordinator()
+      const { responses: consumerOffsets } = await coordinator.offsetFetch({
+        groupId,
+        topics: pendingPartitions,
       })
-    })
+
+      const unresolvedPartitions = consumerOffsets.map(({ topic, partitions }) =>
+        assign(
+          {
+            topic,
+            partitions: partitions
+              .filter(({ offset }) => isInvalidOffset(offset))
+              .map(({ partition }) => assign({ partition })),
+          },
+          this.topicConfigurations[topic]
+        )
+      )
+
+      const indexPartitions = (obj, { partition, offset }) => {
+        return assign(obj, { [partition]: offset })
+      }
+
+      const hasUnresolvedPartitions = () =>
+        unresolvedPartitions.filter(t => t.partitions.length > 0).length > 0
+
+      let offsets = consumerOffsets
+
+      if (hasUnresolvedPartitions()) {
+        const topicOffsets = await this.cluster.fetchTopicsOffset(unresolvedPartitions)
+        offsets = initializeConsumerOffsets(consumerOffsets, topicOffsets)
+      }
+
+      offsets.forEach(({ topic, partitions }) => {
+        this.committedOffsets()[topic] = partitions.reduce(indexPartitions, {
+          ...this.committedOffsets()[topic],
+        })
+      })
+    } finally {
+      await this.lock.release()
+    }
   }
 
   /**
