@@ -416,7 +416,7 @@ module.exports = class ConsumerGroup {
                *
                * @see https://github.com/apache/kafka/blob/9aa660786e46c1efbf5605a6a69136a1dac6edb9/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L1499-L1505
                */
-              if (batch.isEmptyControlRecord()) {
+              if (batch.isEmptyControlRecord() || batch.isEmptyDueToLogCompactedMessages()) {
                 this.resolveOffset({
                   topic: batch.topic,
                   partition: batch.partition,
