@@ -8,7 +8,8 @@ const filterAbortedMessages = require('./filterAbortedMessages')
  */
 module.exports = class Batch {
   constructor(topic, fetchedOffset, partitionData) {
-    const longFetchedOffset = Long.fromValue(fetchedOffset)
+    this.fetchedOffset = fetchedOffset
+    const longFetchedOffset = Long.fromValue(this.fetchedOffset)
     const { abortedTransactions, messages } = partitionData
 
     this.topic = topic
@@ -67,7 +68,7 @@ module.exports = class Batch {
 
   lastOffset() {
     if (this.isEmptyDueToLogCompactedMessages()) {
-      return this.longFetchedOffset
+      return this.fetchedOffset
     }
 
     if (this.isEmptyIncludingFiltered()) {
