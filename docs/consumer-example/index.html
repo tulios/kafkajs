@@ -78,7 +78,7 @@
 
 <span class="hljs-keyword">const</span> run = <span class="hljs-keyword">async</span> () =&gt; {
   <span class="hljs-keyword">await</span> consumer.connect()
-  <span class="hljs-keyword">await</span> consumer.subscribe({ topic })
+  <span class="hljs-keyword">await</span> consumer.subscribe({ topic, <span class="hljs-attr">fromBeginning</span>: <span class="hljs-literal">true</span> })
   <span class="hljs-keyword">await</span> consumer.run({
     <span class="hljs-comment">// eachBatch: async ({ batch }) =&gt; {</span>
     <span class="hljs-comment">//   console.log(batch)</span>
@@ -146,7 +146,7 @@ signalTraps.map(<span class="hljs-function"><span class="hljs-params">type</span
 
 <span class="hljs-keyword">const</span> run = <span class="hljs-keyword">async</span> () =&gt; {
   <span class="hljs-keyword">await</span> consumer.connect()
-  <span class="hljs-keyword">await</span> consumer.subscribe({ topic })
+  <span class="hljs-keyword">await</span> consumer.subscribe({ topic, <span class="hljs-attr">fromBeginning</span>: <span class="hljs-literal">true</span> })
   <span class="hljs-keyword">await</span> consumer.run({
     <span class="hljs-comment">// eachBatch: async ({ batch }) =&gt; {</span>
     <span class="hljs-comment">//   console.log(batch)</span>

@@ -66,12 +66,14 @@
 <p>Subscribing to some topics:</p>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> consumer.connect()
 
-<span class="hljs-comment">// Subscribe can be called several times</span>
 <span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-A'</span> })
-<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-B'</span> })
 
-<span class="hljs-comment">// It's possible to start from the beginning:</span>
-<span class="hljs-comment">// await consumer.subscribe({ topic: 'topic-C', fromBeginning: true })</span>
+<span class="hljs-comment">// Subscribe can be called several times</span>
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-B'</span>)
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-C'</span>)
+
+<span class="hljs-comment">// It's possible to start from the beginning of the topic</span>
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-D'</span>, <span class="hljs-attr">fromBeginning</span>: <span class="hljs-literal">true</span> })
 </code></pre>
 <p>Alternatively, you can subscribe to multiple topics at once using a RegExp:</p>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> consumer.connect()
