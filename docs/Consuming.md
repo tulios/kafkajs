@@ -16,12 +16,14 @@ Subscribing to some topics:
 ```javascript
 await consumer.connect()
 
-// Subscribe can be called several times
 await consumer.subscribe({ topic: 'topic-A' })
-await consumer.subscribe({ topic: 'topic-B' })
 
-// It's possible to start from the beginning:
-// await consumer.subscribe({ topic: 'topic-C', fromBeginning: true })
+// Subscribe can be called several times
+await consumer.subscribe({ topic: 'topic-B')
+await consumer.subscribe({ topic: 'topic-C')
+
+// It's possible to start from the beginning of the topic
+await consumer.subscribe({ topic: 'topic-D', fromBeginning: true })
 ```
 
 Alternatively, you can subscribe to multiple topics at once using a RegExp:
