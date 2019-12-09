@@ -39,7 +39,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager }) => {
           throw new KafkaJSMetadataNotLoaded('Producing to topic without metadata')
         }
 
-        const messagesPerPartition = groupMessagesPerPartition({
+        const messagesPerPartition = await groupMessagesPerPartition({
           topic,
           partitionMetadata,
           messages,
