@@ -368,13 +368,34 @@ module.exports = class ConsumerGroup {
         )
 
         const leaders = keys(partitionsPerLeader)
+        const committedOffsets = this.offsetManager.committedOffsets()
 
         for (const leader of leaders) {
-          const partitions = partitionsPerLeader[leader].map(partition => ({
-            partition,
-            fetchOffset: this.offsetManager.nextOffset(topicPartition.topic, partition).toString(),
-            maxBytes: maxBytesPerPartition,
-          }))
+          const partitions = partitionsPerLeader[leader]
+            .filter(partition => {
+              /**
+               * When recovering from OffsetOutOfRange, each partition can recover
+               * concurrently, which invalidates resolved and committed offsets as part
+               * of the recovery mechanism (see OffsetManager.clearOffsets). In concurrent
+               * scenarios this can initiate a new fetch with invalid offsets.
+               *
+               * This was further highlighted by https://github.com/tulios/kafkajs/pull/570,
+               * which increased concurrency, making this more likely to happen.
+               *
+               * This is solved by only making requests for partitions with initialized offsets.
+               *
+               * See the following pull request which explains the context of the problem:
+               * @issue https://github.com/tulios/kafkajs/pull/578
+               */
+              return committedOffsets[topicPartition.topic][partition] != null
+            })
+            .map(partition => ({
+              partition,
+              fetchOffset: this.offsetManager
+                .nextOffset(topicPartition.topic, partition)
+                .toString(),
+              maxBytes: maxBytesPerPartition,
+            }))
 
           requestsPerLeader[leader] = requestsPerLeader[leader] || []
           requestsPerLeader[leader].push({ topic: topicPartition.topic, partitions })
