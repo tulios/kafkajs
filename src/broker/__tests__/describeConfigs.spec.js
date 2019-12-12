@@ -116,7 +116,7 @@ describe('Broker > describeConfigs', () => {
         },
         {
           configName: 'message.format.version',
-          configValue: expect.stringMatching(/^(0\.11\.0-IV2|1\.1-IV0|2\.2-IV1)$/),
+          configValue: expect.stringMatching(/^(0\.11\.0-IV2|1\.1-IV0|2\.[2,3]-IV1)$/),
           isDefault: false,
           isSensitive: false,
           readOnly: false,
@@ -137,6 +137,22 @@ describe('Broker > describeConfigs', () => {
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
+        },
+        {
+          configName: 'max.compaction.lag.ms',
+          configSynonyms: [],
+          configValue: '9223372036854775807',
+          isDefault: false,
+          isSensitive: false,
+          readOnly: false,
+        },
+        {
+          configName: 'message.downconversion.enable',
+          configSynonyms: [],
+          configValue: 'true',
+          isDefault: false,
+          isSensitive: false,
+          readOnly: false,
         },
         {
           configName: 'max.message.bytes',

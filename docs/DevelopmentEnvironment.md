@@ -20,13 +20,13 @@ For testing KafkaJS we use a multi-broker Kafka cluster as well as Zookeeper for
 This boots the Kafka cluster using the default docker-compose.yml file described in [scripts/dockerComposeUp.sh](https://github.com/tulios/kafkajs/blob/master/scripts/dockerComposeUp.sh). If you want to run a different version of Kafka, specify a different compose file using the `COMPOSE_FILE` environment variable:
 
 ```sh
-COMPOSE_FILE="docker-compose.2_2.yml" ./scripts/dockerComposeUp.sh
+COMPOSE_FILE="docker-compose.2_3.yml" ./scripts/dockerComposeUp.sh
 ```
 
-If you run `docker-compose -f docker-compose.2_2.yml ps` (specify whichever compose file you used in the step above), you should see something like:
+If you run `docker-compose -f docker-compose.2_3.yml ps` (specify whichever compose file you used in the step above), you should see something like:
 
 ```sh
-$ docker-compose -f docker-compose.2_2.yml ps
+$ docker-compose -f docker-compose.2_3.yml ps
 WARNING: The HOST_IP variable is not set. Defaulting to a blank string.
       Name                    Command               State                                   Ports
 ----------------------------------------------------------------------------------------------------------------------------------
