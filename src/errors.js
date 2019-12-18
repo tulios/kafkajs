@@ -67,7 +67,7 @@ class KafkaJSRequestTimeoutError extends KafkaJSError {
 }
 
 class KafkaJSMetadataNotLoaded extends KafkaJSError {
-  constructor(){
+  constructor() {
     super(...arguments)
     this.name = 'KafkaJSMetadataNotLoaded'
   }
@@ -98,61 +98,60 @@ class KafkaJSServerDoesNotSupportApiKey extends KafkaJSNonRetriableError {
 }
 
 class KafkaJSBrokerNotFound extends KafkaJSError {
-  constructor(){
+  constructor() {
     super(...arguments)
     this.name = 'KafkaJSBrokerNotFound'
   }
 }
 
 class KafkaJSPartialMessageError extends KafkaJSNonRetriableError {
-  constructor(){
+  constructor() {
     super(...arguments)
     this.name = 'KafkaJSPartialMessageError'
   }
 }
 
 class KafkaJSSASLAuthenticationError extends KafkaJSNonRetriableError {
-  constructor(){
+  constructor() {
     super(...arguments)
     this.name = 'KafkaJSSASLAuthenticationError'
   }
 }
 
 class KafkaJSGroupCoordinatorNotFound extends KafkaJSNonRetriableError {
-  constructor(){
+  constructor() {
     super(...arguments)
     this.name = 'KafkaJSGroupCoordinatorNotFound'
   }
 }
 
 class KafkaJSNotImplemented extends KafkaJSNonRetriableError {
-  constructor(){
+  constructor() {
     super(...arguments)
     this.name = 'KafkaJSNotImplemented'
   }
 }
 
 class KafkaJSTimeout extends KafkaJSNonRetriableError {
-  constructor(){
+  constructor() {
     super(...arguments)
     this.name = 'KafkaJSTimeout'
   }
 }
 
 class KafkaJSLockTimeout extends KafkaJSTimeout {
-  constructor(){
+  constructor() {
     super(...arguments)
     this.name = 'KafkaJSLockTimeout'
   }
 }
 
 class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSNonRetriableError {
-  constructor(){
+  constructor() {
     super(...arguments)
     this.name = 'KafkaJSUnsupportedMagicByteInMessageSet'
   }
 }
-
 
 module.exports = {
   KafkaJSError,
