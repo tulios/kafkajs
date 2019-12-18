@@ -41,7 +41,7 @@ class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
     this.originalError = e
     this.retryCount = retryCount
     this.retryTime = retryTime
-    this.name = 'KafkaJSOffsetOutOfRange'
+    this.name = 'KafkaJSNumberOfRetriesExceeded'
   }
 }
 
@@ -50,7 +50,7 @@ class KafkaJSConnectionError extends KafkaJSError {
     super(e)
     this.broker = broker
     this.code = code
-    this.name = 'KafkaJSOffsetOutOfRange'
+    this.name = 'KafkaJSConnectionError'
   }
 }
 
