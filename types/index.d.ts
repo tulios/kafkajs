@@ -13,7 +13,7 @@ export class Kafka {
 
 export interface KafkaConfig {
   brokers: string[]
-  ssl?: tls.ConnectionOptions
+  ssl?: tls.ConnectionOptions | boolean
   sasl?: SASLOptions
   clientId?: string
   connectionTimeout?: number
@@ -85,7 +85,7 @@ export type PartitionMetadata = {
 }
 
 export interface IHeaders {
-  [key: string]: Buffer
+  [key: string]: Buffer | string
 }
 
 export interface ConsumerConfig {
@@ -321,7 +321,7 @@ export const PartitionAssigners: { roundRobin: PartitionAssigner }
 
 export interface ISerializer<T> {
   encode(value: T): Buffer
-  decode(buffer: Buffer): T
+  decode(buffer: Buffer): T | null
 }
 
 export type MemberMetadata = {
@@ -364,7 +364,7 @@ export interface LoggerEntryContent {
 
 export type Logger = (entry: LogEntry) => void
 
-export type logCreator = (logLevel: string) => (entry: LogEntry) => void
+export type logCreator = (logLevel: logLevel) => (entry: LogEntry) => void
 
 export type Broker = {
   isConnected(): boolean

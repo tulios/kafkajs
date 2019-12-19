@@ -40,6 +40,8 @@ Refer to [TLS create secure context](https://nodejs.org/dist/latest-v8.x/docs/ap
 
 Kafka has support for using SASL to authenticate clients. The `sasl` option can be used to configure the authentication mechanism. Currently, KafkaJS supports `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512`, and `AWS` mechanisms.
 
+Note that the broker may be configured to reject your authentication attempt if you are not using TLS, even if the credentials themselves are valid. In particular, never authenticate without TLS when using `PLAIN` as your authentication mechanism, as that will transmit your credentials unencrypted in plain text. See [SSL](#ssl) for more information on how to enable TLS.
+
 ### Options
 
 | option                    | description                                                                                                                                                                             | default |
@@ -55,6 +57,7 @@ new Kafka({
   brokers: ['kafka1:9092', 'kafka2:9092'],
   // authenticationTimeout: 1000,
   // reauthenticationThreshold: 10000,
+  ssl: true,
   sasl: {
     mechanism: 'plain', // scram-sha-256 or scram-sha-512
     username: 'my-username',
@@ -71,6 +74,7 @@ new Kafka({
   brokers: ['kafka1:9092', 'kafka2:9092'],
   // authenticationTimeout: 1000,
   // reauthenticationThreshold: 10000,
+  ssl: true,
   sasl: {
     mechanism: 'aws',
     authorizationIdentity: 'AIDAIOSFODNN7EXAMPLE', // UserId or RoleId

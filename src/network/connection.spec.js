@@ -30,10 +30,8 @@ describe('Network > Connection', () => {
 
       test('rejects the Promise in case of errors', async () => {
         connection.host = invalidHost
-        await expect(connection.connect()).rejects.toHaveProperty(
-          'message',
-          'Connection error: getaddrinfo ENOTFOUND kafkajs.test kafkajs.test:9092'
-        )
+        const messagePattern = /Connection error: getaddrinfo ENOTFOUND kafkajs.test/
+        await expect(connection.connect()).rejects.toThrow(messagePattern)
         expect(connection.connected).toEqual(false)
       })
     })
@@ -58,8 +56,8 @@ describe('Network > Connection', () => {
 
       test('rejects the Promise in case of errors', async () => {
         connection.ssl.cert = 'invalid'
-        const message = 'Failed to connect: error:0906D06C:PEM routines:PEM_read_bio:no start line'
-        await expect(connection.connect()).rejects.toHaveProperty('message', message)
+        const messagePattern = /Failed to connect/
+        await expect(connection.connect()).rejects.toThrow(messagePattern)
         expect(connection.connected).toEqual(false)
       })
     })

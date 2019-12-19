@@ -26,7 +26,7 @@ const consumer = kafka.consumer({ groupId: 'test-group' })
 
 const run = async () => {
   await consumer.connect()
-  await consumer.subscribe({ topic })
+  await consumer.subscribe({ topic, fromBeginning: true })
   await consumer.run({
     // eachBatch: async ({ batch }) => {
     //   console.log(batch)
