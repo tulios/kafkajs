@@ -65,7 +65,7 @@ const saslSCRAM256ConnectionOpts = () =>
     sasl: {
       mechanism: 'scram-sha-256',
       username: 'testscram',
-      password: 'testtestscram256',
+      password: 'testtestscram=256',
     },
   })
 
@@ -75,7 +75,7 @@ const saslSCRAM512ConnectionOpts = () =>
     sasl: {
       mechanism: 'scram-sha-512',
       username: 'testscram',
-      password: 'testtestscram512',
+      password: 'testtestscram=512',
     },
   })
 

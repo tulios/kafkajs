@@ -33,7 +33,7 @@ const evaluateLogLevel = logLevel => {
   return LEVELS[envLogLevel] == null ? logLevel : LEVELS[envLogLevel]
 }
 
-const createLogger = ({ level = LEVELS.INFO, logCreator = null } = {}) => {
+const createLogger = ({ level = LEVELS.INFO, logCreator } = {}) => {
   let logLevel = evaluateLogLevel(level)
   const logFunction = logCreator(logLevel)
 
