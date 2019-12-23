@@ -421,10 +421,10 @@ export interface TopicMessages {
 }
 
 export interface ProducerBatch {
-  acks: number
-  timeout: number
-  compression: CompressionTypes
-  topicMessages: TopicMessages[]
+  acks?: number
+  timeout?: number
+  compression?: CompressionTypes
+  topicMessages?: TopicMessages[]
 }
 
 export interface PartitionOffset {
