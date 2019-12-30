@@ -622,20 +622,24 @@ export type ConsumerEachMessagePayload = EachMessagePayload
  */
 export type ConsumerEachBatchPayload = EachBatchPayload
 
+export type ConsumerRunConfig = {
+  autoCommit?: boolean
+  autoCommitInterval?: number | null
+  autoCommitThreshold?: number | null
+  eachBatchAutoResolve?: boolean
+  partitionsConsumedConcurrently?: number
+  eachBatch?: (payload: EachBatchPayload) => Promise<void>
+  eachMessage?: (payload: EachMessagePayload) => Promise<void>
+}
+
+export type ConsumerSubscribeTopic = { topic: string | RegExp; fromBeginning?: boolean }
+
 export type Consumer = {
   connect(): Promise<void>
   disconnect(): Promise<void>
-  subscribe(topic: { topic: string | RegExp; fromBeginning?: boolean }): Promise<void>
+  subscribe(topic: ConsumerSubscribeTopic): Promise<void>
   stop(): Promise<void>
-  run(config?: {
-    autoCommit?: boolean
-    autoCommitInterval?: number | null
-    autoCommitThreshold?: number | null
-    eachBatchAutoResolve?: boolean
-    partitionsConsumedConcurrently?: number
-    eachBatch?: (payload: EachBatchPayload) => Promise<void>
-    eachMessage?: (payload: EachMessagePayload) => Promise<void>
-  }): Promise<void>
+  run(config?: ConsumerRunConfig): Promise<void>
   commitOffsets(topicPartitions: Array<TopicPartitionOffsetAndMedata>): Promise<void>
   seek(topicPartition: { topic: string; partition: number; offset: string }): void
   describeGroup(): Promise<GroupDescription>
