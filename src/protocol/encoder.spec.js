@@ -170,7 +170,7 @@ describe('Protocol > Encoder', () => {
       expect(decode64(signed64(L('36028797018963968')))).toEqual(L('36028797018963968'))
       expect(decode64(signed64(L('4611686018427387903')))).toEqual(L('4611686018427387903'))
       expect(decode64(signed64(L('4611686018427387904')))).toEqual(L('4611686018427387904'))
-      expect(decode64(signed64(Long.MAX_VALUE))).toEqual(Long.MAX_VALUE)
+      expect(decode64(signed64(Long.MAX_VALUE))).toEqual({ value: 9223372036854775807n })
     })
   })
 
