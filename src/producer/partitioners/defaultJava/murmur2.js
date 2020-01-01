@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-const Long = require('long')
+const Long = require('../../../utils/long')
 
 // Based on the kafka client 0.10.2 murmur2 implementation
 // https://github.com/apache/kafka/blob/0.10.2/clients/src/main/java/org/apache/kafka/common/utils/Utils.java#L364

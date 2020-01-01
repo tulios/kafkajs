@@ -83,7 +83,7 @@ describe('Broker > AddPartitionsToTxn', () => {
     await expect(
       broker.addPartitionsToTxn({
         transactionalId,
-        producerId: 'foo',
+        producerId: '999',
         producerEpoch,
         topics: [
           {
@@ -97,5 +97,19 @@ describe('Broker > AddPartitionsToTxn', () => {
         'The producer attempted to use a producer id which is not currently assigned to its transactional id'
       )
     )
+
+    await expect(
+      broker.addPartitionsToTxn({
+        transactionalId,
+        producerId: 'foo',
+        producerEpoch,
+        topics: [
+          {
+            topic: topicName,
+            partitions: [1, 2],
+          },
+        ],
+      })
+    ).rejects.toEqual(new SyntaxError('Cannot convert foo to a BigInt'))
   })
 })

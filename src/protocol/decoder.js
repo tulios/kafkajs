@@ -1,4 +1,4 @@
-const Long = require('long')
+const Long = require('../utils/long')
 
 const INT8_SIZE = 1
 const INT16_SIZE = 2
@@ -56,10 +56,34 @@ module.exports = class Decoder {
     return this.canReadBytes(INT64_SIZE)
   }
 
+  // Implementation taken from Node 12
+  // https://github.com/nodejs/node/blob/923d8bc733262cf960b62a02f113cfb0412b5834/lib/internal/buffer.js#L140
+  readBigInt64BE(buffer, offset = 0) {
+    if (isNaN(offset)) return BigInt(0)
+    const first = buffer[offset]
+
+    const last = buffer[offset + 7]
+
+    if (first === undefined || last === undefined) {
+      throw Error(offset, buffer.length - 8)
+    }
+
+    const val =
+      (first << 24) + // Overflow
+      buffer[++offset] * 2 ** 16 +
+      buffer[++offset] * 2 ** 8 +
+      buffer[++offset]
+
+    return (
+      (BigInt(val) << BigInt('32')) +
+      BigInt(
+        buffer[++offset] * 2 ** 24 + buffer[++offset] * 2 ** 16 + buffer[++offset] * 2 ** 8 + last
+      )
+    )
+  }
+
   readInt64() {
-    const lowBits = this.buffer.readInt32BE(this.offset + 4)
-    const highBits = this.buffer.readInt32BE(this.offset)
-    const value = new Long(lowBits, highBits)
+    const value = this.readBigInt64BE(this.buffer, this.offset)
     this.offset += INT64_SIZE
     return value
   }

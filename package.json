@@ -12,7 +12,7 @@
     "scram"
   ],
   "engines": {
-    "node": ">=8.6.0"
+    "node": ">=10.13.0"
   },
   "repository": {
     "type": "git",
@@ -44,6 +44,7 @@
     "test:types": "./node_modules/.bin/tsc -p types/"
   },
   "devDependencies": {
+    "@babel/plugin-syntax-bigint": "^7.7.4",
     "@types/node": "^12.0.8",
     "@typescript-eslint/typescript-estree": "^1.10.2",
     "eslint": "^6.1.0",
@@ -68,9 +69,7 @@
     "typescript": "^3.5.3",
     "uuid": "^3.3.2"
   },
-  "dependencies": {
-    "long": "^4.0.0"
-  },
+  "dependencies": {},
   "lint-staged": {
     "*.js": [
       "prettier --write",

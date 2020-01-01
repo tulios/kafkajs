@@ -1,4 +1,4 @@
-const Long = require('long')
+const Long = require('../../utils/long')
 const Decoder = require('../decoder')
 const MessageDecoder = require('../message/decoder')
 const { lookupCodecByAttributes } = require('../message/compression')

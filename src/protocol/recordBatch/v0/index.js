@@ -1,4 +1,4 @@
-const Long = require('long')
+const Long = require('../../../utils/long')
 const Encoder = require('../../encoder')
 const crc32C = require('../crc32C')
 const { Types: Compression, lookupCodec } = require('../../message/compression')
