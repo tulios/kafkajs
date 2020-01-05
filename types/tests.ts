@@ -139,7 +139,7 @@ runProducer().catch(console.error)
 
 // ADMIN
 const admin = kafka.admin({ retry: { retries: 10 } })
-admin.logger().warn('Instantiatd admin')
+admin.logger().warn('Instantiated admin')
 
 removeListener = admin.on(admin.events.CONNECT, e => console.log(`Admin connect at ${e.timestamp}`))
 removeListener()
