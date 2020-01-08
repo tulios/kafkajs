@@ -32,8 +32,11 @@ const kafka = new Kafka({
   logCreator: (logLevel: logLevel) => (entry: LogEntry) => {},
 })
 
+kafka.logger().error('Instantiated KafkaJS')
+
 // CONSUMER
 const consumer = kafka.consumer({ groupId: 'test-group' })
+consumer.logger().info('Instantiated logger', { groupId: 'test-group' })
 
 let removeListener = consumer.on(consumer.events.HEARTBEAT, e =>
   console.log(`heartbeat at ${e.timestamp}`)
@@ -100,6 +103,7 @@ runConsumer().catch(console.error)
 
 // PRODUCER
 const producer = kafka.producer({ allowAutoTopicCreation: true })
+producer.logger().debug('Instantiated producer')
 
 removeListener = producer.on(producer.events.CONNECT, e =>
   console.log(`Producer connect at ${e.timestamp}`)
@@ -135,6 +139,7 @@ runProducer().catch(console.error)
 
 // ADMIN
 const admin = kafka.admin({ retry: { retries: 10 } })
+admin.logger().warn('Instantiated admin')
 
 removeListener = admin.on(admin.events.CONNECT, e => console.log(`Admin connect at ${e.timestamp}`))
 removeListener()
