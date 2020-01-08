@@ -524,6 +524,61 @@ describe('Producer', () => {
       await expect(producer.sendBatch({ acks, topicMessages: [] })).toResolve()
     })
 
+    test('sendBatch should consolidate topicMessages by topic', async () => {
+      const cluster = createCluster(
+        Object.assign(connectionOpts(), {
+          createPartitioner: createModPartitioner,
+        })
+      )
+
+      await createTopic({ topic: topicName, partitions: 1 })
+
+      producer = createProducer({ cluster, logger: newLogger(), idempotent })
+      await producer.connect()
+
+      const topicMessages = [
+        {
+          topic: topicName,
+          messages: [{ value: 'value-1' }, { value: 'value-2' }],
+        },
+        {
+          topic: topicName,
+          messages: [{ value: 'value-3' }],
+        },
+      ]
+
+      let result = await producer.sendBatch({
+        acks,
+        topicMessages,
+      })
+
+      expect(result).toEqual([
+        {
+          topicName,
+          errorCode: 0,
+          offset: '0',
+          partition: 0,
+          timestamp: '-1',
+        },
+      ])
+
+      result = await producer.sendBatch({
+        acks,
+        topicMessages,
+      })
+
+      const expectedOffset = '2'
+      expect(result).toEqual([
+        {
+          topicName,
+          errorCode: 0,
+          offset: expectedOffset,
+          partition: 0,
+          timestamp: '-1',
+        },
+      ])
+    })
+
     testIfKafka_0_11('produce messages for Kafka 0.11', async () => {
       const cluster = createCluster(
         Object.assign(connectionOpts(), {

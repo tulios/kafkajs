@@ -56,13 +56,25 @@ module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrie
       }
     }
 
+    const mergedTopicMessages = topicMessages.reduce((merged, { topic, messages }) => {
+      const topicBatch = merged.find(({ topic: mergedTopic }) => topic === mergedTopic)
+
+      if (!topicBatch) {
+        merged.push({ topic, messages })
+      } else {
+        topicBatch.messages.concat(messages)
+      }
+
+      return merged
+    }, [])
+
     return retrier(async (bail, retryCount, retryTime) => {
       try {
         return await sendMessages({
           acks,
           timeout,
           compression,
-          topicMessages,
+          topicMessages: mergedTopicMessages,
         })
       } catch (error) {
         if (!cluster.isConnected()) {
