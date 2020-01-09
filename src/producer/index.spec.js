@@ -19,8 +19,10 @@ jest.mock('../retry', () => {
   return spy
 })
 
+const uuid = require('uuid/v4')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const createProducer = require('./index')
+const createConsumer = require('../consumer')
 const {
   secureRandom,
   connectionOpts,
@@ -34,13 +36,14 @@ const {
   newLogger,
   testIfKafka_0_11,
   createTopic,
+  waitForMessages,
 } = require('testHelpers')
 const createRetrier = require('../retry')
 
 const { KafkaJSNonRetriableError } = require('../errors')
 
 describe('Producer', () => {
-  let topicName, producer
+  let topicName, producer, consumer
 
   beforeEach(() => {
     topicName = `test-topic-${secureRandom()}`
@@ -48,6 +51,7 @@ describe('Producer', () => {
 
   afterEach(async () => {
     producer && (await producer.disconnect())
+    consumer && (await consumer.disconnect())
   })
 
   test('throws an error if the topic is invalid', async () => {
@@ -533,25 +537,38 @@ describe('Producer', () => {
 
       await createTopic({ topic: topicName, partitions: 1 })
 
+      const messagesConsumed = []
+      consumer = createConsumer({
+        groupId: `test-consumer-${uuid()}`,
+        cluster: createCluster(),
+        logger: newLogger(),
+      })
+      await consumer.connect()
+      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.run({
+        eachMessage: async event => {
+          messagesConsumed.push(event)
+        },
+      })
+
       producer = createProducer({ cluster, logger: newLogger(), idempotent })
       await producer.connect()
 
       const topicMessages = [
         {
           topic: topicName,
-          messages: [{ value: 'value-1' }, { value: 'value-2' }],
+          messages: [{ key: 'key-1', value: 'value-1' }, { key: 'key-2', value: 'value-2' }],
         },
         {
           topic: topicName,
-          messages: [{ value: 'value-3' }],
+          messages: [{ key: 'key-3', value: 'value-3' }],
         },
       ]
 
-      let result = await producer.sendBatch({
+      const result = await producer.sendBatch({
         acks,
         topicMessages,
       })
-
       expect(result).toEqual([
         {
           topicName,
@@ -562,20 +579,35 @@ describe('Producer', () => {
         },
       ])
 
-      result = await producer.sendBatch({
-        acks,
-        topicMessages,
-      })
-
-      const expectedOffset = '2'
-      expect(result).toEqual([
-        {
-          topicName,
-          errorCode: 0,
-          offset: expectedOffset,
+      await waitForMessages(messagesConsumed, { number: 3 })
+      await expect(waitForMessages(messagesConsumed, { number: 3 })).resolves.toEqual([
+        expect.objectContaining({
+          topic: topicName,
           partition: 0,
-          timestamp: '-1',
-        },
+          message: expect.objectContaining({
+            key: Buffer.from('key-1'),
+            value: Buffer.from('value-1'),
+            offset: '0',
+          }),
+        }),
+        expect.objectContaining({
+          topic: topicName,
+          partition: 0,
+          message: expect.objectContaining({
+            key: Buffer.from('key-2'),
+            value: Buffer.from('value-2'),
+            offset: '1',
+          }),
+        }),
+        expect.objectContaining({
+          topic: topicName,
+          partition: 0,
+          message: expect.objectContaining({
+            key: Buffer.from('key-3'),
+            value: Buffer.from('value-3'),
+            offset: '2',
+          }),
+        }),
       ])
     })
 

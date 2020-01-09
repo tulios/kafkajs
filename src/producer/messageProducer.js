@@ -57,12 +57,12 @@ module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrie
     }
 
     const mergedTopicMessages = topicMessages.reduce((merged, { topic, messages }) => {
-      const topicBatch = merged.find(({ topic: mergedTopic }) => topic === mergedTopic)
+      const index = merged.findIndex(({ topic: mergedTopic }) => topic === mergedTopic)
 
-      if (!topicBatch) {
+      if (index === -1) {
         merged.push({ topic, messages })
       } else {
-        topicBatch.messages.concat(messages)
+        merged[index].messages = [...merged[index].messages, ...messages]
       }
 
       return merged
