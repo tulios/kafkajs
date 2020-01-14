@@ -28,11 +28,11 @@ describe('Cluster > ConnectionBuilder', () => {
     })
   })
 
-  test('creates a new connection using the first the seed broker', () => {
+  test('creates a new connection using a random broker', () => {
     const connection = builder.build()
     expect(connection).toBeInstanceOf(Connection)
-    expect(connection.host).toEqual('host.test')
-    expect(connection.port).toEqual(7777)
+    expect(connection.host).toBeOneOf(['host.test', 'host2.test', 'host3.test'])
+    expect(connection.port).toBeOneOf([7777, 7778, 7779])
     expect(connection.ssl).toEqual(ssl)
     expect(connection.sasl).toEqual(sasl)
     expect(connection.clientId).toEqual(clientId)
@@ -43,11 +43,13 @@ describe('Cluster > ConnectionBuilder', () => {
   })
 
   test('when called without host and port iterates throught the seed brokers', () => {
-    expect(builder.build()).toEqual(expect.objectContaining({ host: 'host.test', port: 7777 }))
-    expect(builder.build()).toEqual(expect.objectContaining({ host: 'host2.test', port: 7778 }))
-    expect(builder.build()).toEqual(expect.objectContaining({ host: 'host3.test', port: 7779 }))
-    expect(builder.build()).toEqual(expect.objectContaining({ host: 'host.test', port: 7777 }))
-    expect(builder.build()).toEqual(expect.objectContaining({ host: 'host2.test', port: 7778 }))
+    const connections = Array(brokers.length)
+      .fill()
+      .map(() => {
+        const { host, port } = builder.build()
+        return `${host}:${port}`
+      })
+    expect(connections).toIncludeSameMembers(brokers)
   })
 
   test('accepts overrides for host, port and rack', () => {

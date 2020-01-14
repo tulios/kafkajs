@@ -1,5 +1,6 @@
 const Connection = require('../network/connection')
 const { KafkaJSNonRetriableError } = require('../errors')
+const shuffle = require('../utils/shuffle')
 
 const validateBrokers = brokers => {
   if (!brokers || brokers.length === 0) {
@@ -23,6 +24,7 @@ module.exports = ({
 }) => {
   validateBrokers(brokers)
 
+  const shuffledBrokers = shuffle(brokers)
   const size = brokers.length
   let index = 0
 
@@ -30,7 +32,7 @@ module.exports = ({
     build: ({ host, port, rack } = {}) => {
       if (!host) {
         // Always rotate the seed broker
-        const [seedHost, seedPort] = brokers[index++ % size].split(':')
+        const [seedHost, seedPort] = shuffledBrokers[index++ % size].split(':')
         host = seedHost
         port = Number(seedPort)
       }
