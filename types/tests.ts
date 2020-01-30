@@ -29,11 +29,19 @@ const kafka = new Kafka({
     username: 'test',
     password: 'testtest',
   },
-  logCreator: (logLevel: logLevel) => (entry: LogEntry) => { },
+  logCreator: (logLevel: logLevel) => (entry: LogEntry) => {},
 })
+
+kafka.logger().error('Instantiated KafkaJS')
 
 // CONSUMER
 const consumer = kafka.consumer({ groupId: 'test-group' })
+consumer.logger().info('Instantiated logger', { groupId: 'test-group' })
+
+let removeListener = consumer.on(consumer.events.HEARTBEAT, e =>
+  console.log(`heartbeat at ${e.timestamp}`)
+)
+removeListener()
 
 const runConsumer = async () => {
   await consumer.connect()
@@ -95,6 +103,12 @@ runConsumer().catch(console.error)
 
 // PRODUCER
 const producer = kafka.producer({ allowAutoTopicCreation: true })
+producer.logger().debug('Instantiated producer')
+
+removeListener = producer.on(producer.events.CONNECT, e =>
+  console.log(`Producer connect at ${e.timestamp}`)
+)
+removeListener()
 
 const getRandomNumber = () => Math.round(Math.random() * 1000)
 const createMessage = (num: number) => ({
@@ -125,6 +139,10 @@ runProducer().catch(console.error)
 
 // ADMIN
 const admin = kafka.admin({ retry: { retries: 10 } })
+admin.logger().warn('Instantiated admin')
+
+removeListener = admin.on(admin.events.CONNECT, e => console.log(`Admin connect at ${e.timestamp}`))
+removeListener()
 
 const runAdmin = async () => {
   await admin.connect()

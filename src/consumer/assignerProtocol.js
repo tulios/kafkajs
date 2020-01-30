@@ -56,7 +56,7 @@ const MemberAssignment = {
 
   /**
    * @param {Buffer} buffer
-   * @returns {Object}
+   * @returns {Object|null}
    */
   decode(buffer) {
     const decoder = new Decoder(buffer)
@@ -67,6 +67,10 @@ const MemberAssignment = {
     })
     const indexAssignment = (obj, { topic, partitions }) =>
       Object.assign(obj, { [topic]: partitions })
+
+    if (!decoder.canReadInt16()) {
+      return null
+    }
 
     return {
       version: decoder.readInt16(),

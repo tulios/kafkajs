@@ -65,7 +65,7 @@ describe('Consumer', () => {
         for (const message of batch.messages) {
           if (!isRunning() || isStale()) break
           messagesConsumed.push(message)
-          await resolveOffset(message.offset)
+          resolveOffset(message.offset)
           await heartbeat()
         }
       },

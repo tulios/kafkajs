@@ -10,11 +10,15 @@ module.exports = ({ cluster }) => ({
   version: 1,
 
   /**
+   * Assign the topics to the provided members.
+   *
+   * The members array contains information about each member, `memberMetadata` is the result of the
+   * `protocol` operation.
+   *
    * This process can result in imbalanced assignments
    * @param {array} members array of members, e.g:
-                              [{ memberId: 'test-5f93f5a3' }]
+                              [{ memberId: 'test-5f93f5a3', memberMetadata: Buffer }]
    * @param {array} topics
-   * @param {Buffer} userData
    * @returns {array} object partitions per topic per member, e.g:
    *                   [
    *                     {
@@ -33,7 +37,7 @@ module.exports = ({ cluster }) => ({
    *                     }
    *                   ]
    */
-  async assign({ members, topics, userData }) {
+  async assign({ members, topics }) {
     const membersCount = members.length
     const sortedMembers = members.map(({ memberId }) => memberId).sort()
     const assignment = {}
@@ -59,18 +63,16 @@ module.exports = ({ cluster }) => ({
       memberAssignment: MemberAssignment.encode({
         version: this.version,
         assignment: assignment[memberId],
-        userData,
       }),
     }))
   },
 
-  protocol({ topics, userData }) {
+  protocol({ topics }) {
     return {
       name: this.name,
       metadata: MemberMetadata.encode({
         version: this.version,
         topics,
-        userData,
       }),
     }
   },

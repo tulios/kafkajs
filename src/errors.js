@@ -3,7 +3,7 @@ class KafkaJSError extends Error {
     super(e)
     Error.captureStackTrace(this, this.constructor)
     this.message = e.message || e
-    this.name = this.constructor.name
+    this.name = 'KafkaJSError'
     this.retriable = retriable
     this.helpUrl = e.helpUrl
   }
@@ -12,6 +12,7 @@ class KafkaJSError extends Error {
 class KafkaJSNonRetriableError extends KafkaJSError {
   constructor(e) {
     super(e, { retriable: false })
+    this.name = 'KafkaJSNonRetriableError'
   }
 }
 
@@ -20,6 +21,7 @@ class KafkaJSProtocolError extends KafkaJSError {
     super(e, { retriable: e.retriable })
     this.type = e.type
     this.code = e.code
+    this.name = 'KafkaJSProtocolError'
   }
 }
 
@@ -28,6 +30,7 @@ class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
     super(e)
     this.topic = topic
     this.partition = partition
+    this.name = 'KafkaJSOffsetOutOfRange'
   }
 }
 
@@ -38,6 +41,7 @@ class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
     this.originalError = e
     this.retryCount = retryCount
     this.retryTime = retryTime
+    this.name = 'KafkaJSNumberOfRetriesExceeded'
   }
 }
 
@@ -46,6 +50,7 @@ class KafkaJSConnectionError extends KafkaJSError {
     super(e)
     this.broker = broker
     this.code = code
+    this.name = 'KafkaJSConnectionError'
   }
 }
 
@@ -57,14 +62,21 @@ class KafkaJSRequestTimeoutError extends KafkaJSError {
     this.createdAt = createdAt
     this.sentAt = sentAt
     this.pendingDuration = pendingDuration
+    this.name = 'KafkaJSRequestTimeoutError'
   }
 }
 
-class KafkaJSMetadataNotLoaded extends KafkaJSError {}
+class KafkaJSMetadataNotLoaded extends KafkaJSError {
+  constructor() {
+    super(...arguments)
+    this.name = 'KafkaJSMetadataNotLoaded'
+  }
+}
 class KafkaJSTopicMetadataNotLoaded extends KafkaJSMetadataNotLoaded {
   constructor(e, { topic } = {}) {
     super(e)
     this.topic = topic
+    this.name = 'KafkaJSTopicMetadataNotLoaded'
   }
 }
 class KafkaJSStaleTopicMetadataAssignment extends KafkaJSError {
@@ -72,6 +84,7 @@ class KafkaJSStaleTopicMetadataAssignment extends KafkaJSError {
     super(e)
     this.topic = topic
     this.unknownPartitions = unknownPartitions
+    this.name = 'KafkaJSStaleTopicMetadataAssignment'
   }
 }
 
@@ -80,17 +93,65 @@ class KafkaJSServerDoesNotSupportApiKey extends KafkaJSNonRetriableError {
     super(e)
     this.apiKey = apiKey
     this.apiName = apiName
+    this.name = 'KafkaJSServerDoesNotSupportApiKey'
   }
 }
 
-class KafkaJSBrokerNotFound extends KafkaJSError {}
-class KafkaJSPartialMessageError extends KafkaJSNonRetriableError {}
-class KafkaJSSASLAuthenticationError extends KafkaJSNonRetriableError {}
-class KafkaJSGroupCoordinatorNotFound extends KafkaJSNonRetriableError {}
-class KafkaJSNotImplemented extends KafkaJSNonRetriableError {}
-class KafkaJSTimeout extends KafkaJSNonRetriableError {}
-class KafkaJSLockTimeout extends KafkaJSTimeout {}
-class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSNonRetriableError {}
+class KafkaJSBrokerNotFound extends KafkaJSError {
+  constructor() {
+    super(...arguments)
+    this.name = 'KafkaJSBrokerNotFound'
+  }
+}
+
+class KafkaJSPartialMessageError extends KafkaJSNonRetriableError {
+  constructor() {
+    super(...arguments)
+    this.name = 'KafkaJSPartialMessageError'
+  }
+}
+
+class KafkaJSSASLAuthenticationError extends KafkaJSNonRetriableError {
+  constructor() {
+    super(...arguments)
+    this.name = 'KafkaJSSASLAuthenticationError'
+  }
+}
+
+class KafkaJSGroupCoordinatorNotFound extends KafkaJSNonRetriableError {
+  constructor() {
+    super(...arguments)
+    this.name = 'KafkaJSGroupCoordinatorNotFound'
+  }
+}
+
+class KafkaJSNotImplemented extends KafkaJSNonRetriableError {
+  constructor() {
+    super(...arguments)
+    this.name = 'KafkaJSNotImplemented'
+  }
+}
+
+class KafkaJSTimeout extends KafkaJSNonRetriableError {
+  constructor() {
+    super(...arguments)
+    this.name = 'KafkaJSTimeout'
+  }
+}
+
+class KafkaJSLockTimeout extends KafkaJSTimeout {
+  constructor() {
+    super(...arguments)
+    this.name = 'KafkaJSLockTimeout'
+  }
+}
+
+class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSNonRetriableError {
+  constructor() {
+    super(...arguments)
+    this.name = 'KafkaJSUnsupportedMagicByteInMessageSet'
+  }
+}
 
 module.exports = {
   KafkaJSError,

@@ -143,7 +143,7 @@ export type Cluster = {
 
 export type Assignment = { [topic: string]: number[] }
 
-export type GroupMember = { memberId: string }
+export type GroupMember = { memberId: string, memberMetadata: Buffer }
 
 export type GroupMemberAssignment = { memberId: string; memberAssignment: Buffer }
 
@@ -155,9 +155,8 @@ export type Assigner = {
   assign(group: {
     members: GroupMember[]
     topics: string[]
-    userData: Buffer
   }): Promise<GroupMemberAssignment[]>
-  protocol(subscription: { topics: string[]; userData: Buffer }): GroupState
+  protocol(subscription: { topics: string[] }): GroupState
 }
 
 export interface RetryOptions {
@@ -250,6 +249,8 @@ export interface InstrumentationEvent<T> {
   payload: T
 }
 
+export type RemoveInstrumentationEventListener<T> = () => void
+
 export type ConnectEvent = InstrumentationEvent<null>
 export type DisconnectEvent = InstrumentationEvent<null>
 export type RequestEvent = InstrumentationEvent<{
@@ -313,7 +314,10 @@ export type Admin = {
   }): Promise<DescribeConfigResponse>
   alterConfigs(configs: { validateOnly: boolean; resources: IResourceConfig[] }): Promise<any>
   logger(): Logger
-  on(eventName: ValueOf<AdminEvents>, listener: (...args: any[]) => void): void
+  on(
+    eventName: ValueOf<AdminEvents>,
+    listener: (...args: any[]) => void
+  ): RemoveInstrumentationEventListener<typeof eventName>
   events: AdminEvents
 }
 
@@ -321,7 +325,7 @@ export const PartitionAssigners: { roundRobin: PartitionAssigner }
 
 export interface ISerializer<T> {
   encode(value: T): Buffer
-  decode(buffer: Buffer): T
+  decode(buffer: Buffer): T | null
 }
 
 export type MemberMetadata = {
@@ -362,9 +366,14 @@ export interface LoggerEntryContent {
   [key: string]: any
 }
 
-export type Logger = (entry: LogEntry) => void
-
 export type logCreator = (logLevel: logLevel) => (entry: LogEntry) => void
+
+export type Logger = {
+  info: (message: string, extra?: object) => void
+  error: (message: string, extra?: object) => void
+  warn: (message: string, extra?: object) => void
+  debug: (message: string, extra?: object) => void
+}
 
 export type Broker = {
   isConnected(): boolean
@@ -422,10 +431,10 @@ export interface TopicMessages {
 }
 
 export interface ProducerBatch {
-  acks: number
-  timeout: number
-  compression: CompressionTypes
-  topicMessages: TopicMessages[]
+  acks?: number
+  timeout?: number
+  compression?: CompressionTypes
+  topicMessages?: TopicMessages[]
 }
 
 export interface PartitionOffset {
@@ -460,7 +469,10 @@ export type Producer = Sender & {
   disconnect(): Promise<void>
   isIdempotent(): boolean
   events: ProducerEvents
-  on(eventName: ValueOf<ProducerEvents>, listener: (...args: any[]) => void): void
+  on(
+    eventName: ValueOf<ProducerEvents>,
+    listener: (...args: any[]) => void
+  ): RemoveInstrumentationEventListener<typeof eventName>
   transaction(): Promise<Transaction>
   logger(): Logger
 }
@@ -614,27 +626,34 @@ export type ConsumerEachMessagePayload = EachMessagePayload
  */
 export type ConsumerEachBatchPayload = EachBatchPayload
 
+export type ConsumerRunConfig = {
+  autoCommit?: boolean
+  autoCommitInterval?: number | null
+  autoCommitThreshold?: number | null
+  eachBatchAutoResolve?: boolean
+  partitionsConsumedConcurrently?: number
+  eachBatch?: (payload: EachBatchPayload) => Promise<void>
+  eachMessage?: (payload: EachMessagePayload) => Promise<void>
+}
+
+export type ConsumerSubscribeTopic = { topic: string | RegExp; fromBeginning?: boolean }
+
 export type Consumer = {
   connect(): Promise<void>
   disconnect(): Promise<void>
-  subscribe(topic: { topic: string | RegExp; fromBeginning?: boolean }): Promise<void>
+  subscribe(topic: ConsumerSubscribeTopic): Promise<void>
   stop(): Promise<void>
-  run(config?: {
-    autoCommit?: boolean
-    autoCommitInterval?: number | null
-    autoCommitThreshold?: number | null
-    eachBatchAutoResolve?: boolean
-    partitionsConsumedConcurrently?: number
-    eachBatch?: (payload: EachBatchPayload) => Promise<void>
-    eachMessage?: (payload: EachMessagePayload) => Promise<void>
-  }): Promise<void>
+  run(config?: ConsumerRunConfig): Promise<void>
   commitOffsets(topicPartitions: Array<TopicPartitionOffsetAndMedata>): Promise<void>
   seek(topicPartition: { topic: string; partition: number; offset: string }): void
   describeGroup(): Promise<GroupDescription>
   pause(topics: Array<{ topic: string; partitions?: number[] }>): void
   paused(): TopicPartitions[]
   resume(topics: Array<{ topic: string; partitions?: number[] }>): void
-  on(eventName: ValueOf<ConsumerEvents>, listener: (...args: any[]) => void): void
+  on(
+    eventName: ValueOf<ConsumerEvents>,
+    listener: (...args: any[]) => void
+  ): RemoveInstrumentationEventListener<typeof eventName>
   logger(): Logger
   events: ConsumerEvents
 }
