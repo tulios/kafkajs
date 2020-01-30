@@ -2,6 +2,8 @@ const Long = require('long')
 const createRetry = require('../retry')
 const limitConcurrency = require('../utils/concurrency')
 const { KafkaJSError } = require('../errors')
+const barrier = require('./barrier')
+
 const {
   events: { GROUP_JOIN, FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS },
 } = require('./instrumentationEvents')
@@ -255,10 +257,18 @@ module.exports = class Runner {
 
     this.instrumentationEmitter.emit(FETCH_START, {})
 
-    const batches = await this.consumerGroup.fetch()
+    const iterator = await this.consumerGroup.fetch()
 
     this.instrumentationEmitter.emit(FETCH, {
-      numberOfBatches: batches.length,
+      /**
+       * PR #570 removed support for the number of batches in this instrumentation event;
+       * The new implementation uses an async generation to deliver the batches, which makes
+       * this number impossible to get. The number is set to 0 to keep the event backward
+       * compatible until we bump KafkaJS to version 2, following the end of node 8 LTS.
+       *
+       * @since 2019-11-29
+       */
+      numberOfBatches: 0,
       duration: Date.now() - startFetch,
     })
 
@@ -297,22 +307,62 @@ module.exports = class Runner {
     }
 
     const concurrently = limitConcurrency({ limit: this.partitionsConsumedConcurrently })
-    await Promise.all(
-      batches.map(batch =>
-        concurrently(async () => {
-          if (!this.running) {
-            return
-          }
 
-          if (batch.isEmpty()) {
-            return
-          }
+    if (!this.running) {
+      return
+    }
 
-          await onBatch(batch)
-        })
-      )
-    )
+    const enqueuedTasks = []
+    let expectedNumberOfExecutions = 0
+    let numberOfExecutions = 0
+    const { lock, unlock, unlockWithError } = barrier()
 
+    while (true) {
+      const result = iterator.next()
+      if (result.done) {
+        break
+      }
+
+      enqueuedTasks.push(async () => {
+        if (!this.running) {
+          return
+        }
+
+        const batches = await result.value
+        expectedNumberOfExecutions += batches.length
+
+        batches.map(batch =>
+          concurrently(async () => {
+            try {
+              if (!this.running) {
+                return
+              }
+
+              if (batch.isEmpty()) {
+                return
+              }
+
+              await onBatch(batch)
+              await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+            } catch (e) {
+              unlockWithError(e)
+            } finally {
+              numberOfExecutions++
+              if (numberOfExecutions === expectedNumberOfExecutions) {
+                unlock()
+              }
+            }
+          }).catch(unlockWithError)
+        )
+      })
+    }
+
+    if (!this.running) {
+      return
+    }
+
+    await Promise.all(enqueuedTasks.map(fn => fn()))
+    await lock
     await this.autoCommitOffsets()
     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
   }
