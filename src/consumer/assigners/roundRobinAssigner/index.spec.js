@@ -12,7 +12,7 @@ describe('Consumer > assigners > RoundRobinAssigner', () => {
   })
 
   describe('#assign', () => {
-    test('assign all partitions evenly', async () => {
+    test('assign all topic-partitions evenly', async () => {
       metadata['topic-A'] = Array(14)
         .fill()
         .map((_, i) => ({ partitionId: i }))
@@ -37,7 +37,7 @@ describe('Consumer > assigners > RoundRobinAssigner', () => {
             version: assigner.version,
             assignment: {
               'topic-A': [0, 4, 8, 12],
-              'topic-B': [0, 4],
+              'topic-B': [2],
             },
           }),
         },
@@ -47,7 +47,7 @@ describe('Consumer > assigners > RoundRobinAssigner', () => {
             version: assigner.version,
             assignment: {
               'topic-A': [1, 5, 9, 13],
-              'topic-B': [1],
+              'topic-B': [3],
             },
           }),
         },
@@ -57,7 +57,7 @@ describe('Consumer > assigners > RoundRobinAssigner', () => {
             version: assigner.version,
             assignment: {
               'topic-A': [2, 6, 10],
-              'topic-B': [2],
+              'topic-B': [0, 4],
             },
           }),
         },
@@ -67,7 +67,7 @@ describe('Consumer > assigners > RoundRobinAssigner', () => {
             version: assigner.version,
             assignment: {
               'topic-A': [3, 7, 11],
-              'topic-B': [3],
+              'topic-B': [1],
             },
           }),
         },
