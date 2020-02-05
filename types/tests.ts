@@ -8,6 +8,15 @@ import {
   CompressionCodecs,
   ResourceTypes,
   LogEntry,
+  KafkaJSError,
+  KafkaJSOffsetOutOfRange,
+  KafkaJSNumberOfRetriesExceeded,
+  KafkaJSConnectionError,
+  KafkaJSRequestTimeoutError,
+  KafkaJSTopicMetadataNotLoaded,
+  KafkaJSStaleTopicMetadataAssignment,
+  PartitionMetadata,
+  KafkaJSServerDoesNotSupportApiKey,
 } from './index'
 
 const { roundRobin } = PartitionAssigners
@@ -191,3 +200,46 @@ kafka.consumer({
   groupId: 'my-group',
   partitionAssigners: [roundRobin],
 })
+
+// ERROR
+new KafkaJSError('Invalid partition metadata', { retriable: true });
+new KafkaJSError('The group is rebalancing');
+new KafkaJSError(new Error('💣'), { retriable: true });
+
+new KafkaJSOffsetOutOfRange(new Error(), { topic: topic, partition: 0 });
+
+new KafkaJSNumberOfRetriesExceeded(new Error(), { retryCount: 0, retryTime: 0 });
+
+new KafkaJSConnectionError('Connection error: ECONNREFUSED', {
+  broker: `${host}:9094`,
+  code: 'ECONNREFUSED'
+});
+new KafkaJSConnectionError('Connection error: ECONNREFUSED', { code: 'ECONNREFUSED' });
+
+new KafkaJSRequestTimeoutError('Request requestInfo timed out', { 
+  broker: `${host}:9094`,
+  clientId: 'example-consumer',
+  correlationId: 0,
+  createdAt: 0,
+  sentAt: 0,
+  pendingDuration: 0
+});
+
+new KafkaJSTopicMetadataNotLoaded('Topic metadata not loaded', { topic: topic });
+
+const partitionMetadata: PartitionMetadata = {
+  partitionErrorCode: 0,
+  partitionId: 0,
+  leader: 2,
+  replicas: [2],
+  isr: [2],
+}
+new KafkaJSStaleTopicMetadataAssignment('Topic has been updated', {
+  topic: topic,
+  unknownPartitions: [partitionMetadata]
+});
+
+new KafkaJSServerDoesNotSupportApiKey('The Kafka server does not support the requested API version', {
+  apiKey: 0,
+  apiName: 'Produce'
+});
