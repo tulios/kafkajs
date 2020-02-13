@@ -19,8 +19,8 @@ await consumer.connect()
 await consumer.subscribe({ topic: 'topic-A' })
 
 // Subscribe can be called several times
-await consumer.subscribe({ topic: 'topic-B'})
-await consumer.subscribe({ topic: 'topic-C'})
+await consumer.subscribe({ topic: 'topic-B' })
+await consumer.subscribe({ topic: 'topic-C' })
 
 // It's possible to start from the beginning of the topic
 await consumer.subscribe({ topic: 'topic-D', fromBeginning: true })
