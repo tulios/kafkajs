@@ -69,8 +69,8 @@
 <span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-A'</span> })
 
 <span class="hljs-comment">// Subscribe can be called several times</span>
-<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-B'</span>)
-<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-C'</span>)
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-B'</span> })
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-C'</span> })
 
 <span class="hljs-comment">// It's possible to start from the beginning of the topic</span>
 <span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-D'</span>, <span class="hljs-attr">fromBeginning</span>: <span class="hljs-literal">true</span> })
