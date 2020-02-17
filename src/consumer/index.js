@@ -36,6 +36,7 @@ module.exports = ({
   maxBytes = 10485760, // 10MB
   maxWaitTimeInMs = 5000,
   retry = { retries: 10 },
+  onRetryFail = null,
   isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
   instrumentationEmitter: rootInstrumentationEmitter,
 }) => {
@@ -253,17 +254,21 @@ module.exports = ({
         error: e,
         groupId,
       })
-//       Disable reconnect on crash, will be done from upstream (waiting for kafka js to fix this issue)
-//       if (e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true) {
-//         const retryTime = e.retryTime || retry.initialRetryTime || initialRetryTime
-//         logger.error(`Restarting the consumer in ${retryTime}ms`, {
-//           retryCount: e.retryCount,
-//           retryTime,
-//           groupId,
-//         })
 
-//         setTimeout(() => restart(onCrash), retryTime)
-//       }
+      if (e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true) {
+        if (onRetryFail) {
+          onRetryFail(e)
+        } else {
+          const retryTime = e.retryTime || retry.initialRetryTime || initialRetryTime
+          logger.error(`Restarting the consumer in ${retryTime}ms`, {
+            retryCount: e.retryCount,
+            retryTime,
+            groupId,
+          })
+
+          setTimeout(() => restart(onCrash), retryTime)
+        }
+      }
     }
 
     await start(onCrash)
