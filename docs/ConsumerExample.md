@@ -6,7 +6,6 @@ title: Consumer
 The following example assumes that you are using the local Kafka configuration described in [Running Kafka in Development](DockerLocal.md).
 
 ```javascript
-const fs = require('fs')
 const ip = require('ip')
 
 const { Kafka, logLevel } = require('../index')
@@ -70,7 +69,6 @@ signalTraps.map(type => {
 The following example assumes a valid SSL certificate and SASL authentication using the `scram-sha-256` mechanism. Other mechanisms are also available (see [Client Configuration](Configuration.md#sasl)).
 
 ```javascript
-const fs = require('fs')
 const ip = require('ip')
 
 const { Kafka, logLevel } = require('../index')
