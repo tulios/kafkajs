@@ -601,7 +601,6 @@ module.exports = ({
    * @return {Promise<ListGroups>}
    *
    * @typedef {Object} ListGroups
-   * @property {number} errorCode
    * @property {Array<ListGroup>} groups
    *
    * @typedef {Object} ListGroup
@@ -614,9 +613,15 @@ module.exports = ({
     return retrier(async (bail, retryCount, retryTime) => {
       try {
         await cluster.refreshMetadata()
-        const broker = await cluster.findControllerBroker()
-        const response = await broker.listGroups()
-        return response
+
+        let groups = []
+        for (var nodeId in cluster.brokerPool.brokers) {
+          const broker = await cluster.findBroker({ nodeId })
+          const response = await broker.listGroups()
+          groups = groups.concat(response.groups)
+        }
+
+        return { groups }
       } catch (e) {
         if (e.type === 'NOT_CONTROLLER') {
           logger.warn('Could not list groups', { error: e.message, retryCount, retryTime })

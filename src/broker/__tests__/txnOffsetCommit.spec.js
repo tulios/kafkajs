@@ -92,10 +92,7 @@ describe('Broker > TxnOffsetCommit', () => {
       topics: [
         {
           topic: topicName,
-          partitions: [
-            { partition: 0, offset: 0 },
-            { partition: 1, offset: 0 },
-          ],
+          partitions: [{ partition: 0, offset: 0 }, { partition: 1, offset: 0 }],
         },
       ],
     })
@@ -105,10 +102,7 @@ describe('Broker > TxnOffsetCommit', () => {
       topics: [
         {
           topic: topicName,
-          partitions: [
-            { errorCode: 0, partition: 0 },
-            { errorCode: 0, partition: 1 },
-          ],
+          partitions: [{ errorCode: 0, partition: 0 }, { errorCode: 0, partition: 1 }],
         },
       ],
     })
@@ -123,10 +117,7 @@ describe('Broker > TxnOffsetCommit', () => {
       topics: [
         {
           topic: topicName,
-          partitions: [
-            { partition: 0, offset: 0 },
-            { partition: 1, offset: 0 },
-          ],
+          partitions: [{ partition: 0, offset: 0 }, { partition: 1, offset: 0 }],
         },
       ],
     })

@@ -3,7 +3,6 @@ const { failure, createErrorFromCode } = require('../../../error')
 
 /**
  * ListGroups Response (Version: 0) => error_code [groups]
- *   throttle_time_ms => INT32
  *   error_code => INT16
  *   groups => group_id protocol_type
  *     group_id => STRING
