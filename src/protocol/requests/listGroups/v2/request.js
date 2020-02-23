@@ -1,7 +1,7 @@
-const requestV0 = require('../v0/request')
+const requestV1 = require('../v1/request')
 
 /**
- * ListGroups Request (Version: 1)
+ * ListGroups Request (Version: 2)
  */
 
-module.exports = () => Object.assign(requestV0(), { apiVersion: 1 })
+module.exports = () => Object.assign(requestV1(), { apiVersion: 2 })

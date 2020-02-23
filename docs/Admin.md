@@ -343,8 +343,6 @@ Example response:
 
 ```javascript
 {
-    errorCode: 0,
-    throttleTime: 0,
     groups: [
         {groupId: 'testgroup', protocolType: 'consumer'}
     ]
