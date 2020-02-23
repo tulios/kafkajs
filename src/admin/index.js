@@ -596,6 +596,39 @@ module.exports = ({
   }
 
   /**
+   * List groups in a broker
+   *
+   * @return {Promise<ListGroups>}
+   *
+   * @typedef {Object} ListGroups
+   * @property {number} errorCode
+   * @property {Array<ListGroup>} groups
+   *
+   * @typedef {Object} ListGroup
+   * @property {string} groupId
+   * @property {string} protocolType
+   */
+  const listGroups = async () => {
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        const response = await broker.listGroups()
+        return response
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not list groups', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
    * @param {string} eventName
    * @param {Function} listener
    * @return {Function}
@@ -637,5 +670,6 @@ module.exports = ({
     alterConfigs,
     on,
     logger: getLogger,
+    listGroups,
   }
 }

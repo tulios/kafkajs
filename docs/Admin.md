@@ -322,3 +322,31 @@ Example response:
     throttleTime: 0,
 }
 ```
+
+## <a name="list-groups"></a> List groups
+
+List groups available on the broker.
+
+```javascript
+await admin.listGroups()
+```
+
+Example:
+
+```javascript
+const { ResourceTypes } = require('kafkajs')
+
+await admin.listGroups()
+```
+
+Example response:
+
+```javascript
+{
+    errorCode: 0,
+    throttleTime: 0,
+    groups: [
+        {groupId: 'testgroup', protocolType: 'consumer'}
+    ]
+}
+```

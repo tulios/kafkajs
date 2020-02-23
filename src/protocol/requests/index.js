@@ -18,7 +18,7 @@ const requests = {
   LeaveGroup: require('./leaveGroup'),
   SyncGroup: require('./syncGroup'),
   DescribeGroups: require('./describeGroups'),
-  ListGroups: {},
+  ListGroups: require('./listGroups'),
   SaslHandshake: require('./saslHandshake'),
   ApiVersions: require('./apiVersions'),
   CreateTopics: require('./createTopics'),
