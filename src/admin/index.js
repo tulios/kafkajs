@@ -629,6 +629,53 @@ module.exports = ({
   }
 
   /**
+   * List groups in a broker
+   *
+   * @param {string[]} [groupIds]
+   * @return {Promise<DeleteGroups>}
+   *
+   * @typedef {Object} DeleteGroups
+   * @property {Array<DeleteGroup>} results
+   *
+   * @typedef {Object} DeleteGroup
+   * @property {string} groupId
+   * @property {number} errorCode
+   */
+  const deleteGroups = async groupIds => {
+    if (!groupIds || !Array.isArray(groupIds)) {
+      throw new KafkaJSNonRetriableError(`Invalid groupIds array ${groupIds}`)
+    }
+
+    if (groupIds.length === 0) {
+      throw new KafkaJSNonRetriableError('GroupIds array cannot be empty')
+    }
+
+    const invalidGroupId = groupIds.some(g => typeof g !== 'string')
+
+    if (invalidGroupId) {
+      throw new KafkaJSNonRetriableError(`Invalid groupId name: ${JSON.stringify(invalidGroupId)}`)
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        const response = await broker.deleteGroups(groupIds)
+        return response
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not delete groups', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
    * @param {string} eventName
    * @param {Function} listener
    * @return {Function}
@@ -671,5 +718,6 @@ module.exports = ({
     on,
     logger: getLogger,
     listGroups,
+    deleteGroups,
   }
 }

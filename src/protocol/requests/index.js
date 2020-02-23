@@ -44,7 +44,7 @@ const requests = {
   RenewDelegationToken: {},
   ExpireDelegationToken: {},
   DescribeDelegationToken: {},
-  DeleteGroups: {},
+  DeleteGroups: require('./deleteGroups'),
 }
 
 const BEGIN_EXPERIMENTAL_V011_REQUEST_VERSION = {
