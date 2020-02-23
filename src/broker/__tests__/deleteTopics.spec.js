@@ -42,10 +42,9 @@ describe('Broker > deleteTopics', () => {
 
     expect(response).toEqual({
       throttleTime: 0,
-      topicErrors: [
-        { topic: topicName1, errorCode: 0 },
-        { topic: topicName2, errorCode: 0 },
-      ].sort(topicNameComparator),
+      topicErrors: [{ topic: topicName1, errorCode: 0 }, { topic: topicName2, errorCode: 0 }].sort(
+        topicNameComparator
+      ),
     })
   })
 })
