@@ -6,7 +6,6 @@ title: Producer
 The following example assumes that you are using the local Kafka configuration described in [Running Kafka in Development](DockerLocal.md).
 
 ```javascript
-const fs = require('fs')
 const ip = require('ip')
 
 const { Kafka, CompressionTypes, logLevel } = require('../index')

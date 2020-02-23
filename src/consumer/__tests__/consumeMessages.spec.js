@@ -1,3 +1,5 @@
+jest.setTimeout(30000)
+
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
 const { Types } = require('../../protocol/message/compression')

@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2020-01-30
+### Added
+  - Force refresh of metadata when topic is not present #556
+  - Expose ConsumerRunConfig type #615
+  - Randomize order of seed brokers #632
+
+### Changed
+  - Support TLS SNI by default #512
+  - Changed typing of `logLevel` argument of `logCreator` #538
+  - Add type boolean in ssl KafkaConfig #557
+  - Allow logging Fetch response payload buffers #573
+  - Remove default null for logCreator #595
+  - Add error names to ensure error names work with webpack + uglify #602
+  - Merge TopicMessages by topic in producer sendBatch #626
+
+### Fixed
+  - Skip control records without auto-resolve #511
+  - Handle empty member assignment #567
+  - Only fetch for partitions with initialized offsets #582
+  - Get correct next offset for compacted topics #577
+  - TS type definition for removing instrumentation event listeners #608
+  - Fixed IHeaders definition to accept plain strings #547
+  - Make TS type ProducerBatch fields optional #610
+  - Fix typings for logger getters #620
+
 ## [1.11.0] - 2019-09-30
 ### Added
   - Add Typescript SASLMechanism type to definitions #477

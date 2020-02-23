@@ -1,7 +1,9 @@
 const flatten = require('../utils/flatten')
 const sleep = require('../utils/sleep')
+const BufferedAsyncIterator = require('../utils/bufferedAsyncIterator')
 const websiteUrl = require('../utils/websiteUrl')
 const arrayDiff = require('../utils/arrayDiff')
+
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
@@ -464,45 +466,48 @@ module.exports = class ConsumerGroup {
         return []
       }
 
-      const results = await Promise.all(requests)
-      return flatten(results)
+      return BufferedAsyncIterator(requests, e => this.recoverFromFetch(e))
     } catch (e) {
-      if (STALE_METADATA_ERRORS.includes(e.type) || e.name === 'KafkaJSTopicMetadataNotLoaded') {
-        this.logger.debug('Stale cluster metadata, refreshing...', {
-          groupId: this.groupId,
-          memberId: this.memberId,
-          error: e.message,
-        })
-
-        await this.cluster.refreshMetadata()
-        await this.join()
-        await this.sync()
-        throw new KafkaJSError(e.message)
-      }
-
-      if (e.name === 'KafkaJSStaleTopicMetadataAssignment') {
-        this.logger.warn(`${e.message}, resync group`, {
-          groupId: this.groupId,
-          memberId: this.memberId,
-          topic: e.topic,
-          unknownPartitions: e.unknownPartitions,
-        })
-
-        await this.join()
-        await this.sync()
-      }
-
-      if (e.name === 'KafkaJSOffsetOutOfRange') {
-        await this.recoverFromOffsetOutOfRange(e)
-      }
-
-      if (e.name === 'KafkaJSBrokerNotFound') {
-        this.logger.debug(`${e.message}, refreshing metadata and retrying...`)
-        await this.cluster.refreshMetadata()
-      }
-
-      throw e
+      await this.recoverFromFetch(e)
     }
+  }
+
+  async recoverFromFetch(e) {
+    if (STALE_METADATA_ERRORS.includes(e.type) || e.name === 'KafkaJSTopicMetadataNotLoaded') {
+      this.logger.debug('Stale cluster metadata, refreshing...', {
+        groupId: this.groupId,
+        memberId: this.memberId,
+        error: e.message,
+      })
+
+      await this.cluster.refreshMetadata()
+      await this.join()
+      await this.sync()
+      throw new KafkaJSError(e.message)
+    }
+
+    if (e.name === 'KafkaJSStaleTopicMetadataAssignment') {
+      this.logger.warn(`${e.message}, resync group`, {
+        groupId: this.groupId,
+        memberId: this.memberId,
+        topic: e.topic,
+        unknownPartitions: e.unknownPartitions,
+      })
+
+      await this.join()
+      await this.sync()
+    }
+
+    if (e.name === 'KafkaJSOffsetOutOfRange') {
+      await this.recoverFromOffsetOutOfRange(e)
+    }
+
+    if (e.name === 'KafkaJSBrokerNotFound') {
+      this.logger.debug(`${e.message}, refreshing metadata and retrying...`)
+      await this.cluster.refreshMetadata()
+    }
+
+    throw e
   }
 
   async recoverFromOffsetOutOfRange(e) {

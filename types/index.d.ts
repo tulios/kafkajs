@@ -143,7 +143,7 @@ export type Cluster = {
 
 export type Assignment = { [topic: string]: number[] }
 
-export type GroupMember = { memberId: string }
+export type GroupMember = { memberId: string, memberMetadata: Buffer }
 
 export type GroupMemberAssignment = { memberId: string; memberAssignment: Buffer }
 
@@ -155,9 +155,8 @@ export type Assigner = {
   assign(group: {
     members: GroupMember[]
     topics: string[]
-    userData: Buffer
   }): Promise<GroupMemberAssignment[]>
-  protocol(subscription: { topics: string[]; userData: Buffer }): GroupState
+  protocol(subscription: { topics: string[] }): GroupState
 }
 
 export interface RetryOptions {
@@ -367,9 +366,14 @@ export interface LoggerEntryContent {
   [key: string]: any
 }
 
-export type Logger = (entry: LogEntry) => void
-
 export type logCreator = (logLevel: logLevel) => (entry: LogEntry) => void
+
+export type Logger = {
+  info: (message: string, extra?: object) => void
+  error: (message: string, extra?: object) => void
+  warn: (message: string, extra?: object) => void
+  debug: (message: string, extra?: object) => void
+}
 
 export type Broker = {
   isConnected(): boolean
@@ -667,4 +671,125 @@ export var CompressionCodecs: {
   [CompressionTypes.Snappy]: () => any
   [CompressionTypes.LZ4]: () => any
   [CompressionTypes.ZSTD]: () => any
+}
+
+export class KafkaJSError extends Error {
+  constructor(e: Error | string, metadata?: KafkaJSErrorMetadata)
+}
+
+export class KafkaJSNonRetriableError extends KafkaJSError {
+  constructor(e: Error | string)
+}
+
+export class KafkaJSProtocolError extends KafkaJSError {
+  constructor(e: Error | string)
+}
+
+export class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
+  constructor(e: Error | string, metadata?: KafkaJSOffsetOutOfRangeMetadata)
+}
+
+export class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
+  constructor(e: Error | string, metadata?: KafkaJSNumberOfRetriesExceededMetadata)
+}
+
+export class KafkaJSConnectionError extends KafkaJSError {
+  constructor(e: Error | string, metadata?: KafkaJSConnectionErrorMetadata)
+}
+
+export class KafkaJSRequestTimeoutError extends KafkaJSError {
+  constructor(e: Error | string, metadata?: KafkaJSRequestTimeoutErrorMetadata)
+}
+
+export class KafkaJSMetadataNotLoaded extends KafkaJSError {
+  constructor()
+}
+
+export class KafkaJSTopicMetadataNotLoaded extends KafkaJSMetadataNotLoaded {
+  constructor(e: Error | string, metadata?: KafkaJSTopicMetadataNotLoadedMetadata)
+}
+
+export class KafkaJSStaleTopicMetadataAssignment extends KafkaJSError {
+  constructor(e: Error | string, metadata?: KafkaJSStaleTopicMetadataAssignmentMetadata)
+}
+
+export class KafkaJSServerDoesNotSupportApiKey extends KafkaJSNonRetriableError {
+  constructor(e: Error | string, metadata?: KafkaJSServerDoesNotSupportApiKeyMetadata)
+}
+
+export class KafkaJSBrokerNotFound extends KafkaJSError {
+  constructor()
+}
+
+export class KafkaJSPartialMessageError extends KafkaJSError {
+  constructor()
+}
+
+export class KafkaJSSASLAuthenticationError extends KafkaJSError {
+  constructor()
+}
+
+export class KafkaJSGroupCoordinatorNotFound extends KafkaJSError {
+  constructor()
+}
+
+export class KafkaJSNotImplemented extends KafkaJSError {
+  constructor()
+}
+
+export class KafkaJSTimeout extends KafkaJSError {
+  constructor()
+}
+
+export class KafkaJSLockTimeout extends KafkaJSError {
+  constructor()
+}
+
+export class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSError {
+  constructor()
+}
+
+export interface KafkaJSErrorMetadata {
+  retriable?: boolean
+  topic?: string
+  partitionId?: number
+  metadata?: PartitionMetadata
+}
+
+export interface KafkaJSOffsetOutOfRangeMetadata {
+  topic: string
+  partition: number
+}
+
+export interface KafkaJSNumberOfRetriesExceededMetadata {
+  retryCount: number
+  retryTime: number
+}
+
+export interface KafkaJSConnectionErrorMetadata {
+  broker?: string
+  code?: string
+}
+
+export interface KafkaJSRequestTimeoutErrorMetadata {
+  broker: string
+  clientId: string
+  correlationId: number
+  createdAt: number
+  sentAt: number
+  pendingDuration: number
+}
+
+export interface KafkaJSTopicMetadataNotLoadedMetadata {
+  topic: string
+}
+
+export interface KafkaJSStaleTopicMetadataAssignmentMetadata {
+  topic: string
+  unknownPartitions: PartitionMetadata[]
+}
+
+export interface KafkaJSServerDoesNotSupportApiKeyMetadata {
+  apiKey: number
+  apiName: string
 }
