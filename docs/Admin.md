@@ -348,3 +348,29 @@ Example response:
     ]
 }
 ```
+
+## <a name="delete-groups"></a> Delete groups
+
+Delete groups by groupId
+
+```javascript
+await admin.deleteGroups([groupId])
+```
+
+Example:
+
+```javascript
+const { ResourceTypes } = require('kafkajs')
+
+await admin.deleteGroups(['group-test'])
+```
+
+Example response:
+
+```javascript
+{
+    results: [
+        {groupId: 'testgroup', errorCode: 'consumer'}
+    ]
+}
+```
