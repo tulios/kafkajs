@@ -608,29 +608,16 @@ module.exports = ({
    * @property {string} protocolType
    */
   const listGroups = async () => {
-    const retrier = createRetry(retry)
+    let groups = []
+    for (var nodeId in cluster.brokerPool.brokers) {
+      await cluster.refreshMetadata()
 
-    return retrier(async (bail, retryCount, retryTime) => {
-      try {
-        await cluster.refreshMetadata()
+      const broker = await cluster.findBroker({ nodeId })
+      const response = await broker.listGroups()
+      groups = groups.concat(response.groups)
+    }
 
-        let groups = []
-        for (var nodeId in cluster.brokerPool.brokers) {
-          const broker = await cluster.findBroker({ nodeId })
-          const response = await broker.listGroups()
-          groups = groups.concat(response.groups)
-        }
-
-        return { groups }
-      } catch (e) {
-        if (e.type === 'NOT_CONTROLLER') {
-          logger.warn('Could not list groups', { error: e.message, retryCount, retryTime })
-          throw e
-        }
-
-        bail(e)
-      }
-    })
+    return { groups }
   }
 
   /**
