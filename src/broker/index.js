@@ -661,6 +661,16 @@ module.exports = class Broker {
     )
   }
 
+  /**
+   * Send request for list of groups
+   * @public
+   * @returns {Promise}
+   */
+  async listGroups() {
+    const listGroups = this.lookupRequest(apiKeys.ListGroups, requests.ListGroups)
+    return await this.connection.send(listGroups())
+  }
+
   /***
    * @private
    */

@@ -596,6 +596,31 @@ module.exports = ({
   }
 
   /**
+   * List groups in a broker
+   *
+   * @return {Promise<ListGroups>}
+   *
+   * @typedef {Object} ListGroups
+   * @property {Array<ListGroup>} groups
+   *
+   * @typedef {Object} ListGroup
+   * @property {string} groupId
+   * @property {string} protocolType
+   */
+  const listGroups = async () => {
+    let groups = []
+    for (var nodeId in cluster.brokerPool.brokers) {
+      await cluster.refreshMetadata()
+
+      const broker = await cluster.findBroker({ nodeId })
+      const response = await broker.listGroups()
+      groups = groups.concat(response.groups)
+    }
+
+    return { groups }
+  }
+
+  /**
    * @param {string} eventName
    * @param {Function} listener
    * @return {Function}
@@ -637,5 +662,6 @@ module.exports = ({
     alterConfigs,
     on,
     logger: getLogger,
+    listGroups,
   }
 }
