@@ -653,7 +653,7 @@ module.exports = ({
         const brokers = {}
         for (const groupId of groupIds) {
           const broker = await cluster.findGroupCoordinator({ groupId })
-          if (brokersPerGroups[broker.nodeId] == undefined) brokersPerGroups[broker.nodeId] = []
+          if (brokersPerGroups[broker.nodeId] === undefined) brokersPerGroups[broker.nodeId] = []
           brokersPerGroups[broker.nodeId].push(groupId)
           brokers[broker.nodeId] = broker
         }
