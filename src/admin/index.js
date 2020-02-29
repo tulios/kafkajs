@@ -608,10 +608,9 @@ module.exports = ({
    * @property {string} protocolType
    */
   const listGroups = async () => {
+    await cluster.refreshMetadata()
     let groups = []
     for (var nodeId in cluster.brokerPool.brokers) {
-      await cluster.refreshMetadata()
-
       const broker = await cluster.findBroker({ nodeId })
       const response = await broker.listGroups()
       groups = groups.concat(response.groups)
@@ -638,10 +637,6 @@ module.exports = ({
       throw new KafkaJSNonRetriableError(`Invalid groupIds array ${groupIds}`)
     }
 
-    if (groupIds.length === 0) {
-      throw new KafkaJSNonRetriableError('GroupIds array cannot be empty')
-    }
-
     const invalidGroupId = groupIds.some(g => typeof g !== 'string')
 
     if (invalidGroupId) {
@@ -653,11 +648,35 @@ module.exports = ({
     return retrier(async (bail, retryCount, retryTime) => {
       try {
         await cluster.refreshMetadata()
-        const broker = await cluster.findControllerBroker()
-        const response = await broker.deleteGroups(groupIds)
-        return response
+
+        const brokersPerGroups = {}
+        const brokers = {}
+        for (const groupId of groupIds) {
+          const broker = await cluster.findGroupCoordinator({ groupId })
+          if (brokersPerGroups[broker.nodeId] == undefined) brokersPerGroups[broker.nodeId] = []
+          brokersPerGroups[broker.nodeId].push(groupId)
+          brokers[broker.nodeId] = broker
+        }
+
+        const promises = []
+        for (const nodeId in brokersPerGroups) {
+          promises.push(brokers[nodeId].deleteGroups(brokersPerGroups[nodeId]))
+        }
+
+        if (promises.length === 0) return { results: [] }
+
+        const response = await Promise.all(promises)
+
+        const results = []
+        for (const res of response) {
+          for (const result of res.results) {
+            results.push(result)
+          }
+        }
+
+        return { results: results }
       } catch (e) {
-        if (e.type === 'NOT_CONTROLLER') {
+        if (e.type === 'NOT_CONTROLLER' || e.type === 'COORDINATOR_NOT_AVAILABLE') {
           logger.warn('Could not delete groups', { error: e.message, retryCount, retryTime })
           throw e
         }

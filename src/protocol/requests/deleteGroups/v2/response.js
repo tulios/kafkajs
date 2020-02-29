@@ -2,15 +2,15 @@ const Decoder = require('../../../decoder')
 const { failure, createErrorFromCode } = require('../../../error')
 const { KafkaJSDeleteGroupsError } = require('../../../../errors')
 /**
- * DeleteGroups Response (Version: 0) => throttle_time_ms [results]
- *  throttle_time_ms => INT32
- *  results => group_id error_code
- *    group_id => STRING
- *    error_code => INT16
+ * DeleteGroups Response (Version: 2) => throttle_time_ms [results] TAG_BUFFER
+ * throttle_time_ms => INT32
+ * results => group_id error_code TAG_BUFFER
+ *  group_id => COMPACT_STRING
+ *  error_code => INT16
  */
 
 const decodeGroup = decoder => ({
-  groupId: decoder.readString(),
+  groupId: decoder.readVarIntString(),
   errorCode: decoder.readInt16(),
 })
 

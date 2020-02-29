@@ -69,10 +69,29 @@ describe('Admin', () => {
         expect.arrayContaining([expect.objectContaining({ groupId })])
       )
 
-      await admin.deleteGroups([groupId])
+      // let's check deleting empty group
+      const resEmpty = await admin.deleteGroups([])
 
-      expect(listGroupResponse.groups).toEqual(
-        expect.arrayContaining([expect.not.objectContaining({ groupId })])
+      expect(resEmpty.results).toEqual([])
+
+      // let's try to delete group that has consumer conected, it should throw error
+      try {
+        await admin.deleteGroups([groupId])
+      } catch (error) {
+        expect(error.name).toEqual('KafkaJSDeleteGroupsError')
+        expect(error.groups).toEqual(expect.arrayContaining([expect.objectContaining({ groupId })]))
+      }
+
+      // now let's try to stop consumer and then delete group
+      await consumer.stop()
+
+      const res = await admin.deleteGroups([groupId])
+      expect(res.results).toEqual(expect.arrayContaining([expect.objectContaining({ groupId })]))
+
+      const listGroupResponseAfter = await admin.listGroups()
+
+      expect(listGroupResponseAfter.groups).toEqual(
+        expect.not.arrayContaining([expect.objectContaining({ groupId })])
       )
     })
   })

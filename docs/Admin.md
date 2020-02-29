@@ -352,6 +352,7 @@ Example response:
 ## <a name="delete-groups"></a> Delete groups
 
 Delete groups by groupId
+Bear in mind that you can delete groups of consumers that are not connected
 
 ```javascript
 await admin.deleteGroups([groupId])
@@ -372,5 +373,17 @@ Example response:
     results: [
         {groupId: 'testgroup', errorCode: 'consumer'}
     ]
+}
+```
+
+Because this method accepts multiple group IDs and can fail on certain group deletion
+in case of failure it will throw exception with failed group
+
+```javascript
+try {
+    await admin.deleteGroups([groupId])
+} catch (error) {
+//error.name 'KafkaJSDeleteGroupsError'
+//error.groups [{groupId, error}]
 }
 ```
