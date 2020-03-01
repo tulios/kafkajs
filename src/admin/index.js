@@ -644,15 +644,17 @@ module.exports = ({
 
     const results = []
 
+    const clonedGroupIds = groupIds.slice()
+
     return retrier(async (bail, retryCount, retryTime) => {
       try {
-        if (groupIds.length === 0) return []
+        if (clonedGroupIds.length === 0) return []
 
         await cluster.refreshMetadata()
 
         const brokersPerGroups = {}
         const brokers = {}
-        for (const groupId of groupIds) {
+        for (const groupId of clonedGroupIds) {
           const broker = await cluster.findGroupCoordinator({ groupId })
           if (brokersPerGroups[broker.nodeId] === undefined) brokersPerGroups[broker.nodeId] = []
           brokersPerGroups[broker.nodeId].push(groupId)
@@ -676,9 +678,9 @@ module.exports = ({
               }
               // now that we have all success groupIds let's remove them from groupIds
               for (const groupId of brokersPerGroups[nodeId]) {
-                const index = groupIds.indexOf(groupId)
+                const index = clonedGroupIds.indexOf(groupId)
                 if (index !== -1) {
-                  groupIds.splice(index, 1)
+                  clonedGroupIds.splice(index, 1)
                 }
               }
             }
