@@ -369,11 +369,9 @@ await admin.deleteGroups(['group-test'])
 Example response:
 
 ```javascript
-{
-    results: [
-        {groupId: 'testgroup', errorCode: 'consumer'}
-    ]
-}
+[
+    {groupId: 'testgroup', errorCode: 'consumer'}
+]
 ```
 
 Because this method accepts multiple group IDs and can fail on certain group deletion

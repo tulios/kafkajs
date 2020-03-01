@@ -9,6 +9,11 @@ const versions = {
     const response = require('./v1/response')
     return { request: request(groupIds), response }
   },
+  2: groupIds => {
+    const request = require('./v2/request')
+    const response = require('./v2/response')
+    return { request: request(groupIds), response }
+  },
 }
 
 module.exports = {

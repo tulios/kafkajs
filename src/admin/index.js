@@ -620,15 +620,12 @@ module.exports = ({
   }
 
   /**
-   * List groups in a broker
+   * Delete groups in a broker
    *
    * @param {string[]} [groupIds]
    * @return {Promise<DeleteGroups>}
    *
-   * @typedef {Object} DeleteGroups
-   * @property {Array<DeleteGroup>} results
-   *
-   * @typedef {Object} DeleteGroup
+   * @typedef {Array} DeleteGroups
    * @property {string} groupId
    * @property {number} errorCode
    */
@@ -645,8 +642,12 @@ module.exports = ({
 
     const retrier = createRetry(retry)
 
+    const results = []
+
     return retrier(async (bail, retryCount, retryTime) => {
       try {
+        if (groupIds.length === 0) return []
+
         await cluster.refreshMetadata()
 
         const brokersPerGroups = {}
@@ -658,23 +659,35 @@ module.exports = ({
           brokers[broker.nodeId] = broker
         }
 
-        const promises = []
         for (const nodeId in brokersPerGroups) {
-          promises.push(brokers[nodeId].deleteGroups(brokersPerGroups[nodeId]))
-        }
+          try {
+            const res = await brokers[nodeId].deleteGroups(brokersPerGroups[nodeId])
+            for (const result of res.results) {
+              results.push(result)
+            }
+          } catch (error) {
+            if (error.name === 'KafkaJSDeleteGroupsError') {
+              // here we will find all groups that had error in deletion and remove them from brokersPerGroups[nodeId]
+              for (const err of error.groups) {
+                const index = brokersPerGroups[nodeId].indexOf(err.groupId)
+                if (index !== -1) {
+                  brokersPerGroups[nodeId].splice(index, 1)
+                }
+              }
+              // now that we have all success groupIds let's remove them from groupIds
+              for (const groupId of brokersPerGroups[nodeId]) {
+                const index = groupIds.indexOf(groupId)
+                if (index !== -1) {
+                  groupIds.splice(index, 1)
+                }
+              }
+            }
 
-        if (promises.length === 0) return { results: [] }
-
-        const response = await Promise.all(promises)
-
-        const results = []
-        for (const res of response) {
-          for (const result of res.results) {
-            results.push(result)
+            throw error
           }
         }
 
-        return { results: results }
+        return results
       } catch (e) {
         if (e.type === 'NOT_CONTROLLER' || e.type === 'COORDINATOR_NOT_AVAILABLE') {
           logger.warn('Could not delete groups', { error: e.message, retryCount, retryTime })
