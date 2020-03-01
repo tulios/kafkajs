@@ -377,14 +377,16 @@ Example response:
 }
 ```
 
-Because this method accepts multiple group IDs and can fail on certain group deletion
-in case of failure it will throw exception with failed group
+Because this method accepts multiple `groupId`s, it can fail to delete one or more of the provided groups. In case of failure, it will throw an error containing the failed groups:
 
 ```javascript
 try {
-    await admin.deleteGroups([groupId])
+    await admin.deleteGroups(['a', 'b', 'c'])
 } catch (error) {
-//error.name 'KafkaJSDeleteGroupsError'
-//error.groups [{groupId, error}]
+  // error.name 'KafkaJSDeleteGroupsError'
+  // error.groups = [{
+  //   groupId: a
+  //   error: KafkaJSProtocolError
+  // }]
 }
 ```
