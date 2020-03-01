@@ -351,8 +351,9 @@ Example response:
 
 ## <a name="delete-groups"></a> Delete groups
 
-Delete groups by groupId
-Bear in mind that you can delete groups of consumers that are not connected
+Delete groups by `groupId`.
+
+Note that you can only delete groups with no connected consumers.
 
 ```javascript
 await admin.deleteGroups([groupId])
