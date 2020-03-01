@@ -346,6 +346,16 @@ describe('Cluster > BrokerPool', () => {
       expect(broker.isConnected()).toEqual(true)
     })
 
+    it('does not connect the broker if connect=false is passed', async () => {
+      const nodeId = Object.keys(brokerPool.brokers).find(
+        id => !brokerPool.brokers[id].isConnected()
+      )
+      expect(brokerPool.brokers[nodeId].isConnected()).toEqual(false)
+
+      const broker = await brokerPool.findBroker({ nodeId, connect: false })
+      expect(broker.isConnected()).toEqual(false)
+    })
+
     it('recreates the connection on connection errors', async () => {
       const nodeId = 'fakebroker'
       const mockBroker = new Broker({

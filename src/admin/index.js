@@ -611,14 +611,31 @@ module.exports = ({
    * @property {Number} nodeId
    * @property {String} host
    * @property {Number} port
+   * @property {boolean} connected
    */
   const describeCluster = async () => {
+    const isConnected = async nodeId => {
+      try {
+        const broker = await cluster.brokerPool.findBroker({ nodeId, connect: false })
+        return broker.isConnected()
+      } catch (error) {
+        if (error.name === 'KafkaJSBrokerNotFound') {
+          return false
+        }
+
+        throw error
+      }
+    }
+
     const { brokers: nodes, clusterId, controllerId } = await cluster.metadata({ topics: [] })
-    const brokers = nodes.map(({ nodeId, host, port }) => ({
-      nodeId,
-      host,
-      port,
-    }))
+    const brokers = await Promise.all(
+      nodes.map(async ({ nodeId, host, port }) => ({
+        nodeId,
+        host,
+        port,
+        connected: await isConnected(nodeId),
+      }))
+    )
     const controller =
       controllerId == null || controllerId === NO_CONTROLLER_ID ? null : controllerId
 

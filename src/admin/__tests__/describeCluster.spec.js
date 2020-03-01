@@ -24,6 +24,7 @@ describe('Admin', () => {
             nodeId: expect.any(Number),
             host: expect.any(String),
             port: expect.any(Number),
+            connected: expect.any(Boolean),
           }),
         ])
       )

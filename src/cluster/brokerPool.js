@@ -202,17 +202,25 @@ module.exports = class BrokerPool {
 
   /**
    * @public
-   * @param {string} nodeId
+   *
+   * @typedef {Object} FindBrokerOptions
+   * @property {string} nodeId
+   * @property {boolean} [connect=true] Should connect broker if it is not connected
+   *
+   * @param {FindBrokerOptions}
    * @returns {Promise<Broker>}
    */
-  async findBroker({ nodeId }) {
+  async findBroker({ nodeId, connect = true }) {
     const broker = this.brokers[nodeId]
 
     if (!broker) {
       throw new KafkaJSBrokerNotFound(`Broker ${nodeId} not found in the cached metadata`)
     }
 
-    await this.connectBroker(broker)
+    if (connect) {
+      await this.connectBroker(broker)
+    }
+
     return broker
   }
 

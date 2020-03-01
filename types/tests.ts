@@ -160,10 +160,11 @@ const runAdmin = async () => {
   admin.logger().debug('Fetched cluster metadata', {
     controller,
     clusterId,
-    brokers: brokers.map(({ nodeId, host, port }) => ({
+    brokers: brokers.map(({ nodeId, host, port, connected }) => ({
       nodeId,
       host,
-      port
+      port,
+      connected
     }))
   })
 
