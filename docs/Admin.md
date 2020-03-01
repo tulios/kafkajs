@@ -351,8 +351,9 @@ Example response:
 
 ## <a name="delete-groups"></a> Delete groups
 
-Delete groups by groupId
-Bear in mind that you can delete groups of consumers that are not connected
+Delete groups by `groupId`.
+
+Note that you can only delete groups with no connected consumers.
 
 ```javascript
 await admin.deleteGroups([groupId])
@@ -374,14 +375,16 @@ Example response:
 ]
 ```
 
-Because this method accepts multiple group IDs and can fail on certain group deletion
-in case of failure it will throw exception with failed group
+Because this method accepts multiple `groupId`s, it can fail to delete one or more of the provided groups. In case of failure, it will throw an error containing the failed groups:
 
 ```javascript
 try {
-    await admin.deleteGroups([groupId])
+    await admin.deleteGroups(['a', 'b', 'c'])
 } catch (error) {
-//error.name 'KafkaJSDeleteGroupsError'
-//error.groups [{groupId, error}]
+  // error.name 'KafkaJSDeleteGroupsError'
+  // error.groups = [{
+  //   groupId: a
+  //   error: KafkaJSProtocolError
+  // }]
 }
 ```
