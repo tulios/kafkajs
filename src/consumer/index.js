@@ -36,7 +36,6 @@ module.exports = ({
   maxBytes = 10485760, // 10MB
   maxWaitTimeInMs = 5000,
   retry = { retries: 10 },
-  onRetryFail = null,
   isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
   instrumentationEmitter: rootInstrumentationEmitter,
 }) => {
@@ -256,9 +255,22 @@ module.exports = ({
       })
 
       if (e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true) {
-        if (onRetryFail) {
-          onRetryFail(e)
-        } else {
+        const shouldRestart =
+          !retry.restartOnFailure ||
+          (await retry.restartOnFailure(e)).catch(error => {
+            logger.error(
+              'Caught error when invoking user-provided "restartOnFailure" callback. Defaulting to restarting.',
+              {
+                error: error.message || error,
+                originalError: e.message || e,
+                groupId,
+              }
+            )
+
+            return true
+          })
+
+        if (shouldRestart) {
           const retryTime = e.retryTime || retry.initialRetryTime || initialRetryTime
           logger.error(`Restarting the consumer in ${retryTime}ms`, {
             retryCount: e.retryCount,
