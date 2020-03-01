@@ -1,6 +1,28 @@
 jest.setTimeout(90000)
 
 require('jest-extended')
+
+expect.extend({
+  toBeTypeOrNull(received, argument) {
+    if (received === null)
+      return {
+        message: () => `Ok`,
+        pass: true,
+      }
+    if (expect(received).toEqual(expect.any(argument))) {
+      return {
+        message: () => `Ok`,
+        pass: true,
+      }
+    } else {
+      return {
+        message: () => `expected ${received} to be ${argument} type or null`,
+        pass: false,
+      }
+    }
+  },
+})
+
 const glob = require('glob')
 const path = require('path')
 
