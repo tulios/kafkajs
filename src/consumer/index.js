@@ -257,7 +257,7 @@ module.exports = ({
       if (e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true) {
         const shouldRestart =
           !retry.restartOnFailure ||
-          (await retry.restartOnFailure(e)).catch(error => {
+          (await retry.restartOnFailure(e).catch(error => {
             logger.error(
               'Caught error when invoking user-provided "restartOnFailure" callback. Defaulting to restarting.',
               {
@@ -268,7 +268,7 @@ module.exports = ({
             )
 
             return true
-          })
+          }))
 
         if (shouldRestart) {
           const retryTime = e.retryTime || retry.initialRetryTime || initialRetryTime
