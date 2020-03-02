@@ -9,7 +9,7 @@ const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
 const SubscriptionState = require('./subscriptionState')
 const {
-  events: { HEARTBEAT },
+  events: { HEARTBEAT, CONNECT },
 } = require('./instrumentationEvents')
 const { MemberAssignment } = require('./assignerProtocol')
 const {
@@ -84,6 +84,7 @@ module.exports = class ConsumerGroup {
 
   async connect() {
     await this.cluster.connect()
+    this.instrumentationEmitter.emit(CONNECT)
     await this.cluster.refreshMetadataIfNecessary()
   }
 
