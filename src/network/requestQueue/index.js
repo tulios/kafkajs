@@ -45,7 +45,7 @@ module.exports = class RequestQueue {
     // run requests check every 100ms to see if any inflight requests timed out
     this.requestTimeoutIntervalId = setInterval(() => {
       this.inflight.forEach(request => {
-        if (Date.now() - request.sentAt > request.requestTimeout * 1000) {
+        if (Date.now() - request.sentAt > request.requestTimeout) {
           request.timeoutRequest()
         }
       })
