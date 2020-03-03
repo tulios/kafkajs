@@ -18,7 +18,6 @@ module.exports = class RequestQueue {
     instrumentationEmitter = null,
     maxInFlightRequests,
     requestTimeout,
-    enforceRequestTimeout,
     clientId,
     broker,
     logger,
@@ -26,7 +25,6 @@ module.exports = class RequestQueue {
     this.instrumentationEmitter = instrumentationEmitter
     this.maxInFlightRequests = maxInFlightRequests
     this.requestTimeout = requestTimeout
-    this.enforceRequestTimeout = enforceRequestTimeout
     this.clientId = clientId
     this.broker = broker
     this.logger = logger
@@ -42,6 +40,16 @@ module.exports = class RequestQueue {
           queueSize: this.pending.length,
         })
     }
+
+    // FIXME: How do we correctly clearInterval ?
+    // run requests check every 100ms to see if any inflight requests timed out
+    this.requestTimeoutIntervalId = setInterval(() => {
+      this.inflight.forEach(request => {
+        if (Date.now() - request.sentAt > request.requestTimeout * 1000) {
+          request.timeoutRequest()
+        }
+      })
+    }, 100)
   }
 
   /**
@@ -69,7 +77,6 @@ module.exports = class RequestQueue {
       broker: this.broker,
       clientId: this.clientId,
       instrumentationEmitter: this.instrumentationEmitter,
-      enforceRequestTimeout: this.enforceRequestTimeout,
       requestTimeout,
       send: () => {
         this.inflight.set(correlationId, socketRequest)
