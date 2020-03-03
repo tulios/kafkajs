@@ -42,14 +42,14 @@ module.exports = class RequestQueue {
     }
 
     // FIXME: How do we correctly clearInterval ?
-    // run requests check every 100ms to see if any inflight requests timed out
+    // run requests check every 10ms to see if any inflight requests timed out
     this.requestTimeoutIntervalId = setInterval(() => {
       this.inflight.forEach(request => {
         if (Date.now() - request.sentAt > request.requestTimeout) {
           request.timeoutRequest()
         }
       })
-    }, 100)
+    }, 10)
   }
 
   /**

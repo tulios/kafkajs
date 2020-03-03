@@ -355,7 +355,6 @@ describe('Consumer > Instrumentation Events', () => {
     cluster = createCluster({
       instrumentationEmitter: emitter,
       requestTimeout: 1,
-      enforceRequestTimeout: true,
     })
     const requestListener = jest.fn().mockName('request_timeout')
 

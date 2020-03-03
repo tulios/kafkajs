@@ -259,7 +259,6 @@ describe('Producer', () => {
     const emitter = new InstrumentationEventEmitter()
     const cluster = createCluster({
       requestTimeout: 1,
-      enforceRequestTimeout: true,
       instrumentationEmitter: emitter,
     })
 
@@ -557,7 +556,10 @@ describe('Producer', () => {
       const topicMessages = [
         {
           topic: topicName,
-          messages: [{ key: 'key-1', value: 'value-1' }, { key: 'key-2', value: 'value-2' }],
+          messages: [
+            { key: 'key-1', value: 'value-1' },
+            { key: 'key-2', value: 'value-2' },
+          ],
         },
         {
           topic: topicName,
