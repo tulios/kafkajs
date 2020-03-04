@@ -1,6 +1,5 @@
-const sleep = require('../../utils/sleep')
 const SocketRequest = require('./socketRequest')
-const { KafkaJSRequestTimeoutError, KafkaJSNonRetriableError } = require('../../errors')
+const { KafkaJSNonRetriableError } = require('../../errors')
 const InstrumentationEventEmitter = require('../../instrumentation/emitter')
 const events = require('../instrumentationEvents')
 
