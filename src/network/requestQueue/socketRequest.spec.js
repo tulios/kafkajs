@@ -41,7 +41,6 @@ describe('Network > SocketRequest', () => {
     it('sends the request using the provided function', () => {
       expect(request.sentAt).toEqual(null)
       expect(request.pendingDuration).toEqual(null)
-      expect(request.timeoutId).toEqual(null)
 
       request.enforceRequestTimeout = true
       request.send()
@@ -49,9 +48,6 @@ describe('Network > SocketRequest', () => {
       expect(sendRequest).toHaveBeenCalled()
       expect(request.sentAt).toEqual(expect.any(Number))
       expect(request.pendingDuration).toEqual(expect.any(Number))
-      expect(request.timeoutId).not.toEqual(null)
-
-      clearTimeout(request.timeoutId)
     })
 
     it('does not call sendRequest more than once', () => {
@@ -59,19 +55,18 @@ describe('Network > SocketRequest', () => {
       expect(() => request.send()).toThrow(KafkaJSNonRetriableError)
 
       expect(sendRequest).toHaveBeenCalledTimes(1)
-      clearTimeout(request.timeoutId)
     })
 
-    it('executes the timeoutHandler when it times out', async () => {
-      jest.spyOn(request, 'rejected')
-      request.enforceRequestTimeout = true
-      request.send()
+    // it('executes the timeoutHandler when it times out', async () => {
+    //   jest.spyOn(request, 'rejected')
+    //   request.enforceRequestTimeout = true
+    //   request.send()
 
-      await sleep(requestTimeout + 1)
-      expect(request.rejected).toHaveBeenCalled()
-      expect(request.entry.reject).toHaveBeenCalledWith(expect.any(KafkaJSRequestTimeoutError))
-      expect(timeoutHandler).toHaveBeenCalled()
-    })
+    //   await sleep(requestTimeout + 1)
+    //   expect(request.rejected).toHaveBeenCalled()
+    //   expect(request.entry.reject).toHaveBeenCalledWith(expect.any(KafkaJSRequestTimeoutError))
+    //   expect(timeoutHandler).toHaveBeenCalled()
+    // })
   })
 
   describe('#completed', () => {
@@ -163,31 +158,31 @@ describe('Network > SocketRequest', () => {
       })
     })
 
-    it('emits NETWORK_REQUEST_TIMEOUT', async () => {
-      jest.spyOn(request, 'rejected')
-      emitter.addListener(events.NETWORK_REQUEST_TIMEOUT, eventCalled)
-      request.enforceRequestTimeout = true
-      request.send()
+    // it('emits NETWORK_REQUEST_TIMEOUT', async () => {
+    //   jest.spyOn(request, 'rejected')
+    //   emitter.addListener(events.NETWORK_REQUEST_TIMEOUT, eventCalled)
+    //   request.enforceRequestTimeout = true
+    //   request.send()
 
-      await sleep(requestTimeout + 1)
+    //   await sleep(requestTimeout + 1)
 
-      expect(timeoutHandler).toHaveBeenCalled()
-      expect(eventCalled).toHaveBeenCalledWith({
-        id: expect.any(Number),
-        type: 'network.request_timeout',
-        timestamp: expect.any(Number),
-        payload: {
-          apiKey: 0,
-          apiName: 'Produce',
-          apiVersion: 4,
-          broker: 'localhost:9092',
-          clientId: 'KafkaJS',
-          correlationId: expect.any(Number),
-          createdAt: expect.any(Number),
-          pendingDuration: expect.any(Number),
-          sentAt: expect.any(Number),
-        },
-      })
-    })
+    //   expect(timeoutHandler).toHaveBeenCalled()
+    //   expect(eventCalled).toHaveBeenCalledWith({
+    //     id: expect.any(Number),
+    //     type: 'network.request_timeout',
+    //     timestamp: expect.any(Number),
+    //     payload: {
+    //       apiKey: 0,
+    //       apiName: 'Produce',
+    //       apiVersion: 4,
+    //       broker: 'localhost:9092',
+    //       clientId: 'KafkaJS',
+    //       correlationId: expect.any(Number),
+    //       createdAt: expect.any(Number),
+    //       pendingDuration: expect.any(Number),
+    //       sentAt: expect.any(Number),
+    //     },
+    //   })
+    // })
   })
 })
