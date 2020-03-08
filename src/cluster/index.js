@@ -50,6 +50,7 @@ module.exports = class Cluster {
     reauthenticationThreshold,
     requestTimeout,
     enforceRequestTimeout,
+    requestTimeoutCheckInterval,
     metadataMaxAge,
     retry,
     allowExperimentalV011,
@@ -73,6 +74,7 @@ module.exports = class Cluster {
       connectionTimeout,
       requestTimeout,
       enforceRequestTimeout,
+      requestTimeoutCheckInterval,
       maxInFlightRequests,
       retry,
     })

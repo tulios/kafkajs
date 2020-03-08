@@ -15,11 +15,11 @@ module.exports = class RequestQueue {
    * @param {InstrumentationEventEmitter} [instrumentationEmitter=null]
    */
   constructor({
-    requestTimeoutCheckInterval = 100,
     instrumentationEmitter = null,
     maxInFlightRequests,
     requestTimeout,
     enforceRequestTimeout,
+    requestTimeoutCheckInterval,
     clientId,
     broker,
     logger,

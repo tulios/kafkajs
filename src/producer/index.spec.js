@@ -260,6 +260,7 @@ describe('Producer', () => {
     const cluster = createCluster({
       requestTimeout: 1,
       enforceRequestTimeout: true,
+      requestTimeoutCheckInterval: 1,
       instrumentationEmitter: emitter,
     })
 
