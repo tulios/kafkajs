@@ -199,7 +199,7 @@ module.exports = class Connection {
     }
 
     this.logDebug('disconnecting...')
-    this.requestQueue.destroy();
+    this.requestQueue.destroy()
     this.connected = false
     this.socket.end()
     this.socket.unref()

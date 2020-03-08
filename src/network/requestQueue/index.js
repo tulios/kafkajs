@@ -183,6 +183,6 @@ module.exports = class RequestQueue {
    * @public
    */
   destroy() {
-    clearInterval(this.requestTimeoutIntervalId);
+    clearInterval(this.requestTimeoutIntervalId)
   }
 }
