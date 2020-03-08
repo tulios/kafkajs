@@ -142,9 +142,9 @@ describe('Network > Connection', () => {
       const protocol = apiVersions()
       connection = new Connection(
         connectionOpts({ 
-          requestTimeout: 50, 
-          enforceRequestTimeout: true, 
-          requestTimeoutCheckInterval: 1 
+          requestTimeout: 50,
+          enforceRequestTimeout: true,
+          requestTimeoutCheckInterval: 1,
         })
       )
       const originalProcessData = connection.processData

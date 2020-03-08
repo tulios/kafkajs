@@ -356,7 +356,7 @@ describe('Consumer > Instrumentation Events', () => {
       instrumentationEmitter: emitter,
       requestTimeout: 1,
       enforceRequestTimeout: true,
-      requestTimeoutCheckInterval: 1
+      requestTimeoutCheckInterval: 1,
     })
     const requestListener = jest.fn().mockName('request_timeout')
 
