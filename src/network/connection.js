@@ -43,6 +43,7 @@ module.exports = class Connection {
     clientId = 'kafkajs',
     connectionTimeout = 1000,
     requestTimeout = 30000,
+    enforceRequestTimeout = false,
     maxInFlightRequests = null,
     instrumentationEmitter = null,
     retry = {},
@@ -70,6 +71,7 @@ module.exports = class Connection {
       instrumentationEmitter,
       maxInFlightRequests,
       requestTimeout,
+      enforceRequestTimeout,
       clientId,
       broker: this.broker,
       logger: logger.namespace('RequestQueue'),
@@ -197,6 +199,7 @@ module.exports = class Connection {
     }
 
     this.logDebug('disconnecting...')
+    this.requestQueue.destroy();
     this.connected = false
     this.socket.end()
     this.socket.unref()

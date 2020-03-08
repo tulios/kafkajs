@@ -15,15 +15,18 @@ module.exports = class RequestQueue {
    * @param {InstrumentationEventEmitter} [instrumentationEmitter=null]
    */
   constructor({
+    requestTimeoutCheckInterval = 100,
     instrumentationEmitter = null,
     maxInFlightRequests,
     requestTimeout,
+    enforceRequestTimeout,
     clientId,
     broker,
     logger,
   }) {
     this.instrumentationEmitter = instrumentationEmitter
     this.maxInFlightRequests = maxInFlightRequests
+    this.enforceRequestTimeout = enforceRequestTimeout
     this.requestTimeout = requestTimeout
     this.clientId = clientId
     this.broker = broker
@@ -41,15 +44,13 @@ module.exports = class RequestQueue {
         })
     }
 
-    // FIXME: How do we correctly clearInterval ?
-    // run requests check every 10ms to see if any inflight requests timed out
     this.requestTimeoutIntervalId = setInterval(() => {
       this.inflight.forEach(request => {
-        if (Date.now() - request.sentAt > request.requestTimeout) {
+        if (request.enforceRequestTimeout && Date.now() - request.sentAt > request.requestTimeout) {
           request.timeoutRequest()
         }
       })
-    }, 10)
+    }, requestTimeoutCheckInterval)
   }
 
   /**
@@ -76,6 +77,7 @@ module.exports = class RequestQueue {
       expectResponse: pushedRequest.expectResponse,
       broker: this.broker,
       clientId: this.clientId,
+      enforceRequestTimeout: this.enforceRequestTimeout,
       instrumentationEmitter: this.instrumentationEmitter,
       requestTimeout,
       send: () => {
@@ -175,5 +177,12 @@ module.exports = class RequestQueue {
     this.pending = []
     this.inflight.clear()
     this[PRIVATE.EMIT_QUEUE_SIZE_EVENT]()
+  }
+
+  /**
+   * @public
+   */
+  destroy() {
+    clearInterval(this.requestTimeoutIntervalId);
   }
 }

@@ -66,6 +66,7 @@ describe('Admin', () => {
     const emitter = new InstrumentationEventEmitter()
     const cluster = createCluster({
       requestTimeout: 1,
+      enforceRequestTimeout: true,
       instrumentationEmitter: emitter,
     })
 
