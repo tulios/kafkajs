@@ -26,6 +26,8 @@ const STALE_METADATA_ERRORS = [
   'UNKNOWN_TOPIC_OR_PARTITION',
 ]
 
+const EMPTY_FETCH_RESULT = BufferedAsyncIterator([])
+
 module.exports = class ConsumerGroup {
   constructor({
     cluster,
@@ -350,7 +352,7 @@ module.exports = class ConsumerGroup {
         })
 
         await sleep(this.maxWaitTime)
-        return []
+        return EMPTY_FETCH_RESULT
       }
 
       await this.offsetManager.resolveOffsets()
@@ -460,7 +462,7 @@ module.exports = class ConsumerGroup {
       // configured max wait time
       if (requests.length === 0) {
         await sleep(this.maxWaitTime)
-        return []
+        return EMPTY_FETCH_RESULT
       }
 
       return BufferedAsyncIterator(requests, e => this.recoverFromFetch(e))
