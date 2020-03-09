@@ -1,10 +1,7 @@
 jest.setTimeout(90000)
 
-console.log('=============== JEST SETUP ================')
 const retries = process.env.TEST_RETRIES != null ? parseInt(process.env.TEST_RETRIES, 10) : 0
 jest.retryTimes(retries)
-console.log(`Setting retries to: ${retries}`)
-console.log('============= END JEST SETUP ==============')
 
 require('jest-extended')
 const glob = require('glob')
