@@ -75,7 +75,6 @@ module.exports = class Connection {
       clientId,
       broker: this.broker,
       logger: logger.namespace('RequestQueue'),
-      isConnected: () => this.connected,
     })
 
     this.authHandlers = null

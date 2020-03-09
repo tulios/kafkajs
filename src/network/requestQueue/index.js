@@ -22,7 +22,6 @@ module.exports = class RequestQueue {
     clientId,
     broker,
     logger,
-    isConnected = () => true,
   }) {
     this.instrumentationEmitter = instrumentationEmitter
     this.maxInFlightRequests = maxInFlightRequests
@@ -48,12 +47,8 @@ module.exports = class RequestQueue {
 
     if (this.enforceRequestTimeout) {
       this.requestTimeoutIntervalId = setInterval(() => {
-        if (!isConnected()) {
-          this.destroy()
-        }
-
         this.inflight.forEach(request => {
-          if (!isConnected() || Date.now() - request.sentAt > request.requestTimeout) {
+          if (Date.now() - request.sentAt > request.requestTimeout) {
             request.timeoutRequest()
           }
         })
