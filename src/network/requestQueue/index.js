@@ -25,8 +25,8 @@ module.exports = class RequestQueue {
   }) {
     this.instrumentationEmitter = instrumentationEmitter
     this.maxInFlightRequests = maxInFlightRequests
-    this.enforceRequestTimeout = enforceRequestTimeout
     this.requestTimeout = requestTimeout
+    this.enforceRequestTimeout = enforceRequestTimeout
     this.clientId = clientId
     this.broker = broker
     this.logger = logger
@@ -47,6 +47,8 @@ module.exports = class RequestQueue {
 
     if (this.enforceRequestTimeout) {
       this.requestTimeoutIntervalId = setInterval(() => {
+        // TODO: clear interval if not connected any more
+
         this.inflight.forEach(request => {
           if (Date.now() - request.sentAt > request.requestTimeout) {
             request.timeoutRequest()
@@ -80,8 +82,8 @@ module.exports = class RequestQueue {
       expectResponse: pushedRequest.expectResponse,
       broker: this.broker,
       clientId: this.clientId,
-      enforceRequestTimeout: this.enforceRequestTimeout,
       instrumentationEmitter: this.instrumentationEmitter,
+      enforceRequestTimeout: this.enforceRequestTimeout,
       requestTimeout,
       send: () => {
         this.inflight.set(correlationId, socketRequest)

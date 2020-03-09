@@ -1,5 +1,5 @@
 const SocketRequest = require('./socketRequest')
-const { KafkaJSNonRetriableError } = require('../../errors')
+const { KafkaJSRequestTimeoutError, KafkaJSNonRetriableError } = require('../../errors')
 const InstrumentationEventEmitter = require('../../instrumentation/emitter')
 const events = require('../instrumentationEvents')
 
@@ -56,16 +56,16 @@ describe('Network > SocketRequest', () => {
       expect(sendRequest).toHaveBeenCalledTimes(1)
     })
 
-    // it('executes the timeoutHandler when it times out', async () => {
-    //   jest.spyOn(request, 'rejected')
-    //   request.enforceRequestTimeout = true
-    //   request.send()
+    it('executes the timeoutHandler when it times out', async () => {
+      jest.spyOn(request, 'rejected')
+      request.enforceRequestTimeout = true
+      request.send()
+      request.timeoutRequest()
 
-    //   await sleep(requestTimeout + 1)
-    //   expect(request.rejected).toHaveBeenCalled()
-    //   expect(request.entry.reject).toHaveBeenCalledWith(expect.any(KafkaJSRequestTimeoutError))
-    //   expect(timeoutHandler).toHaveBeenCalled()
-    // })
+      expect(request.rejected).toHaveBeenCalled()
+      expect(request.entry.reject).toHaveBeenCalledWith(expect.any(KafkaJSRequestTimeoutError))
+      expect(timeoutHandler).toHaveBeenCalled()
+    })
   })
 
   describe('#completed', () => {
@@ -156,32 +156,5 @@ describe('Network > SocketRequest', () => {
         },
       })
     })
-
-    // it('emits NETWORK_REQUEST_TIMEOUT', async () => {
-    //   jest.spyOn(request, 'rejected')
-    //   emitter.addListener(events.NETWORK_REQUEST_TIMEOUT, eventCalled)
-    //   request.enforceRequestTimeout = true
-    //   request.send()
-
-    //   await sleep(requestTimeout + 1)
-
-    //   expect(timeoutHandler).toHaveBeenCalled()
-    //   expect(eventCalled).toHaveBeenCalledWith({
-    //     id: expect.any(Number),
-    //     type: 'network.request_timeout',
-    //     timestamp: expect.any(Number),
-    //     payload: {
-    //       apiKey: 0,
-    //       apiName: 'Produce',
-    //       apiVersion: 4,
-    //       broker: 'localhost:9092',
-    //       clientId: 'KafkaJS',
-    //       correlationId: expect.any(Number),
-    //       createdAt: expect.any(Number),
-    //       pendingDuration: expect.any(Number),
-    //       sentAt: expect.any(Number),
-    //     },
-    //   })
-    // })
   })
 })
