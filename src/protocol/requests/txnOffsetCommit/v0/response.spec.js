@@ -9,7 +9,10 @@ describe('Protocol > Requests > TxnOffsetCommit > v0', () => {
       topics: [
         {
           topic: 'test-topic-0ba33173f7664d75c6b2-63632-a0dab079-1c9a-44ba-be25-ca3d50df5003',
-          partitions: [{ errorCode: 0, partition: 1 }, { errorCode: 0, partition: 2 }],
+          partitions: [
+            { errorCode: 0, partition: 1 },
+            { errorCode: 0, partition: 2 },
+          ],
         },
       ],
     })
@@ -23,7 +26,10 @@ describe('Protocol > Requests > TxnOffsetCommit > v0', () => {
       topics: [
         {
           topic: 'test-topic',
-          partitions: [{ errorCode: 0, partition: 1 }, { errorCode: 49, partition: 2 }],
+          partitions: [
+            { errorCode: 0, partition: 1 },
+            { errorCode: 49, partition: 2 },
+          ],
         },
       ],
     }
