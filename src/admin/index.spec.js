@@ -1,6 +1,7 @@
 const createAdmin = require('./index')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const { createCluster, newLogger, secureRandom } = require('testHelpers')
+const createRetry = require('../retry')
 
 describe('Admin', () => {
   it('gives access to its logger', () => {
@@ -63,6 +64,7 @@ describe('Admin', () => {
   })
 
   test('emits the request timeout event', async () => {
+    const retrier = createRetry()
     const emitter = new InstrumentationEventEmitter()
     const cluster = createCluster({
       requestTimeout: 1,
@@ -79,15 +81,20 @@ describe('Admin', () => {
     const requestListener = jest.fn().mockName('request_timeout')
     admin.on(admin.events.REQUEST_TIMEOUT, requestListener)
 
-    await admin
-      .connect()
-      .then(() =>
-        admin.createTopics({
+    await admin.connect()
+
+    await retrier(async () => {
+      try {
+        await admin.createTopics({
           waitForLeaders: false,
           topics: [{ topic: `test-topic-${secureRandom()}` }],
         })
-      )
-      .catch(e => e)
+      } catch (e) {
+        if (e.name !== 'KafkaJSRequestTimeoutError') {
+          throw e
+        }
+      }
+    })
 
     expect(requestListener).toHaveBeenCalledWith({
       id: expect.any(Number),
