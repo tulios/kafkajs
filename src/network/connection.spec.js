@@ -144,7 +144,6 @@ describe('Network > Connection', () => {
         connectionOpts({
           requestTimeout: 50,
           enforceRequestTimeout: true,
-          requestTimeoutCheckInterval: 1,
         })
       )
       const originalProcessData = connection.processData

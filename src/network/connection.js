@@ -46,7 +46,6 @@ module.exports = class Connection {
     enforceRequestTimeout = false,
     maxInFlightRequests = null,
     instrumentationEmitter = null,
-    requestTimeoutCheckInterval = 100,
     retry = {},
   }) {
     this.host = host
@@ -73,7 +72,6 @@ module.exports = class Connection {
       maxInFlightRequests,
       requestTimeout,
       enforceRequestTimeout,
-      requestTimeoutCheckInterval,
       clientId,
       broker: this.broker,
       logger: logger.namespace('RequestQueue'),

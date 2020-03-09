@@ -21,7 +21,6 @@ export interface KafkaConfig {
   reauthenticationThreshold?: number
   requestTimeout?: number
   enforceRequestTimeout?: boolean
-  requestTimeoutCheckInterval?: number
   retry?: RetryOptions
   socketFactory?: ISocketFactory
   logLevel?: logLevel

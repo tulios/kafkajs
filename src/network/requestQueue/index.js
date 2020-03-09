@@ -19,7 +19,6 @@ module.exports = class RequestQueue {
     maxInFlightRequests,
     requestTimeout,
     enforceRequestTimeout,
-    requestTimeoutCheckInterval,
     clientId,
     broker,
     logger,
@@ -44,13 +43,17 @@ module.exports = class RequestQueue {
         })
     }
 
-    this.requestTimeoutIntervalId = setInterval(() => {
-      this.inflight.forEach(request => {
-        if (request.enforceRequestTimeout && Date.now() - request.sentAt > request.requestTimeout) {
-          request.timeoutRequest()
-        }
-      })
-    }, requestTimeoutCheckInterval)
+    const requestTimeoutCheckInterval = Math.min(this.requestTimeout, 100)
+
+    if (this.enforceRequestTimeout) {
+      this.requestTimeoutIntervalId = setInterval(() => {
+        this.inflight.forEach(request => {
+          if (Date.now() - request.sentAt > request.requestTimeout) {
+            request.timeoutRequest()
+          }
+        })
+      }, requestTimeoutCheckInterval)
+    }
   }
 
   /**
