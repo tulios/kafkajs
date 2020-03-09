@@ -43,9 +43,8 @@ module.exports = class RequestQueue {
         })
     }
 
-    const requestTimeoutCheckInterval = Math.min(this.requestTimeout, 100)
-
     if (this.enforceRequestTimeout) {
+      const requestTimeoutCheckInterval = Math.min(this.requestTimeout, 100)
       this.requestTimeoutIntervalId = setInterval(() => {
         this.inflight.forEach(request => {
           if (Date.now() - request.sentAt > request.requestTimeout) {
