@@ -192,7 +192,7 @@ Allows you to get information about the broker cluster.
 await admin.describeCluster()
 // {
 //   brokers: [
-//     { nodeId: 0, host: 'localhost', port: 9092, connected: true }
+//     { nodeId: 0, host: 'localhost', port: 9092 }
 //   ],
 //   controller: 0,
 //   clusterId: 'f8QmWTB8SQSLE6C99G4qzA'
