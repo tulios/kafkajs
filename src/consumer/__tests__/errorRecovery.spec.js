@@ -204,7 +204,7 @@ describe('Consumer', () => {
     await waitFor(() => restartOnFailure.mock.calls.length > 0)
     expect(restartOnFailure).toHaveBeenCalledWith(error)
 
-    await expect(waitFor(() => eachMessage.mock.calls.length)).resolves.toBe(1)
+    await expect(waitFor(() => eachMessage.mock.calls.length)).resolves.toBeGreaterThanOrEqual(1)
   })
 
   it('allows the user to bail out of restarting on retriable errors', async () => {
