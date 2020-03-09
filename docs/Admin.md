@@ -186,7 +186,8 @@ await admin.setOffsets({
 
 ## <a name="describe-cluster"></a> Describe cluster
 
-Allows you to get information about the broker cluster.
+Allows you to get information about the broker cluster. This is mostly useful
+for monitoring or operations, and is usually not relevant for typical event processing.
 
 ```javascript
 await admin.describeCluster()
