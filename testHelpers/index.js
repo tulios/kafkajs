@@ -174,6 +174,18 @@ const createTopic = async ({ topic, partitions = 1, config = [] }) => {
   }
 }
 
+const deleteTopic = async topic => {
+  const kafka = new Kafka({ clientId: 'testHelpers', brokers: [`${getHost()}:9092`] })
+  const admin = kafka.admin()
+
+  try {
+    await admin.connect()
+    await admin.deleteTopics({ topics: [topic] })
+  } finally {
+    admin && (await admin.disconnect())
+  }
+}
+
 const addPartitions = async ({ topic, partitions }) => {
   const cmd = `TOPIC=${topic} PARTITIONS=${partitions} ./scripts/addPartitions.sh`
   const cluster = createCluster()
@@ -242,6 +254,7 @@ module.exports = {
   newLogger,
   retryProtocol,
   createTopic,
+  deleteTopic,
   waitFor: testWaitFor,
   waitForMessages,
   waitForNextEvent,
