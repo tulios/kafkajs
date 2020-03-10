@@ -7,7 +7,10 @@ describe('Protocol > Requests > Produce > v0', () => {
   let args, messageSet1, messageSet2
 
   beforeEach(() => {
-    messageSet1 = [{ key: '1', value: 'value-1' }, { key: '2', value: 'value-2' }]
+    messageSet1 = [
+      { key: '1', value: 'value-1' },
+      { key: '2', value: 'value-2' },
+    ]
     messageSet2 = [{ key: '3', value: 'value-3' }]
     args = {
       acks: -1,

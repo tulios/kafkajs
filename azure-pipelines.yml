@@ -57,6 +57,8 @@ jobs:
   - job: test_broker
     displayName: Broker
     dependsOn: lint
+    variables:
+      test_retries: 2
     pool:
       vmImage: 'Ubuntu 16.04'
     steps:
@@ -80,6 +82,8 @@ jobs:
   - job: test_admin
     displayName: Admin
     dependsOn: lint
+    variables:
+      test_retries: 2
     pool:
       vmImage: 'Ubuntu 16.04'
     steps:
@@ -103,6 +107,8 @@ jobs:
   - job: test_producer
     displayName: Producer
     dependsOn: lint
+    variables:
+      test_retries: 2
     pool:
       vmImage: 'Ubuntu 16.04'
     steps:
@@ -126,6 +132,8 @@ jobs:
   - job: test_consumer
     displayName: Consumer
     dependsOn: lint
+    variables:
+      test_retries: 2
     pool:
       vmImage: 'Ubuntu 16.04'
     steps:
@@ -149,6 +157,8 @@ jobs:
   - job: test_others
     displayName: 'Others (protocol, cluster, network, etc)'
     dependsOn: lint
+    variables:
+      test_retries: 2
     pool:
       vmImage: 'Ubuntu 16.04'
     steps:
