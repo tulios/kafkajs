@@ -4,6 +4,13 @@ const sleep = require('./sleep')
 const BufferedAsyncIterator = require('./bufferedAsyncIterator')
 
 describe('Utils > BufferedAsyncIterator', () => {
+  it('yields an empty iterator if passed an empty array of promises', async () => {
+    const iterator = BufferedAsyncIterator([])
+    const result = iterator.next()
+
+    expect(result.done).toBe(true)
+  })
+
   it('provide the values as they become available', async () => {
     const promises = [sleep(300).then(() => 1), sleep(100).then(() => 2), sleep(500).then(() => 3)]
     const iterator = BufferedAsyncIterator(promises)
