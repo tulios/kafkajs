@@ -350,7 +350,7 @@ module.exports = class ConsumerGroup {
         })
 
         await sleep(this.maxWaitTime)
-        return []
+        return BufferedAsyncIterator([])
       }
 
       await this.offsetManager.resolveOffsets()
@@ -460,7 +460,7 @@ module.exports = class ConsumerGroup {
       // configured max wait time
       if (requests.length === 0) {
         await sleep(this.maxWaitTime)
-        return []
+        return BufferedAsyncIterator([])
       }
 
       return BufferedAsyncIterator(requests, e => this.recoverFromFetch(e))
