@@ -51,7 +51,10 @@ describe('Consumer > OffsetMananger > initializeConsumerOffsets', () => {
       },
       {
         topic: 'topic-name2',
-        partitions: [{ partition: 0, offset: '1' }, { partition: 1, offset: '2' }],
+        partitions: [
+          { partition: 0, offset: '1' },
+          { partition: 1, offset: '2' },
+        ],
       },
     ])
   })

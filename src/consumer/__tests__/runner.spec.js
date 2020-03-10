@@ -247,22 +247,21 @@ describe('Consumer > Runner', () => {
     beforeEach(async () => {
       offsets = { topics: [{ topic: topicName, partitions: [{ offset: '1', partition }] }] }
       await runner.start()
+
+      consumerGroup.join.mockClear()
+      consumerGroup.commitOffsetsIfNecessary.mockClear()
+      consumerGroup.commitOffsets.mockClear()
     })
 
     it('should commit offsets while running', async () => {
-      // Clear state
-      consumerGroup.commitOffsetsIfNecessary.mockClear()
-      consumerGroup.commitOffsets.mockClear()
-
       await runner.commitOffsets(offsets)
+
       expect(consumerGroup.commitOffsetsIfNecessary).toHaveBeenCalledTimes(0)
-      expect(consumerGroup.commitOffsets).toHaveBeenCalledTimes(1)
+      expect(consumerGroup.commitOffsets.mock.calls.length).toBeGreaterThanOrEqual(1)
       expect(consumerGroup.commitOffsets).toHaveBeenCalledWith(offsets)
     })
 
     it('should throw when group is rebalancing, while triggering another join', async () => {
-      consumerGroup.join.mockClear()
-      consumerGroup.commitOffsets.mockClear()
       consumerGroup.commitOffsets.mockImplementationOnce(() => {
         throw rebalancingError()
       })
