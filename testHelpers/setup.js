@@ -1,5 +1,8 @@
 jest.setTimeout(90000)
 
+const retries = process.env.TEST_RETRIES != null ? parseInt(process.env.TEST_RETRIES, 10) : 0
+jest.retryTimes(retries)
+
 require('jest-extended')
 const glob = require('glob')
 const path = require('path')
