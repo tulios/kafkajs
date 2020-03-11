@@ -307,6 +307,7 @@ describe('Network > RequestQueue', () => {
 
     it('emits NETWORK_REQUEST_TIMEOUT', async () => {
       emitter.addListener(events.NETWORK_REQUEST_TIMEOUT, eventCalled)
+      requestQueue.scheduleRequestTimeoutCheck()
       requestQueue.push(request)
 
       await sleep(requestTimeout + 1)

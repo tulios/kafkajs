@@ -22,6 +22,7 @@ module.exports = class RequestQueue {
     clientId,
     broker,
     logger,
+    isConnected = () => true,
   }) {
     this.instrumentationEmitter = instrumentationEmitter
     this.maxInFlightRequests = maxInFlightRequests
@@ -30,6 +31,7 @@ module.exports = class RequestQueue {
     this.clientId = clientId
     this.broker = broker
     this.logger = logger
+    this.isConnected = isConnected
 
     this.inflight = new Map()
     this.pending = []
@@ -42,16 +44,26 @@ module.exports = class RequestQueue {
           queueSize: this.pending.length,
         })
     }
+  }
 
+  /**
+   * @public
+   */
+  scheduleRequestTimeoutCheck() {
     if (this.enforceRequestTimeout) {
-      const requestTimeoutCheckInterval = Math.min(this.requestTimeout, 100)
+      this.destroy()
+
       this.requestTimeoutIntervalId = setInterval(() => {
         this.inflight.forEach(request => {
           if (Date.now() - request.sentAt > request.requestTimeout) {
             request.timeoutRequest()
           }
+
+          if (!this.isConnected()) {
+            this.destroy()
+          }
         })
-      }, requestTimeoutCheckInterval)
+      }, Math.min(this.requestTimeout, 100))
     }
   }
 
@@ -80,7 +92,6 @@ module.exports = class RequestQueue {
       broker: this.broker,
       clientId: this.clientId,
       instrumentationEmitter: this.instrumentationEmitter,
-      enforceRequestTimeout: this.enforceRequestTimeout,
       requestTimeout,
       send: () => {
         this.inflight.set(correlationId, socketRequest)

@@ -75,6 +75,7 @@ module.exports = class Connection {
       clientId,
       broker: this.broker,
       logger: logger.namespace('RequestQueue'),
+      isConnected: () => this.connected,
     })
 
     this.authHandlers = null
@@ -109,6 +110,7 @@ module.exports = class Connection {
       const onConnect = () => {
         clearTimeout(timeoutId)
         this.connected = true
+        this.requestQueue.scheduleRequestTimeoutCheck()
         resolve(true)
       }
 
