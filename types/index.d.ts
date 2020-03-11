@@ -99,14 +99,14 @@ export interface ConsumerConfig {
   minBytes?: number
   maxBytes?: number
   maxWaitTimeInMs?: number
-  retry?: RetryOptions
+  retry?: RetryOptions & { restartOnFailure?: () => Promise<boolean> }
   allowAutoTopicCreation?: boolean
   maxInFlightRequests?: number
   readUncommitted?: boolean
 }
 
 export interface PartitionAssigner {
-  new (config: { cluster: Cluster }): Assigner
+  new(config: { cluster: Cluster }): Assigner
 }
 
 export interface CoordinatorMetadata {
