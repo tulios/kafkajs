@@ -9,6 +9,8 @@ const RESOURCE_TYPES = require('../protocol/resourceTypes')
 
 const { CONNECT, DISCONNECT } = events
 
+const NO_CONTROLLER_ID = -1
+
 const { values, keys } = Object
 const eventNames = values(events)
 const eventKeys = keys(events)
@@ -596,6 +598,38 @@ module.exports = ({
   }
 
   /**
+   * Describe cluster
+   *
+   * @return {Promise<ClusterMetadata>}
+   *
+   * @typedef {Object} ClusterMetadata
+   * @property {Array<Broker>} brokers
+   * @property {Number} controller Current controller id. Returns null if unknown.
+   * @property {String} clusterId
+   *
+   * @typedef {Object} Broker
+   * @property {Number} nodeId
+   * @property {String} host
+   * @property {Number} port
+   */
+  const describeCluster = async () => {
+    const { brokers: nodes, clusterId, controllerId } = await cluster.metadata({ topics: [] })
+    const brokers = nodes.map(({ nodeId, host, port }) => ({
+      nodeId,
+      host,
+      port,
+    }))
+    const controller =
+      controllerId == null || controllerId === NO_CONTROLLER_ID ? null : controllerId
+
+    return {
+      brokers,
+      controller,
+      clusterId,
+    }
+  }
+
+  /**
    * List groups in a broker
    *
    * @return {Promise<ListGroups>}
@@ -653,6 +687,7 @@ module.exports = ({
     deleteTopics,
     getTopicMetadata,
     fetchTopicMetadata,
+    describeCluster,
     events,
     fetchOffsets,
     fetchTopicOffsets,
