@@ -8,3 +8,4 @@ yarn-error.log
 .vs
 build/
 *.class
+.idea/

@@ -179,6 +179,12 @@ export interface ITopicConfig {
   configEntries?: object[]
 }
 
+export interface ITopicPartitionConfig {
+  topic: string
+  count: number
+  assignments?: Array<Array<number>>
+}
+
 export interface ITopicMetadata {
   name: string
   partitions: PartitionMetadata[]
@@ -298,6 +304,11 @@ export type Admin = {
     topics: ITopicConfig[]
   }): Promise<boolean>
   deleteTopics(options: { topics: string[]; timeout?: number }): Promise<void>
+  createPartitions(options: {
+    validateOnly?: boolean
+    timeout?: number
+    topicPartitions: ITopicPartitionConfig[]
+  }): Promise<boolean>
   fetchTopicMetadata(options: { topics: string[] }): Promise<{ topics: Array<ITopicMetadata> }>
   fetchOffsets(options: {
     groupId: string

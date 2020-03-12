@@ -65,6 +65,36 @@ Topic deletion is disabled by default in Apache Kafka versions prior to `1.0.0`.
 delete.topic.enable=true
 ```
 
+## <a name="create-partitions"></a> Create partitions
+
+`createPartitions` will resolve to `true` in case of success. The method will throw exceptions in case of errors.
+
+```javascript
+await admin.createPartitions({
+    validateOnly: <boolean>,
+    timeout: <Number>,
+    topicPartitions: <TopicPartition[]>,
+})
+```
+
+`TopicPartition` structure:
+
+```javascript
+{
+    topic: <String>,
+    count: <Number>,     // partition count
+    assignments: <Array<Array<Number>>> // Example: [[0,1],[1,2],[2,0]] 
+}
+```
+
+| property       | description                                                                                           | default |
+| -------------- | ----------------------------------------------------------------------------------------------------- | ------- |
+| topicPartitions| Topic partition definition                                                                                      |         |
+| validateOnly   | If this is `true`, the request will be validated, but the topic won't be created.                     | false   |
+| timeout        | The time in ms to wait for a topic to be completely created on the controller node                    | 5000    |
+| count          | New partition count, mandatory                                                                                   |         |
+| assignments    | Assigned brokers for each new partition                                                               | null    |
+
 ## <a name="get-topic-metadata"></a> Get topic metadata
 
 Deprecated, see [Fetch topic metadata](#fetch-topic-metadata)
