@@ -11,5 +11,5 @@ const requestV0 = require('../v0/request')
  *   validate_only => BOOLEAN
  */
 
-module.exports = ({ topicPartitions, validateOnly , timeout }) =>
-  Object.assign(requestV0({ topicPartitions, validateOnly , timeout }),{apiVersion: 1})
+module.exports = ({ topicPartitions, validateOnly, timeout }) =>
+  Object.assign(requestV0({ topicPartitions, validateOnly, timeout }), { apiVersion: 1 })

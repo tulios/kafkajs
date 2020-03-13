@@ -1,7 +1,6 @@
 const Encoder = require('../../../encoder')
 const { CreatePartitions: apiKey } = require('../../apiKeys')
 
-
 /**
  * CreatePartitions Request (Version: 0) => [topic_partitions] timeout validate_only
  *   topic_partitions => topic new_partitions
@@ -25,18 +24,13 @@ module.exports = ({ topicPartitions, validateOnly = false, timeout = 5000 }) => 
   },
 })
 
-const encodeTopicPartitions = ({
- topic,
- count,
- assignments = [],
-}) => {
+const encodeTopicPartitions = ({ topic, count, assignments = [] }) => {
   return new Encoder()
     .writeString(topic)
     .writeInt32(count)
     .writeNullableArray(assignments.map(encodeAssignments))
 }
 
-const encodeAssignments = (brokerIds) => {
-  return new Encoder()
-    .writeNullableArray(brokerIds)
+const encodeAssignments = brokerIds => {
+  return new Encoder().writeNullableArray(brokerIds)
 }

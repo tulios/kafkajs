@@ -5,13 +5,6 @@ const { Kafka, logLevel } = require('../index')
 
 const host = process.env.HOST_IP || ip.address()
 
-const logCreator = _logLevel => {
-  return ({ namespace, level, label, log }) => {
-    const { timestamp, message, error, ...extra } = log
-    console.log(`${timestamp}: ${label}: ${message} ${error}`)
-  }
-}
-
 const kafka = new Kafka({
   logLevel: logLevel.INFO,
   brokers: [`${host}:9094`, `${host}:9097`, `${host}:9100`],
@@ -53,7 +46,7 @@ const getMyTopics = async () => {
 }
 
 const wait = nrOfSec => {
-  return new Promise((resolve, _) => {
+  return new Promise((resolve, reject) => {
     setTimeout(resolve, nrOfSec * 1000)
   })
 }

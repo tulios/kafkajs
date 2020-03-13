@@ -130,11 +130,11 @@ module.exports = ({
    * @param {number} [timeout=5000]
    * @return {Promise}
    */
-  const createPartitions = async ({ topicPartitions, validateOnly, timeout}) => {
+  const createPartitions = async ({ topicPartitions, validateOnly, timeout }) => {
     if (!topicPartitions || !Array.isArray(topicPartitions)) {
       throw new KafkaJSNonRetriableError(`Invalid topics partitions array ${topicPartitions}`)
     }
-    if (topicPartitions.length === 0){
+    if (topicPartitions.length === 0) {
       throw new KafkaJSNonRetriableError(`Empty topics partitions array`)
     }
 
