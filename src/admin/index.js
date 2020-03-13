@@ -132,15 +132,22 @@ module.exports = ({
    */
   const createPartitions = async ({ topicPartitions, validateOnly, timeout }) => {
     if (!topicPartitions || !Array.isArray(topicPartitions)) {
-      throw new KafkaJSNonRetriableError(`Invalid topics partitions array ${topicPartitions}`)
+      throw new KafkaJSNonRetriableError(`Invalid topic partitions array ${topicPartitions}`)
     }
     if (topicPartitions.length === 0) {
-      throw new KafkaJSNonRetriableError(`Empty topics partitions array`)
+      throw new KafkaJSNonRetriableError(`Empty topic partitions array`)
     }
 
     if (topicPartitions.filter(({ topic }) => typeof topic !== 'string').length > 0) {
       throw new KafkaJSNonRetriableError(
-        'Invalid topicPartitions array, the topic names have to be a valid string'
+        'Invalid topic partitions array, the topic names have to be a valid string'
+      )
+    }
+
+    const topicNames = new Set(topicPartitions.map(({ topic }) => topic))
+    if (topicNames.size < topicPartitions.length) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid topic partitions array, it cannot have multiple entries for the same topic'
       )
     }
 

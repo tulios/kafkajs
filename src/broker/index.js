@@ -510,7 +510,8 @@ module.exports = class Broker {
    *                 [
    *                   {
    *                     topic: 'topic-name',
-   *                     newAssignments: []
+   *                     count: 3,
+   *                     assignments: []
    *                   }
    *                 ]
    * @param {boolean} [validateOnly=false] If this is true, the request will be validated, but the topic
