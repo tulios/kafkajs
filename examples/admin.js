@@ -32,7 +32,7 @@ const run = async () => {
     waitForLeaders: true,
   })
   await admin.createPartitions({
-    topicPartitions: [{ topic: topic1, count: 3 }],
+    topicPartitions: [{ topic: topic, count: 3 }],
   })
 }
 

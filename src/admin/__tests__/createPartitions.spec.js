@@ -5,7 +5,6 @@ const { createErrorFromCode } = require('../../protocol/error')
 const { secureRandom, createCluster, newLogger } = require('testHelpers')
 
 const NOT_CONTROLLER = 41
-const TOPIC_ALREADY_EXISTS = 36
 
 describe('Admin', () => {
   let topicName, admin
