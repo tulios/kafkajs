@@ -80,25 +80,6 @@ describe('Admin', () => {
       ).rejects.toHaveProperty('message', 'Replica assignment is invalid')
     })
 
-    test('throws an error trying to assign invalid broker list', async () => {
-      admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
-
-      await admin.connect()
-
-      await expect(
-        admin.createTopics({
-          waitForLeaders: false,
-          topics: [{ topic: topicName }],
-        })
-      ).resolves.toEqual(true)
-
-      await expect(
-        admin.createPartitions({
-          topicPartitions: [{ topic: topicName, count: 2, assignments: [null] }],
-        })
-      ).rejects.toHaveProperty('message', 'Replica assignment is invalid')
-    })
-
     test('create new partition and return true', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
 
