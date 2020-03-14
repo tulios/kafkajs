@@ -7,7 +7,7 @@ describe('Producer > Partitioner > DefaultJava > murmur2', () => {
     })
   })
 
-  test.only('it handles numeric input', () => {
+  test('it handles numeric input', () => {
     expect(murmur2(0)).toEqual(971027396)
   })
 
