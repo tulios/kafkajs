@@ -63,7 +63,6 @@
     "jest-extended": "^0.11.2",
     "jest-junit": "^10.0.0",
     "lint-staged": "^9.2.0",
-    "long": "^4.0.0",
     "mockdate": "^2.0.3",
     "prettier": "^1.19.1",
     "semver": "^6.2.0",
