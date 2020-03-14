@@ -95,6 +95,15 @@ class Long {
   }
 
   /**
+   * Converts the Long to the nearest floating-point representation (double, 53-bit mantissa)
+   * @returns {number}
+   * @override
+   */
+  toNumber() {
+    return Number(this.value)
+  }
+
+  /**
    * Converts the Long to a 32 bit integer, assuming it is a 32 bit integer.
    * @returns {number}
    */
