@@ -86,7 +86,7 @@ describe('Broker > AddPartitionsToTxn', () => {
     await expect(
       broker.addPartitionsToTxn({
         transactionalId,
-        producerId: 'foo',
+        producerId: '123456789',
         producerEpoch,
         topics: [
           {

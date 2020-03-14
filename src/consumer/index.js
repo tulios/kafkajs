@@ -1,4 +1,4 @@
-const Long = require('long')
+const Long = require('../utils/long')
 const createRetry = require('../retry')
 const { initialRetryTime } = require('../retry/defaults')
 const ConsumerGroup = require('./consumerGroup')
