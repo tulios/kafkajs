@@ -99,7 +99,7 @@ export interface ConsumerConfig {
   minBytes?: number
   maxBytes?: number
   maxWaitTimeInMs?: number
-  retry?: RetryOptions
+  retry?: RetryOptions & { restartOnFailure?: (err: Error) => Promise<boolean> }
   allowAutoTopicCreation?: boolean
   maxInFlightRequests?: number
   readUncommitted?: boolean
