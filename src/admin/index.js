@@ -124,6 +124,50 @@ module.exports = ({
       }
     })
   }
+  /**
+   * @param {array} topicPartitions
+   * @param {boolean} [validateOnly=false]
+   * @param {number} [timeout=5000]
+   * @return {Promise<void>}
+   */
+  const createPartitions = async ({ topicPartitions, validateOnly, timeout }) => {
+    if (!topicPartitions || !Array.isArray(topicPartitions)) {
+      throw new KafkaJSNonRetriableError(`Invalid topic partitions array ${topicPartitions}`)
+    }
+    if (topicPartitions.length === 0) {
+      throw new KafkaJSNonRetriableError(`Empty topic partitions array`)
+    }
+
+    if (topicPartitions.filter(({ topic }) => typeof topic !== 'string').length > 0) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid topic partitions array, the topic names have to be a valid string'
+      )
+    }
+
+    const topicNames = new Set(topicPartitions.map(({ topic }) => topic))
+    if (topicNames.size < topicPartitions.length) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid topic partitions array, it cannot have multiple entries for the same topic'
+      )
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        await broker.createPartitions({ topicPartitions, validateOnly, timeout })
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not create topics', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
 
   /**
    * @param {string[]} topics
@@ -685,6 +729,7 @@ module.exports = ({
     disconnect,
     createTopics,
     deleteTopics,
+    createPartitions,
     getTopicMetadata,
     fetchTopicMetadata,
     describeCluster,
