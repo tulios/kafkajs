@@ -184,6 +184,22 @@ await admin.setOffsets({
 })
 ```
 
+## <a name="describe-cluster"></a> Describe cluster
+
+Allows you to get information about the broker cluster. This is mostly useful
+for monitoring or operations, and is usually not relevant for typical event processing.
+
+```javascript
+await admin.describeCluster()
+// {
+//   brokers: [
+//     { nodeId: 0, host: 'localhost', port: 9092 }
+//   ],
+//   controller: 0,
+//   clusterId: 'f8QmWTB8SQSLE6C99G4qzA'
+// }
+```
+
 ## <a name="describe-configs"></a> Describe configs
 
 Get the configuration for the specified resources.

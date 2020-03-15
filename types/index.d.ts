@@ -306,6 +306,7 @@ export type Admin = {
   fetchTopicOffsets(
     topic: string
   ): Promise<Array<{ partition: number; offset: string; high: string; low: string }>>
+  describeCluster(): Promise<{ brokers: Array<{ nodeId: number; host: string; port: number }>; controller: number | null, clusterId: string }>
   setOffsets(options: { groupId: string; topic: string; partitions: SeekEntry[] }): Promise<void>
   resetOffsets(options: { groupId: string; topic: string; earliest: boolean }): Promise<void>
   describeConfigs(configs: {
