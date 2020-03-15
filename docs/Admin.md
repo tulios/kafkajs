@@ -67,7 +67,7 @@ delete.topic.enable=true
 
 ## <a name="create-partitions"></a> Create partitions
 
-`createPartitions` will resolve to `true` in case of success. The method will throw exceptions in case of errors.
+`createPartitions` will resolve in case of success. The method will throw exceptions in case of errors.
 
 ```javascript
 await admin.createPartitions({

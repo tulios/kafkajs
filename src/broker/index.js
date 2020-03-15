@@ -518,7 +518,7 @@ module.exports = class Broker {
    *                                       won't be created
    * @param {number} [timeout=5000] The time in ms to wait for a topic to be completely created
    *                                on the controller node
-   * @returns {Promise}
+   * @returns {Promise<void>}
    */
   async createPartitions({ topicPartitions, validateOnly = false, timeout = 5000 }) {
     const createPartitions = this.lookupRequest(apiKeys.CreatePartitions, requests.CreatePartitions)

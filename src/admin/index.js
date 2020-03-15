@@ -128,7 +128,7 @@ module.exports = ({
    * @param {array} topicPartitions
    * @param {boolean} [validateOnly=false]
    * @param {number} [timeout=5000]
-   * @return {Promise}
+   * @return {Promise<void>}
    */
   const createPartitions = async ({ topicPartitions, validateOnly, timeout }) => {
     if (!topicPartitions || !Array.isArray(topicPartitions)) {
@@ -158,8 +158,6 @@ module.exports = ({
         await cluster.refreshMetadata()
         const broker = await cluster.findControllerBroker()
         await broker.createPartitions({ topicPartitions, validateOnly, timeout })
-
-        return true
       } catch (e) {
         if (e.type === 'NOT_CONTROLLER') {
           logger.warn('Could not create topics', { error: e.message, retryCount, retryTime })

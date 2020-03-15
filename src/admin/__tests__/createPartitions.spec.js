@@ -80,7 +80,26 @@ describe('Admin', () => {
       ).rejects.toHaveProperty('message', 'Replica assignment is invalid')
     })
 
-    test('create new partition and return true', async () => {
+    test('throws an error trying when total partition is less then current', async () => {
+      admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
+
+      await admin.connect()
+
+      await expect(
+        admin.createTopics({
+          waitForLeaders: false,
+          topics: [{ topic: topicName, numPartitions: 3 }],
+        })
+      ).resolves.toEqual(true)
+
+      await expect(
+        admin.createPartitions({
+          topicPartitions: [{ topic: topicName, count: 2 }],
+        })
+      ).rejects.toHaveProperty('message', 'Number of partitions is invalid')
+    })
+
+    test('create new partition', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
 
       await admin.connect()
@@ -95,7 +114,7 @@ describe('Admin', () => {
         admin.createPartitions({
           topicPartitions: [{ topic: topicName, count: 2 }],
         })
-      ).resolves.toEqual(true)
+      ).resolves.not.toThrow()
     })
 
     test('retries if the controller has moved', async () => {
@@ -115,7 +134,7 @@ describe('Admin', () => {
         admin.createPartitions({
           topicPartitions: [{ topic: topicName, count: 2 }],
         })
-      ).resolves.toEqual(true)
+      ).resolves.not.toThrow()
 
       expect(cluster.refreshMetadata).toHaveBeenCalledTimes(2)
       expect(cluster.findControllerBroker).toHaveBeenCalledTimes(2)
