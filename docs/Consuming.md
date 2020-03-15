@@ -238,6 +238,8 @@ In order to pause and resume consuming from one or more topics, the `Consumer` p
 
 Calling `pause` with a topic that the consumer is not subscribed to is a no-op, calling `resume` with a topic that is not paused is also a no-op.
 
+> Note: Calling `resume` or `pause` while the consumer is not running will throw an error.
+
 Example: A situation where this could be useful is when an external dependency used by the consumer is under too much load. Here we want to `pause` consumption from a topic when this happens, and after a predefined interval we `resume` again:
 
 ```javascript

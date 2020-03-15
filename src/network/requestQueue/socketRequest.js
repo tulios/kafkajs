@@ -49,7 +49,6 @@ module.exports = class SocketRequest {
    */
   constructor({
     requestTimeout,
-    enforceRequestTimeout,
     broker,
     clientId,
     entry,
@@ -60,7 +59,6 @@ module.exports = class SocketRequest {
   }) {
     this.createdAt = Date.now()
     this.requestTimeout = requestTimeout
-    this.enforceRequestTimeout = enforceRequestTimeout
     this.broker = broker
     this.clientId = clientId
     this.entry = entry
@@ -72,7 +70,6 @@ module.exports = class SocketRequest {
     this.sentAt = null
     this.duration = null
     this.pendingDuration = null
-    this.timeoutId = null
 
     this[PRIVATE.STATE] = REQUEST_STATE.PENDING
     this[PRIVATE.EMIT_EVENT] = (eventName, payload) =>
@@ -89,32 +86,28 @@ module.exports = class SocketRequest {
     this.sentAt = Date.now()
     this.pendingDuration = this.sentAt - this.createdAt
     this[PRIVATE.STATE] = REQUEST_STATE.SENT
+  }
 
-    const timeoutCallback = () => {
-      const { apiName, apiKey, apiVersion } = this.entry
-      const requestInfo = `${apiName}(key: ${apiKey}, version: ${apiVersion})`
-      const eventData = {
-        broker: this.broker,
-        clientId: this.clientId,
-        correlationId: this.correlationId,
-        createdAt: this.createdAt,
-        sentAt: this.sentAt,
-        pendingDuration: this.pendingDuration,
-      }
-
-      this.timeoutHandler()
-      this.rejected(new KafkaJSRequestTimeoutError(`Request ${requestInfo} timed out`, eventData))
-      this[PRIVATE.EMIT_EVENT](events.NETWORK_REQUEST_TIMEOUT, {
-        ...eventData,
-        apiName,
-        apiKey,
-        apiVersion,
-      })
+  timeoutRequest() {
+    const { apiName, apiKey, apiVersion } = this.entry
+    const requestInfo = `${apiName}(key: ${apiKey}, version: ${apiVersion})`
+    const eventData = {
+      broker: this.broker,
+      clientId: this.clientId,
+      correlationId: this.correlationId,
+      createdAt: this.createdAt,
+      sentAt: this.sentAt,
+      pendingDuration: this.pendingDuration,
     }
 
-    if (this.enforceRequestTimeout) {
-      this.timeoutId = setTimeout(timeoutCallback, this.requestTimeout)
-    }
+    this.timeoutHandler()
+    this.rejected(new KafkaJSRequestTimeoutError(`Request ${requestInfo} timed out`, eventData))
+    this[PRIVATE.EMIT_EVENT](events.NETWORK_REQUEST_TIMEOUT, {
+      ...eventData,
+      apiName,
+      apiKey,
+      apiVersion,
+    })
   }
 
   completed({ size, payload }) {
@@ -123,7 +116,6 @@ module.exports = class SocketRequest {
       next: REQUEST_STATE.COMPLETED,
     })
 
-    clearTimeout(this.timeoutId)
     const { entry, correlationId, broker, clientId, createdAt, sentAt, pendingDuration } = this
 
     this[PRIVATE.STATE] = REQUEST_STATE.COMPLETED
@@ -151,7 +143,6 @@ module.exports = class SocketRequest {
       next: REQUEST_STATE.REJECTED,
     })
 
-    clearTimeout(this.timeoutId)
     this[PRIVATE.STATE] = REQUEST_STATE.REJECTED
     this.duration = Date.now() - this.sentAt
     this.entry.reject(error)
