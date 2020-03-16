@@ -49,19 +49,13 @@ describe('Admin', () => {
       })
     })
 
-    test('by default retrieves metadata for all topics of which the cluster is aware', async () => {
+    test('by default retrieves metadata for all topics', async () => {
       const cluster = createCluster()
       admin = createAdmin({ cluster, logger: newLogger() })
 
       await admin.connect()
       const { topics: topicsMetadataBeforeAware } = await admin.getTopicMetadata()
       expect(topicsMetadataBeforeAware).toHaveLength(0)
-
-      await cluster.addTargetTopic(existingTopicName)
-
-      const { topics: topicsMetadataAfterAware } = await admin.getTopicMetadata()
-      expect(topicsMetadataAfterAware).toHaveLength(1)
-      expect(topicsMetadataAfterAware[0]).toHaveProperty('name', existingTopicName)
     })
 
     test('creates a new topic if the topic does not exist and "allowAutoTopicCreation" is true', async () => {
@@ -93,10 +87,7 @@ describe('Admin', () => {
         admin.getTopicMetadata({
           topics: [existingTopicName, newTopicName],
         })
-      ).rejects.toHaveProperty(
-        'message',
-        `Failed to add target topic ${newTopicName}: This server does not host this topic-partition`
-      )
+      ).rejects.toHaveProperty('message', 'This server does not host this topic-partition')
     })
   })
 })

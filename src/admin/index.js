@@ -35,9 +35,7 @@ const retryOnLeaderNotAvailable = (fn, opts = {}) => {
 
 const isConsumerGroupRunning = description => ['Empty', 'Dead'].includes(description.state)
 const findTopicPartitions = async (cluster, topic) => {
-  await cluster.addTargetTopic(topic)
-  await cluster.refreshMetadataIfNecessary()
-
+  await cluster.refreshMetadataIfNecessary([topic])
   return cluster
     .findTopicPartitionMetadata(topic)
     .map(({ partitionId }) => partitionId)
@@ -188,15 +186,11 @@ module.exports = ({
 
     return retrier(async (bail, retryCount, retryTime) => {
       try {
-        await cluster.refreshMetadata()
+        await cluster.refreshMetadata(topics)
         const broker = await cluster.findControllerBroker()
         await broker.deleteTopics({ topics, timeout })
 
-        // Remove deleted topics
-        for (const topic of topics) {
-          cluster.targetTopics.delete(topic)
-        }
-
+        // full metadata refresh to remove recently deleted topics
         await cluster.refreshMetadata()
       } catch (e) {
         if (['NOT_CONTROLLER', 'UNKNOWN_TOPIC_OR_PARTITION'].includes(e.type)) {
@@ -233,8 +227,7 @@ module.exports = ({
 
     return retrier(async (bail, retryCount, retryTime) => {
       try {
-        await cluster.addTargetTopic(topic)
-        await cluster.refreshMetadataIfNecessary()
+        await cluster.refreshMetadataIfNecessary([topic])
 
         const metadata = cluster.findTopicPartitionMetadata(topic)
         const high = await cluster.fetchTopicsOffset([
@@ -264,7 +257,6 @@ module.exports = ({
         }))
       } catch (e) {
         if (e.type === 'UNKNOWN_TOPIC_OR_PARTITION') {
-          await cluster.refreshMetadata()
           throw e
         }
 
@@ -567,31 +559,19 @@ module.exports = ({
    * @property {Array<number>} isr The set of nodes that are in sync with the leader for this partition.
    */
   const getTopicMetadata = async options => {
-    const { topics } = options || {}
+    const { topics = [] } = options || {}
 
-    if (topics) {
-      await Promise.all(
-        topics.map(async topic => {
-          if (!topic) {
-            throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
-          }
+    topics.forEach(topic => {
+      if (!topic) {
+        throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+      }
+    })
 
-          try {
-            await cluster.addTargetTopic(topic)
-          } catch (e) {
-            e.message = `Failed to add target topic ${topic}: ${e.message}`
-            throw e
-          }
-        })
-      )
-    }
-
-    await cluster.refreshMetadataIfNecessary()
-    const targetTopics = topics || [...cluster.targetTopics]
+    await cluster.refreshMetadataIfNecessary(topics)
 
     return {
       topics: await Promise.all(
-        targetTopics.map(async topic => ({
+        topics.map(async topic => ({
           name: topic,
           partitions: await cluster.findTopicPartitionMetadata(topic),
         }))
@@ -689,6 +669,7 @@ module.exports = ({
   const listGroups = async () => {
     await cluster.refreshMetadata()
     let groups = []
+    await cluster.refreshMetadata()
     for (var nodeId in cluster.brokerPool.brokers) {
       const broker = await cluster.findBroker({ nodeId })
       const response = await broker.listGroups()

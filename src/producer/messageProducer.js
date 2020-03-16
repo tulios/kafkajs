@@ -83,6 +83,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrie
             retryTime,
           })
           await cluster.connect()
+          // TODO: full refresh? or do we just refresh the topics for our current messages?
           await cluster.refreshMetadata()
           throw error
         }
@@ -94,6 +95,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrie
           (error.name === 'KafkaJSProtocolError' && error.retriable)
         ) {
           logger.error(`Failed to send messages: ${error.message}`, { retryCount, retryTime })
+          // TODO: full refresh? or do we just refresh the topics for our current messages?
           await cluster.refreshMetadata()
           throw error
         }

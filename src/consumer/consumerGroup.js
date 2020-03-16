@@ -85,6 +85,7 @@ module.exports = class ConsumerGroup {
   async connect() {
     await this.cluster.connect()
     this.instrumentationEmitter.emit(CONNECT)
+    // TODO: full refresh?
     await this.cluster.refreshMetadataIfNecessary()
   }
 
@@ -143,7 +144,7 @@ module.exports = class ConsumerGroup {
         )
       }
 
-      await this.cluster.refreshMetadata()
+      await this.cluster.refreshMetadata(topicsSubscribed)
       assignment = await assigner.assign({ members, topics: topicsSubscribed })
 
       this.logger.debug('Group assignment', {
@@ -217,10 +218,10 @@ module.exports = class ConsumerGroup {
           assignedPartitions,
         })
 
-        // If the consumer is not aware of all assigned partions, refresh metadata
+        // If the consumer is not aware of all assigned partitions, refresh metadata
         // and update the list of partitions per subscribed topic. It's enough to perform
         // this operation once since refresh metadata will update metadata for all topics
-        await this.cluster.refreshMetadata()
+        await this.cluster.refreshMetadata([topicsSubscribed])
         this.partitionsPerSubscribedTopic = this.generatePartitionsPerSubscribedTopic()
         break
       }
@@ -322,10 +323,18 @@ module.exports = class ConsumerGroup {
 
   async fetch() {
     try {
-      const { topics, maxBytesPerPartition, maxWaitTime, minBytes, maxBytes } = this
+      const {
+        topics,
+        topicsSubscribed,
+        maxBytesPerPartition,
+        maxWaitTime,
+        minBytes,
+        maxBytes,
+      } = this
       const requestsPerLeader = {}
 
-      await this.cluster.refreshMetadataIfNecessary()
+      // TODO: check format of this.topicsSubscribed
+      await this.cluster.refreshMetadataIfNecessary(topicsSubscribed)
       this.checkForStaleAssignment()
 
       while (this.seekOffset.size > 0) {
@@ -481,7 +490,8 @@ module.exports = class ConsumerGroup {
         error: e.message,
       })
 
-      await this.cluster.refreshMetadata()
+      // TODO: check format of this.topicsSubscribed
+      await this.cluster.refreshMetadata(this.topicsSubscribed)
       await this.join()
       await this.sync()
       throw new KafkaJSError(e.message)
@@ -505,7 +515,8 @@ module.exports = class ConsumerGroup {
 
     if (e.name === 'KafkaJSBrokerNotFound') {
       this.logger.debug(`${e.message}, refreshing metadata and retrying...`)
-      await this.cluster.refreshMetadata()
+      // TODO: check format of this.topicsSubscribed
+      await this.cluster.refreshMetadata(this.topicsSubscribed)
     }
 
     throw e

@@ -124,6 +124,7 @@ module.exports = class BrokerPool {
 
     return this.retrier(async (bail, retryCount, retryTime) => {
       try {
+        // TODO: perhaps we merge here, instead of replace?
         this.metadata = await broker.metadata(topics)
         this.metadataExpireAt = Date.now() + this.metadataMaxAge
 
@@ -191,6 +192,7 @@ module.exports = class BrokerPool {
       this.metadata == null ||
       this.metadataExpireAt == null ||
       Date.now() > this.metadataExpireAt ||
+      topics == null ||
       !topics.every(topic =>
         this.metadata.topicMetadata.some(topicMetadata => topicMetadata.topic === topic)
       )

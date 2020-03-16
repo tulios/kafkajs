@@ -183,7 +183,7 @@ module.exports = ({
       topics[t] = { fromBeginning }
     }
 
-    await cluster.addMultipleTargetTopics(topicsToSubscribe)
+    await cluster.refreshMetadataIfNecessary(topicsToSubscribe)
   }
 
   /**

@@ -179,12 +179,11 @@ const addPartitions = async ({ topic, partitions }) => {
   const cluster = createCluster()
 
   await cluster.connect()
-  await cluster.addTargetTopic(topic)
 
   execa.commandSync(cmd, { shell: true })
 
   waitFor(async () => {
-    await cluster.refreshMetadata()
+    await cluster.refreshMetadata([topic])
     const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
     return partitionMetadata.length === partitions
   })

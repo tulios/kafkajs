@@ -54,13 +54,11 @@ describe('Producer > sendMessages', () => {
       },
     ]
     cluster = {
-      addTargetTopic: jest.fn(),
       refreshMetadata: jest.fn(),
       refreshMetadataIfNecessary: jest.fn(),
       findTopicPartitionMetadata: jest.fn(() => topicPartitionMetadata),
       findLeaderForPartitions: jest.fn(() => partitionsPerLeader),
       findBroker: jest.fn(({ nodeId }) => brokers[nodeId]),
-      targetTopics: new Set(),
     }
     messagesPerPartition = {
       '0': [{ key: '3' }, { key: '6' }, { key: '9' }],

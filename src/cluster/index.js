@@ -1,5 +1,4 @@
 const BrokerPool = require('./brokerPool')
-const Lock = require('../utils/lock')
 const createRetry = require('../retry')
 const connectionBuilder = require('./connectionBuilder')
 const flatten = require('../utils/flatten')
@@ -78,11 +77,6 @@ module.exports = class Cluster {
       retry,
     })
 
-    this.targetTopics = new Set()
-    this.mutatingTargetTopics = new Lock({
-      description: `updating target topics`,
-      timeout: requestTimeout,
-    })
     this.isolationLevel = isolationLevel
     this.brokerPool = new BrokerPool({
       connectionBuilder: this.connectionBuilder,
@@ -119,18 +113,20 @@ module.exports = class Cluster {
 
   /**
    * @public
+   * @param {string[]} topics
    * @returns {Promise<null>}
    */
-  async refreshMetadata() {
-    await this.brokerPool.refreshMetadata(Array.from(this.targetTopics))
+  async refreshMetadata(topics) {
+    await this.brokerPool.refreshMetadata(topics)
   }
 
   /**
    * @public
+   * @param {string[]} topics
    * @returns {Promise<null>}
    */
-  async refreshMetadataIfNecessary() {
-    await this.brokerPool.refreshMetadataIfNecessary(Array.from(this.targetTopics))
+  async refreshMetadataIfNecessary(topics) {
+    await this.brokerPool.refreshMetadataIfNecessary(topics)
   }
 
   /**
@@ -150,48 +146,6 @@ module.exports = class Cluster {
         bail(e)
       }
     })
-  }
-
-  /**
-   * @public
-   * @param {string} topic
-   * @return {Promise}
-   */
-  async addTargetTopic(topic) {
-    return this.addMultipleTargetTopics([topic])
-  }
-
-  /**
-   * @public
-   * @param {string[]} topics
-   * @return {Promise}
-   */
-  async addMultipleTargetTopics(topics) {
-    await this.mutatingTargetTopics.acquire()
-
-    try {
-      const previousSize = this.targetTopics.size
-      const previousTopics = new Set(this.targetTopics)
-      for (const topic of topics) {
-        this.targetTopics.add(topic)
-      }
-
-      const hasChanged = previousSize !== this.targetTopics.size || !this.brokerPool.metadata
-
-      if (hasChanged) {
-        try {
-          await this.refreshMetadata()
-        } catch (e) {
-          if (e.type === 'INVALID_TOPIC_EXCEPTION') {
-            this.targetTopics = previousTopics
-          }
-
-          throw e
-        }
-      }
-    } finally {
-      await this.mutatingTargetTopics.release()
-    }
   }
 
   /**

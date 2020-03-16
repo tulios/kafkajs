@@ -17,7 +17,7 @@ describe('Cluster > fetchTopicsOffset', () => {
 
     await createTopic({ topic, partitions: 3 })
     await cluster.connect()
-    await cluster.addTargetTopic(topic)
+    await cluster.refreshMetadata([topic])
 
     producer = createProducer({
       cluster,

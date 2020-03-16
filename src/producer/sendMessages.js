@@ -18,14 +18,12 @@ module.exports = ({ logger, cluster, partitioner, eosManager }) => {
   return async ({ acks, timeout, compression, topicMessages }) => {
     const responsePerBroker = new Map()
 
-    for (const { topic } of topicMessages) {
-      await cluster.addTargetTopic(topic)
-    }
+    const topics = topicMessages.map(message => message.topic)
 
     const createProducerRequests = async responsePerBroker => {
       const topicMetadata = new Map()
 
-      await cluster.refreshMetadataIfNecessary()
+      await cluster.refreshMetadataIfNecessary(topics)
 
       for (const { topic, messages } of topicMessages) {
         const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
@@ -33,7 +31,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager }) => {
         if (keys(partitionMetadata).length === 0) {
           logger.debug('Producing to topic without metadata', {
             topic,
-            targetTopics: Array.from(cluster.targetTopics),
+            targetTopics: topics,
           })
 
           throw new KafkaJSMetadataNotLoaded('Producing to topic without metadata')
@@ -127,6 +125,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager }) => {
         return flatten(responses)
       } catch (e) {
         if (staleMetadata(e) || e.name === 'KafkaJSMetadataNotLoaded') {
+          // TODO: what do we do here?
           await cluster.refreshMetadata()
         }
 

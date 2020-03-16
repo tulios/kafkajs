@@ -22,7 +22,7 @@ describe('Cluster > findBroker', () => {
 
     await createTopic({ topic })
     await cluster.connect()
-    await cluster.addTargetTopic(topic)
+    await cluster.refreshMetadata([topic])
   })
 
   afterEach(async () => {

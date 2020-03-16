@@ -48,19 +48,6 @@ describe('Admin', () => {
       await expect(admin.deleteTopics({ topics: [topicName] })).resolves.toBe()
     })
 
-    test('remove deleted topics from the cluster target group', async () => {
-      const cluster = createCluster()
-      admin = createAdmin({ cluster, logger: newLogger() })
-      await admin.connect()
-
-      await expect(admin.getTopicMetadata({ topics: [topicName] })).resolves.toBeTruthy()
-      expect(cluster.targetTopics.size).toEqual(1)
-
-      await admin.deleteTopics({ topics: [topicName] })
-      await expect(admin.getTopicMetadata()).resolves.toBeTruthy()
-      expect(cluster.targetTopics.size).toEqual(0)
-    })
-
     test('retries if the controller has moved', async () => {
       const cluster = createCluster()
       const broker = { deleteTopics: jest.fn(() => true) }

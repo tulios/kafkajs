@@ -269,7 +269,8 @@ module.exports = class OffsetManager {
       // metadata is stale, the coordinator has changed due to a restart or
       // broker reassignment
       if (e.type === 'NOT_COORDINATOR_FOR_GROUP') {
-        await this.cluster.refreshMetadata()
+        const topicNames = topics.map(topic => topic.topic)
+        await this.cluster.refreshMetadata(topicNames)
       }
 
       throw e
