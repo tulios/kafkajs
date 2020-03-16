@@ -98,7 +98,11 @@ module.exports = class ConsumerGroup {
       sessionTimeout,
       rebalanceTimeout,
       memberId: this.memberId || '',
-      groupProtocols: this.assigners.map(assigner => assigner.protocol({ topics: this.topics })),
+      groupProtocols: this.assigners.map(assigner =>
+        assigner.protocol({
+          topics: this.topicsSubscribed,
+        })
+      ),
     })
 
     this.generationId = groupData.generationId
