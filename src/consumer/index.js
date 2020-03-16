@@ -255,14 +255,31 @@ module.exports = ({
       })
 
       if (e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true) {
-        const retryTime = e.retryTime || retry.initialRetryTime || initialRetryTime
-        logger.error(`Restarting the consumer in ${retryTime}ms`, {
-          retryCount: e.retryCount,
-          retryTime,
-          groupId,
-        })
+        const shouldRestart =
+          !retry.restartOnFailure ||
+          (await retry.restartOnFailure(e).catch(error => {
+            logger.error(
+              'Caught error when invoking user-provided "restartOnFailure" callback. Defaulting to restarting.',
+              {
+                error: error.message || error,
+                originalError: e.message || e,
+                groupId,
+              }
+            )
 
-        setTimeout(() => restart(onCrash), retryTime)
+            return true
+          }))
+
+        if (shouldRestart) {
+          const retryTime = e.retryTime || retry.initialRetryTime || initialRetryTime
+          logger.error(`Restarting the consumer in ${retryTime}ms`, {
+            retryCount: e.retryCount,
+            retryTime,
+            groupId,
+          })
+
+          setTimeout(() => restart(onCrash), retryTime)
+        }
       }
     }
 
