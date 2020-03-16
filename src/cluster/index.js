@@ -163,6 +163,7 @@ module.exports = class Cluster {
    */
   async addMultipleTargetTopics(topics) {
     const previousSize = this.targetTopics.size
+    const previousTopics = new Set(this.targetTopics)
     for (const topic of topics) {
       this.targetTopics.add(topic)
     }
@@ -170,7 +171,15 @@ module.exports = class Cluster {
     const hasChanged = previousSize !== this.targetTopics.size || !this.brokerPool.metadata
 
     if (hasChanged) {
-      await this.refreshMetadata()
+      try {
+        await this.refreshMetadata()
+      } catch (e) {
+        if (e.type === 'INVALID_TOPIC_EXCEPTION') {
+          this.targetTopics = previousTopics
+        }
+
+        throw e
+      }
     }
   }
 
