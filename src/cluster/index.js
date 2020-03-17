@@ -210,8 +210,9 @@ module.exports = class Cluster {
       throw new KafkaJSTopicMetadataNotLoaded('Topic metadata not loaded', { topic })
     }
 
-    const topicMetadata = metadata.topicMetadata.find(t => t.topic === topic)
-    return topicMetadata ? topicMetadata.partitionMetadata : []
+    return this.brokerPool.topicMetadataCache.has(topic)
+      ? this.brokerPool.topicMetadataCache.get(topic).metadata.partitionMetadata
+      : []
   }
 
   /**

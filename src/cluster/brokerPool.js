@@ -52,6 +52,7 @@ module.exports = class BrokerPool {
     this.brokers = {}
     this.metadata = null
     this.metadataExpireAt = null
+    this.topicMetadataCache = new Map()
     this.versions = null
     this.supportAuthenticationProtocol = null
   }
@@ -109,6 +110,8 @@ module.exports = class BrokerPool {
 
     this.brokers = {}
     this.metadata = null
+    this.metadataExpireAt = null
+    this.topicMetadataCache.clear()
     this.versions = null
     this.supportAuthenticationProtocol = null
   }
@@ -122,9 +125,13 @@ module.exports = class BrokerPool {
     const broker = await this.findConnectedBroker()
     const { host: seedHost, port: seedPort } = this.seedBroker.connection
 
+    // clear expired entries to prevent cache bloat
+    Array.from(this.topicMetadataCache.entries())
+      .filter(([_, cached]) => Date.now() > cached.expireAt)
+      .forEach(([topic]) => this.topicMetadataCache.delete(topic))
+
     return this.retrier(async (bail, retryCount, retryTime) => {
       try {
-        // TODO: perhaps we merge here, instead of replace?
         this.metadata = await broker.metadata(topics)
         this.metadataExpireAt = Date.now() + this.metadataMaxAge
 
@@ -156,6 +163,13 @@ module.exports = class BrokerPool {
             }),
           })
         }, this.brokers)
+
+        this.metadata.topicMetadata.forEach(topicMetadata =>
+          this.topicMetadataCache.set(topicMetadata.topic, {
+            expireAt: Date.now() + this.metadataMaxAge,
+            metadata: topicMetadata,
+          })
+        )
 
         const freshBrokerIds = this.metadata.brokers.map(({ nodeId }) => `${nodeId}`).sort()
         const currentBrokerIds = keys(this.brokers).sort()
@@ -189,12 +203,14 @@ module.exports = class BrokerPool {
    */
   async refreshMetadataIfNecessary(topics) {
     const shouldRefresh =
+      topics == null ||
       this.metadata == null ||
       this.metadataExpireAt == null ||
       Date.now() > this.metadataExpireAt ||
-      topics == null ||
-      !topics.every(topic =>
-        this.metadata.topicMetadata.some(topicMetadata => topicMetadata.topic === topic)
+      !topics.every(
+        topic =>
+          this.topicMetadataCache.has(topic) &&
+          Date.now() < this.topicMetadataCache.get(topic).expireAt
       )
 
     if (shouldRefresh) {
