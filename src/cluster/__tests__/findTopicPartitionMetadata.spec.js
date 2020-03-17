@@ -16,17 +16,20 @@ describe('Cluster > findTopicPartitionMetadata', () => {
       partitionId: 0,
       replicas: [2],
     }
-    cluster.brokerPool.metadata = { topicMetadata: [{ topic, partitionMetadata }] }
+    cluster.brokerPool.metadata = {}
+    cluster.brokerPool.topicMetadataCache.set(topic, { metadata: { topic, partitionMetadata } })
     expect(cluster.findTopicPartitionMetadata(topic)).toEqual(partitionMetadata)
   })
 
   test('throws and error if the topicMetadata is not loaded', () => {
     cluster.brokerPool.metadata = null
+    cluster.brokerPool.topicMetadataCache.set(topic, { metadata: { topic, partitionMetadata: {} } })
     expect(() => cluster.findTopicPartitionMetadata(topic)).toThrowError(
       /Topic metadata not loaded/
     )
 
     cluster.brokerPool.metadata = {}
+    cluster.brokerPool.topicMetadataCache.clear()
     expect(() => cluster.findTopicPartitionMetadata(topic)).toThrowError(
       /Topic metadata not loaded/
     )
@@ -40,7 +43,8 @@ describe('Cluster > findTopicPartitionMetadata', () => {
       partitionId: 0,
       replicas: [2],
     }
-    cluster.brokerPool.metadata = { topicMetadata: [{ topic, partitionMetadata }] }
+    cluster.brokerPool.metadata = {}
+    cluster.brokerPool.topicMetadataCache.set(topic, { topic, partitionMetadata })
     const anotherTopic = `test-topic-${secureRandom()}`
     expect(cluster.findTopicPartitionMetadata(anotherTopic)).toEqual([])
   })

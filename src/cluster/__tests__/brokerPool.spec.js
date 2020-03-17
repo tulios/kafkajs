@@ -174,6 +174,23 @@ describe('Cluster > BrokerPool', () => {
       expect(brokerPool.metadata).not.toEqual(null)
     })
 
+    it('updates the topicMetadataCache', async () => {
+      expect(brokerPool.topicMetadataCache).toBeDefined()
+      expect(brokerPool.topicMetadataCache.size).toEqual(0)
+      await brokerPool.refreshMetadata([topicName])
+      expect(brokerPool.topicMetadataCache.size).toEqual(1)
+      expect(brokerPool.topicMetadataCache.has(topicName)).toEqual(true)
+    })
+
+    it('purges stale topics from the topicMetadataCache', async () => {
+      brokerPool.topicMetadataCache.set('fake', {
+        expireAt: Date.now() - 1000,
+        metadata: {},
+      })
+      await brokerPool.refreshMetadata([topicName])
+      expect(brokerPool.topicMetadataCache.has('fake')).toEqual(false)
+    })
+
     it('updates the list of brokers', async () => {
       expect(brokerPool.brokers).toEqual({})
       await brokerPool.refreshMetadata([topicName])
@@ -311,6 +328,16 @@ describe('Cluster > BrokerPool', () => {
       expect(brokerPool.refreshMetadata).toHaveBeenCalledWith([topicName])
     })
 
+    it('calls refreshMetadata if topic metadata is expired', async () => {
+      brokerPool.metadataExpireAt = Date.now() + 1000
+      brokerPool.topicMetadataCache.set(topicName, {
+        expireAt: Date.now() - 1000,
+        metadata: {},
+      })
+      await brokerPool.refreshMetadataIfNecessary([topicName])
+      expect(brokerPool.refreshMetadata).toHaveBeenCalledWith([topicName])
+    })
+
     it('does not call refreshMetadata if metadata is valid and up to date', async () => {
       brokerPool.metadataExpireAt = Date.now() + 1000
       brokerPool.metadata = {
@@ -320,8 +347,29 @@ describe('Cluster > BrokerPool', () => {
           },
         ],
       }
+      brokerPool.topicMetadataCache.set(topicName, {
+        expireAt: Date.now() + 1000,
+        metadata: {},
+      })
       await brokerPool.refreshMetadataIfNecessary([topicName])
       expect(brokerPool.refreshMetadata).not.toHaveBeenCalled()
+    })
+
+    it('calls refreshMetadata when requested topic list is empty', async () => {
+      brokerPool.metadataExpireAt = Date.now() + 1000
+      brokerPool.metadata = {
+        topicMetadata: [
+          {
+            topic: topicName,
+          },
+        ],
+      }
+      brokerPool.topicMetadataCache.set(topicName, {
+        expireAt: Date.now() + 1000,
+        metadata: {},
+      })
+      await brokerPool.refreshMetadataIfNecessary()
+      expect(brokerPool.refreshMetadata).toHaveBeenCalledWith(undefined)
     })
   })
 

@@ -205,8 +205,7 @@ module.exports = class Cluster {
    *                   }]
    */
   findTopicPartitionMetadata(topic) {
-    const { metadata } = this.brokerPool
-    if (!metadata || !metadata.topicMetadata) {
+    if (!this.brokerPool.metadata || this.brokerPool.topicMetadataCache.size === 0) {
       throw new KafkaJSTopicMetadataNotLoaded('Topic metadata not loaded', { topic })
     }
 
