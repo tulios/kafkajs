@@ -48,6 +48,18 @@ describe('Admin', () => {
       await expect(admin.deleteTopics({ topics: [topicName] })).resolves.toBe()
     })
 
+    test('remove deleted topics from the cluster metadata cache', async () => {
+      const cluster = createCluster()
+      admin = createAdmin({ cluster, logger: newLogger() })
+      await admin.connect()
+
+      await expect(admin.getTopicMetadata({ topics: [topicName] })).resolves.toBeTruthy()
+
+      await admin.deleteTopics({ topics: [topicName] })
+      await expect(admin.getTopicMetadata()).resolves.toBeTruthy()
+      expect(cluster.brokerPool.topicMetadataCache.has(topicName)).toEqual(false)
+    })
+
     test('retries if the controller has moved', async () => {
       const cluster = createCluster()
       const broker = { deleteTopics: jest.fn(() => true) }

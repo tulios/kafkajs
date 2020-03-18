@@ -441,4 +441,12 @@ module.exports = class Cluster {
     committedOffsets[topic] = committedOffsets[topic] || {}
     committedOffsets[topic][partition] = offset
   }
+
+  /**
+   * Removes a topic from the topic metadata cache
+   * @param {string} topic
+   */
+  removeTopicMetadata(topic) {
+    this.brokerPool.topicMetadataCache.delete(topic)
+  }
 }

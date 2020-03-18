@@ -190,8 +190,7 @@ module.exports = ({
         const broker = await cluster.findControllerBroker()
         await broker.deleteTopics({ topics, timeout })
 
-        // full metadata refresh to remove recently deleted topics
-        await cluster.refreshMetadata()
+        topics.forEach(topic => cluster.removeTopicMetadata(topic))
       } catch (e) {
         if (['NOT_CONTROLLER', 'UNKNOWN_TOPIC_OR_PARTITION'].includes(e.type)) {
           logger.warn('Could not delete topics', { error: e.message, retryCount, retryTime })
