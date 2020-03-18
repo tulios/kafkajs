@@ -397,7 +397,7 @@ module.exports = class Connection {
       const expectedResponseSize = decoder.readInt32()
 
       if (!decoder.canReadBytes(expectedResponseSize)) {
-        this.bufferQueue.bytesAwaiting = expectedResponseSize
+        this.bufferQueue.bytesAwaiting = Decoder.int32Size() + expectedResponseSize
         return
       } else {
         this.bufferQueue.bytesAwaiting = Decoder.int32Size()
