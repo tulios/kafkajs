@@ -65,6 +65,11 @@ module.exports = class Connection {
     this.connectionTimeout = connectionTimeout
 
     this.buffer = Buffer.alloc(0)
+    this.bufferQueue = {
+      bytesTotal: 0,
+      bytesAwaiting: 0,
+      buffers: [],
+    }
     this.connected = false
     this.correlationId = 0
     this.requestQueue = new RequestQueue({
@@ -371,7 +376,18 @@ module.exports = class Connection {
       return this.authHandlers.onSuccess(rawData)
     }
 
-    this.buffer = Buffer.concat([this.buffer, rawData])
+    this.bufferQueue.buffers.push(rawData)
+    this.bufferQueue.bytesTotal += Buffer.byteLength(rawData)
+
+    const bytesTotal = Buffer.byteLength(this.buffer) + this.bufferQueue.bytesTotal
+    if (this.bufferQueue.bytesAwaiting <= bytesTotal) {
+      this.buffer = Buffer.concat([this.buffer, ...this.bufferQueue.buffers])
+      this.bufferQueue.bytesTotal = 0
+      this.bufferQueue.bytesAwaiting = Decoder.int32Size()
+      this.bufferQueue.buffers = []
+    } else {
+      return
+    }
 
     // Process data if there are enough bytes to read the expected response size,
     // otherwise keep buffering
@@ -381,7 +397,10 @@ module.exports = class Connection {
       const expectedResponseSize = decoder.readInt32()
 
       if (!decoder.canReadBytes(expectedResponseSize)) {
+        this.bufferQueue.bytesAwaiting = expectedResponseSize
         return
+      } else {
+        this.bufferQueue.bytesAwaiting = Decoder.int32Size()
       }
 
       const response = new Decoder(decoder.readBytes(expectedResponseSize))
