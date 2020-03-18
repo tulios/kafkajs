@@ -85,8 +85,7 @@ module.exports = class ConsumerGroup {
   async connect() {
     await this.cluster.connect()
     this.instrumentationEmitter.emit(CONNECT)
-    // TODO: full refresh?
-    await this.cluster.refreshMetadataIfNecessary()
+    await this.cluster.refreshMetadataIfNecessary(this.topicsSubscribed)
   }
 
   async join() {
@@ -333,7 +332,6 @@ module.exports = class ConsumerGroup {
       } = this
       const requestsPerLeader = {}
 
-      // TODO: check format of this.topicsSubscribed
       await this.cluster.refreshMetadataIfNecessary(topicsSubscribed)
       this.checkForStaleAssignment()
 
@@ -490,7 +488,6 @@ module.exports = class ConsumerGroup {
         error: e.message,
       })
 
-      // TODO: check format of this.topicsSubscribed
       await this.cluster.refreshMetadata(this.topicsSubscribed)
       await this.join()
       await this.sync()
@@ -515,7 +512,6 @@ module.exports = class ConsumerGroup {
 
     if (e.name === 'KafkaJSBrokerNotFound') {
       this.logger.debug(`${e.message}, refreshing metadata and retrying...`)
-      // TODO: check format of this.topicsSubscribed
       await this.cluster.refreshMetadata(this.topicsSubscribed)
     }
 

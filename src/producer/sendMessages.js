@@ -125,8 +125,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager }) => {
         return flatten(responses)
       } catch (e) {
         if (staleMetadata(e) || e.name === 'KafkaJSMetadataNotLoaded') {
-          // TODO: what do we do here?
-          await cluster.refreshMetadata()
+          await cluster.refreshMetadata(topics)
         }
 
         throw e
