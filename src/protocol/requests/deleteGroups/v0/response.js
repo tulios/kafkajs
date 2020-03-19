@@ -1,6 +1,5 @@
 const Decoder = require('../../../decoder')
 const { failure, createErrorFromCode } = require('../../../error')
-const { KafkaJSDeleteGroupsError } = require('../../../../errors')
 /**
  * DeleteGroups Response (Version: 0) => throttle_time_ms [results]
  *  throttle_time_ms => INT32
@@ -19,18 +18,11 @@ const decode = async rawData => {
   const throttleTimeMs = decoder.readInt32()
   const results = decoder.readArray(decodeGroup)
 
-  const errors = []
   for (const result of results) {
     if (failure(result.errorCode)) {
-      errors.push({
-        groupId: result.groupId,
-        error: createErrorFromCode(result.errorCode),
-      })
+      result.error = createErrorFromCode(result.errorCode)
     }
   }
-
-  if (errors.length > 0) throw new KafkaJSDeleteGroupsError('Error in DeleteGroups', errors)
-
   return {
     throttleTimeMs,
     results,

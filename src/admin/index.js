@@ -1,10 +1,11 @@
 const createRetry = require('../retry')
+const flatten = require('../utils/flatten')
 const waitFor = require('../utils/waitFor')
 const createConsumer = require('../consumer')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentationEvents')
 const { LEVELS } = require('../loggers')
-const { KafkaJSNonRetriableError } = require('../errors')
+const { KafkaJSNonRetriableError, KafkaJSDeleteGroupsError } = require('../errors')
 const RESOURCE_TYPES = require('../protocol/resourceTypes')
 
 const { CONNECT, DISCONNECT } = events
@@ -642,9 +643,9 @@ module.exports = ({
 
     const retrier = createRetry(retry)
 
-    const results = []
+    let results = []
 
-    const clonedGroupIds = groupIds.slice()
+    let clonedGroupIds = groupIds.slice()
 
     return retrier(async (bail, retryCount, retryTime) => {
       try {
@@ -653,41 +654,33 @@ module.exports = ({
         await cluster.refreshMetadata()
 
         const brokersPerGroups = {}
-        const brokers = {}
+        const brokersPerNode = {}
         for (const groupId of clonedGroupIds) {
           const broker = await cluster.findGroupCoordinator({ groupId })
           if (brokersPerGroups[broker.nodeId] === undefined) brokersPerGroups[broker.nodeId] = []
           brokersPerGroups[broker.nodeId].push(groupId)
-          brokers[broker.nodeId] = broker
+          brokersPerNode[broker.nodeId] = broker
         }
 
-        for (const nodeId in brokersPerGroups) {
-          try {
-            const res = await brokers[nodeId].deleteGroups(brokersPerGroups[nodeId])
-            for (const result of res.results) {
-              results.push(result)
-            }
-          } catch (error) {
-            if (error.name === 'KafkaJSDeleteGroupsError') {
-              // here we will find all groups that had error in deletion and remove them from brokersPerGroups[nodeId]
-              for (const err of error.groups) {
-                const index = brokersPerGroups[nodeId].indexOf(err.groupId)
-                if (index !== -1) {
-                  brokersPerGroups[nodeId].splice(index, 1)
-                }
-              }
-              // now that we have all success groupIds let's remove them from groupIds
-              for (const groupId of brokersPerGroups[nodeId]) {
-                const index = clonedGroupIds.indexOf(groupId)
-                if (index !== -1) {
-                  clonedGroupIds.splice(index, 1)
-                }
-              }
-            }
+        const res = await Promise.all(
+          Object.keys(brokersPerNode).map(
+            async nodeId => await brokersPerNode[nodeId].deleteGroups(brokersPerGroups[nodeId])
+          )
+        )
 
-            throw error
-          }
-        }
+        const errors = flatten(
+          res.map(({ results }) =>
+            results.map(({ groupId, errorCode, error }) => {
+              return { groupId, errorCode, error }
+            })
+          )
+        ).filter(({ errorCode }) => errorCode !== 0)
+
+        clonedGroupIds = errors.map(({ groupId }) => groupId)
+
+        if (errors.length > 0) throw new KafkaJSDeleteGroupsError('Error in DeleteGroups', errors)
+
+        results = flatten(res.map(({ results }) => results))
 
         return results
       } catch (e) {
