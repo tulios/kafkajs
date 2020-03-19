@@ -378,7 +378,7 @@ module.exports = class Connection {
     this.chunks.push(rawData)
     this.bytesBuffered += Buffer.byteLength(rawData)
 
-    // Return early if not enough bytes to read the size of the message
+    // Return early if more bytes are needed to read the next messzge
     if (this.bytesNeeded > this.bytesBuffered) {
       return
     }
