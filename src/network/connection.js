@@ -64,12 +64,10 @@ module.exports = class Connection {
     this.requestTimeout = requestTimeout
     this.connectionTimeout = connectionTimeout
 
-    this.buffer = Buffer.alloc(0)
-    this.bufferQueue = {
-      bytesTotal: 0,
-      bytesAwaiting: 0,
-      buffers: [],
-    }
+    this.bytesBuffered = 0
+    this.bytesNeeded = 0
+    this.chunks = []
+
     this.connected = false
     this.correlationId = 0
     this.requestQueue = new RequestQueue({
@@ -376,36 +374,42 @@ module.exports = class Connection {
       return this.authHandlers.onSuccess(rawData)
     }
 
-    this.bufferQueue.buffers.push(rawData)
-    this.bufferQueue.bytesTotal += Buffer.byteLength(rawData)
+    // Accumulate the new chunk
+    this.chunks.push(rawData)
+    this.bytesBuffered += Buffer.byteLength(rawData)
 
-    const bytesTotal = Buffer.byteLength(this.buffer) + this.bufferQueue.bytesTotal
-    if (this.bufferQueue.bytesAwaiting <= bytesTotal) {
-      this.buffer = Buffer.concat([this.buffer, ...this.bufferQueue.buffers])
-      this.bufferQueue.bytesTotal = 0
-      this.bufferQueue.bytesAwaiting = Decoder.int32Size()
-      this.bufferQueue.buffers = []
-    } else {
+    // Return early if not enough bytes to read the size of the message
+    if (this.bytesNeeded > this.bytesBuffered) {
       return
     }
 
+    const buffer = Buffer.concat(this.chunks)
+    this.chunks = []
+    this.bytesBuffered = 0
+    this.bytesNeeded = Decoder.int32Size()
+
     // Process data if there are enough bytes to read the expected response size,
     // otherwise keep buffering
-    while (Buffer.byteLength(this.buffer) > Decoder.int32Size()) {
-      const data = Buffer.from(this.buffer)
+    while (Buffer.byteLength(buffer) > Decoder.int32Size()) {
+      const data = Buffer.from(buffer)
       const decoder = new Decoder(data)
       const expectedResponseSize = decoder.readInt32()
 
+      // Return early if not enough bytes to read the full response
       if (!decoder.canReadBytes(expectedResponseSize)) {
-        this.bufferQueue.bytesAwaiting = Decoder.int32Size() + expectedResponseSize
+        this.chunks = [buffer]
+        this.bytesBuffered = Buffer.byteLength(buffer)
+        this.bytesNeeded = Decoder.int32Size() + expectedResponseSize
         return
-      } else {
-        this.bufferQueue.bytesAwaiting = Decoder.int32Size()
       }
 
       const response = new Decoder(decoder.readBytes(expectedResponseSize))
-      // Reset the buffer as the rest of the bytes
-      this.buffer = decoder.readAll()
+
+      // Reset the buffered chunks as the rest of the bytes
+      const remainderBuffer = decoder.readAll()
+      this.chunks = [remainderBuffer]
+      this.bytesBuffered = Buffer.byteLength(remainderBuffer)
+      this.bytesNeeded = Decoder.int32Size() + expectedResponseSize
 
       if (this.authHandlers) {
         const rawResponseSize = Decoder.int32Size() + expectedResponseSize
