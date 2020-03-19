@@ -1,4 +1,5 @@
 const BrokerPool = require('./brokerPool')
+const Lock = require('../utils/lock')
 const createRetry = require('../retry')
 const connectionBuilder = require('./connectionBuilder')
 const flatten = require('../utils/flatten')
@@ -78,6 +79,10 @@ module.exports = class Cluster {
     })
 
     this.targetTopics = new Set()
+    this.mutatingTargetTopics = new Lock({
+      description: `updating target topics`,
+      timeout: requestTimeout,
+    })
     this.isolationLevel = isolationLevel
     this.brokerPool = new BrokerPool({
       connectionBuilder: this.connectionBuilder,
@@ -162,15 +167,30 @@ module.exports = class Cluster {
    * @return {Promise}
    */
   async addMultipleTargetTopics(topics) {
-    const previousSize = this.targetTopics.size
-    for (const topic of topics) {
-      this.targetTopics.add(topic)
-    }
+    await this.mutatingTargetTopics.acquire()
 
-    const hasChanged = previousSize !== this.targetTopics.size || !this.brokerPool.metadata
+    try {
+      const previousSize = this.targetTopics.size
+      const previousTopics = new Set(this.targetTopics)
+      for (const topic of topics) {
+        this.targetTopics.add(topic)
+      }
 
-    if (hasChanged) {
-      await this.refreshMetadata()
+      const hasChanged = previousSize !== this.targetTopics.size || !this.brokerPool.metadata
+
+      if (hasChanged) {
+        try {
+          await this.refreshMetadata()
+        } catch (e) {
+          if (e.type === 'INVALID_TOPIC_EXCEPTION') {
+            this.targetTopics = previousTopics
+          }
+
+          throw e
+        }
+      }
+    } finally {
+      await this.mutatingTargetTopics.release()
     }
   }
 

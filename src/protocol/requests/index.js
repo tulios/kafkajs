@@ -39,7 +39,7 @@ const requests = {
   AlterReplicaLogDirs: {},
   DescribeLogDirs: {},
   SaslAuthenticate: require('./saslAuthenticate'),
-  CreatePartitions: {},
+  CreatePartitions: require('./createPartitions'),
   CreateDelegationToken: {},
   RenewDelegationToken: {},
   ExpireDelegationToken: {},

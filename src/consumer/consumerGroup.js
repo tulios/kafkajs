@@ -9,7 +9,7 @@ const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
 const SubscriptionState = require('./subscriptionState')
 const {
-  events: { HEARTBEAT },
+  events: { HEARTBEAT, CONNECT },
 } = require('./instrumentationEvents')
 const { MemberAssignment } = require('./assignerProtocol')
 const {
@@ -84,6 +84,7 @@ module.exports = class ConsumerGroup {
 
   async connect() {
     await this.cluster.connect()
+    this.instrumentationEmitter.emit(CONNECT)
     await this.cluster.refreshMetadataIfNecessary()
   }
 
@@ -97,7 +98,11 @@ module.exports = class ConsumerGroup {
       sessionTimeout,
       rebalanceTimeout,
       memberId: this.memberId || '',
-      groupProtocols: this.assigners.map(assigner => assigner.protocol({ topics: this.topics })),
+      groupProtocols: this.assigners.map(assigner =>
+        assigner.protocol({
+          topics: this.topicsSubscribed,
+        })
+      ),
     })
 
     this.generationId = groupData.generationId
@@ -349,7 +354,7 @@ module.exports = class ConsumerGroup {
         })
 
         await sleep(this.maxWaitTime)
-        return []
+        return BufferedAsyncIterator([])
       }
 
       await this.offsetManager.resolveOffsets()
@@ -459,7 +464,7 @@ module.exports = class ConsumerGroup {
       // configured max wait time
       if (requests.length === 0) {
         await sleep(this.maxWaitTime)
-        return []
+        return BufferedAsyncIterator([])
       }
 
       return BufferedAsyncIterator(requests, e => this.recoverFromFetch(e))

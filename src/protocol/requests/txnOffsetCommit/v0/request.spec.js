@@ -10,7 +10,10 @@ describe('Protocol > Requests > TxnOffsetCommit > v0', () => {
       topics: [
         {
           topic: 'test-topic',
-          partitions: [{ partition: 1, offset: 0 }, { partition: 2, offset: 0 }],
+          partitions: [
+            { partition: 1, offset: 0 },
+            { partition: 2, offset: 0 },
+          ],
         },
       ],
     }).encode()

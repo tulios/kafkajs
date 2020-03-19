@@ -38,7 +38,7 @@ const kafka = new Kafka({
     username: 'test',
     password: 'testtest',
   },
-  logCreator: (logLevel: logLevel) => (entry: LogEntry) => {},
+  logCreator: (logLevel: logLevel) => (entry: LogEntry) => { },
 })
 
 kafka.logger().error('Instantiated KafkaJS')
@@ -155,6 +155,18 @@ removeListener()
 
 const runAdmin = async () => {
   await admin.connect()
+
+  const { controller, brokers, clusterId } = await admin.describeCluster()
+  admin.logger().debug('Fetched cluster metadata', {
+    controller,
+    clusterId,
+    brokers: brokers.map(({ nodeId, host, port }) => ({
+      nodeId,
+      host,
+      port
+    }))
+  })
+
   await admin.fetchTopicMetadata({ topics: ['string'] }).then(metadata => {
     metadata.topics.forEach(topic => {
       console.log(topic.name, topic.partitions)
@@ -216,7 +228,7 @@ new KafkaJSConnectionError('Connection error: ECONNREFUSED', {
 });
 new KafkaJSConnectionError('Connection error: ECONNREFUSED', { code: 'ECONNREFUSED' });
 
-new KafkaJSRequestTimeoutError('Request requestInfo timed out', { 
+new KafkaJSRequestTimeoutError('Request requestInfo timed out', {
   broker: `${host}:9094`,
   clientId: 'example-consumer',
   correlationId: 0,

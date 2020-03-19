@@ -99,14 +99,14 @@ export interface ConsumerConfig {
   minBytes?: number
   maxBytes?: number
   maxWaitTimeInMs?: number
-  retry?: RetryOptions
+  retry?: RetryOptions & { restartOnFailure?: (err: Error) => Promise<boolean> }
   allowAutoTopicCreation?: boolean
   maxInFlightRequests?: number
   readUncommitted?: boolean
 }
 
 export interface PartitionAssigner {
-  new (config: { cluster: Cluster }): Assigner
+  new(config: { cluster: Cluster }): Assigner
 }
 
 export interface CoordinatorMetadata {
@@ -177,6 +177,12 @@ export interface ITopicConfig {
   replicationFactor?: number
   replicaAssignment?: object[]
   configEntries?: object[]
+}
+
+export interface ITopicPartitionConfig {
+  topic: string
+  count: number
+  assignments?: Array<Array<number>>
 }
 
 export interface ITopicMetadata {
@@ -298,6 +304,11 @@ export type Admin = {
     topics: ITopicConfig[]
   }): Promise<boolean>
   deleteTopics(options: { topics: string[]; timeout?: number }): Promise<void>
+  createPartitions(options: {
+    validateOnly?: boolean
+    timeout?: number
+    topicPartitions: ITopicPartitionConfig[]
+  }): Promise<boolean>
   fetchTopicMetadata(options: { topics: string[] }): Promise<{ topics: Array<ITopicMetadata> }>
   fetchOffsets(options: {
     groupId: string
@@ -306,6 +317,7 @@ export type Admin = {
   fetchTopicOffsets(
     topic: string
   ): Promise<Array<{ partition: number; offset: string; high: string; low: string }>>
+  describeCluster(): Promise<{ brokers: Array<{ nodeId: number; host: string; port: number }>; controller: number | null, clusterId: string }>
   setOffsets(options: { groupId: string; topic: string; partitions: SeekEntry[] }): Promise<void>
   resetOffsets(options: { groupId: string; topic: string; earliest: boolean }): Promise<void>
   describeConfigs(configs: {

@@ -10,6 +10,8 @@ const RESOURCE_TYPES = require('../protocol/resourceTypes')
 
 const { CONNECT, DISCONNECT } = events
 
+const NO_CONTROLLER_ID = -1
+
 const { values, keys } = Object
 const eventNames = values(events)
 const eventKeys = keys(events)
@@ -117,6 +119,50 @@ module.exports = ({
 
         if (e.type === 'TOPIC_ALREADY_EXISTS') {
           return false
+        }
+
+        bail(e)
+      }
+    })
+  }
+  /**
+   * @param {array} topicPartitions
+   * @param {boolean} [validateOnly=false]
+   * @param {number} [timeout=5000]
+   * @return {Promise<void>}
+   */
+  const createPartitions = async ({ topicPartitions, validateOnly, timeout }) => {
+    if (!topicPartitions || !Array.isArray(topicPartitions)) {
+      throw new KafkaJSNonRetriableError(`Invalid topic partitions array ${topicPartitions}`)
+    }
+    if (topicPartitions.length === 0) {
+      throw new KafkaJSNonRetriableError(`Empty topic partitions array`)
+    }
+
+    if (topicPartitions.filter(({ topic }) => typeof topic !== 'string').length > 0) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid topic partitions array, the topic names have to be a valid string'
+      )
+    }
+
+    const topicNames = new Set(topicPartitions.map(({ topic }) => topic))
+    if (topicNames.size < topicPartitions.length) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid topic partitions array, it cannot have multiple entries for the same topic'
+      )
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        await broker.createPartitions({ topicPartitions, validateOnly, timeout })
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not create topics', { error: e.message, retryCount, retryTime })
+          throw e
         }
 
         bail(e)
@@ -597,6 +643,38 @@ module.exports = ({
   }
 
   /**
+   * Describe cluster
+   *
+   * @return {Promise<ClusterMetadata>}
+   *
+   * @typedef {Object} ClusterMetadata
+   * @property {Array<Broker>} brokers
+   * @property {Number} controller Current controller id. Returns null if unknown.
+   * @property {String} clusterId
+   *
+   * @typedef {Object} Broker
+   * @property {Number} nodeId
+   * @property {String} host
+   * @property {Number} port
+   */
+  const describeCluster = async () => {
+    const { brokers: nodes, clusterId, controllerId } = await cluster.metadata({ topics: [] })
+    const brokers = nodes.map(({ nodeId, host, port }) => ({
+      nodeId,
+      host,
+      port,
+    }))
+    const controller =
+      controllerId == null || controllerId === NO_CONTROLLER_ID ? null : controllerId
+
+    return {
+      brokers,
+      controller,
+      clusterId,
+    }
+  }
+
+  /**
    * List groups in a broker
    *
    * @return {Promise<ListGroups>}
@@ -725,8 +803,10 @@ module.exports = ({
     disconnect,
     createTopics,
     deleteTopics,
+    createPartitions,
     getTopicMetadata,
     fetchTopicMetadata,
+    describeCluster,
     events,
     fetchOffsets,
     fetchTopicOffsets,
