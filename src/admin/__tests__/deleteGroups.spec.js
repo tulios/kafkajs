@@ -1,7 +1,7 @@
 const createAdmin = require('../index')
 const createConsumer = require('../../consumer')
 const createProducer = require('../../producer')
-const { KafkaJSProtocolError, KafkaJSDeleteGroupsError } = require('../../errors')
+const { KafkaJSProtocolError } = require('../../errors')
 
 const {
   createCluster,
