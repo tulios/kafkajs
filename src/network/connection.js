@@ -65,7 +65,7 @@ module.exports = class Connection {
     this.connectionTimeout = connectionTimeout
 
     this.bytesBuffered = 0
-    this.bytesNeeded = 0
+    this.bytesNeeded = Decoder.int32Size()
     this.chunks = []
 
     this.connected = false
@@ -378,21 +378,11 @@ module.exports = class Connection {
     this.chunks.push(rawData)
     this.bytesBuffered += Buffer.byteLength(rawData)
 
-    // Return early if more bytes are needed to read the next messzge
-    if (this.bytesNeeded > this.bytesBuffered) {
-      return
-    }
-
-    const buffer = Buffer.concat(this.chunks)
-    this.chunks = []
-    this.bytesBuffered = 0
-    this.bytesNeeded = Decoder.int32Size()
-
     // Process data if there are enough bytes to read the expected response size,
     // otherwise keep buffering
-    while (Buffer.byteLength(buffer) > Decoder.int32Size()) {
-      const data = Buffer.from(buffer)
-      const decoder = new Decoder(data)
+    while (this.bytesNeeded <= this.bytesBuffered) {
+      const buffer = this.chunks.length > 1 ? Buffer.concat(this.chunks) : this.chunks[0]
+      const decoder = new Decoder(buffer)
       const expectedResponseSize = decoder.readInt32()
 
       // Return early if not enough bytes to read the full response
@@ -409,11 +399,11 @@ module.exports = class Connection {
       const remainderBuffer = decoder.readAll()
       this.chunks = [remainderBuffer]
       this.bytesBuffered = Buffer.byteLength(remainderBuffer)
-      this.bytesNeeded = Decoder.int32Size() + expectedResponseSize
+      this.bytesNeeded = Decoder.int32Size()
 
       if (this.authHandlers) {
         const rawResponseSize = Decoder.int32Size() + expectedResponseSize
-        const rawResponseBuffer = data.slice(0, rawResponseSize)
+        const rawResponseBuffer = buffer.slice(0, rawResponseSize)
         return this.authHandlers.onSuccess(rawResponseBuffer)
       }
 
