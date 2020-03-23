@@ -105,9 +105,7 @@ export interface ConsumerConfig {
   readUncommitted?: boolean
 }
 
-export interface PartitionAssigner {
-  new(config: { cluster: Cluster }): Assigner
-}
+export type PartitionAssigner = (config: { cluster: Cluster }) => Assigner
 
 export interface CoordinatorMetadata {
   errorCode: number
