@@ -692,6 +692,17 @@ module.exports = class Broker {
     return await this.connection.send(listGroups())
   }
 
+  /**
+   * Send request to delete groups
+   * @param {Array<string>} groupIds
+   * @public
+   * @returns {Promise}
+   */
+  async deleteGroups(groupIds) {
+    const deleteGroups = this.lookupRequest(apiKeys.DeleteGroups, requests.DeleteGroups)
+    return await this.connection.send(deleteGroups(groupIds))
+  }
+
   /***
    * @private
    */

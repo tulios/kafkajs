@@ -88,6 +88,14 @@ class KafkaJSStaleTopicMetadataAssignment extends KafkaJSError {
   }
 }
 
+class KafkaJSDeleteGroupsError extends KafkaJSError {
+  constructor(e, groups = []) {
+    super(e)
+    this.groups = groups
+    this.name = 'KafkaJSDeleteGroupsError'
+  }
+}
+
 class KafkaJSServerDoesNotSupportApiKey extends KafkaJSNonRetriableError {
   constructor(e, { apiKey, apiName } = {}) {
     super(e)
@@ -169,6 +177,7 @@ module.exports = {
   KafkaJSMetadataNotLoaded,
   KafkaJSTopicMetadataNotLoaded,
   KafkaJSStaleTopicMetadataAssignment,
+  KafkaJSDeleteGroupsError,
   KafkaJSTimeout,
   KafkaJSLockTimeout,
   KafkaJSServerDoesNotSupportApiKey,
