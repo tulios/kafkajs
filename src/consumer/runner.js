@@ -362,7 +362,9 @@ module.exports = class Runner {
     }
 
     await Promise.all(enqueuedTasks.map(fn => fn()))
-    await lock
+    if (expectedNumberOfExecutions > 0) {
+      await lock
+    }
     await this.autoCommitOffsets()
     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
   }
