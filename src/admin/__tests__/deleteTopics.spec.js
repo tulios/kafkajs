@@ -75,7 +75,7 @@ describe('Admin', () => {
       admin = createAdmin({ cluster, logger: newLogger() })
       await expect(admin.deleteTopics({ topics: [topicName] })).resolves.toBe()
 
-      expect(cluster.refreshMetadata).toHaveBeenCalledTimes(3)
+      expect(cluster.refreshMetadata).toHaveBeenCalledTimes(2)
       expect(cluster.findControllerBroker).toHaveBeenCalledTimes(2)
       expect(broker.deleteTopics).toHaveBeenCalledTimes(1)
     })
