@@ -10,15 +10,15 @@ module.exports = class OAuthBearerAuthenticator {
 
   async authenticate() {
     const { sasl } = this.connection
-    if (sasl.oauthBearerResolver == null) {
+    if (sasl.oauthBearerProvider == null) {
       throw new KafkaJSSASLAuthenticationError(
-        'SASL OAUTHBEARER: Missing OAuth Bearer Token resolver'
+        'SASL OAUTHBEARER: Missing OAuth Bearer Token provider'
       )
     }
 
-    const { oauthBearerResolver } = sasl
+    const { oauthBearerProvider } = sasl
 
-    const oauthBearerToken = await oauthBearerResolver()
+    const oauthBearerToken = await oauthBearerProvider()
 
     if (oauthBearerToken.value == null) {
       throw new KafkaJSSASLAuthenticationError('SASL OAUTHBEARER: Invalid OAuth Bearer Token')
