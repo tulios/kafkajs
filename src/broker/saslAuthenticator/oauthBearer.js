@@ -1,3 +1,15 @@
+/**
+ * The sasl object must include a property named oauthBearerProvider, an
+ * async function that is used to return the OAuth bearer token.
+ *
+ * The OAuth bearer token must be an object with properties value and
+ * (optionally) extensions, that will be sent during the SASL/OAUTHBEARER
+ * request.
+ *
+ * The implementation of the oauthBearerProvider must take care that tokens are
+ * reused and refreshed when appropriate.
+ */
+
 const oauthBearer = require('../../protocol/sasl/oauthBearer')
 const { KafkaJSSASLAuthenticationError } = require('../../errors')
 
