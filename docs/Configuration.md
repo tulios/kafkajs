@@ -66,6 +66,41 @@ new Kafka({
 })
 ```
 
+### OAUTHBEARER Example
+
+```javascript
+new Kafka({
+  clientId: 'my-app',
+  brokers: ['kafka1:9092', 'kafka2:9092'],
+  // authenticationTimeout: 1000,
+  // reauthenticationThreshold: 10000,
+  ssl: true,
+  sasl: {
+    mechanism: 'oauthbearer',
+    oauthBearerProvider: async () => {
+      // Use an unsecured token...
+      const token = jwt.sign({ sub: 'test' }, 'abc', { algorithm: 'none' })
+
+      // ...or, more realistically, grab the token from some OAuth endpoint
+
+      return {
+        value: token
+      }
+    }
+  },
+})
+```
+
+The sasl object must include a property named oauthBearerProvider, an
+async function that is used to return the OAuth bearer token.
+
+The OAuth bearer token must be an object with properties value and
+(optionally) extensions, that will be sent during the SASL/OAUTHBEARER
+request.
+
+The implementation of the oauthBearerProvider must take care that tokens are
+reused and refreshed when appropriate.
+
 ### AWS IAM Example
 
 ```javascript
