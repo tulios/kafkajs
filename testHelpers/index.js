@@ -3,6 +3,7 @@ const execa = require('execa')
 const uuid = require('uuid/v4')
 const semver = require('semver')
 const crypto = require('crypto')
+const jwt = require('jsonwebtoken')
 const Cluster = require('../src/cluster')
 const waitFor = require('../src/utils/waitFor')
 const connectionBuilder = require('../src/cluster/connectionBuilder')
@@ -85,13 +86,7 @@ const saslOAuthBearerConnectionOpts = () =>
     sasl: {
       mechanism: 'oauthbearer',
       oauthBearerProvider: () => {
-        let sig = { alg: 'none' }
-        sig = Buffer.from(JSON.stringify(sig)).toString('base64')
-
-        let payload = { sub: 'test', scope: 'KAFKAJS' }
-        payload = Buffer.from(JSON.stringify(payload)).toString('base64')
-
-        const token = `${sig}.${payload}`
+        const token = jwt.sign({ sub: 'test' }, 'abc', { algorithm: 'none' })
 
         return {
           value: token,
