@@ -10,6 +10,7 @@ const {
   sslConnectionOpts,
   saslSCRAM256ConnectionOpts,
   saslSCRAM512ConnectionOpts,
+  saslOAuthBearerConnectionOpts,
   sslBrokers,
   saslBrokers,
   waitFor,
@@ -81,6 +82,19 @@ describe('Consumer', () => {
 
   test('support SASL SCRAM 512 connections', async () => {
     cluster = createCluster(saslSCRAM512ConnectionOpts(), saslBrokers())
+
+    consumer = createConsumer({
+      cluster,
+      groupId,
+      maxWaitTimeInMs: 1,
+      logger: newLogger(),
+    })
+
+    await consumer.connect()
+  })
+
+  test('support SASL OAUTHBEARER connections', async () => {
+    cluster = createCluster(saslOAuthBearerConnectionOpts(), saslBrokers())
 
     consumer = createConsumer({
       cluster,

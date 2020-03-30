@@ -79,6 +79,27 @@ const saslSCRAM512ConnectionOpts = () =>
     },
   })
 
+const saslOAuthBearerConnectionOpts = () =>
+  Object.assign(sslConnectionOpts(), {
+    port: 9094,
+    sasl: {
+      mechanism: 'oauthbearer',
+      oauthBearerProvider: () => {
+        let sig = { alg: 'none' }
+        sig = Buffer.from(JSON.stringify(sig)).toString('base64')
+
+        let payload = { sub: 'test', scope: 'KAFKAJS' }
+        payload = Buffer.from(JSON.stringify(payload)).toString('base64')
+
+        const token = `${sig}.${payload}`
+
+        return {
+          value: token,
+        }
+      },
+    },
+  })
+
 const createConnection = (opts = {}) => new Connection(Object.assign(connectionOpts(), opts))
 
 const createConnectionBuilder = (opts = {}, brokers = plainTextBrokers()) => {
@@ -237,6 +258,7 @@ module.exports = {
   saslConnectionOpts,
   saslSCRAM256ConnectionOpts,
   saslSCRAM512ConnectionOpts,
+  saslOAuthBearerConnectionOpts,
   createConnection,
   createConnectionBuilder,
   createCluster,
