@@ -28,6 +28,25 @@ describe('Protocol > Encoder', () => {
     })
   })
 
+  describe('writeEncoderArray', () => {
+    it('should throw if any of the elements in the array are not encoders', () => {
+      const values = [new Encoder(), 'not an encoder']
+      expect(() => new Encoder().writeEncoderArray(values)).toThrow(
+        'all values should be an instance of Encoder[]'
+      )
+    })
+
+    it('should append all encoder values to the existing encoder', () => {
+      const values = [
+        new Encoder().writeBuffer(B(1)),
+        new Encoder().writeBuffer(B(2)),
+        new Encoder().writeBuffer(B(3)),
+      ]
+
+      expect(new Encoder().writeEncoderArray(values).buffer).toEqual(B(1, 2, 3))
+    })
+  })
+
   describe('varint', () => {
     test('encode signed int32 numbers', () => {
       expect(signed32(0)).toEqual(B(0x00))
