@@ -56,6 +56,7 @@ module.exports = class Encoder {
 
   constructor() {
     this.buffer = Buffer.alloc(0)
+    this.name = 'Encoder'
   }
 
   writeInt8(value) {
@@ -173,7 +174,7 @@ module.exports = class Encoder {
   }
 
   writeEncoder(value) {
-    if (value instanceof Encoder !== true) {
+    if (value == null || value.name !== 'Encoder') {
       throw new Error('value should be an instance of Encoder')
     }
     this.buffer = Buffer.concat([this.buffer, value.buffer])

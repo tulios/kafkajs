@@ -16,6 +16,18 @@ describe('Protocol > Encoder', () => {
   const B = (...args) => Buffer.from(args)
   const L = value => Long.fromString(`${value}`)
 
+  describe('writeEncoder', () => {
+    it('should throw if the value is not an Encoder', () => {
+      const encoder = new Encoder()
+      expect(() => encoder.writeEncoder()).toThrow('value should be an instance of Encoder')
+    })
+
+    it('should append the value buffer to the existing encoder', () => {
+      const encoder = new Encoder().writeBuffer(B(1)).writeEncoder(new Encoder().writeBuffer(B(2)))
+      expect(encoder.buffer).toEqual(B(1, 2))
+    })
+  })
+
   describe('varint', () => {
     test('encode signed int32 numbers', () => {
       expect(signed32(0)).toEqual(B(0x00))
