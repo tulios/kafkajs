@@ -232,7 +232,6 @@ module.exports = ({
 
     const restart = onCrash => {
       consumerGroup = createConsumerGroup({
-        autoCommit,
         autoCommitInterval,
         autoCommitThreshold,
       })
