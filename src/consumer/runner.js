@@ -94,7 +94,11 @@ module.exports = class Runner {
       return
     }
 
-    return this.join().catch(this.onCrash)
+    try {
+      return await this.join()
+    } catch (e) {
+      this.onCrash(e)
+    }
   }
 
   async start() {
