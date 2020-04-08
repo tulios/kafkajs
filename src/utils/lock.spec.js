@@ -40,6 +40,26 @@ describe('Utils > Lock', () => {
     ).rejects.toHaveProperty('message', 'Timeout while acquiring lock (2 waiting locks)')
   })
 
+  it('allows lock to be acquired after timeout', async () => {
+    const lock = new Lock({ timeout: 60 })
+    const resource = jest.fn()
+    const callResource = async () => {
+      await lock.acquire()
+      try {
+        resource(Date.now())
+        await sleep(100)
+      } finally {
+        lock.release()
+      }
+    }
+
+    await expect(
+      Promise.all([callResource(), callResource(), callResource()])
+    ).rejects.toHaveProperty('message', 'Timeout while acquiring lock (2 waiting locks)')
+
+    await expect(callResource()).resolves.toBeUndefined()
+  })
+
   describe('with a description', () => {
     it('throws an error with the configured description if the lock cannot be acquired within a period', async () => {
       const lock = new Lock({ timeout: 60, description: 'My test mock' })
