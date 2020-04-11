@@ -703,6 +703,77 @@ module.exports = class Broker {
     return await this.connection.send(deleteGroups(groupIds))
   }
 
+  /**
+   * @public
+   * @param {Array} ACL e.g:
+   *                 [
+   *                   {
+   *                     resourceType: ,
+   *                     resourceName: 'resource-name',
+   *                     resourcePatternType: ,
+   *                     principal: 'principal-name',
+   *                     host: 'hostname',
+   *                     operation: ,
+   *                     permissionType:
+   *                   }
+   *                 ]
+   * @returns {Promise<void>}
+   */
+  async createAcls({ acl }) {
+    const createAcls = this.lookupRequest(apiKeys.CreateAcls, requests.CreateAcls)
+    return await this.connection.send(createAcls({ creations: acl }))
+  }
+
+  /**
+   * @public
+   * @param {number} resourceType The type of resource
+   * @param {string} resourceName The name of the resource
+   * @param {number} resourcePatternTypeFilter The resource pattern type filter
+   * @param {string} principal The principal name
+   * @param {string} host The hostname
+   * @param {number} operation The type of operation
+   * @param {number} permissionType The type of permission
+   * @returns {Promise<void>}
+   */
+  async describeAcls({
+    resourceType,
+    resourceName,
+    resourcePatternTypeFilter,
+    principal,
+    host,
+    operation,
+    permissionType,
+  }) {
+    const describeAcls = this.lookupRequest(apiKeys.DescribeAcls, requests.DescribeAcls)
+    return await this.connection.send(
+      describeAcls({
+        resourceType,
+        resourceName,
+        resourcePatternTypeFilter,
+        principal,
+        host,
+        operation,
+        permissionType,
+      })
+    )
+  }
+
+  /**
+   * @public
+   * @param {number} resourceType The type of resource
+   * @param {string} resourceName The name of the resource
+   * @param {number} resourcePatternTypeFilter The resource pattern type filter
+   * @param {string} principal The principal name
+   * @param {string} host The hostname
+   * @param {number} operation The type of operation
+   * @param {number} permissionType The type of permission
+   * @returns {Promise<void>}
+   */
+  async deleteAcls({ filters }) {
+    const deleteAcls = this.lookupRequest(apiKeys.DeleteAcls, requests.DeleteAcls)
+    return await this.connection.send(deleteAcls({ filters }))
+  }
+
   /***
    * @private
    */
