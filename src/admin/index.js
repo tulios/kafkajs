@@ -776,6 +776,280 @@ module.exports = ({
   }
 
   /**
+   * @param {array} ACL
+   * @return {Promise<void>}
+   */
+  const createAcls = async ({ acl }) => {
+    if (!acl || !Array.isArray(acl)) {
+      throw new KafkaJSNonRetriableError(`Invalid ACL array ${acl}`)
+    }
+    if (acl.length === 0) {
+      throw new KafkaJSNonRetriableError(`Empty ACL array`)
+    }
+
+    // Validate principal
+    if (acl.filter(({ principal }) => typeof principal !== 'string').length > 0) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL array, the principals have to be a valid string'
+      )
+    }
+    // Validate host
+    if (acl.filter(({ host }) => typeof host !== 'string').length > 0) {
+      throw new KafkaJSNonRetriableError('Invalid ACL array, the hosts have to be a valid string')
+    }
+    // Validate resourceName
+    if (acl.filter(({ resourceName }) => typeof resourceName !== 'string').length > 0) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL array, the resourceNames have to be a valid string'
+      )
+    }
+    // Validate operation
+    if (acl.filter(({ operation }) => typeof operation !== 'number').length > 0) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL array, the operations have to be a valid number'
+      )
+    }
+    // Validate resourcePatternTypes
+    if (
+      acl.filter(({ resourcePatternType }) => typeof resourcePatternType !== 'number').length > 0
+    ) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL array, the resourcePatternTypes have to be a valid number'
+      )
+    }
+    // Validate permissionType
+    if (acl.filter(({ permissionType }) => typeof permissionType !== 'number').length > 0) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL array, the permissionTypes have to be a valid number'
+      )
+    }
+    // Validate resourceType
+    if (acl.filter(({ resourceType }) => typeof resourceType !== 'number').length > 0) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL array, the resourceTypes have to be a valid number'
+      )
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        await broker.createAcls({ acl })
+
+        return true
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not create ACL', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
+   * @param {number} resourceType The type of resource
+   * @param {string} resourceName The name of the resource
+   * @param {number} resourcePatternTypeFilter The resource pattern type filter
+   * @param {string} principal The principal name
+   * @param {string} host The hostname
+   * @param {number} operation The type of operation
+   * @param {number} permissionType The type of permission
+   * @return {Promise<void>}
+   */
+  const describeAcls = async ({
+    resourceType,
+    resourceName,
+    resourcePatternTypeFilter,
+    principal,
+    host,
+    operation,
+    permissionType,
+  }) => {
+    // Validate resourceType
+    if (typeof resourceType !== 'number' && typeof resourceType !== 'undefined') {
+      throw new KafkaJSNonRetriableError(
+        'Invalid resourceType, the resourceType have to be a valid number'
+      )
+    }
+    // Validate resourceName
+    if (typeof resourceName !== 'string' && typeof resourceName !== 'undefined') {
+      throw new KafkaJSNonRetriableError(
+        'Invalid resourceName, the resourceName have to be a valid string'
+      )
+    }
+    // Validate resourcePatternTypeFilter
+    if (
+      typeof resourcePatternTypeFilter !== 'number' &&
+      typeof resourcePatternTypeFilter !== 'undefined'
+    ) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid resourcePatternTypeFilter, the resourcePatternTypeFilter have to be a valid number'
+      )
+    }
+    // Validate principal
+    if (typeof principal !== 'string' && typeof principal !== 'undefined') {
+      throw new KafkaJSNonRetriableError(
+        'Invalid principal, the principal have to be a valid string'
+      )
+    }
+    // Validate host
+    if (typeof host !== 'string' && typeof host !== 'undefined') {
+      throw new KafkaJSNonRetriableError('Invalid host, the host have to be a valid string')
+    }
+    // Validate operation
+    if (typeof operation !== 'number' && typeof operation !== 'undefined') {
+      throw new KafkaJSNonRetriableError(
+        'Invalid operation, the operation have to be a valid number'
+      )
+    }
+    // Validate permissionType
+    if (typeof permissionType !== 'number' && typeof permissionType !== 'undefined') {
+      throw new KafkaJSNonRetriableError(
+        'Invalid permissionType, the permissionType have to be a valid number'
+      )
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        const { resources } = await broker.describeAcls({
+          resourceType,
+          resourceName,
+          resourcePatternTypeFilter,
+          principal,
+          host,
+          operation,
+          permissionType,
+        })
+        return { resources }
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not describe ACL', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
+   * @param {number} resourceType The type of resource
+   * @param {string} resourceName The name of the resource
+   * @param {number} resourcePatternType The resource pattern type
+   * @param {string} principal The principal name
+   * @param {string} host The hostname
+   * @param {number} operation The type of operation
+   * @param {number} permissionType The type of permission
+   * @return {Promise<void>}
+   */
+  const deleteAcls = async ({ filters }) => {
+    if (!filters || !Array.isArray(filters)) {
+      throw new KafkaJSNonRetriableError(`Invalid ACL array ${filters}`)
+    }
+    if (filters.length === 0) {
+      throw new KafkaJSNonRetriableError(`Empty ACL array`)
+    }
+
+    // Validate principal
+    if (
+      filters.filter(
+        ({ principal }) => typeof principal !== 'string' && typeof principal !== 'undefined'
+      ).length > 0
+    ) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL array, the principals have to be a valid string'
+      )
+    }
+    // Validate host
+    if (
+      filters.filter(({ host }) => typeof host !== 'string' && typeof host !== 'undefined').length >
+      0
+    ) {
+      throw new KafkaJSNonRetriableError('Invalid ACL array, the hosts have to be a valid string')
+    }
+    // Validate resourceName
+    if (
+      filters.filter(
+        ({ resourceName }) =>
+          typeof resourceName !== 'string' && typeof resourceName !== 'undefined'
+      ).length > 0
+    ) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL array, the resourceNames have to be a valid string'
+      )
+    }
+    // Validate operation
+    if (
+      filters.filter(
+        ({ operation }) => typeof operation !== 'number' && typeof operation !== 'undefined'
+      ).length > 0
+    ) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL array, the operations have to be a valid number'
+      )
+    }
+    // Validate resourcePatternTypes
+    if (
+      filters.filter(
+        ({ resourcePatternType }) =>
+          typeof resourcePatternType !== 'number' && typeof resourcePatternType !== 'undefined'
+      ).length > 0
+    ) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL array, the resourcePatternTypes have to be a valid number'
+      )
+    }
+    // Validate permissionType
+    if (
+      filters.filter(
+        ({ permissionType }) =>
+          typeof permissionType !== 'number' && typeof permissionType !== 'undefined'
+      ).length > 0
+    ) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL array, the permissionTypes have to be a valid number'
+      )
+    }
+    // Validate resourceType
+    if (
+      filters.filter(
+        ({ resourceType }) =>
+          typeof resourceType !== 'number' && typeof resourceType !== 'undefined'
+      ).length > 0
+    ) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL array, the resourceTypes have to be a valid number'
+      )
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        const { filterResponses } = await broker.deleteAcls({ filters })
+        return { filterResponses }
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not delete ACL', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
    * @param {string} eventName
    * @param {Function} listener
    * @return {Function}
@@ -821,5 +1095,8 @@ module.exports = ({
     logger: getLogger,
     listGroups,
     deleteGroups,
+    describeAcls,
+    deleteAcls,
+    createAcls,
   }
 }
