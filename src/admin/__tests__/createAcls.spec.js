@@ -1,6 +1,6 @@
 const createAdmin = require('../index')
-const { KafkaJSProtocolError } = require('../../errors')
-const { createErrorFromCode } = require('../../protocol/error')
+// const { KafkaJSProtocolError } = require('../../errors')
+// const { createErrorFromCode } = require('../../protocol/error')
 
 const {
   secureRandom,
@@ -9,8 +9,6 @@ const {
   sslConnectionOpts,
   saslBrokers,
 } = require('testHelpers')
-
-const NOT_CONTROLLER = 41
 
 const RESOURCE_TYPES = require('../../protocol/resourceTypes')
 const OPERATION_TYPES = require('../../protocol/operationsTypes')

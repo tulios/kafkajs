@@ -55,8 +55,8 @@ const parse = async data => {
     throw createErrorFromCode(filterResponsesWithError[0].errorCode)
   }
   for (let i = 0; i < data.filterResponses.length; i++) {
-    let matchingAcls = data.filterResponses[i].matchingAcls
-    let matchingAclsWithError = matchingAcls.filter(({ errorCode }) => failure(errorCode))
+    const matchingAcls = data.filterResponses[i].matchingAcls
+    const matchingAclsWithError = matchingAcls.filter(({ errorCode }) => failure(errorCode))
     if (matchingAclsWithError.length > 0) {
       throw createErrorFromCode(matchingAclsWithError[0].errorCode)
     }

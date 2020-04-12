@@ -7,9 +7,9 @@ const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentat
 const { LEVELS } = require('../loggers')
 const { KafkaJSNonRetriableError, KafkaJSDeleteGroupsError } = require('../errors')
 const RESOURCE_TYPES = require('../protocol/resourceTypes')
-const OPERATION_TYPES = require('../protocol/operationsTypes')
-const PERMISSION_TYPES = require('../protocol/permissionTypes')
-const RESOURCE_PATTERN_TYPES = require('../protocol/resourcePatternTypes')
+// const OPERATION_TYPES = require('../protocol/operationsTypes')
+// const PERMISSION_TYPES = require('../protocol/permissionTypes')
+// const RESOURCE_PATTERN_TYPES = require('../protocol/resourcePatternTypes')
 
 const { CONNECT, DISCONNECT } = events
 
