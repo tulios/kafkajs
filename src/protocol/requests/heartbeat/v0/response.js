@@ -16,9 +16,9 @@ const decode = async rawData => {
 }
 
 const parse = async data => {
-  if (failure(data.errorCode)) {
-    throw createErrorFromCode(data.errorCode)
-  }
+  // if (failure(data.errorCode)) {
+  throw createErrorFromCode(data.errorCode)
+  // }
 
   return data
 }

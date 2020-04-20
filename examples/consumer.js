@@ -47,7 +47,10 @@ errorTypes.map(type => {
   process.on(type, async e => {
     try {
       console.log(`process.on ${type}`)
-      console.error(e)
+      console.error('Unhandled promise rejection', {
+        error: e.message || e,
+        stack: e.stack,
+      })
       await consumer.disconnect()
       process.exit(0)
     } catch (_) {
