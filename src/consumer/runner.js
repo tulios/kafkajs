@@ -2,7 +2,6 @@ const Long = require('long')
 const createRetry = require('../retry')
 const limitConcurrency = require('../utils/concurrency')
 const { KafkaJSError } = require('../errors')
-const barrier = require('./barrier')
 
 const {
   events: { GROUP_JOIN, FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS },
@@ -312,11 +311,7 @@ module.exports = class Runner {
       return
     }
 
-    const { lock, unlock, unlockWithError } = barrier()
-
     const allResults = []
-    let numberOfExecutions = 0
-    let expectedNumberOfExecutions = 0
 
     while (true) {
       const result = iterator.next()
@@ -331,10 +326,9 @@ module.exports = class Runner {
         }
 
         const batches = await result.value
-        expectedNumberOfExecutions += batches.length
 
         return () => {
-          batches.map(batch =>
+          return batches.map(batch =>
             concurrently(async () => {
               if (!this.running) {
                 return
@@ -346,12 +340,7 @@ module.exports = class Runner {
 
               await onBatch(batch)
               await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
-
-              numberOfExecutions++
-              if (numberOfExecutions === expectedNumberOfExecutions) {
-                unlock()
-              }
-            }).catch(unlockWithError)
+            })
           )
         }
       })
@@ -363,11 +352,7 @@ module.exports = class Runner {
       return
     }
 
-    if (expectedNumberOfExecutions === 0) {
-      unlock()
-    }
-
-    await Promise.all([lock, ...enqueuedTasks.map(fn => fn())])
+    await Promise.all([].concat(...enqueuedTasks.map(fn => fn())))
     await this.autoCommitOffsets()
     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
   }
