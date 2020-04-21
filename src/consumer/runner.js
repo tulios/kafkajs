@@ -317,6 +317,11 @@ module.exports = class Runner {
     let numberOfExecutions = 0
     const { lock, unlock, unlockWithError } = barrier()
 
+    // What do we supposed to do in here ???
+    lock.catch(() => {
+      // ignore
+    })
+
     while (true) {
       const result = iterator.next()
       if (result.done) {
