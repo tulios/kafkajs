@@ -58,15 +58,15 @@ while [ "$1" != "" ]; do
     shift
 done
 
-if ["$kafka_username" = ""]; then
+if [ "$kafka_username" = "" ]; then
   kafka_username=$DEFAULT_KAFKA_USERNAME
 fi
 
-if ["$password_256" = ""]; then
+if [ "$password_256" = "" ]; then
   password_256=$DEFAULT_PASSWORD_256
 fi
 
-if ["$password_512" = ""]; then
+if [ "$password_512" = "" ]; then
   password_512=$DEFAULT_PASSWORD_512
 fi
  
