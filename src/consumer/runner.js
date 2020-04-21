@@ -317,11 +317,6 @@ module.exports = class Runner {
     let numberOfExecutions = 0
     const { lock, unlock, unlockWithError } = barrier()
 
-    // What do we supposed to do in here ???
-    lock.catch(() => {
-      // ignore
-    })
-
     while (true) {
       const result = iterator.next()
       if (result.done) {
@@ -366,10 +361,11 @@ module.exports = class Runner {
       return
     }
 
-    await Promise.all(enqueuedTasks.map(fn => fn()))
-    if (expectedNumberOfExecutions > 0) {
-      await lock
+    if (expectedNumberOfExecutions === 0) {
+      unlock()
     }
+
+    await Promise.all([lock, ...enqueuedTasks.map(fn => fn())])
     await this.autoCommitOffsets()
     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
   }
