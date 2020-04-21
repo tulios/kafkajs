@@ -312,18 +312,20 @@ module.exports = class Runner {
       return
     }
 
-    const enqueuedTasks = []
-    let expectedNumberOfExecutions = 0
-    let numberOfExecutions = 0
     const { lock, unlock, unlockWithError } = barrier()
+
+    const allResults = []
+    let numberOfExecutions = 0
+    let expectedNumberOfExecutions = 0
 
     while (true) {
       const result = iterator.next()
+
       if (result.done) {
         break
       }
 
-      enqueuedTasks.push(async () => {
+      allResults.push(async () => {
         if (!this.running) {
           return
         }
@@ -331,9 +333,9 @@ module.exports = class Runner {
         const batches = await result.value
         expectedNumberOfExecutions += batches.length
 
-        batches.map(batch =>
-          concurrently(async () => {
-            try {
+        return () => {
+          batches.map(batch =>
+            concurrently(async () => {
               if (!this.running) {
                 return
               }
@@ -344,18 +346,18 @@ module.exports = class Runner {
 
               await onBatch(batch)
               await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
-            } catch (e) {
-              unlockWithError(e)
-            } finally {
+
               numberOfExecutions++
               if (numberOfExecutions === expectedNumberOfExecutions) {
                 unlock()
               }
-            }
-          }).catch(unlockWithError)
-        )
+            }).catch(unlockWithError)
+          )
+        }
       })
     }
+
+    const enqueuedTasks = await Promise.all(allResults.map(fn => fn()))
 
     if (!this.running) {
       return
@@ -364,6 +366,7 @@ module.exports = class Runner {
     if (expectedNumberOfExecutions === 0) {
       unlock()
     }
+
     await Promise.all([lock, ...enqueuedTasks.map(fn => fn())])
     await this.autoCommitOffsets()
     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
