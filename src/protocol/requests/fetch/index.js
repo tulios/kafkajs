@@ -125,6 +125,37 @@ const versions = {
       requestTimeout: requestTimeout(maxWaitTime),
     }
   },
+  11: ({
+    replicaId = REPLICA_ID,
+    isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
+    sessionId = 0,
+    sessionEpoch = -1,
+    forgottenTopics = [],
+    maxWaitTime,
+    minBytes,
+    maxBytes,
+    topics,
+    rackId,
+  }) => {
+    const request = require('./v11/request')
+    const response = require('./v11/response')
+    return {
+      request: request({
+        replicaId,
+        isolationLevel,
+        sessionId,
+        sessionEpoch,
+        forgottenTopics,
+        maxWaitTime,
+        minBytes,
+        maxBytes,
+        topics,
+        rackId,
+      }),
+      response,
+      requestTimeout: requestTimeout(maxWaitTime),
+    }
+  },
 }
 
 module.exports = {

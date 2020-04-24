@@ -116,6 +116,7 @@ module.exports = class Client {
     minBytes,
     maxBytes,
     maxWaitTimeInMs,
+    rackId,
     retry,
     allowAutoTopicCreation,
     maxInFlightRequests,
@@ -148,6 +149,7 @@ module.exports = class Client {
       maxBytes,
       maxWaitTimeInMs,
       isolationLevel,
+      rackId,
       instrumentationEmitter,
     })
   }

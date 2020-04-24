@@ -37,6 +37,7 @@ module.exports = ({
   maxWaitTimeInMs = 5000,
   retry = { retries: 10 },
   isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
+  rackId = '',
   instrumentationEmitter: rootInstrumentationEmitter,
 }) => {
   if (!groupId) {
@@ -77,6 +78,7 @@ module.exports = ({
       autoCommitInterval,
       autoCommitThreshold,
       isolationLevel,
+      rackId,
     })
   }
 

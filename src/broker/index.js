@@ -285,6 +285,8 @@ module.exports = class Broker {
    *                            ]
    *                          }
    *                        ]
+   * @param {string} rackId='' A rack identifier for this client. This can be any string value which indicates where this
+   *                           client is physically located. It corresponds with the broker config `broker.rack`.
    * @returns {Promise}
    */
   async fetch({
@@ -294,11 +296,12 @@ module.exports = class Broker {
     minBytes = 1,
     maxBytes = 10485760,
     topics,
+    rackId = '',
   }) {
     // TODO: validate topics not null/empty
     const fetch = this.lookupRequest(apiKeys.Fetch, requests.Fetch)
     return await this.connection.send(
-      fetch({ replicaId, isolationLevel, maxWaitTime, minBytes, maxBytes, topics })
+      fetch({ replicaId, isolationLevel, maxWaitTime, minBytes, maxBytes, topics, rackId })
     )
   }
 

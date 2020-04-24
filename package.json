@@ -23,7 +23,7 @@
   },
   "homepage": "https://kafka.js.org",
   "scripts": {
-    "jest": "export KAFKA_VERSION=${KAFKA_VERSION:='2.3'} && NODE_ENV=test echo \"KAFKA_VERSION: ${KAFKA_VERSION}\" && KAFKAJS_DEBUG_PROTOCOL_BUFFERS=1 ./node_modules/.bin/jest",
+    "jest": "export KAFKA_VERSION=${KAFKA_VERSION:='2.4'} && NODE_ENV=test echo \"KAFKA_VERSION: ${KAFKA_VERSION}\" && KAFKAJS_DEBUG_PROTOCOL_BUFFERS=1 ./node_modules/.bin/jest",
     "test:local": "yarn jest --detectOpenHandles",
     "test:debug": "NODE_ENV=test KAFKAJS_DEBUG_PROTOCOL_BUFFERS=1 node --inspect-brk node_modules/.bin/jest --detectOpenHandles --runInBand --watch",
     "test:local:watch": "yarn test:local --watch",

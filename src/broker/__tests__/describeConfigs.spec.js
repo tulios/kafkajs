@@ -116,7 +116,7 @@ describe('Broker > describeConfigs', () => {
         },
         {
           configName: 'message.format.version',
-          configValue: expect.stringMatching(/^(0\.11\.0-IV2|1\.1-IV0|2\.[2,3]-IV1)$/),
+          configValue: expect.stringMatching(/^(0\.11\.0-IV2|1\.1-IV0|2\.[2,4]-IV1)$/),
           isDefault: false,
           isSensitive: false,
           readOnly: false,

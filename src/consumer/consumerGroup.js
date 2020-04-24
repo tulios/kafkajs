@@ -44,6 +44,7 @@ module.exports = class ConsumerGroup {
     autoCommitInterval,
     autoCommitThreshold,
     isolationLevel,
+    rackId,
   }) {
     this.cluster = cluster
     this.groupId = groupId
@@ -62,6 +63,7 @@ module.exports = class ConsumerGroup {
     this.autoCommitInterval = autoCommitInterval
     this.autoCommitThreshold = autoCommitThreshold
     this.isolationLevel = isolationLevel
+    this.rackId = rackId
 
     this.seekOffset = new SeekOffsets()
     this.coordinator = null
@@ -417,6 +419,7 @@ module.exports = class ConsumerGroup {
           maxBytes,
           isolationLevel: this.isolationLevel,
           topics: requestsPerLeader[nodeId],
+          rackId: this.rackId,
         })
 
         const batchesPerPartition = responses.map(({ topicName, partitions }) => {
