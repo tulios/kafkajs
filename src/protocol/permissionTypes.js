@@ -2,9 +2,11 @@
 // https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/common/acl/AclPermissionType.java/#L31
 
 /**
+ * @typedef {number} ACLPermissionTypes
+ *
  * Enum for Permission Types
  * @readonly
- * @enum {PermissionTypes}
+ * @enum {ACLPermissionTypes}
  */
 module.exports = {
   /**

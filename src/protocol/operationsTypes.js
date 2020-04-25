@@ -2,9 +2,11 @@
 // https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/common/acl/AclOperation.java#L44
 
 /**
- * Enum for Acl Operation
+ * @typedef {number} ACLOperationTypes
+ *
+ * Enum for ACL Operations Types
  * @readonly
- * @enum {AclOperation}
+ * @enum {ACLOperationTypes}
  */
 module.exports = {
   /**

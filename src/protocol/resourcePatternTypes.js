@@ -2,9 +2,11 @@
 // https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/common/resource/PatternType.java#L32
 
 /**
- * Enum for Resource Pattern Types
+ * @typedef {number} ACLResourcePatternTypes
+ *
+ * Enum for ACL Resource Pattern Type
  * @readonly
- * @enum {ResourcePatternTypes}
+ * @enum {ACLResourcePatternTypes}
  */
 module.exports = {
   /**

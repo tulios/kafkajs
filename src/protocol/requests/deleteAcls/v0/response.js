@@ -47,7 +47,6 @@ const decode = async rawData => {
 }
 
 const parse = async data => {
-  console.debug('%o', data)
   const filterResponsesWithError = data.filterResponses.filter(({ errorCode }) =>
     failure(errorCode)
   )

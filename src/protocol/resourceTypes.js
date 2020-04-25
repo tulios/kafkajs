@@ -1,6 +1,13 @@
 // From:
 // https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/common/resource/ResourceType.java#L31
 
+/**
+ * @typedef {number} ACLResourceTypes
+ *
+ * Enum for ACL Resource Types
+ * @readonly
+ * @enum {ACLResourceTypes}
+ */
 module.exports = {
   /**
    * Represents any ResourceType which this client cannot understand,
