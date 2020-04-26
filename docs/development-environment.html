@@ -80,7 +80,7 @@ kafkajs_kafka2_1   start-kafka.sh                   Up      0.0.0.0:9095-&gt;909
 kafkajs_kafka3_1   start-kafka.sh                   Up      0.0.0.0:9098-&gt;9098/tcp, 0.0.0.0:9099-&gt;9099/tcp, 0.0.0.0:9100-&gt;9100/tcp
 kafkajs_zk_1       /bin/sh -c /usr/sbin/sshd  ...   Up      0.0.0.0:2181-&gt;2181/tcp, 22/tcp, 2888/tcp, 3888/tcp
 </code></pre>
-<p>The user credentials are listed in <a href="https://github.com/tulios/kafkajs/blob/master/scripts/createScramCredentials.sh">scripts/createScramCredentials.sh</a>.</p>
+<p>The user credentials are listed in <a href="https://github.com/tulios/kafkajs/blob/master/scripts/createScramCredentials.sh">scripts/createScramCredentials.sh</a>. You can also pass in the <code>-h</code> flag to this script for more details and controls.</p>
 <p>You should now be able to connect to your cluster as such:</p>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> fs = <span class="hljs-built_in">require</span>(<span class="hljs-string">'fs'</span>)
 <span class="hljs-keyword">const</span> ip = <span class="hljs-built_in">require</span>(<span class="hljs-string">'ip'</span>)
