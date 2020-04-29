@@ -173,15 +173,15 @@ module.exports = class Encoder {
   }
 
   writeEncoder(value) {
-    if (value instanceof Encoder !== true) {
+    if (value == null || value.buffer == null) {
       throw new Error('value should be an instance of Encoder')
     }
-    this.buffer = Buffer.concat([this.buffer, value.buffer])
-    return this
+
+    return this.writeBuffer(value.buffer)
   }
 
   writeEncoderArray(value) {
-    if (!Array.isArray(value) || value.some(v => !(v instanceof Encoder))) {
+    if (!Array.isArray(value) || value.some(v => v == null || !Buffer.isBuffer(v.buffer))) {
       throw new Error('all values should be an instance of Encoder[]')
     }
 
@@ -194,7 +194,7 @@ module.exports = class Encoder {
   }
 
   writeBuffer(value) {
-    if (value instanceof Buffer !== true) {
+    if (!Buffer.isBuffer(value)) {
       throw new Error('value should be an instance of Buffer')
     }
 
