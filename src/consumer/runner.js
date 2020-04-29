@@ -312,11 +312,12 @@ module.exports = class Runner {
       return
     }
 
-    const enqueuedTasks = []
-    let expectedNumberOfExecutions = 0
-    let numberOfExecutions = 0
-    let requestsCompleted = false
     const { lock, unlock, unlockWithError } = barrier()
+
+    let requestsCompleted = false
+    let numberOfExecutions = 0
+    let expectedNumberOfExecutions = 0
+    const enqueuedTasks = []
 
     while (true) {
       const result = iterator.next()
