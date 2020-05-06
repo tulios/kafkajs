@@ -70,6 +70,15 @@ module.exports = ({
   }
 
   /**
+   * @return {Promise}
+   */
+  const listTopics = async () => {
+    const { topicMetadata } = await cluster.metadata({ topics: [] })
+    const topics = topicMetadata.map(t => t.topic);
+    return topics;
+  }
+
+  /**
    * @param {array} topics
    * @param {boolean} [validateOnly=false]
    * @param {number} [timeout=5000]
@@ -801,6 +810,7 @@ module.exports = ({
   return {
     connect,
     disconnect,
+    listTopics,
     createTopics,
     deleteTopics,
     createPartitions,
