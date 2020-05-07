@@ -47,7 +47,7 @@ const findTopicPartitions = async (cluster, topic) => {
 module.exports = ({
   logger: rootLogger,
   instrumentationEmitter: rootInstrumentationEmitter,
-  retry = { retries: 5 },
+  retry,
   cluster,
 }) => {
   const logger = rootLogger.namespace('Admin')
