@@ -117,7 +117,7 @@ describe('Client', () => {
 
       expect(createConsumer).toHaveBeenCalledWith(
         expect.objectContaining({
-          retry: { retries: 10 },
+          retry: { retries: 5 },
         })
       )
     })
