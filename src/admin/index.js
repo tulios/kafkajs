@@ -73,7 +73,7 @@ module.exports = ({
    * @return {Promise}
    */
   const listTopics = async () => {
-    const { topicMetadata } = await cluster.metadata({ topics: [] })
+    const { topicMetadata } = await cluster.metadata()
     const topics = topicMetadata.map(t => t.topic)
     return topics
   }
