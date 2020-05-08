@@ -25,6 +25,7 @@ The method will throw exceptions in case of errors.
 
 ```javascript
 await admin.listTopics()
+// [ 'topic-1', 'topic-2', 'topic-3', ... ]
 ```
 
 ## <a name="create-topics"></a> Create topics
