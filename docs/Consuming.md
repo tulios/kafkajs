@@ -94,10 +94,10 @@ await consumer.run({
 * `eachBatchAutoResolve` configures auto-resolve of batch processing. If set to true, KafkaJS will automatically commit the last offset of the batch if `eachBatch` doesn't throw an error. Default: true.
 * `batch.highWatermark` is the last committed offset within the topic partition. It can be useful for calculating lag.
 * `resolveOffset()` is used to mark a message in the batch as processed. In case of errors, the consumer will automatically commit the resolved offsets.
-* `async heartbeat()` can be used to send heartbeat to the broker according to the set `heartbeatInterval` value in consumer [configuration](#options).
-* `async commitOffsetsIfNecessary(offsets?)` is used to commit offsets based on the autoCommit configurations (`autoCommitInterval` and `autoCommitThreshold`). Note that auto commit won't happen in `eachBatch` if `commitOffsetsIfNecessary` is not invoked. Take a look at [autoCommit](#auto-commit) for more information.
+* `heartbeat(): Promise<void>` can be used to send heartbeat to the broker according to the set `heartbeatInterval` value in consumer [configuration](#options).
+* `commitOffsetsIfNecessary(offsets?): Promise<void>` is used to commit offsets based on the autoCommit configurations (`autoCommitInterval` and `autoCommitThreshold`). Note that auto commit won't happen in `eachBatch` if `commitOffsetsIfNecessary` is not invoked. Take a look at [autoCommit](#auto-commit) for more information.
 * `uncommittedOffsets()` returns all offsets by topic-partition which have not yet been committed.
-* `isRunning()` returns true is consumer is in running state, else it returns false.
+* `isRunning()` returns true if consumer is in running state, else it returns false.
 * `isStale()` returns whether the messages in the batch have been rendered stale through some other operation and should be discarded. For example, when calling [`consumer.seek`](#seek) the messages in the batch should be discarded, as they are not at the offset we seeked to.
 
 ### Example
