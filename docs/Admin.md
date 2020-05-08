@@ -18,6 +18,16 @@ The option `retry` can be used to customize the configuration for the admin.
 
 Take a look at [Retry](Configuration.md#default-retry) for more information.
 
+## <a name="list-topics"></a> List topics
+
+`listTopics` lists the names of all existing topics, and returns an array of strings.
+The method will throw exceptions in case of errors.
+
+```javascript
+await admin.listTopics()
+// [ 'topic-1', 'topic-2', 'topic-3', ... ]
+```
+
 ## <a name="create-topics"></a> Create topics
 
 `createTopics` will resolve to `true` if the topic was created successfully or `false` if it already exists. The method will throw exceptions in case of errors.
