@@ -295,6 +295,7 @@ export interface SeekEntry {
 export type Admin = {
   connect(): Promise<void>
   disconnect(): Promise<void>
+  listTopics(): Promise<string[]>
   createTopics(options: {
     validateOnly?: boolean
     waitForLeaders?: boolean
