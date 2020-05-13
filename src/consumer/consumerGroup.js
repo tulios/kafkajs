@@ -217,7 +217,7 @@ module.exports = class ConsumerGroup {
           assignedPartitions,
         })
 
-        // If the consumer is not aware of all assigned partions, refresh metadata
+        // If the consumer is not aware of all assigned partitions, refresh metadata
         // and update the list of partitions per subscribed topic. It's enough to perform
         // this operation once since refresh metadata will update metadata for all topics
         await this.cluster.refreshMetadata()

@@ -336,7 +336,7 @@ module.exports = ({
 
         if (metadata !== null && typeof metadata !== 'string') {
           throw new KafkaJSNonRetriableError(
-            `Invalid offset metatadta, expected string or null, received ${metadata}`
+            `Invalid offset metadata, expected string or null, received ${metadata}`
           )
         }
 
