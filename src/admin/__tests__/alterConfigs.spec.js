@@ -89,7 +89,7 @@ describe('Admin', () => {
       )
     })
 
-    test('throws an error if there are invalid resource configEntriy values', async () => {
+    test('throws an error if there are invalid resource configEntry values', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
       const resources = [
         {

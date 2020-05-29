@@ -83,7 +83,7 @@ module.exports = ({
 
   /**
    * Begin a transaction. The returned object contains methods to send messages
-   * to the transaction and end the transaction by comitting or aborting.
+   * to the transaction and end the transaction by committing or aborting.
    *
    * Only messages sent on the transaction object will participate in the transaction.
    *
