@@ -620,7 +620,7 @@ export interface EachBatchPayload {
   resolveOffset(offset: string): void
   heartbeat(): Promise<void>
   commitOffsetsIfNecessary(offsets?: Offsets): Promise<void>
-  uncommittedOffsets(): Promise<OffsetsByTopicPartition>
+  uncommittedOffsets(): OffsetsByTopicPartition
   isRunning(): boolean
   isStale(): boolean
 }
