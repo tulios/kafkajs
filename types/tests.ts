@@ -173,6 +173,8 @@ const runAdmin = async () => {
     })
   })
 
+  await admin.listTopics()
+
   await admin.createTopics({
     topics: [{ topic, numPartitions: 10, replicationFactor: 1 }],
     timeout: 30000,
