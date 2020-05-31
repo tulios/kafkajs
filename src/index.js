@@ -116,7 +116,7 @@ module.exports = class Client {
     minBytes,
     maxBytes,
     maxWaitTimeInMs,
-    retry,
+    retry = { retries: 5 },
     allowAutoTopicCreation,
     maxInFlightRequests,
     readUncommitted = false,

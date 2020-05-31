@@ -1,3 +1,4 @@
+const EventEmitter = require('events')
 const Long = require('long')
 const createRetry = require('../retry')
 const limitConcurrency = require('../utils/concurrency')
@@ -15,8 +16,10 @@ const isRebalancing = e =>
 
 const isKafkaJSError = e => e instanceof KafkaJSError
 const isSameOffset = (offsetA, offsetB) => Long.fromValue(offsetA).equals(Long.fromValue(offsetB))
+const CONSUMING_START = 'consuming-start'
+const CONSUMING_STOP = 'consuming-stop'
 
-module.exports = class Runner {
+module.exports = class Runner extends EventEmitter {
   constructor({
     logger,
     consumerGroup,
@@ -30,6 +33,7 @@ module.exports = class Runner {
     retry,
     autoCommit = true,
   }) {
+    super()
     this.logger = logger.namespace('Runner')
     this.consumerGroup = consumerGroup
     this.instrumentationEmitter = instrumentationEmitter
@@ -44,6 +48,17 @@ module.exports = class Runner {
 
     this.running = false
     this.consuming = false
+  }
+
+  get consuming() {
+    return this._consuming
+  }
+
+  set consuming(value) {
+    if (this._consuming !== value) {
+      this._consuming = value
+      this.emit(value ? CONSUMING_START : CONSUMING_STOP)
+    }
   }
 
   async join() {
@@ -135,20 +150,14 @@ module.exports = class Runner {
 
   waitForConsumer() {
     return new Promise(resolve => {
-      const scheduleWait = () => {
-        this.logger.debug('waiting for consumer to finish...', {
-          groupId: this.consumerGroup.groupId,
-          memberId: this.consumerGroup.memberId,
-        })
-
-        setTimeout(() => (!this.consuming ? resolve() : scheduleWait()), 1000)
-      }
-
       if (!this.consuming) {
         return resolve()
       }
-
-      scheduleWait()
+      this.logger.debug('waiting for consumer to finish...', {
+        groupId: this.consumerGroup.groupId,
+        memberId: this.consumerGroup.memberId,
+      })
+      this.once(CONSUMING_STOP, () => resolve())
     })
   }
 

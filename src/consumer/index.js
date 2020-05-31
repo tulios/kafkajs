@@ -26,6 +26,7 @@ const specialOffsets = [
 module.exports = ({
   cluster,
   groupId,
+  retry,
   logger: rootLogger,
   partitionAssigners = [roundRobin],
   sessionTimeout = 30000,
@@ -35,7 +36,6 @@ module.exports = ({
   minBytes = 1,
   maxBytes = 10485760, // 10MB
   maxWaitTimeInMs = 5000,
-  retry = { retries: 10 },
   isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
   instrumentationEmitter: rootInstrumentationEmitter,
 }) => {
@@ -336,7 +336,7 @@ module.exports = ({
 
         if (metadata !== null && typeof metadata !== 'string') {
           throw new KafkaJSNonRetriableError(
-            `Invalid offset metatadta, expected string or null, received ${metadata}`
+            `Invalid offset metadata, expected string or null, received ${metadata}`
           )
         }
 

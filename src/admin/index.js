@@ -47,7 +47,7 @@ const findTopicPartitions = async (cluster, topic) => {
 module.exports = ({
   logger: rootLogger,
   instrumentationEmitter: rootInstrumentationEmitter,
-  retry = { retries: 5 },
+  retry,
   cluster,
 }) => {
   const logger = rootLogger.namespace('Admin')
@@ -67,6 +67,15 @@ module.exports = ({
   const disconnect = async () => {
     await cluster.disconnect()
     instrumentationEmitter.emit(DISCONNECT)
+  }
+
+  /**
+   * @return {Promise}
+   */
+  const listTopics = async () => {
+    const { topicMetadata } = await cluster.metadata()
+    const topics = topicMetadata.map(t => t.topic)
+    return topics
   }
 
   /**
@@ -801,6 +810,7 @@ module.exports = ({
   return {
     connect,
     disconnect,
+    listTopics,
     createTopics,
     deleteTopics,
     createPartitions,
