@@ -208,10 +208,10 @@ describe('Consumer > Runner', () => {
   })
 
   it('calls onCrash for any other errors', async () => {
-    const unknowError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
+    const unknownError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
     consumerGroup.join
       .mockImplementationOnce(() => {
-        throw unknowError
+        throw unknownError
       })
       .mockImplementationOnce(() => true)
 
@@ -223,7 +223,7 @@ describe('Consumer > Runner', () => {
     await sleep(100)
 
     expect(runner.scheduleFetch).not.toHaveBeenCalled()
-    expect(onCrash).toHaveBeenCalledWith(unknowError)
+    expect(onCrash).toHaveBeenCalledWith(unknownError)
   })
 
   it('crashes on KafkaJSNotImplemented errors', async () => {
@@ -333,9 +333,9 @@ describe('Consumer > Runner', () => {
     })
 
     it('a triggered rejoin failing should cause a crash', async () => {
-      const unknowError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
+      const unknownError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
       consumerGroup.join.mockImplementationOnce(() => {
-        throw unknowError
+        throw unknownError
       })
       consumerGroup.commitOffsets.mockImplementationOnce(() => {
         throw rebalancingError()
@@ -345,7 +345,7 @@ describe('Consumer > Runner', () => {
 
       await sleep(100)
 
-      expect(onCrash).toHaveBeenCalledWith(unknowError)
+      expect(onCrash).toHaveBeenCalledWith(unknownError)
     })
   })
 })
