@@ -173,15 +173,15 @@ module.exports = class Encoder {
   }
 
   writeEncoder(value) {
-    if (value instanceof Encoder !== true) {
+    if (value == null || value.buffer == null) {
       throw new Error('value should be an instance of Encoder')
     }
-    this.buffer = Buffer.concat([this.buffer, value.buffer])
-    return this
+
+    return this.writeBuffer(value.buffer)
   }
 
   writeEncoderArray(value) {
-    if (!Array.isArray(value) || value.some(v => !(v instanceof Encoder))) {
+    if (!Array.isArray(value) || value.some(v => v == null || !Buffer.isBuffer(v.buffer))) {
       throw new Error('all values should be an instance of Encoder[]')
     }
 
@@ -194,7 +194,7 @@ module.exports = class Encoder {
   }
 
   writeBuffer(value) {
-    if (value instanceof Buffer !== true) {
+    if (!Buffer.isBuffer(value)) {
       throw new Error('value should be an instance of Buffer')
     }
 
@@ -202,6 +202,10 @@ module.exports = class Encoder {
     return this
   }
 
+  /**
+   * @param {any[]} array
+   * @param {'int32'|'number'|'string'|'object'} [type]
+   */
   writeNullableArray(array, type) {
     // A null value is encoded with length of -1 and there are no following bytes
     // On the context of this library, empty array and null are the same thing
@@ -209,6 +213,11 @@ module.exports = class Encoder {
     return this.writeArray(array, type, length)
   }
 
+  /**
+   * @param {any[]} array
+   * @param {'int32'|'number'|'string'|'object'} [type]
+   * @param {number} [length]
+   */
   writeArray(array, type, length) {
     const arrayLength = length == null ? array.length : length
     this.writeInt32(arrayLength)
@@ -228,7 +237,6 @@ module.exports = class Encoder {
     } else {
       array.forEach(value => {
         switch (typeof value) {
-          case 'int32':
           case 'number':
             this.writeInt32(value)
             break

@@ -1,3 +1,4 @@
+const EventEmitter = require('events')
 const Long = require('long')
 const createRetry = require('../retry')
 const limitConcurrency = require('../utils/concurrency')
@@ -15,8 +16,10 @@ const isRebalancing = e =>
 
 const isKafkaJSError = e => e instanceof KafkaJSError
 const isSameOffset = (offsetA, offsetB) => Long.fromValue(offsetA).equals(Long.fromValue(offsetB))
+const CONSUMING_START = 'consuming-start'
+const CONSUMING_STOP = 'consuming-stop'
 
-module.exports = class Runner {
+module.exports = class Runner extends EventEmitter {
   constructor({
     logger,
     consumerGroup,
@@ -30,6 +33,7 @@ module.exports = class Runner {
     retry,
     autoCommit = true,
   }) {
+    super()
     this.logger = logger.namespace('Runner')
     this.consumerGroup = consumerGroup
     this.instrumentationEmitter = instrumentationEmitter
@@ -44,6 +48,17 @@ module.exports = class Runner {
 
     this.running = false
     this.consuming = false
+  }
+
+  get consuming() {
+    return this._consuming
+  }
+
+  set consuming(value) {
+    if (this._consuming !== value) {
+      this._consuming = value
+      this.emit(value ? CONSUMING_START : CONSUMING_STOP)
+    }
   }
 
   async join() {
@@ -135,20 +150,14 @@ module.exports = class Runner {
 
   waitForConsumer() {
     return new Promise(resolve => {
-      const scheduleWait = () => {
-        this.logger.debug('waiting for consumer to finish...', {
-          groupId: this.consumerGroup.groupId,
-          memberId: this.consumerGroup.memberId,
-        })
-
-        setTimeout(() => (!this.consuming ? resolve() : scheduleWait()), 1000)
-      }
-
       if (!this.consuming) {
         return resolve()
       }
-
-      scheduleWait()
+      this.logger.debug('waiting for consumer to finish...', {
+        groupId: this.consumerGroup.groupId,
+        memberId: this.consumerGroup.memberId,
+      })
+      this.once(CONSUMING_STOP, () => resolve())
     })
   }
 
@@ -312,10 +321,12 @@ module.exports = class Runner {
       return
     }
 
-    const enqueuedTasks = []
-    let expectedNumberOfExecutions = 0
-    let numberOfExecutions = 0
     const { lock, unlock, unlockWithError } = barrier()
+
+    let requestsCompleted = false
+    let numberOfExecutions = 0
+    let expectedNumberOfExecutions = 0
+    const enqueuedTasks = []
 
     while (true) {
       const result = iterator.next()
@@ -348,7 +359,7 @@ module.exports = class Runner {
               unlockWithError(e)
             } finally {
               numberOfExecutions++
-              if (numberOfExecutions === expectedNumberOfExecutions) {
+              if (requestsCompleted && numberOfExecutions === expectedNumberOfExecutions) {
                 unlock()
               }
             }
@@ -362,7 +373,17 @@ module.exports = class Runner {
     }
 
     await Promise.all(enqueuedTasks.map(fn => fn()))
-    await lock
+    requestsCompleted = true
+
+    if (expectedNumberOfExecutions === numberOfExecutions) {
+      unlock()
+    }
+
+    const error = await lock
+    if (error) {
+      throw error
+    }
+
     await this.autoCommitOffsets()
     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
   }

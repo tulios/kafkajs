@@ -9,5 +9,5 @@ module.exports = {
   testEnvironment: 'node',
   testRegex: '(/__tests__/.*\\.spec\\.js|(\\.|/)spec)\\.jsx?$',
   reporters: ['default', 'jest-junit'],
-  bail: true,
+  bail: false,
 }

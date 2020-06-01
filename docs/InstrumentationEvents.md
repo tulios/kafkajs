@@ -3,8 +3,6 @@ id: instrumentation-events
 title: Instrumentation Events
 ---
 
-> **Experimental** - This feature may be removed or changed in new versions of KafkaJS
-
 Some operations are instrumented using `EventEmitter`. To receive the events use the method `consumer#on`, `producer#on` and `admin#on`, example:
 
 ```javascript

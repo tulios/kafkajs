@@ -64,7 +64,10 @@ module.exports = class Connection {
     this.requestTimeout = requestTimeout
     this.connectionTimeout = connectionTimeout
 
-    this.buffer = Buffer.alloc(0)
+    this.bytesBuffered = 0
+    this.bytesNeeded = Decoder.int32Size()
+    this.chunks = []
+
     this.connected = false
     this.correlationId = 0
     this.requestQueue = new RequestQueue({
@@ -371,26 +374,36 @@ module.exports = class Connection {
       return this.authHandlers.onSuccess(rawData)
     }
 
-    this.buffer = Buffer.concat([this.buffer, rawData])
+    // Accumulate the new chunk
+    this.chunks.push(rawData)
+    this.bytesBuffered += Buffer.byteLength(rawData)
 
     // Process data if there are enough bytes to read the expected response size,
     // otherwise keep buffering
-    while (Buffer.byteLength(this.buffer) > Decoder.int32Size()) {
-      const data = Buffer.from(this.buffer)
-      const decoder = new Decoder(data)
+    while (this.bytesNeeded <= this.bytesBuffered) {
+      const buffer = this.chunks.length > 1 ? Buffer.concat(this.chunks) : this.chunks[0]
+      const decoder = new Decoder(buffer)
       const expectedResponseSize = decoder.readInt32()
 
+      // Return early if not enough bytes to read the full response
       if (!decoder.canReadBytes(expectedResponseSize)) {
+        this.chunks = [buffer]
+        this.bytesBuffered = Buffer.byteLength(buffer)
+        this.bytesNeeded = Decoder.int32Size() + expectedResponseSize
         return
       }
 
       const response = new Decoder(decoder.readBytes(expectedResponseSize))
-      // Reset the buffer as the rest of the bytes
-      this.buffer = decoder.readAll()
+
+      // Reset the buffered chunks as the rest of the bytes
+      const remainderBuffer = decoder.readAll()
+      this.chunks = [remainderBuffer]
+      this.bytesBuffered = Buffer.byteLength(remainderBuffer)
+      this.bytesNeeded = Decoder.int32Size()
 
       if (this.authHandlers) {
         const rawResponseSize = Decoder.int32Size() + expectedResponseSize
-        const rawResponseBuffer = data.slice(0, rawResponseSize)
+        const rawResponseBuffer = buffer.slice(0, rawResponseSize)
         return this.authHandlers.onSuccess(rawResponseBuffer)
       }
 

@@ -84,7 +84,7 @@ describe('Admin', () => {
       expect(offsets).toEqual([{ partition: 0, offset: '-2', metadata: null }])
     })
 
-    test('throws an error if the consumer group is runnig', async () => {
+    test('throws an error if the consumer group is running', async () => {
       consumer = createConsumer({ groupId, cluster: createCluster(), logger: newLogger() })
       await consumer.connect()
       await consumer.subscribe({ topic: topicName })

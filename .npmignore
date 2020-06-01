@@ -31,3 +31,4 @@ logo
 *.java
 types/tests.ts
 types/tsconfig.json
+.github/

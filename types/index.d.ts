@@ -105,9 +105,7 @@ export interface ConsumerConfig {
   readUncommitted?: boolean
 }
 
-export interface PartitionAssigner {
-  new(config: { cluster: Cluster }): Assigner
-}
+export type PartitionAssigner = (config: { cluster: Cluster }) => Assigner
 
 export interface CoordinatorMetadata {
   errorCode: number
@@ -297,6 +295,7 @@ export interface SeekEntry {
 export type Admin = {
   connect(): Promise<void>
   disconnect(): Promise<void>
+  listTopics(): Promise<string[]>
   createTopics(options: {
     validateOnly?: boolean
     waitForLeaders?: boolean
@@ -621,7 +620,7 @@ export interface EachBatchPayload {
   resolveOffset(offset: string): void
   heartbeat(): Promise<void>
   commitOffsetsIfNecessary(offsets?: Offsets): Promise<void>
-  uncommittedOffsets(): Promise<OffsetsByTopicPartition>
+  uncommittedOffsets(): OffsetsByTopicPartition
   isRunning(): boolean
   isStale(): boolean
 }
