@@ -91,7 +91,7 @@ new Kafka({
 })
 ```
 
-The sasl object must include a property named oauthBearerProvider, an
+The `sasl` object must include a property named `oauthBearerProvider`, an
 async function that is used to return the OAuth bearer token.
 
 The OAuth bearer token must be an object with properties value and
