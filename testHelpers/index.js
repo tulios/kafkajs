@@ -226,6 +226,20 @@ const flakyTest = (description, callback, testFn = test) =>
   testFn(`[flaky] ${description}`, callback)
 flakyTest.skip = (description, callback) => flakyTest(description, callback, test.skip)
 flakyTest.only = (description, callback) => flakyTest(description, callback, test.only)
+const describeIfEnv = (key, value) => (description, callback, describeFn = describe) => {
+  return value === process.env[key]
+    ? describeFn(description, callback)
+    : describe.skip(description, callback)
+}
+
+const describeIfNotEnv = (key, value) => (description, callback, describeFn = describe) => {
+  return value !== process.env[key]
+    ? describeFn(description, callback)
+    : describe.skip(description, callback)
+}
+
+const describeIfOauthbearerEnabled = describeIfEnv('OAUTHBEARER_ENABLED', '1')
+const describeIfOauthbearerDisabled = describeIfNotEnv('OAUTHBEARER_ENABLED', '1')
 
 const unsupportedVersionResponse = () => Buffer.from({ type: 'Buffer', data: [0, 35, 0, 0, 0, 0] })
 const unsupportedVersionResponseWithTimeout = () =>
@@ -271,6 +285,8 @@ module.exports = {
   testIfKafka_0_11,
   testIfKafka_1_1_0,
   flakyTest,
+  describeIfOauthbearerEnabled,
+  describeIfOauthbearerDisabled,
   addPartitions,
   unsupportedVersionResponse,
   generateMessages,

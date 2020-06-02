@@ -37,6 +37,7 @@ const {
   testIfKafka_0_11,
   createTopic,
   waitForMessages,
+  describeIfOauthbearerDisabled,
 } = require('testHelpers')
 const createRetrier = require('../retry')
 
@@ -91,79 +92,81 @@ describe('Producer', () => {
     await producer.connect()
   })
 
-  test('support SASL PLAIN connections', async () => {
-    const cluster = createCluster(
-      Object.assign(sslConnectionOpts(), {
-        sasl: {
-          mechanism: 'plain',
-          username: 'test',
-          password: 'testtest',
-        },
-      }),
-      saslBrokers()
-    )
-    producer = createProducer({ cluster, logger: newLogger() })
-    await producer.connect()
-  })
+  describeIfOauthbearerDisabled('when SASL PLAIN and SCRAM are configured', () => {
+    test('support SASL PLAIN connections', async () => {
+      const cluster = createCluster(
+        Object.assign(sslConnectionOpts(), {
+          sasl: {
+            mechanism: 'plain',
+            username: 'test',
+            password: 'testtest',
+          },
+        }),
+        saslBrokers()
+      )
+      producer = createProducer({ cluster, logger: newLogger() })
+      await producer.connect()
+    })
 
-  test('support SASL SCRAM 256 connections', async () => {
-    const cluster = createCluster(saslSCRAM256ConnectionOpts(), saslBrokers())
-    producer = createProducer({ cluster, logger: newLogger() })
-    await producer.connect()
-  })
+    test('support SASL SCRAM 256 connections', async () => {
+      const cluster = createCluster(saslSCRAM256ConnectionOpts(), saslBrokers())
+      producer = createProducer({ cluster, logger: newLogger() })
+      await producer.connect()
+    })
 
-  test('support SASL SCRAM 512 connections', async () => {
-    const cluster = createCluster(saslSCRAM512ConnectionOpts(), saslBrokers())
-    producer = createProducer({ cluster, logger: newLogger() })
-    await producer.connect()
-  })
+    test('support SASL SCRAM 512 connections', async () => {
+      const cluster = createCluster(saslSCRAM512ConnectionOpts(), saslBrokers())
+      producer = createProducer({ cluster, logger: newLogger() })
+      await producer.connect()
+    })
 
-  test('throws an error if SASL PLAIN fails to authenticate', async () => {
-    const cluster = createCluster(
-      Object.assign(sslConnectionOpts(), {
-        sasl: {
-          mechanism: 'plain',
-          username: 'wrong',
-          password: 'wrong',
-        },
-      }),
-      saslBrokers()
-    )
+    test('throws an error if SASL PLAIN fails to authenticate', async () => {
+      const cluster = createCluster(
+        Object.assign(sslConnectionOpts(), {
+          sasl: {
+            mechanism: 'plain',
+            username: 'wrong',
+            password: 'wrong',
+          },
+        }),
+        saslBrokers()
+      )
 
-    producer = createProducer({ cluster, logger: newLogger() })
-    await expect(producer.connect()).rejects.toThrow(/SASL PLAIN authentication failed/)
-  })
+      producer = createProducer({ cluster, logger: newLogger() })
+      await expect(producer.connect()).rejects.toThrow(/SASL PLAIN authentication failed/)
+    })
 
-  test('throws an error if SASL SCRAM 256 fails to authenticate', async () => {
-    const cluster = createCluster(
-      Object.assign(sslConnectionOpts(), {
-        sasl: {
-          mechanism: 'SCRAM-SHA-256',
-          username: 'wrong',
-          password: 'wrong',
-        },
-      }),
-      saslBrokers()
-    )
+    test('throws an error if SASL SCRAM 256 fails to authenticate', async () => {
+      const cluster = createCluster(
+        Object.assign(sslConnectionOpts(), {
+          sasl: {
+            mechanism: 'SCRAM-SHA-256',
+            username: 'wrong',
+            password: 'wrong',
+          },
+        }),
+        saslBrokers()
+      )
 
-    producer = createProducer({ cluster, logger: newLogger() })
-    await expect(producer.connect()).rejects.toThrow(/SASL SCRAM SHA256 authentication failed/)
-  })
+      producer = createProducer({ cluster, logger: newLogger() })
+      await expect(producer.connect()).rejects.toThrow(/SASL SCRAM SHA256 authentication failed/)
+    })
 
-  test('throws an error if SASL SCRAM 512 fails to authenticate', async () => {
-    const cluster = createCluster(
-      Object.assign(sslConnectionOpts(), {
-        sasl: {
-          mechanism: 'SCRAM-SHA-512',
-          username: 'wrong',
-          password: 'wrong',
-        },
-      }),
-      saslBrokers()
-    )
+    test('throws an error if SASL SCRAM 512 fails to authenticate', async () => {
+      const cluster = createCluster(
+        Object.assign(sslConnectionOpts(), {
+          sasl: {
+            mechanism: 'SCRAM-SHA-512',
+            username: 'wrong',
+            password: 'wrong',
+          },
+        }),
+        saslBrokers()
+      )
 
-    producer = createProducer({ cluster, logger: newLogger() })
-    await expect(producer.connect()).rejects.toThrow(/SASL SCRAM SHA512 authentication failed/)
+      producer = createProducer({ cluster, logger: newLogger() })
+      await expect(producer.connect()).rejects.toThrow(/SASL SCRAM SHA512 authentication failed/)
+    })
   })
 
   test('reconnects the cluster if disconnected', async () => {
