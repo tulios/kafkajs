@@ -708,6 +708,55 @@ module.exports = ({
   }
 
   /**
+   * Describe groups by group ids
+   * @param {Array<string>} groupIds
+   *
+   * @typedef {Object} GroupDescriptions
+   * @property {Array<GroupDescription>} groups
+   *
+   * @return {Promise<GroupDescriptions>}
+   */
+  const describeGroups = async groupIds => {
+    const coordinatorsForGroup = await Promise.all(
+      groupIds.map(async groupId => {
+        const coordinator = await cluster.findGroupCoordinator({ groupId })
+        return {
+          coordinator,
+          groupId,
+        }
+      })
+    )
+
+    const groupsByCoordinator = Object.values(
+      coordinatorsForGroup.reduce((coordinators, { coordinator, groupId }) => {
+        const group = coordinators[coordinator.nodeId]
+
+        if (group) {
+          coordinators[coordinator.nodeId] = {
+            ...group,
+            groupIds: [...group.groupIds, groupId],
+          }
+        } else {
+          coordinators[coordinator.nodeId] = { coordinator, groupIds: [groupId] }
+        }
+        return coordinators
+      }, {})
+    )
+
+    const responses = await Promise.all(
+      groupsByCoordinator.map(async ({ coordinator, groupIds }) => {
+        const retrier = createRetry(retry)
+        const { groups } = await retrier(() => coordinator.describeGroups({ groupIds }))
+        return groups
+      })
+    )
+
+    const groups = [].concat.apply([], responses)
+
+    return { groups }
+  }
+
+  /**
    * Delete groups in a broker
    *
    * @param {string[]} [groupIds]
@@ -827,6 +876,7 @@ module.exports = ({
     on,
     logger: getLogger,
     listGroups,
+    describeGroups,
     deleteGroups,
   }
 }
