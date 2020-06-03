@@ -2,7 +2,9 @@ const shuffle = require('./shuffle')
 
 describe('Utils > shuffle', () => {
   it('shuffles', () => {
-    const array = [1, 2, 3]
+    const array = Array(500)
+      .fill()
+      .map((_, i) => i)
     const shuffled = shuffle(array)
 
     expect(shuffled).not.toEqual(array)
