@@ -4,6 +4,8 @@ title: Getting Started
 sidebar_label: Getting Started
 ---
 
+> This documentation is generated from latest `master`. There may be differences from the current stable version of KafkaJS. Contributions setting up [versioned documentation](https://github.com/tulios/kafkajs/issues/279) are welcome.
+
 Install KafkaJS using [`yarn`](https://yarnpkg.com/en/package/kafkajs):
 
 ```bash
