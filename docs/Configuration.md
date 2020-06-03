@@ -151,7 +151,7 @@ __Available options:__
 | multiplier          | Exponential factor                                                                                                      | `2`                 |
 | retries             | Max number of retries per call                                                                                          | `5`                 |
 | maxInFlightRequests | Max number of requests that may be in progress at any time. If falsey then no limit.                                    | `null` _(no limit)_ |
-| restartOnFailure | Only used in consumer. See [`restartOnFailure`](#restart-on-failure) | `async () => true`
+| restartOnFailure    | Only used in consumer. See [`restartOnFailure`](#restart-on-failure)                                                    | `async () => true`  |
 
 Example:
 
