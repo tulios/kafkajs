@@ -60,6 +60,16 @@ const saslConnectionOpts = () =>
     },
   })
 
+const saslWrongConnectionOpts = () =>
+  Object.assign(sslConnectionOpts(), {
+    port: 9094,
+    sasl: {
+      mechanism: 'plain',
+      username: 'wrong',
+      password: 'wrong',
+    },
+  })
+
 const saslSCRAM256ConnectionOpts = () =>
   Object.assign(sslConnectionOpts(), {
     port: 9094,
@@ -70,6 +80,16 @@ const saslSCRAM256ConnectionOpts = () =>
     },
   })
 
+const saslSCRAM256WrongConnectionOpts = () =>
+  Object.assign(sslConnectionOpts(), {
+    port: 9094,
+    sasl: {
+      mechanism: 'scram-sha-256',
+      username: 'wrong',
+      password: 'wrong',
+    },
+  })
+
 const saslSCRAM512ConnectionOpts = () =>
   Object.assign(sslConnectionOpts(), {
     port: 9094,
@@ -77,6 +97,16 @@ const saslSCRAM512ConnectionOpts = () =>
       mechanism: 'scram-sha-512',
       username: 'testscram',
       password: 'testtestscram=512',
+    },
+  })
+
+const saslSCRAM512WrongConnectionOpts = () =>
+  Object.assign(sslConnectionOpts(), {
+    port: 9094,
+    sasl: {
+      mechanism: 'scram-sha-512',
+      username: 'wrong',
+      password: 'wrong',
     },
   })
 
@@ -94,6 +124,39 @@ const saslOAuthBearerConnectionOpts = () =>
       },
     },
   })
+
+/**
+ * List of the possible SASL setups.
+ * OAUTHBEARER must be enabled as a special case.
+ */
+const saslEntries = []
+if (process.env['OAUTHBEARER_ENABLED'] !== '1') {
+  saslEntries.push({
+    name: 'PLAIN',
+    opts: saslConnectionOpts,
+    wrongOpts: saslWrongConnectionOpts,
+    expectedErr: /SASL PLAIN authentication failed/,
+  })
+
+  saslEntries.push({
+    name: 'SCRAM 256',
+    opts: saslSCRAM256ConnectionOpts,
+    wrongOpts: saslSCRAM256WrongConnectionOpts,
+    expectedErr: /SASL SCRAM SHA256 authentication failed/,
+  })
+
+  saslEntries.push({
+    name: 'SCRAM 512',
+    opts: saslSCRAM512ConnectionOpts,
+    wrongOpts: saslSCRAM512WrongConnectionOpts,
+    expectedErr: /SASL SCRAM SHA512 authentication failed/,
+  })
+} else {
+  saslEntries.push({
+    name: 'OAUTHBEARER',
+    opts: saslOAuthBearerConnectionOpts,
+  })
+}
 
 const createConnection = (opts = {}) => new Connection(Object.assign(connectionOpts(), opts))
 
@@ -238,6 +301,11 @@ const describeIfNotEnv = (key, value) => (description, callback, describeFn = de
     : describe.skip(description, callback)
 }
 
+/**
+ * Conditional describes for SASL OAUTHBEARER.
+ * OAUTHBEARER must be enabled as a special case as current Kafka impl
+ * doesn't allow it to be enabled aside of other SASL mechanisms.
+ */
 const describeIfOauthbearerEnabled = describeIfEnv('OAUTHBEARER_ENABLED', '1')
 const describeIfOauthbearerDisabled = describeIfNotEnv('OAUTHBEARER_ENABLED', '1')
 
@@ -268,6 +336,7 @@ module.exports = {
   saslSCRAM256ConnectionOpts,
   saslSCRAM512ConnectionOpts,
   saslOAuthBearerConnectionOpts,
+  saslEntries,
   createConnection,
   createConnectionBuilder,
   createCluster,

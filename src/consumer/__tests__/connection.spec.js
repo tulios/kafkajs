@@ -8,15 +8,11 @@ const {
   createModPartitioner,
   newLogger,
   sslConnectionOpts,
-  saslSCRAM256ConnectionOpts,
-  saslSCRAM512ConnectionOpts,
-  saslOAuthBearerConnectionOpts,
+  saslEntries,
   sslBrokers,
   saslBrokers,
   waitFor,
   waitForConsumerToJoinGroup,
-  describeIfOauthbearerEnabled,
-  describeIfOauthbearerDisabled,
 } = require('testHelpers')
 
 describe('Consumer', () => {
@@ -47,18 +43,9 @@ describe('Consumer', () => {
     await consumer.connect()
   })
 
-  describeIfOauthbearerDisabled('when SASL PLAIN and SCRAM are configured', () => {
-    test('support SASL PLAIN connections', async () => {
-      cluster = createCluster(
-        Object.assign(sslConnectionOpts(), {
-          sasl: {
-            mechanism: 'plain',
-            username: 'test',
-            password: 'testtest',
-          },
-        }),
-        saslBrokers()
-      )
+  for (const e of saslEntries) {
+    test(`support SASL ${e.name} connections`, async () => {
+      cluster = createCluster(e.opts(), saslBrokers())
 
       consumer = createConsumer({
         cluster,
@@ -69,48 +56,7 @@ describe('Consumer', () => {
 
       await consumer.connect()
     })
-
-    test('support SASL SCRAM 256 connections', async () => {
-      cluster = createCluster(saslSCRAM256ConnectionOpts(), saslBrokers())
-
-      consumer = createConsumer({
-        cluster,
-        groupId,
-        maxWaitTimeInMs: 1,
-        logger: newLogger(),
-      })
-
-      await consumer.connect()
-    })
-
-    test('support SASL SCRAM 512 connections', async () => {
-      cluster = createCluster(saslSCRAM512ConnectionOpts(), saslBrokers())
-
-      consumer = createConsumer({
-        cluster,
-        groupId,
-        maxWaitTimeInMs: 1,
-        logger: newLogger(),
-      })
-
-      await consumer.connect()
-    })
-  })
-
-  describeIfOauthbearerEnabled('when SASL OAUTHBEARER is configured', () => {
-    test('support SASL OAUTHBEARER connections', async () => {
-      cluster = createCluster(saslOAuthBearerConnectionOpts(), saslBrokers())
-
-      consumer = createConsumer({
-        cluster,
-        groupId,
-        maxWaitTimeInMs: 1,
-        logger: newLogger(),
-      })
-
-      await consumer.connect()
-    })
-  })
+  }
 
   test('reconnects the cluster if disconnected', async () => {
     consumer = createConsumer({
