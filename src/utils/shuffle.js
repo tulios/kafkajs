@@ -11,7 +11,7 @@ module.exports = array => {
 
   let shuffled = [...array]
 
-  while (shuffled.every((value, index) => value === array[index])) {
+  while (!shuffled.some((value, index) => value !== array[index])) {
     shuffled = shuffle(shuffled)
   }
 
