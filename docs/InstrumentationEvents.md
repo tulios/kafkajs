@@ -25,74 +25,29 @@ Instrumentation Event:
 }
 ```
 
+Events which have `payload.duration` defined, it represent the time between the current event and the last event.
+
+
 ## <a name="list"> List of available events:
 
 ### <a name="consumer"></a> Consumer
 
-* consumer.events.HEARTBEAT  
-  payload: {`groupId`, `memberId`, `groupGenerationId`}
-
-* consumer.events.COMMIT_OFFSETS  
-  payload: {`groupId`, `memberId`, `groupGenerationId`, `topics`}
-
-* consumer.events.GROUP_JOIN  
-  payload: {`groupId`, `memberId`, `leaderId`, `isLeader`, `memberAssignment`, `duration`}
-
-* consumer.events.FETCH_START
-  payload: {}
-
-* consumer.events.FETCH
-  payload: {`numberOfBatches`, `duration`}
-
-* consumer.events.START_BATCH_PROCESS  
-  payload: {`topic`, `partition`, `highWatermark`, `offsetLag`, `offsetLagLow`, `batchSize`, `firstOffset`, `lastOffset`}
-
-* consumer.events.END_BATCH_PROCESS  
-  payload: {`topic`, `partition`, `highWatermark`, `offsetLag`, `offsetLagLow`, `batchSize`, `firstOffset`, `lastOffset`, `duration`}
-
-* consumer.events.CONNECT
-
-* consumer.events.DISCONNECT
-
-* consumer.events.STOP
-
-* consumer.events.CRASH
-  payload: {`error`, `groupId`}
-
-* consumer.events.REQUEST
-  payload: {
-    `broker`,
-    `clientId`,
-    `correlationId`,
-    `size`,
-    `createdAt`,
-    `sentAt`,
-    `pendingDuration`,
-    `duration`,
-    `apiName`,
-    `apiKey`,
-    `apiVersion`
-  }
-
-* consumer.events.REQUEST_TIMEOUT
-  payload: {
-    `broker`,
-    `clientId`,
-    `correlationId`,
-    `createdAt`,
-    `sentAt`,
-    `pendingDuration`,
-    `apiName`,
-    `apiKey`,
-    `apiVersion`
-  }
-
-* consumer.events.REQUEST_QUEUE_SIZE
-  payload: {
-    `broker`,
-    `clientId`,
-    `queueSize`
-  }
+| order | event               | payload                                                                                                                                                                                                       | description |
+|-------|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
+|1      | REQUEST             | {`broker`, `clientId`, `correlationId`, `size`, `createdAt`, `sentAt`, `pendingDuration`, `duration`, `apiName`, `apiKey`, `apiVersion`} |Whenever a request is made to the broker |
+|2      | CONNECT             |                                                                                                                                                                                                               | Consumer connected with broker |
+|3      | GROUP_JOIN          | {`groupId`, `memberId`, `leaderId`, `isLeader`, `memberAssignment`, `groupProtocol`, `duration`}                                                                                                                   | Consumer has joined the group |
+|4      | FETCH_START         | {}                                                                                                                                                                                                            | Starting to fetch messages from broker |
+|5      | FETCH               | {`numberOfBatches`, `duration`}                                                                                                                                                                           | Fetched messages from the broker |
+|6      | START_BATCH_PROCESS | {`topic`, `partition`, `highWatermark`, `offsetLag`, `offsetLagLow`, `batchSize`, `firstOffset`, `lastOffset`}                                                                                | Starting to process the batch |
+|7      | END_BATCH_PROCESS   | {`topic`, `partition`, `highWatermark`, `offsetLag`, `offsetLagLow`, `batchSize`, `firstOffset`, `lastOffset`, `duration`}                                                                  | Processed the batch |
+|8      | COMMIT_OFFSETS      | {`groupId`, `memberId`, `groupGenerationId`, `topics`}                                                                                                                                                | Committed resolved offsets |
+|9     | STOP                |                                                                                                                                                                                                               | Consumer has stopped |
+|10     | DISCONNECT          |                                                                                                                                                                                                               | Consumer has disconnected |
+|-      | CRASH               | {`error`, `groupId`}                                                                                                                                                                                      | Consumer has crashed. After this, consumer will try to perform a full restart if possible, otherwise it will stay hanging. Ideally you should listen to this event and handle yourself. |
+|-      | HEARTBEAT           | {`groupId`, `memberId`, `groupGenerationId`}                                                                                                                                                            | Heartbeat sent to the broker |
+|-      | REQUEST_TIMEOUT     | {`broker`, `clientId`, `correlationId`, `createdAt`, `sentAt`, `pendingDuration`, `apiName`, `apiKey`, `apiVersion`}                                 | Request to the broker timed out |
+|-      | REQUEST_QUEUE_SIZE  | {`broker`, `clientId`, `queueSize`}                                                                                                                                                      | ?? Too many requests? |
 
 ### <a name="producer"></a> Producer
 
