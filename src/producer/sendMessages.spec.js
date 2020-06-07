@@ -54,7 +54,7 @@ describe('Producer > sendMessages', () => {
       },
     ]
     cluster = {
-      addTargetTopic: jest.fn(),
+      addMultipleTargetTopics: jest.fn(),
       refreshMetadata: jest.fn(),
       refreshMetadataIfNecessary: jest.fn(),
       findTopicPartitionMetadata: jest.fn(() => topicPartitionMetadata),

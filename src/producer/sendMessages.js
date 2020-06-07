@@ -18,9 +18,8 @@ module.exports = ({ logger, cluster, partitioner, eosManager }) => {
   return async ({ acks, timeout, compression, topicMessages }) => {
     const responsePerBroker = new Map()
 
-    for (const { topic } of topicMessages) {
-      await cluster.addTargetTopic(topic)
-    }
+    const topics = topicMessages.map(({ topic }) => topic)
+    await cluster.addMultipleTargetTopics(topics)
 
     const createProducerRequests = async responsePerBroker => {
       const topicMetadata = new Map()
