@@ -387,14 +387,6 @@ List groups available on the broker.
 await admin.listGroups()
 ```
 
-Example:
-
-```javascript
-const { ResourceTypes } = require('kafkajs')
-
-await admin.listGroups()
-```
-
 Example response:
 
 ```javascript
@@ -403,6 +395,33 @@ Example response:
         {groupId: 'testgroup', protocolType: 'consumer'}
     ]
 }
+```
+
+## <a name="describe-groups"></a> Describe groups
+
+Describe consumer groups by `groupId`s. This is similar to [consumer.describeGroup()](Consuming.md#describe-group), except
+it allows you to describe multiple groups and does not require you to have a consumer be part of any of those groups.
+
+```js
+await admin.describeGroups([ 'testgroup' ])
+// {
+//   groups: [{
+//     errorCode: 0,
+//     groupId: 'testgroup',
+//     members: [
+//       {
+//         clientHost: '/172.19.0.1',
+//         clientId: 'test-3e93246fe1f4efa7380a',
+//         memberAssignment: Buffer,
+//         memberId: 'test-3e93246fe1f4efa7380a-ff87d06d-5c87-49b8-a1f1-c4f8e3ffe7eb',
+//         memberMetadata: Buffer,
+//       },
+//     ],
+//     protocol: 'RoundRobinAssigner',
+//     protocolType: 'consumer',
+//     state: 'Stable',
+//   }]
+// }
 ```
 
 ## <a name="delete-groups"></a> Delete groups
@@ -418,8 +437,6 @@ await admin.deleteGroups([groupId])
 Example:
 
 ```javascript
-const { ResourceTypes } = require('kafkajs')
-
 await admin.deleteGroups(['group-test'])
 ```
 
