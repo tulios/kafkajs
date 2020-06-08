@@ -25,29 +25,26 @@ Instrumentation Event:
 }
 ```
 
-Events which have `payload.duration` defined, it represent the time between the current event and the last event.
-
-
 ## <a name="list"> List of available events:
 
 ### <a name="consumer"></a> Consumer
 
-| order | event               | payload                                                                                                                                                                                                       | description |
-|-------|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
-|1      | REQUEST             | {`broker`, `clientId`, `correlationId`, `size`, `createdAt`, `sentAt`, `pendingDuration`, `duration`, `apiName`, `apiKey`, `apiVersion`} |Whenever a request is made to the broker |
-|2      | CONNECT             |                                                                                                                                                                                                               | Consumer connected with broker |
-|3      | GROUP_JOIN          | {`groupId`, `memberId`, `leaderId`, `isLeader`, `memberAssignment`, `groupProtocol`, `duration`}                                                                                                                   | Consumer has joined the group |
-|4      | FETCH_START         | {}                                                                                                                                                                                                            | Starting to fetch messages from broker |
-|5      | FETCH               | {`numberOfBatches`, `duration`}                                                                                                                                                                           | Fetched messages from the broker |
-|6      | START_BATCH_PROCESS | {`topic`, `partition`, `highWatermark`, `offsetLag`, `offsetLagLow`, `batchSize`, `firstOffset`, `lastOffset`}                                                                                | Starting to process the batch |
-|7      | END_BATCH_PROCESS   | {`topic`, `partition`, `highWatermark`, `offsetLag`, `offsetLagLow`, `batchSize`, `firstOffset`, `lastOffset`, `duration`}                                                                  | Processed the batch |
-|8      | COMMIT_OFFSETS      | {`groupId`, `memberId`, `groupGenerationId`, `topics`}                                                                                                                                                | Committed resolved offsets |
-|9     | STOP                |                                                                                                                                                                                                               | Consumer has stopped |
-|10     | DISCONNECT          |                                                                                                                                                                                                               | Consumer has disconnected |
-|-      | CRASH               | {`error`, `groupId`}                                                                                                                                                                                      | Consumer has crashed. After this, consumer will try to perform a full restart if possible, otherwise it will stay hanging. Ideally you should listen to this event and handle yourself. |
-|-      | HEARTBEAT           | {`groupId`, `memberId`, `groupGenerationId`}                                                                                                                                                            | Heartbeat sent to the broker |
-|-      | REQUEST_TIMEOUT     | {`broker`, `clientId`, `correlationId`, `createdAt`, `sentAt`, `pendingDuration`, `apiName`, `apiKey`, `apiVersion`}                                 | Request to the broker timed out |
-|-      | REQUEST_QUEUE_SIZE  | {`broker`, `clientId`, `queueSize`}                                                                                                                                                      | ?? Too many requests? |
+| event               | payload                                                                                                                                                                                                       | description |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
+| REQUEST             | {`broker`, `clientId`, `correlationId`, `size`, `createdAt`, `sentAt`, `pendingDuration`, `duration`, `apiName`, `apiKey`, `apiVersion`} |Whenever a request is made to the broker. |
+| CONNECT             |                                                                                                                                                                                                               | Consumer connected with broker. |
+| GROUP_JOIN          | {`groupId`, `memberId`, `leaderId`, `isLeader`, `memberAssignment`, `groupProtocol`, `duration`}                                                                                                                   | Consumer has joined the group. |
+| FETCH_START         | {}                                                                                                                                                                                                            | Starting to fetch messages from broker. |
+| FETCH               | {`numberOfBatches`, `duration`}                                                                                                                                                                           | Fetched messages from the broker. |
+| START_BATCH_PROCESS | {`topic`, `partition`, `highWatermark`, `offsetLag`, `offsetLagLow`, `batchSize`, `firstOffset`, `lastOffset`}                                                                                | Starting to process the batch. |
+| END_BATCH_PROCESS   | {`topic`, `partition`, `highWatermark`, `offsetLag`, `offsetLagLow`, `batchSize`, `firstOffset`, `lastOffset`, `duration`}                                                                  | Processed the batch. |
+| COMMIT_OFFSETS      | {`groupId`, `memberId`, `groupGenerationId`, `topics`}                                                                                                                                                | Committed resolved offsets. |
+| STOP                |                                                                                                                                                                                                               | Consumer has stopped. |
+| DISCONNECT          |                                                                                                                                                                                                               | Consumer has disconnected. |
+| CRASH               | {`error`, `groupId`}                                                                                                                                                                                      | Consumer has crashed. </br> In the case of CRASH, the consumer will try to restart itself. If the error is not retriable, the consumer will instead stop and exit. If your application wants to react to the error, such as by cleanly shutting down resources, restarting the consumer itself, or exiting the process entirely, it should listen to the CRASH event. |
+| HEARTBEAT           | {`groupId`, `memberId`, `groupGenerationId`}                                                                                                                                                            | Heartbeat sent to the broker. |
+| REQUEST_TIMEOUT     | {`broker`, `clientId`, `correlationId`, `createdAt`, `sentAt`, `pendingDuration`, `apiName`, `apiKey`, `apiVersion`}                                 | Request to the broker has timed out. |
+| REQUEST_QUEUE_SIZE  | {`broker`, `clientId`, `queueSize`}                                                                                                                                                      | All requests go through a request queue where concurrency is managed (`maxInflightRequests`). Whenever the size of the queue changes, this event is emitted. |
 
 ### <a name="producer"></a> Producer
 
