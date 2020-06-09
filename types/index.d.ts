@@ -323,7 +323,10 @@ export type Admin = {
     resources: ResourceConfigQuery[]
     includeSynonyms: boolean
   }): Promise<DescribeConfigResponse>
-  alterConfigs(configs: { validateOnly: boolean; resources: IResourceConfig[] }): Promise<any>
+  alterConfigs(configs: { validateOnly: boolean; resources: IResourceConfig[] }): Promise<any>,
+  listGroups(): Promise<{ groups: GroupOverview[] }>,
+  deleteGroups(groupIds: string[]): Promise<DeleteGroupsResult[]>,
+  describeGroups(groupIds: string[]): Promise<GroupDescription[]>
   logger(): Logger
   on(
     eventName: ValueOf<AdminEvents>,
@@ -536,6 +539,16 @@ export type Batch = {
   lastOffset(): string
   offsetLag(): string
   offsetLagLow(): string
+}
+
+export type GroupOverview = {
+  groupId: string,
+  protocolType: string
+}
+
+export type DeleteGroupsResult = {
+  groupId: string,
+  errorCode?: number
 }
 
 export type ConsumerEvents = {
@@ -759,6 +772,16 @@ export class KafkaJSLockTimeout extends KafkaJSError {
 
 export class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSError {
   constructor()
+}
+
+export class KafkaJSDeleteGroupsError extends KafkaJSError {
+  constructor(e: Error | string, groups?: KafkaJSDeleteGroupsErrorGroups[] )
+}
+
+export interface KafkaJSDeleteGroupsErrorGroups {
+  groupId: string
+  errorCode: number
+  error: KafkaJSError
 }
 
 export interface KafkaJSErrorMetadata {
