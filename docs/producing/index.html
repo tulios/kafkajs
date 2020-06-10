@@ -74,6 +74,7 @@
 <tr><td>allowAutoTopicCreation</td><td>Allow topic creation when querying metadata for non-existent topics</td><td><code>true</code></td></tr>
 <tr><td>transactionTimeout</td><td>The maximum amount of time in ms that the transaction coordinator will wait for a transaction status update from the producer before proactively aborting the ongoing transaction. If this value is larger than the <code>transaction.max.timeout.ms</code> setting in the <strong>broker</strong>, the request will fail with a <code>InvalidTransactionTimeout</code> error</td><td><code>60000</code></td></tr>
 <tr><td>idempotent</td><td><em>Experimental.</em> If enabled producer will ensure each message is written exactly once. Acks <em>must</em> be set to -1 (&quot;all&quot;). Retries will default to MAX_SAFE_INTEGER.</td><td><code>false</code></td></tr>
+<tr><td>maxInFlightRequests</td><td>Max number of requests that may be in progress at any time. If falsey then no limit.</td><td><code>null</code> <em>(no limit)</em></td></tr>
 </tbody>
 </table>
 <p>The method <code>send</code> is used to publish messages to the Kafka cluster.</p>
