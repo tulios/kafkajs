@@ -529,6 +529,9 @@ export type TopicPartitionOffsetAndMetadata = {
   metadata?: string | null
 }
 
+// TODO: Remove with 2.x
+export type TopicPartitionOffsetAndMedata = TopicPartitionOffsetAndMetadata
+
 export type Batch = {
   topic: string
   partition: number
