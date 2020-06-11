@@ -225,6 +225,7 @@ kafka.consumer({
   maxBytes: <Number>,
   maxWaitTimeInMs: <Number>,
   retry: <Object>,
+  maxInFlightRequests: <Number>
 })
 ```
 
@@ -242,6 +243,7 @@ kafka.consumer({
 | maxWaitTimeInMs        | The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes`                                                                                                                                                      | `5000`                            |
 | retry                  | See [retry](Configuration.md#retry) for more information                                                                                                                                                                                                                                                                                           | `{ retries: 5 }`                 |
 | readUncommitted        | Configures the consumer isolation level. If `false` (default), the consumer will not return any transactional messages which were not committed.                                                                                                                                                                                                   | `false`                           |
+| maxInFlightRequests | Max number of requests that may be in progress at any time. If falsey then no limit.                                    | `null` _(no limit)_ |
 
 ## <a name="pause-resume"></a> Pause & Resume
 

@@ -19,7 +19,7 @@ const producer = kafka.producer()
 | allowAutoTopicCreation | Allow topic creation when querying metadata for non-existent topics                                                                                                                          | `true`               |
 | transactionTimeout | The maximum amount of time in ms that the transaction coordinator will wait for a transaction status update from the producer before proactively aborting the ongoing transaction. If this value is larger than the `transaction.max.timeout.ms` setting in the __broker__, the request will fail with a `InvalidTransactionTimeout` error | `60000`                            |
 | idempotent         | _Experimental._ If enabled producer will ensure each message is written exactly once. Acks _must_ be set to -1 ("all"). Retries will default to MAX_SAFE_INTEGER.                                                                                                                                                                          | `false`                            |
-
+| maxInFlightRequests | Max number of requests that may be in progress at any time. If falsey then no limit.                                    | `null` _(no limit)_ |
 The method `send` is used to publish messages to the Kafka cluster.
 
 ```javascript
