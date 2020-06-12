@@ -83,7 +83,7 @@ Learn more about using [KafkaJS on the official site!](https://kafka.js.org)
 
 ## <a name="contributing"></a> Contributing
 
-KafkaJS is an open-source project where development takes place in the open on GitHub. Although the project is maintained by a small group of dedicated volunteers, we are grateful to the community for bugfixes, feature development and other contributions.
+KafkaJS is an open-source project where development takes place in the open on GitHub. Although the project is maintained by a small group of dedicated volunteers, we are grateful to the community for bug fixes, feature development and other contributions.
 
 See [Developing KafkaJS](https://kafka.js.org/docs/contribution-guide) for information on how to run and develop KafkaJS.
 
@@ -94,7 +94,7 @@ We welcome contributions to KafkaJS, but we also want to see a thriving third-pa
 Here are some projects that we would like to build, but haven't yet been able to prioritize:
 
 * [Dead Letter Queue](https://eng.uber.com/reliable-reprocessing/) - Automatically reprocess messages
-* [Schema Registry](https://www.confluent.io/confluent-schema-registry/) - Seamless integration with the schema registry to encode and decode AVRO
+* [Schema Registry](https://www.confluent.io/confluent-schema-registry/) - ~~Seamless integration with the schema registry to encode and decode AVRO~~ **[Now available!](https://www.npmjs.com/package/@kafkajs/confluent-schema-registry)** thanks to [@erikengervall](https://github.com/erikengervall)
 * [Metrics](https://prometheus.io/) - Integrate with the [instrumentation events](https://kafka.js.org/docs/instrumentation-events) to expose commonly used metrics
 
 ## Acknowledgements

@@ -11,10 +11,10 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
       KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/server-jaas.conf -Dzookeeper.authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider"
     volumes:
-      - ./testHelpers/kafka/server-jaas.conf:/etc/kafka/server-jaas.conf
+      - ./testHelpers/kafka/server-jaas.conf:/etc/kafka/server-jaas.conf:ro,z
 
   kafka1:
-    image: confluentinc/cp-kafka:5.2.1
+    image: confluentinc/cp-kafka:5.2.3-1
     hostname: kafka1
     container_name: kafka1
     labels:
@@ -49,16 +49,15 @@ services:
       # https://github.com/confluentinc/cp-docker-images/blob/master/debian/kafka/include/etc/confluent/docker/log4j.properties.template
       KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./testHelpers/certs/kafka.server.keystore.jks:/etc/kafka/secrets/kafka.server.keystore.jks
-      - ./testHelpers/certs/kafka.server.truststore.jks:/etc/kafka/secrets/kafka.server.truststore.jks
-      - ./testHelpers/certs/keystore_creds:/etc/kafka/secrets/keystore_creds
-      - ./testHelpers/certs/sslkey_creds:/etc/kafka/secrets/sslkey_creds
-      - ./testHelpers/certs/truststore_creds:/etc/kafka/secrets/truststore_creds
-      - ./testHelpers/kafka/server-jaas.conf:/opt/kafka/config/server-jaas.conf
+      - ./testHelpers/certs/kafka.server.keystore.jks:/etc/kafka/secrets/kafka.server.keystore.jks:ro,z
+      - ./testHelpers/certs/kafka.server.truststore.jks:/etc/kafka/secrets/kafka.server.truststore.jks:ro,z
+      - ./testHelpers/certs/keystore_creds:/etc/kafka/secrets/keystore_creds:ro,z
+      - ./testHelpers/certs/sslkey_creds:/etc/kafka/secrets/sslkey_creds:ro,z
+      - ./testHelpers/certs/truststore_creds:/etc/kafka/secrets/truststore_creds:ro,z
+      - ./testHelpers/kafka/server-jaas.conf:/opt/kafka/config/server-jaas.conf:ro,z
   
   kafka2:
-    image: confluentinc/cp-kafka:5.2.1
+    image: confluentinc/cp-kafka:5.2.3-1
     hostname: kafka2
     container_name: kafka2
     labels:
@@ -93,16 +92,15 @@ services:
       # https://github.com/confluentinc/cp-docker-images/blob/master/debian/kafka/include/etc/confluent/docker/log4j.properties.template
       KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./testHelpers/certs/kafka.server.keystore.jks:/etc/kafka/secrets/kafka.server.keystore.jks
-      - ./testHelpers/certs/kafka.server.truststore.jks:/etc/kafka/secrets/kafka.server.truststore.jks
-      - ./testHelpers/certs/keystore_creds:/etc/kafka/secrets/keystore_creds
-      - ./testHelpers/certs/sslkey_creds:/etc/kafka/secrets/sslkey_creds
-      - ./testHelpers/certs/truststore_creds:/etc/kafka/secrets/truststore_creds
-      - ./testHelpers/kafka/server-jaas.conf:/opt/kafka/config/server-jaas.conf
+      - ./testHelpers/certs/kafka.server.keystore.jks:/etc/kafka/secrets/kafka.server.keystore.jks:ro,z
+      - ./testHelpers/certs/kafka.server.truststore.jks:/etc/kafka/secrets/kafka.server.truststore.jks:ro,z
+      - ./testHelpers/certs/keystore_creds:/etc/kafka/secrets/keystore_creds:ro,z
+      - ./testHelpers/certs/sslkey_creds:/etc/kafka/secrets/sslkey_creds:ro,z
+      - ./testHelpers/certs/truststore_creds:/etc/kafka/secrets/truststore_creds:ro,z
+      - ./testHelpers/kafka/server-jaas.conf:/opt/kafka/config/server-jaas.conf:ro,z
 
   kafka3:
-    image: confluentinc/cp-kafka:5.2.1
+    image: confluentinc/cp-kafka:5.2.3-1
     hostname: kafka3
     container_name: kafka3
     labels:
@@ -137,10 +135,9 @@ services:
       # https://github.com/confluentinc/cp-docker-images/blob/master/debian/kafka/include/etc/confluent/docker/log4j.properties.template
       KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./testHelpers/certs/kafka.server.keystore.jks:/etc/kafka/secrets/kafka.server.keystore.jks
-      - ./testHelpers/certs/kafka.server.truststore.jks:/etc/kafka/secrets/kafka.server.truststore.jks
-      - ./testHelpers/certs/keystore_creds:/etc/kafka/secrets/keystore_creds
-      - ./testHelpers/certs/sslkey_creds:/etc/kafka/secrets/sslkey_creds
-      - ./testHelpers/certs/truststore_creds:/etc/kafka/secrets/truststore_creds
-      - ./testHelpers/kafka/server-jaas.conf:/opt/kafka/config/server-jaas.conf
+      - ./testHelpers/certs/kafka.server.keystore.jks:/etc/kafka/secrets/kafka.server.keystore.jks:ro,z
+      - ./testHelpers/certs/kafka.server.truststore.jks:/etc/kafka/secrets/kafka.server.truststore.jks:ro,z
+      - ./testHelpers/certs/keystore_creds:/etc/kafka/secrets/keystore_creds:ro,z
+      - ./testHelpers/certs/sslkey_creds:/etc/kafka/secrets/sslkey_creds:ro,z
+      - ./testHelpers/certs/truststore_creds:/etc/kafka/secrets/truststore_creds:ro,z
+      - ./testHelpers/kafka/server-jaas.conf:/opt/kafka/config/server-jaas.conf:ro,z

@@ -65,7 +65,7 @@ const saslSCRAM256ConnectionOpts = () =>
     sasl: {
       mechanism: 'scram-sha-256',
       username: 'testscram',
-      password: 'testtestscram256',
+      password: 'testtestscram=256',
     },
   })
 
@@ -75,7 +75,7 @@ const saslSCRAM512ConnectionOpts = () =>
     sasl: {
       mechanism: 'scram-sha-512',
       username: 'testscram',
-      password: 'testtestscram512',
+      password: 'testtestscram=512',
     },
   })
 
@@ -140,16 +140,22 @@ const waitForNextEvent = (consumer, eventName, { maxWait = 10000 } = {}) =>
     })
   })
 
-const waitForConsumerToJoinGroup = (consumer, { maxWait = 10000 } = {}) =>
+const waitForConsumerToJoinGroup = (consumer, { maxWait = 10000, label = '' } = {}) =>
   new Promise((resolve, reject) => {
-    const timeoutId = setTimeout(() => reject(new Error('Timeout')), maxWait)
+    const timeoutId = setTimeout(() => {
+      consumer.disconnect().then(() => {
+        reject(new Error(`Timeout ${label}`.trim()))
+      })
+    }, maxWait)
     consumer.on(consumer.events.GROUP_JOIN, event => {
       clearTimeout(timeoutId)
       resolve(event)
     })
     consumer.on(consumer.events.CRASH, event => {
       clearTimeout(timeoutId)
-      reject(event.payload.error)
+      consumer.disconnect().then(() => {
+        reject(event.payload.error)
+      })
     })
   })
 

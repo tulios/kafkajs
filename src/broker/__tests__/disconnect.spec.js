@@ -36,9 +36,9 @@ describe('Broker > disconnect', () => {
       logger: newLogger(),
     })
     await broker.connect()
-    expect(broker.authenticated).toEqual(true)
+    expect(broker.authenticatedAt).not.toBe(null)
     await broker.disconnect()
-    expect(broker.authenticated).toEqual(false)
+    expect(broker.authenticatedAt).toBe(null)
   })
 
   test('when authenticated with SASL SCRAM 256 set authenticated to false', async () => {
@@ -47,9 +47,9 @@ describe('Broker > disconnect', () => {
       logger: newLogger(),
     })
     await broker.connect()
-    expect(broker.authenticated).toEqual(true)
+    expect(broker.authenticatedAt).not.toBe(null)
     await broker.disconnect()
-    expect(broker.authenticated).toEqual(false)
+    expect(broker.authenticatedAt).toBe(null)
   })
 
   test('when authenticated with SASL SCRAM 512 set authenticated to false', async () => {
@@ -58,8 +58,8 @@ describe('Broker > disconnect', () => {
       logger: newLogger(),
     })
     await broker.connect()
-    expect(broker.authenticated).toEqual(true)
+    expect(broker.authenticatedAt).not.toBe(null)
     await broker.disconnect()
-    expect(broker.authenticated).toEqual(false)
+    expect(broker.authenticatedAt).toBe(null)
   })
 })

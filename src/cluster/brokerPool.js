@@ -16,6 +16,7 @@ module.exports = class BrokerPool {
    * @param {Logger} logger
    * @param {Object} retry
    * @param {number} authenticationTimeout
+   * @param {number} reauthenticationThreshold
    * @param {number} metadataMaxAge
    */
   constructor({
@@ -25,6 +26,7 @@ module.exports = class BrokerPool {
     allowExperimentalV011,
     allowAutoTopicCreation,
     authenticationTimeout,
+    reauthenticationThreshold,
     metadataMaxAge,
   }) {
     this.rootLogger = logger
@@ -38,6 +40,7 @@ module.exports = class BrokerPool {
         allowExperimentalV011,
         allowAutoTopicCreation,
         authenticationTimeout,
+        reauthenticationThreshold,
         ...options,
       })
 
@@ -185,7 +188,12 @@ module.exports = class BrokerPool {
    */
   async refreshMetadataIfNecessary(topics) {
     const shouldRefresh =
-      this.metadata == null || this.metadataExpireAt == null || Date.now() > this.metadataExpireAt
+      this.metadata == null ||
+      this.metadataExpireAt == null ||
+      Date.now() > this.metadataExpireAt ||
+      !topics.every(topic =>
+        this.metadata.topicMetadata.some(topicMetadata => topicMetadata.topic === topic)
+      )
 
     if (shouldRefresh) {
       return this.refreshMetadata(topics)

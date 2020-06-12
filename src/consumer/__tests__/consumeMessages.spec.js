@@ -1,3 +1,5 @@
+jest.setTimeout(30000)
+
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
 const { Types } = require('../../protocol/message/compression')
@@ -547,7 +549,7 @@ describe('Consumer', () => {
               consumer.seek({ topic: topicName, partition: 0, offset: message.offset })
             }
 
-            await resolveOffset(message.offset)
+            resolveOffset(message.offset)
             await heartbeat()
           }
         },

@@ -6,7 +6,6 @@ title: Consumer
 The following example assumes that you are using the local Kafka configuration described in [Running Kafka in Development](DockerLocal.md).
 
 ```javascript
-const fs = require('fs')
 const ip = require('ip')
 
 const { Kafka, logLevel } = require('../index')
@@ -24,7 +23,7 @@ const consumer = kafka.consumer({ groupId: 'test-group' })
 
 const run = async () => {
   await consumer.connect()
-  await consumer.subscribe({ topic })
+  await consumer.subscribe({ topic, fromBeginning: true })
   await consumer.run({
     // eachBatch: async ({ batch }) => {
     //   console.log(batch)
@@ -70,7 +69,6 @@ signalTraps.map(type => {
 The following example assumes a valid SSL certificate and SASL authentication using the `scram-sha-256` mechanism. Other mechanisms are also available (see [Client Configuration](Configuration.md#sasl)).
 
 ```javascript
-const fs = require('fs')
 const ip = require('ip')
 
 const { Kafka, logLevel } = require('../index')
@@ -96,7 +94,7 @@ const consumer = kafka.consumer({ groupId: 'test-group' })
 
 const run = async () => {
   await consumer.connect()
-  await consumer.subscribe({ topic })
+  await consumer.subscribe({ topic, fromBeginning: true })
   await consumer.run({
     // eachBatch: async ({ batch }) => {
     //   console.log(batch)

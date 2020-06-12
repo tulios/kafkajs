@@ -39,10 +39,12 @@ module.exports = class Lock {
       }
 
       this[PRIVATE.WAITING].add(tryToAcquire)
-      timeoutId = setTimeout(
-        () => reject(new KafkaJSLockTimeout(this[PRIVATE.TIMEOUT_ERROR_MESSAGE]())),
-        this[PRIVATE.TIMEOUT]
-      )
+      timeoutId = setTimeout(() => {
+        // The message should contain the number of waiters _including_ this one
+        const error = new KafkaJSLockTimeout(this[PRIVATE.TIMEOUT_ERROR_MESSAGE]())
+        this[PRIVATE.WAITING].delete(tryToAcquire)
+        reject(error)
+      }, this[PRIVATE.TIMEOUT])
     })
   }
 

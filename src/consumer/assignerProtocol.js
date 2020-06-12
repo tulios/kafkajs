@@ -3,9 +3,10 @@ const Decoder = require('../protocol/decoder')
 
 const MemberMetadata = {
   /**
-   * @param {number} version
-   * @param {Array<string>} topics
-   * @param {Buffer} [userData=Buffer.alloc(0)]
+   * @param {Object} metadata
+   * @param {number} metadata.version
+   * @param {Array<string>} metadata.topics
+   * @param {Buffer} [metadata.userData=Buffer.alloc(0)]
    *
    * @returns Buffer
    */
@@ -55,7 +56,7 @@ const MemberAssignment = {
 
   /**
    * @param {Buffer} buffer
-   * @returns {Object}
+   * @returns {Object|null}
    */
   decode(buffer) {
     const decoder = new Decoder(buffer)
@@ -66,6 +67,10 @@ const MemberAssignment = {
     })
     const indexAssignment = (obj, { topic, partitions }) =>
       Object.assign(obj, { [topic]: partitions })
+
+    if (!decoder.canReadInt16()) {
+      return null
+    }
 
     return {
       version: decoder.readInt16(),

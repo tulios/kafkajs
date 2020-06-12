@@ -1,6 +1,6 @@
 {
   "name": "kafkajs",
-  "version": "1.10.0",
+  "version": "1.12.0",
   "description": "A modern Apache Kafka client for node.js",
   "author": "Tulio Ornelas <ornelas.tulio@gmail.com>",
   "main": "index.js",
@@ -12,7 +12,7 @@
     "scram"
   ],
   "engines": {
-    "node": ">=8.6.0"
+    "node": ">=10.13.0"
   },
   "repository": {
     "type": "git",
@@ -23,11 +23,11 @@
   },
   "homepage": "https://kafka.js.org",
   "scripts": {
-    "jest": "export KAFKA_VERSION=${KAFKA_VERSION:='2.2'} && NODE_ENV=test echo \"KAFKA_VERSION: ${KAFKA_VERSION}\" && KAFKAJS_DEBUG_PROTOCOL_BUFFERS=1 ./node_modules/.bin/jest",
+    "jest": "export KAFKA_VERSION=${KAFKA_VERSION:='2.3'} && NODE_ENV=test echo \"KAFKA_VERSION: ${KAFKA_VERSION}\" && KAFKAJS_DEBUG_PROTOCOL_BUFFERS=1 ./node_modules/.bin/jest",
     "test:local": "yarn jest --detectOpenHandles",
     "test:debug": "NODE_ENV=test KAFKAJS_DEBUG_PROTOCOL_BUFFERS=1 node --inspect-brk node_modules/.bin/jest --detectOpenHandles --runInBand --watch",
     "test:local:watch": "yarn test:local --watch",
-    "test": "yarn lint && JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh 'yarn jest --ci --maxWorkers=4 --no-watchman --forceExit'",
+    "test": "yarn lint && JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh 'yarn jest --ci --maxWorkers=4 --no-watchman --forceExit'",
     "lint": "find . -path ./node_modules -prune -o -path ./coverage -prune -o -path ./website -prune -o -name '*.js' -print0 | xargs -0 ./node_modules/.bin/eslint",
     "format": "find . -path ./node_modules -prune -o -path ./coverage -prune -o -path ./website -prune -o -name '*.js' -print0 | xargs -0 ./node_modules/.bin/prettier --write",
     "precommit": "lint-staged",
@@ -36,11 +36,11 @@
     "test:group:producer": "yarn jest --forceExit --testPathPattern 'src/producer/.*'",
     "test:group:consumer": "yarn jest --forceExit --testPathPattern 'src/consumer/.*.spec.js'",
     "test:group:others": "yarn jest --forceExit --testPathPattern 'src/(?!(broker|admin|producer|consumer)/).*'",
-    "test:group:broker:ci": "JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:broker --ci --maxWorkers=4 --no-watchman\"",
-    "test:group:admin:ci": "JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:admin --ci --maxWorkers=4 --no-watchman\"",
-    "test:group:producer:ci": "JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:producer --ci --maxWorkers=4 --no-watchman\"",
-    "test:group:consumer:ci": "JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:consumer --ci --maxWorkers=4 --no-watchman\"",
-    "test:group:others:ci": "JEST_JUNIT_OUTPUT=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:others --ci --maxWorkers=4 --no-watchman\"",
+    "test:group:broker:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:broker --ci --maxWorkers=4 --no-watchman\"",
+    "test:group:admin:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:admin --ci --maxWorkers=4 --no-watchman\"",
+    "test:group:producer:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:producer --ci --maxWorkers=4 --no-watchman\"",
+    "test:group:consumer:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:consumer --ci --maxWorkers=4 --no-watchman\"",
+    "test:group:others:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:others --ci --maxWorkers=4 --no-watchman\"",
     "test:types": "./node_modules/.bin/tsc -p types/"
   },
   "devDependencies": {
@@ -58,9 +58,10 @@
     "glob": "^7.1.4",
     "husky": "^3.0.1",
     "ip": "^1.1.5",
-    "jest": "^24.8.0",
+    "jest": "^25.1.0",
+    "jest-circus": "^25.1.0",
     "jest-extended": "^0.11.2",
-    "jest-junit": "^6.4.0",
+    "jest-junit": "^10.0.0",
     "lint-staged": "^9.2.0",
     "mockdate": "^2.0.3",
     "prettier": "^1.18.2",

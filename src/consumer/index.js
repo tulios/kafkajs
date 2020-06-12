@@ -26,6 +26,7 @@ const specialOffsets = [
 module.exports = ({
   cluster,
   groupId,
+  retry,
   logger: rootLogger,
   partitionAssigners = [roundRobin],
   sessionTimeout = 30000,
@@ -35,7 +36,6 @@ module.exports = ({
   minBytes = 1,
   maxBytes = 10485760, // 10MB
   maxWaitTimeInMs = 5000,
-  retry = { retries: 10 },
   isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
   instrumentationEmitter: rootInstrumentationEmitter,
 }) => {
@@ -145,6 +145,10 @@ module.exports = ({
    * @return {Promise}
    */
   const subscribe = async ({ topic, fromBeginning = false }) => {
+    if (consumerGroup) {
+      throw new KafkaJSNonRetriableError('Cannot subscribe to topic while consumer is running')
+    }
+
     if (!topic) {
       throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
     }
@@ -228,7 +232,6 @@ module.exports = ({
 
     const restart = onCrash => {
       consumerGroup = createConsumerGroup({
-        autoCommit,
         autoCommitInterval,
         autoCommitThreshold,
       })
@@ -251,14 +254,32 @@ module.exports = ({
       })
 
       if (e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true) {
-        const retryTime = e.retryTime || retry.initialRetryTime || initialRetryTime
-        logger.error(`Restarting the consumer in ${retryTime}ms`, {
-          retryCount: e.retryCount,
-          retryTime,
-          groupId,
-        })
+        const shouldRestart =
+          !retry ||
+          !retry.restartOnFailure ||
+          (await retry.restartOnFailure(e).catch(error => {
+            logger.error(
+              'Caught error when invoking user-provided "restartOnFailure" callback. Defaulting to restarting.',
+              {
+                error: error.message || error,
+                originalError: e.message || e,
+                groupId,
+              }
+            )
 
-        setTimeout(() => restart(onCrash), retryTime)
+            return true
+          }))
+
+        if (shouldRestart) {
+          const retryTime = e.retryTime || (retry && retry.initialRetryTime) || initialRetryTime
+          logger.error(`Restarting the consumer in ${retryTime}ms`, {
+            retryCount: e.retryCount,
+            retryTime,
+            groupId,
+          })
+
+          setTimeout(() => restart(onCrash), retryTime)
+        }
       }
     }
 
@@ -316,7 +337,7 @@ module.exports = ({
 
         if (metadata !== null && typeof metadata !== 'string') {
           throw new KafkaJSNonRetriableError(
-            `Invalid offset metatadta, expected string or null, received ${metadata}`
+            `Invalid offset metadata, expected string or null, received ${metadata}`
           )
         }
 

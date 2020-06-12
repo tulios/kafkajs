@@ -1,3 +1,4 @@
+const sleep = require('../../utils/sleep')
 const { newLogger } = require('testHelpers')
 const InstrumentationEventEmitter = require('../../instrumentation/emitter')
 const events = require('../instrumentationEvents')
@@ -196,12 +197,17 @@ describe('Network > RequestQueue', () => {
   })
 
   describe('instrumentation events', () => {
-    let emitter, removeListener, eventCalled, request, payload, size
+    let emitter, removeListener, eventCalled, request, payload, size, requestTimeout
 
     beforeEach(() => {
+      requestTimeout = 1
       eventCalled = jest.fn()
       emitter = new InstrumentationEventEmitter()
-      requestQueue = createRequestQueue({ instrumentationEmitter: emitter })
+      requestQueue = createRequestQueue({
+        instrumentationEmitter: emitter,
+        enforceRequestTimeout: true,
+        requestTimeout,
+      })
       request = {
         sendRequest: jest.fn(),
         entry: createEntry(),
@@ -295,6 +301,31 @@ describe('Network > RequestQueue', () => {
           broker: 'localhost:9092',
           clientId: 'KafkaJS',
           queueSize: 0,
+        },
+      })
+    })
+
+    it('emits NETWORK_REQUEST_TIMEOUT', async () => {
+      emitter.addListener(events.NETWORK_REQUEST_TIMEOUT, eventCalled)
+      requestQueue.scheduleRequestTimeoutCheck()
+      requestQueue.push(request)
+
+      await sleep(requestTimeout + 10)
+
+      expect(eventCalled).toHaveBeenCalledWith({
+        id: expect.any(Number),
+        type: 'network.request_timeout',
+        timestamp: expect.any(Number),
+        payload: {
+          apiKey: request.entry.apiKey,
+          apiName: request.entry.apiName,
+          apiVersion: request.entry.apiVersion,
+          broker: 'localhost:9092',
+          clientId: 'KafkaJS',
+          correlationId: expect.any(Number),
+          createdAt: expect.any(Number),
+          pendingDuration: expect.any(Number),
+          sentAt: expect.any(Number),
         },
       })
     })

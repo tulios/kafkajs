@@ -40,6 +40,15 @@ Refer to [TLS create secure context](https://nodejs.org/dist/latest-v8.x/docs/ap
 
 Kafka has support for using SASL to authenticate clients. The `sasl` option can be used to configure the authentication mechanism. Currently, KafkaJS supports `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512`, and `AWS` mechanisms.
 
+Note that the broker may be configured to reject your authentication attempt if you are not using TLS, even if the credentials themselves are valid. In particular, never authenticate without TLS when using `PLAIN` as your authentication mechanism, as that will transmit your credentials unencrypted in plain text. See [SSL](#ssl) for more information on how to enable TLS.
+
+### Options
+
+| option                    | description                                                                                                                                                                             | default |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| authenticationTimeout     | Timeout in ms for authentication requests                                                                                                                                               | `1000`  |
+| reauthenticationThreshold | When periodic reauthentication (`connections.max.reauth.ms`) is configured on the broker side, reauthenticate when `reauthenticationThreshold` milliseconds remain of session lifetime. | `10000` |
+
 ### PLAIN/SCRAM Example
 
 ```javascript
@@ -47,6 +56,8 @@ new Kafka({
   clientId: 'my-app',
   brokers: ['kafka1:9092', 'kafka2:9092'],
   // authenticationTimeout: 1000,
+  // reauthenticationThreshold: 10000,
+  ssl: true,
   sasl: {
     mechanism: 'plain', // scram-sha-256 or scram-sha-512
     username: 'my-username',
@@ -62,6 +73,8 @@ new Kafka({
   clientId: 'my-app',
   brokers: ['kafka1:9092', 'kafka2:9092'],
   // authenticationTimeout: 1000,
+  // reauthenticationThreshold: 10000,
+  ssl: true,
   sasl: {
     mechanism: 'aws',
     authorizationIdentity: 'AIDAIOSFODNN7EXAMPLE', // UserId or RoleId
@@ -137,7 +150,7 @@ __Available options:__
 | factor              | Randomization factor                                                                                                    | `0.2`               |
 | multiplier          | Exponential factor                                                                                                      | `2`                 |
 | retries             | Max number of retries per call                                                                                          | `5`                 |
-| maxInFlightRequests | Max number of requests that may be in progress at any time. If falsey then no limit.                                    | `null` _(no limit)_ |
+| restartOnFailure    | Only used in consumer. See [`restartOnFailure`](#restart-on-failure)                                                    | `async () => true`  |
 
 Example:
 
@@ -151,6 +164,19 @@ new Kafka({
   }
 })
 ```
+
+### <a name="restart-on-failure"></a> `restartOnFailure`
+
+An async function that will be invoked after the consumer exhausts all retries, to decide whether or not to restart the consumer (essentially resetting `consumer.run`). This can be used to, for example, cleanly shut down resources before crashing, if that is preferred. The function will be passed the error, which allows it to decide based on the type of error whether or not to exit the application or allow it to restart.
+
+The function has the following signature: `(error: Error) => Promise<boolean>`
+
+* If the promise resolves to `true`: the consumer will restart
+* If the promise resolves to `false`: the consumer will **not** restart
+* If the promise rejects: the consumer will restart
+* If there is no `restartOnFailure` provided: the consumer will restart
+
+Note that the function will only ever be invoked for what KafkaJS considers retriable errors. On non-retriable errors, the consumer will not be restarted and the `restartOnFailure` function will not be invoked. [See this list](https://kafka.apache.org/protocol#protocol_error_codes) for retriable errors in the Kafka protocol, but note that some additional errors will still be considered retriable in KafkaJS, such as for example network connection errors.
 
 ## Logging
 

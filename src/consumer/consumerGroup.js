@@ -1,13 +1,15 @@
 const flatten = require('../utils/flatten')
 const sleep = require('../utils/sleep')
+const BufferedAsyncIterator = require('../utils/bufferedAsyncIterator')
 const websiteUrl = require('../utils/websiteUrl')
 const arrayDiff = require('../utils/arrayDiff')
+
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
 const SubscriptionState = require('./subscriptionState')
 const {
-  events: { HEARTBEAT },
+  events: { HEARTBEAT, CONNECT },
 } = require('./instrumentationEvents')
 const { MemberAssignment } = require('./assignerProtocol')
 const {
@@ -82,6 +84,7 @@ module.exports = class ConsumerGroup {
 
   async connect() {
     await this.cluster.connect()
+    this.instrumentationEmitter.emit(CONNECT)
     await this.cluster.refreshMetadataIfNecessary()
   }
 
@@ -95,7 +98,11 @@ module.exports = class ConsumerGroup {
       sessionTimeout,
       rebalanceTimeout,
       memberId: this.memberId || '',
-      groupProtocols: this.assigners.map(assigner => assigner.protocol({ topics: this.topics })),
+      groupProtocols: this.assigners.map(assigner =>
+        assigner.protocol({
+          topics: this.topicsSubscribed,
+        })
+      ),
     })
 
     this.generationId = groupData.generationId
@@ -157,7 +164,9 @@ module.exports = class ConsumerGroup {
       groupAssignment: assignment,
     })
 
-    const decodedAssignment = MemberAssignment.decode(memberAssignment).assignment
+    const decodedMemberAssignment = MemberAssignment.decode(memberAssignment)
+    const decodedAssignment =
+      decodedMemberAssignment != null ? decodedMemberAssignment.assignment : {}
     this.logger.debug('Received assignment', {
       groupId,
       generationId,
@@ -208,7 +217,7 @@ module.exports = class ConsumerGroup {
           assignedPartitions,
         })
 
-        // If the consumer is not aware of all assigned partions, refresh metadata
+        // If the consumer is not aware of all assigned partitions, refresh metadata
         // and update the list of partitions per subscribed topic. It's enough to perform
         // this operation once since refresh metadata will update metadata for all topics
         await this.cluster.refreshMetadata()
@@ -345,7 +354,7 @@ module.exports = class ConsumerGroup {
         })
 
         await sleep(this.maxWaitTime)
-        return []
+        return BufferedAsyncIterator([])
       }
 
       await this.offsetManager.resolveOffsets()
@@ -366,13 +375,34 @@ module.exports = class ConsumerGroup {
         )
 
         const leaders = keys(partitionsPerLeader)
+        const committedOffsets = this.offsetManager.committedOffsets()
 
         for (const leader of leaders) {
-          const partitions = partitionsPerLeader[leader].map(partition => ({
-            partition,
-            fetchOffset: this.offsetManager.nextOffset(topicPartition.topic, partition).toString(),
-            maxBytes: maxBytesPerPartition,
-          }))
+          const partitions = partitionsPerLeader[leader]
+            .filter(partition => {
+              /**
+               * When recovering from OffsetOutOfRange, each partition can recover
+               * concurrently, which invalidates resolved and committed offsets as part
+               * of the recovery mechanism (see OffsetManager.clearOffsets). In concurrent
+               * scenarios this can initiate a new fetch with invalid offsets.
+               *
+               * This was further highlighted by https://github.com/tulios/kafkajs/pull/570,
+               * which increased concurrency, making this more likely to happen.
+               *
+               * This is solved by only making requests for partitions with initialized offsets.
+               *
+               * See the following pull request which explains the context of the problem:
+               * @issue https://github.com/tulios/kafkajs/pull/578
+               */
+              return committedOffsets[topicPartition.topic][partition] != null
+            })
+            .map(partition => ({
+              partition,
+              fetchOffset: this.offsetManager
+                .nextOffset(topicPartition.topic, partition)
+                .toString(),
+              maxBytes: maxBytesPerPartition,
+            }))
 
           requestsPerLeader[leader] = requestsPerLeader[leader] || []
           requestsPerLeader[leader].push({ topic: topicPartition.topic, partitions })
@@ -406,8 +436,23 @@ module.exports = class ConsumerGroup {
               )
 
               const fetchedOffset = partitionRequestData.fetchOffset
+              const batch = new Batch(topicName, fetchedOffset, partitionData)
 
-              return new Batch(topicName, fetchedOffset, partitionData)
+              /**
+               * Resolve the offset to skip the control batch since `eachBatch` or `eachMessage` callbacks
+               * won't process empty batches
+               *
+               * @see https://github.com/apache/kafka/blob/9aa660786e46c1efbf5605a6a69136a1dac6edb9/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L1499-L1505
+               */
+              if (batch.isEmptyControlRecord() || batch.isEmptyDueToLogCompactedMessages()) {
+                this.resolveOffset({
+                  topic: batch.topic,
+                  partition: batch.partition,
+                  offset: batch.lastOffset(),
+                })
+              }
+
+              return batch
             })
         })
 
@@ -419,48 +464,51 @@ module.exports = class ConsumerGroup {
       // configured max wait time
       if (requests.length === 0) {
         await sleep(this.maxWaitTime)
-        return []
+        return BufferedAsyncIterator([])
       }
 
-      const results = await Promise.all(requests)
-      return flatten(results)
+      return BufferedAsyncIterator(requests, e => this.recoverFromFetch(e))
     } catch (e) {
-      if (STALE_METADATA_ERRORS.includes(e.type) || e.name === 'KafkaJSTopicMetadataNotLoaded') {
-        this.logger.debug('Stale cluster metadata, refreshing...', {
-          groupId: this.groupId,
-          memberId: this.memberId,
-          error: e.message,
-        })
-
-        await this.cluster.refreshMetadata()
-        await this.join()
-        await this.sync()
-        throw new KafkaJSError(e.message)
-      }
-
-      if (e.name === 'KafkaJSStaleTopicMetadataAssignment') {
-        this.logger.warn(`${e.message}, resync group`, {
-          groupId: this.groupId,
-          memberId: this.memberId,
-          topic: e.topic,
-          unknownPartitions: e.unknownPartitions,
-        })
-
-        await this.join()
-        await this.sync()
-      }
-
-      if (e.name === 'KafkaJSOffsetOutOfRange') {
-        await this.recoverFromOffsetOutOfRange(e)
-      }
-
-      if (e.name === 'KafkaJSBrokerNotFound') {
-        this.logger.debug(`${e.message}, refreshing metadata and retrying...`)
-        await this.cluster.refreshMetadata()
-      }
-
-      throw e
+      await this.recoverFromFetch(e)
     }
+  }
+
+  async recoverFromFetch(e) {
+    if (STALE_METADATA_ERRORS.includes(e.type) || e.name === 'KafkaJSTopicMetadataNotLoaded') {
+      this.logger.debug('Stale cluster metadata, refreshing...', {
+        groupId: this.groupId,
+        memberId: this.memberId,
+        error: e.message,
+      })
+
+      await this.cluster.refreshMetadata()
+      await this.join()
+      await this.sync()
+      throw new KafkaJSError(e.message)
+    }
+
+    if (e.name === 'KafkaJSStaleTopicMetadataAssignment') {
+      this.logger.warn(`${e.message}, resync group`, {
+        groupId: this.groupId,
+        memberId: this.memberId,
+        topic: e.topic,
+        unknownPartitions: e.unknownPartitions,
+      })
+
+      await this.join()
+      await this.sync()
+    }
+
+    if (e.name === 'KafkaJSOffsetOutOfRange') {
+      await this.recoverFromOffsetOutOfRange(e)
+    }
+
+    if (e.name === 'KafkaJSBrokerNotFound') {
+      this.logger.debug(`${e.message}, refreshing metadata and retrying...`)
+      await this.cluster.refreshMetadata()
+    }
+
+    throw e
   }
 
   async recoverFromOffsetOutOfRange(e) {

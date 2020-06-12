@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2020-01-30
+### Added
+  - Force refresh of metadata when topic is not present #556
+  - Expose ConsumerRunConfig type #615
+  - Randomize order of seed brokers #632
+
+### Changed
+  - Support TLS SNI by default #512
+  - Changed typing of `logLevel` argument of `logCreator` #538
+  - Add type boolean in ssl KafkaConfig #557
+  - Allow logging Fetch response payload buffers #573
+  - Remove default null for logCreator #595
+  - Add error names to ensure error names work with webpack + uglify #602
+  - Merge TopicMessages by topic in producer sendBatch #626
+
+### Fixed
+  - Skip control records without auto-resolve #511
+  - Handle empty member assignment #567
+  - Only fetch for partitions with initialized offsets #582
+  - Get correct next offset for compacted topics #577
+  - TS type definition for removing instrumentation event listeners #608
+  - Fixed IHeaders definition to accept plain strings #547
+  - Make TS type ProducerBatch fields optional #610
+  - Fix typings for logger getters #620
+
+## [1.11.0] - 2019-09-30
+### Added
+  - Add Typescript SASLMechanism type to definitions #477
+  - Allow SASL Connections to Periodically Re-Authenticate #496
+
+### Changed
+  - Throw validation error when the broker list is empty #460
+  - Improve the encoder to avoid copying unnecessary bytes #471
+  - Throw an error on subscription changes for running consumers #470
+  - Default `throttle_time_ms` to 0 if missing in `ApiVersions` response #495
+  - Remove normalisation of the password when using SCRAM mechanism #505
+
+### Fixed
+  - Fix built-in partitioners type definition error #455
+  - Detect replaced brokers on refresh metadata #457
+  - Make NodeJS REPL get correct `randomBytes()` #462
+  - Fix `IHeaders` type definition (from string to Buffer) #467
+  - Rename Typescript definitions from `ResourceType` to `ResourceTypes` #468
+  - Update Typescript definitions to make `configNames` optional in `ResourceTypes` #474
+  - Fix `transactionState.ABORTING` value #478
+
 ## [1.10.0] - 2019-07-31
 ### Added
   - Allow the consumer to pause and resume individual partitions #417

@@ -18,6 +18,16 @@ The option `retry` can be used to customize the configuration for the admin.
 
 Take a look at [Retry](Configuration.md#default-retry) for more information.
 
+## <a name="list-topics"></a> List topics
+
+`listTopics` lists the names of all existing topics, and returns an array of strings.
+The method will throw exceptions in case of errors.
+
+```javascript
+await admin.listTopics()
+// [ 'topic-1', 'topic-2', 'topic-3', ... ]
+```
+
 ## <a name="create-topics"></a> Create topics
 
 `createTopics` will resolve to `true` if the topic was created successfully or `false` if it already exists. The method will throw exceptions in case of errors.
@@ -64,6 +74,36 @@ Topic deletion is disabled by default in Apache Kafka versions prior to `1.0.0`.
 ```yml
 delete.topic.enable=true
 ```
+
+## <a name="create-partitions"></a> Create partitions
+
+`createPartitions` will resolve in case of success. The method will throw exceptions in case of errors.
+
+```javascript
+await admin.createPartitions({
+    validateOnly: <boolean>,
+    timeout: <Number>,
+    topicPartitions: <TopicPartition[]>,
+})
+```
+
+`TopicPartition` structure:
+
+```javascript
+{
+    topic: <String>,
+    count: <Number>,     // partition count
+    assignments: <Array<Array<Number>>> // Example: [[0,1],[1,2],[2,0]] 
+}
+```
+
+| property       | description                                                                                           | default |
+| -------------- | ----------------------------------------------------------------------------------------------------- | ------- |
+| topicPartitions| Topic partition definition                                                                                      |         |
+| validateOnly   | If this is `true`, the request will be validated, but the topic won't be created.                     | false   |
+| timeout        | The time in ms to wait for a topic to be completely created on the controller node                    | 5000    |
+| count          | New partition count, mandatory                                                                                   |         |
+| assignments    | Assigned brokers for each new partition                                                               | null    |
 
 ## <a name="get-topic-metadata"></a> Get topic metadata
 
@@ -182,6 +222,22 @@ await admin.setOffsets({
         { partition: 3, offset: '19' },
     ]
 })
+```
+
+## <a name="describe-cluster"></a> Describe cluster
+
+Allows you to get information about the broker cluster. This is mostly useful
+for monitoring or operations, and is usually not relevant for typical event processing.
+
+```javascript
+await admin.describeCluster()
+// {
+//   brokers: [
+//     { nodeId: 0, host: 'localhost', port: 9092 }
+//   ],
+//   controller: 0,
+//   clusterId: 'f8QmWTB8SQSLE6C99G4qzA'
+// }
 ```
 
 ## <a name="describe-configs"></a> Describe configs
@@ -320,5 +376,88 @@ Example response:
         resourceType: 2,
     }],
     throttleTime: 0,
+}
+```
+
+## <a name="list-groups"></a> List groups
+
+List groups available on the broker.
+
+```javascript
+await admin.listGroups()
+```
+
+Example response:
+
+```javascript
+{
+    groups: [
+        {groupId: 'testgroup', protocolType: 'consumer'}
+    ]
+}
+```
+
+## <a name="describe-groups"></a> Describe groups
+
+Describe consumer groups by `groupId`s. This is similar to [consumer.describeGroup()](Consuming.md#describe-group), except
+it allows you to describe multiple groups and does not require you to have a consumer be part of any of those groups.
+
+```js
+await admin.describeGroups([ 'testgroup' ])
+// {
+//   groups: [{
+//     errorCode: 0,
+//     groupId: 'testgroup',
+//     members: [
+//       {
+//         clientHost: '/172.19.0.1',
+//         clientId: 'test-3e93246fe1f4efa7380a',
+//         memberAssignment: Buffer,
+//         memberId: 'test-3e93246fe1f4efa7380a-ff87d06d-5c87-49b8-a1f1-c4f8e3ffe7eb',
+//         memberMetadata: Buffer,
+//       },
+//     ],
+//     protocol: 'RoundRobinAssigner',
+//     protocolType: 'consumer',
+//     state: 'Stable',
+//   }]
+// }
+```
+
+## <a name="delete-groups"></a> Delete groups
+
+Delete groups by `groupId`.
+
+Note that you can only delete groups with no connected consumers.
+
+```javascript
+await admin.deleteGroups([groupId])
+```
+
+Example:
+
+```javascript
+await admin.deleteGroups(['group-test'])
+```
+
+Example response:
+
+```javascript
+[
+    {groupId: 'testgroup', errorCode: 'consumer'}
+]
+```
+
+Because this method accepts multiple `groupId`s, it can fail to delete one or more of the provided groups. In case of failure, it will throw an error containing the failed groups:
+
+```javascript
+try {
+    await admin.deleteGroups(['a', 'b', 'c'])
+} catch (error) {
+  // error.name 'KafkaJSDeleteGroupsError'
+  // error.groups = [{
+  //   groupId: a
+  //   error: KafkaJSProtocolError
+  // }]
 }
 ```

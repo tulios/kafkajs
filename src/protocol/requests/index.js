@@ -18,7 +18,7 @@ const requests = {
   LeaveGroup: require('./leaveGroup'),
   SyncGroup: require('./syncGroup'),
   DescribeGroups: require('./describeGroups'),
-  ListGroups: {},
+  ListGroups: require('./listGroups'),
   SaslHandshake: require('./saslHandshake'),
   ApiVersions: require('./apiVersions'),
   CreateTopics: require('./createTopics'),
@@ -39,12 +39,12 @@ const requests = {
   AlterReplicaLogDirs: {},
   DescribeLogDirs: {},
   SaslAuthenticate: require('./saslAuthenticate'),
-  CreatePartitions: {},
+  CreatePartitions: require('./createPartitions'),
   CreateDelegationToken: {},
   RenewDelegationToken: {},
   ExpireDelegationToken: {},
   DescribeDelegationToken: {},
-  DeleteGroups: {},
+  DeleteGroups: require('./deleteGroups'),
 }
 
 const BEGIN_EXPERIMENTAL_V011_REQUEST_VERSION = {

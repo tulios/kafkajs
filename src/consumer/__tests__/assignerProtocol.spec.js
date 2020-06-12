@@ -44,5 +44,9 @@ describe('Consumer > assignerProtocol', () => {
         userData: Buffer.alloc(0),
       })
     })
+
+    test('decode empty assignment', () => {
+      expect(MemberAssignment.decode(Buffer.from([]))).toBe(null)
+    })
   })
 })

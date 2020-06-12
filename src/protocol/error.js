@@ -374,6 +374,7 @@ const errorCodes = [
     code: 58,
     retriable: false,
     message: 'SASL Authentication failed',
+    helpUrl: websiteUrl('docs/configuration', 'sasl'),
   },
   {
     type: 'UNKNOWN_PRODUCER_ID',
