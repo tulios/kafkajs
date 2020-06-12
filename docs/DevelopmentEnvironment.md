@@ -64,3 +64,29 @@ const kafka = new Kafka({
   },
 })
 ```
+
+## Visual Studio Code Integration
+
+In order to [better integrate with Visual Studio Code's Javascript Language Service](https://code.visualstudio.com/docs/languages/jsconfig),
+you can add a `jsconfig.json` file to the root of the project.
+
+```json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "module": "commonjs",
+    "target": "es6",
+    "paths": {
+      "testHelpers": ["./testHelpers"]
+    }
+  },
+  "include": [
+    "src",
+    "testHelpers"
+  ]
+}
+```
+
+This can help Visual Studio Code show type-hints even for modules that don't directly import each other:
+
+![Editor screenshot showing type hinting for Cluster methods](./assets/vscode-integration.png)
