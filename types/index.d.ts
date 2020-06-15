@@ -415,7 +415,7 @@ export type Broker = {
 
 export type KafkaMessage = {
   key: Buffer
-  value: Buffer
+  value: Buffer | null
   timestamp: string
   size: number
   attributes: number
