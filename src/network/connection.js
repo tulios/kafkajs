@@ -200,10 +200,15 @@ module.exports = class Connection {
    */
   async disconnect() {
     this.logDebug('disconnecting...')
-    this.requestQueue.destroy()
     this.connected = false
-    this.socket.end()
-    this.socket.unref()
+
+    this.requestQueue.destroy()
+
+    if (this.socket) {
+      this.socket.end()
+      this.socket.unref()
+    }
+
     this.logDebug('disconnected')
     return true
   }
