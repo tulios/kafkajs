@@ -105,7 +105,7 @@ module.exports = class OffsetManager {
 
     const subtractOffsets = (resolvedOffset, committedOffset) => {
       const resolvedOffsetLong = Long.fromValue(resolvedOffset)
-      return committedOffset === '-1'
+      return isInvalidOffset(committedOffset)
         ? resolvedOffsetLong
         : resolvedOffsetLong.subtract(Long.fromValue(committedOffset))
     }
