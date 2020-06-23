@@ -199,10 +199,6 @@ module.exports = class Connection {
    * @returns {Promise}
    */
   async disconnect() {
-    if (!this.connected) {
-      return true
-    }
-
     this.logDebug('disconnecting...')
     this.requestQueue.destroy()
     this.connected = false
