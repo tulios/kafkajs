@@ -1,3 +1,3 @@
 const Long = require('long')
 
-module.exports = offset => !offset || Long.fromValue(offset).isNegative()
+module.exports = offset => (!offset && offset !== 0) || Long.fromValue(offset).isNegative()
