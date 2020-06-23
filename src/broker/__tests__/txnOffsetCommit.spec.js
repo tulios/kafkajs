@@ -100,6 +100,7 @@ describe('Broker > TxnOffsetCommit', () => {
       ],
     })
 
+    result.topics.forEach(topic => topic.partitions.sort((p1, p2) => p1.partition - p2.partition))
     expect(result).toEqual({
       throttleTime: 0,
       topics: [

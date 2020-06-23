@@ -423,7 +423,7 @@ module.exports = class Runner extends EventEmitter {
           })
 
           await this.join()
-          this.scheduleFetch()
+          setImmediate(() => this.scheduleFetch())
           return
         }
 
@@ -438,12 +438,12 @@ module.exports = class Runner extends EventEmitter {
 
           this.consumerGroup.memberId = null
           await this.join()
-          this.scheduleFetch()
+          setImmediate(() => this.scheduleFetch())
           return
         }
 
         if (e.name === 'KafkaJSOffsetOutOfRange') {
-          this.scheduleFetch()
+          setImmediate(() => this.scheduleFetch())
           return
         }
 

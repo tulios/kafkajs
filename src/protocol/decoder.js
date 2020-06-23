@@ -133,9 +133,9 @@ module.exports = class Decoder {
       return []
     }
 
-    const array = []
+    const array = new Array(length)
     for (let i = 0; i < length; i++) {
-      array.push(reader(this))
+      array[i] = reader(this)
     }
 
     return array
@@ -148,9 +148,9 @@ module.exports = class Decoder {
       return []
     }
 
-    const array = []
+    const array = new Array(length)
     for (let i = 0; i < length; i++) {
-      array.push(reader(this))
+      array[i] = reader(this)
     }
 
     return array
@@ -163,9 +163,9 @@ module.exports = class Decoder {
       return []
     }
 
-    const array = []
+    const array = new Array(length)
     for (let i = 0; i < length; i++) {
-      array.push(await reader(this))
+      array[i] = await reader(this)
     }
 
     return array

@@ -522,12 +522,15 @@ export type GroupDescription = {
 }
 
 export type TopicPartitions = { topic: string; partitions: number[] }
-export type TopicPartitionOffsetAndMedata = {
+export type TopicPartitionOffsetAndMetadata = {
   topic: string
   partition: number
   offset: string
   metadata?: string | null
 }
+
+// TODO: Remove with 2.x
+export type TopicPartitionOffsetAndMedata = TopicPartitionOffsetAndMetadata
 
 export type Batch = {
   topic: string
@@ -555,6 +558,7 @@ export type ConsumerEvents = {
   HEARTBEAT: 'consumer.heartbeat'
   COMMIT_OFFSETS: 'consumer.commit_offsets'
   GROUP_JOIN: 'consumer.group_join'
+  FETCH_START: 'consumer.fetch_start'
   FETCH: 'consumer.fetch'
   START_BATCH_PROCESS: 'consumer.start_batch_process'
   END_BATCH_PROCESS: 'consumer.end_batch_process'
@@ -668,7 +672,7 @@ export type Consumer = {
   subscribe(topic: ConsumerSubscribeTopic): Promise<void>
   stop(): Promise<void>
   run(config?: ConsumerRunConfig): Promise<void>
-  commitOffsets(topicPartitions: Array<TopicPartitionOffsetAndMedata>): Promise<void>
+  commitOffsets(topicPartitions: Array<TopicPartitionOffsetAndMetadata>): Promise<void>
   seek(topicPartition: { topic: string; partition: number; offset: string }): void
   describeGroup(): Promise<GroupDescription>
   pause(topics: Array<{ topic: string; partitions?: number[] }>): void
