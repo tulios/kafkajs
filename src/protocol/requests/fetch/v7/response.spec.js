@@ -1,6 +1,6 @@
 const { decode, parse } = require('./response')
 
-describe('Protocol > Requests > Fetch > v5', () => {
+describe('Protocol > Requests > Fetch > v7', () => {
   const batchContext = {
     firstOffset: expect.any(String),
     firstSequence: expect.any(Number),
