@@ -60,7 +60,7 @@ module.exports = class OffsetManager {
     }
 
     let offset = this.resolvedOffsets[topic][partition]
-    if (Long.fromValue(offset).equals(-1)) {
+    if (isInvalidOffset(offset)) {
       offset = '0'
     }
 
