@@ -29,7 +29,7 @@ describe('Consumer', () => {
   })
 
   afterEach(async () => {
-    await consumer.disconnect()
+    consumer && (await consumer.disconnect())
   })
 
   test('support SSL connections', async () => {
