@@ -57,8 +57,8 @@ describe('Consumer', () => {
   })
 
   afterEach(async () => {
-    await consumer.disconnect()
-    await producer.disconnect()
+    consumer && (await consumer.disconnect())
+    producer && (await producer.disconnect())
   })
 
   testIfKafka_0_11('consume 0.10 messages with 0.11 API', async () => {

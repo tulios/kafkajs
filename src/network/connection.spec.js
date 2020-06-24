@@ -74,6 +74,17 @@ describe('Network > Connection', () => {
       await expect(connection.disconnect()).resolves.toEqual(true)
       expect(connection.connected).toEqual(false)
     })
+
+    test('trigger "end" and "unref" function on not active connection', async () => {
+      expect(connection.connected).toEqual(false)
+      connection.socket = {
+        end: jest.fn(),
+        unref: jest.fn(),
+      }
+      await expect(connection.disconnect()).resolves.toEqual(true)
+      expect(connection.socket.end).toHaveBeenCalled()
+      expect(connection.socket.unref).toHaveBeenCalled()
+    })
   })
 
   describe('#send', () => {
