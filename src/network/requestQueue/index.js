@@ -122,16 +122,23 @@ module.exports = class RequestQueue {
       return
     }
 
+    this.sendSocketRequest(socketRequest)
+  }
+
+  /**
+   * @param {SocketRequest} socketRequest
+   */
+  sendSocketRequest(socketRequest) {
     socketRequest.send()
 
     if (!socketRequest.expectResponse) {
       this.logger.debug(`Request does not expect a response, resolving immediately`, {
         clientId: this.clientId,
         broker: this.broker,
-        correlationId,
+        correlationId: socketRequest.correlationId,
       })
 
-      this.inflight.delete(correlationId)
+      this.inflight.delete(socketRequest.correlationId)
       socketRequest.completed({ size: 0, payload: null })
     }
   }
@@ -147,7 +154,7 @@ module.exports = class RequestQueue {
 
     if (this.pending.length > 0) {
       const pendingRequest = this.pending.pop()
-      pendingRequest.send()
+      this.sendSocketRequest(pendingRequest)
 
       this.logger.debug(`Consumed pending request`, {
         clientId: this.clientId,
