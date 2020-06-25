@@ -40,23 +40,25 @@ describe('Network > RequestQueue', () => {
       }
     })
 
-    it('calls send on the request', () => {
-      requestQueue.push(request)
-      expect(send).toHaveBeenCalledTimes(1)
-    })
-
-    describe('when the request does not require a response', () => {
-      beforeEach(() => {
-        request.expectResponse = false
+    describe('when there are no inflight requests', () => {
+      it('calls send on the request', () => {
+        requestQueue.push(request)
+        expect(send).toHaveBeenCalledTimes(1)
       })
 
-      it('deletes the inflight request and complete the request', () => {
-        requestQueue.push(request)
-        expect(request.entry.resolve).toHaveBeenCalledWith(
-          expect.objectContaining({ size: 0, payload: null })
-        )
+      describe('when the request does not require a response', () => {
+        beforeEach(() => {
+          request.expectResponse = false
+        })
 
-        expect(requestQueue.inflight.size).toEqual(0)
+        it('deletes the inflight request and complete the request', () => {
+          requestQueue.push(request)
+          expect(request.entry.resolve).toHaveBeenCalledWith(
+            expect.objectContaining({ size: 0, payload: null })
+          )
+
+          expect(requestQueue.inflight.size).toEqual(0)
+        })
       })
     })
 
@@ -78,6 +80,28 @@ describe('Network > RequestQueue', () => {
         requestQueue.push(request)
         expect(requestQueue.inflight.size).toEqual(requestQueue.maxInFlightRequests)
         expect(requestQueue.pending.length).toEqual(1)
+      })
+
+      describe('when the request does not require a response', () => {
+        beforeEach(() => {
+          request.expectResponse = false
+        })
+
+        it('deletes the inflight request and complete the request when it is processed', () => {
+          requestQueue.push(request)
+
+          // Process the queue except the entry for the request, which should get handled automatically
+          for (const correlationId of requestQueue.inflight.keys()) {
+            if (correlationId !== request.entry.correlationId) {
+              requestQueue.fulfillRequest({ correlationId, size: 1, payload: Buffer.from('a') })
+            }
+          }
+          expect(request.entry.resolve).toHaveBeenCalledWith(
+            expect.objectContaining({ size: 0, payload: null })
+          )
+
+          expect(requestQueue.inflight.size).toEqual(0)
+        })
       })
 
       describe('when maxInFlightRequests is null', () => {
