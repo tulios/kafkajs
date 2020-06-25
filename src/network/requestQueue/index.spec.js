@@ -294,8 +294,11 @@ describe('Network > RequestQueue', () => {
       }
 
       requestQueue.push(request)
+
+      // Pick one of the inflight requests to fulfill
+      const correlationId = requestQueue.inflight.keys().next().value
       requestQueue.fulfillRequest({
-        correlationId: request.entry.correlationId,
+        correlationId,
         payload,
         size,
       })
