@@ -20,6 +20,11 @@ describe('Utils > concurrency', () => {
       KafkaJSNonRetriableError,
       '"limit" cannot be less than 1'
     )
+
+    expect(() => concurrency({ limit: NaN })).toThrowWithMessage(
+      KafkaJSNonRetriableError,
+      '"limit" cannot be less than 1'
+    )
   })
 
   it('invokes functions in sequence with concurrency of 1', async () => {
