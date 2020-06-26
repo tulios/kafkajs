@@ -133,11 +133,10 @@ describe('Network > RequestQueue', () => {
         entry: createEntry(),
         expectResponse: true,
       }
-
-      requestQueue.push(request)
     })
 
     it('deletes the inflight request and calls completed on the request', () => {
+      requestQueue.push(request)
       expect(requestQueue.inflight.size).toEqual(1)
 
       requestQueue.fulfillRequest({
@@ -163,21 +162,23 @@ describe('Network > RequestQueue', () => {
         }
       })
 
-      it('calls send on the latest pending request', () => {
+      it('calls send on the earliest pending request', () => {
         requestQueue.push(request)
         expect(requestQueue.pending.length).toEqual(1)
 
         const currentInflightSize = requestQueue.inflight.size
 
+        // Pick one of the inflight requests to fulfill
+        const correlationId = requestQueue.inflight.keys().next().value
         requestQueue.fulfillRequest({
-          correlationId: request.entry.correlationId,
+          correlationId: correlationId,
           payload,
           size,
         })
 
         expect(send).toHaveBeenCalled()
         expect(requestQueue.pending.length).toEqual(0)
-        expect(requestQueue.inflight.size).toEqual(currentInflightSize - 1)
+        expect(requestQueue.inflight.size).toEqual(currentInflightSize)
       })
     })
   })
@@ -293,8 +294,11 @@ describe('Network > RequestQueue', () => {
       }
 
       requestQueue.push(request)
+
+      // Pick one of the inflight requests to fulfill
+      const correlationId = requestQueue.inflight.keys().next().value
       requestQueue.fulfillRequest({
-        correlationId: request.entry.correlationId,
+        correlationId,
         payload,
         size,
       })
