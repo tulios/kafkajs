@@ -102,7 +102,9 @@ describe('Admin', () => {
       )
 
       expect(broker.deleteTopics).toHaveBeenCalledTimes(1)
-      expect(loggerInstance.error).toHaveBeenCalledWith(
+      expect(
+        loggerInstance.error
+      ).toHaveBeenCalledWith(
         'Could not delete topics, check if "delete.topic.enable" is set to "true" (the default value is "false") or increase the timeout',
         { error: 'The request timed out', retryCount: 0, retryTime: expect.any(Number) }
       )
