@@ -347,5 +347,26 @@ describe('Consumer > Runner', () => {
 
       expect(onCrash).toHaveBeenCalledWith(unknownError)
     })
+
+    it('should still catch request errors from BufferedAsyncIterator even if running is false', async () => {
+      const rejectedRequest = new Promise((resolve, reject) => {
+        setTimeout(() => reject(new Error('Failed or manually rejected request')), 100)
+      })
+
+      consumerGroup.fetch.mockImplementationOnce(
+        () =>
+          new Promise(resolve =>
+            setTimeout(() => {
+              resolve(BufferedAsyncIterator([rejectedRequest, Promise.resolve([])]))
+            }, 100)
+          )
+      )
+
+      runner.scheduleFetch = jest.fn()
+      await runner.start()
+      runner.running = false
+
+      await expect(runner.fetch()).rejects.toThrow('Failed or manually rejected request')
+    })
   })
 })
