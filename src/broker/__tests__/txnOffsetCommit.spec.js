@@ -78,9 +78,9 @@ describe('Broker > TxnOffsetCommit', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await transactionBroker.disconnect()
-    await consumerBroker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    transactionBroker && (await transactionBroker.disconnect())
+    consumerBroker && (await consumerBroker.disconnect())
   })
 
   test('request', async () => {
@@ -92,10 +92,7 @@ describe('Broker > TxnOffsetCommit', () => {
       topics: [
         {
           topic: topicName,
-          partitions: [
-            { partition: 0, offset: 0 },
-            { partition: 1, offset: 0 },
-          ],
+          partitions: [{ partition: 0, offset: 0 }, { partition: 1, offset: 0 }],
         },
       ],
     })
@@ -106,10 +103,7 @@ describe('Broker > TxnOffsetCommit', () => {
       topics: [
         {
           topic: topicName,
-          partitions: [
-            { errorCode: 0, partition: 0 },
-            { errorCode: 0, partition: 1 },
-          ],
+          partitions: [{ errorCode: 0, partition: 0 }, { errorCode: 0, partition: 1 }],
         },
       ],
     })
@@ -124,10 +118,7 @@ describe('Broker > TxnOffsetCommit', () => {
       topics: [
         {
           topic: topicName,
-          partitions: [
-            { partition: 0, offset: 0 },
-            { partition: 1, offset: 0 },
-          ],
+          partitions: [{ partition: 0, offset: 0 }, { partition: 1, offset: 0 }],
         },
       ],
     })

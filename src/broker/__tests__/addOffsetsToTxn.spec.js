@@ -44,8 +44,8 @@ describe('Broker > AddOffsetsToTxn', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await broker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    broker && (await broker.disconnect())
   })
 
   test('request', async () => {
