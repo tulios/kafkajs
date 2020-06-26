@@ -104,6 +104,7 @@ export interface ConsumerConfig {
   allowAutoTopicCreation?: boolean
   maxInFlightRequests?: number
   readUncommitted?: boolean
+  rackId?: string
 }
 
 export type PartitionAssigner = (config: { cluster: Cluster }) => Assigner
@@ -398,7 +399,7 @@ export type Broker = {
   metadata(
     topics: string[]
   ): Promise<{
-    brokers: Array<{ nodeId: number; host: string; port: number }>
+    brokers: Array<{ nodeId: number; host: string; port: number, rack?: string }>
     topicMetadata: Array<{
       topicErrorCode: number
       topic: number
