@@ -105,8 +105,8 @@ Thanks to [Tracy (Tan Yun)](https://medium.com/@tanyuntracy) for the V2 logo ❤
 
 ### Sponsored by:
 
-<a href="https://www.digitalocean.com/?refcode=9ee868b06152&utm_campaign=Referral_Invite&utm_medium=opensource&utm_source=kafkajs">
-  <img src="https://opensource.nyc3.cdn.digitaloceanspaces.com/attribution/assets/SVG/DO_Logo_horizontal_blue.svg" width="201px">
+<a href="https://www.confluent.io/confluent-cloud/?utm_source=kafkajs&utm_medium=opensource&utm_campaign=referral">
+  <img src="./logo/confluent/logo.png" width="830px">
 </a>
 
 ## License

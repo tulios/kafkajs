@@ -1,6 +1,6 @@
-const RequestV7Protocol = require('./request')
+const RequestV8Protocol = require('./request')
 
-describe('Protocol > Requests > Fetch > v7', () => {
+describe('Protocol > Requests > Fetch > v8', () => {
   test('request', async () => {
     const minBytes = 1
     const maxBytes = 10485760 // 10MB
@@ -13,7 +13,7 @@ describe('Protocol > Requests > Fetch > v7', () => {
       },
     ]
 
-    const { buffer } = await RequestV7Protocol({
+    const { buffer } = await RequestV8Protocol({
       replicaId: -1,
       maxWaitTime,
       minBytes,
@@ -21,6 +21,6 @@ describe('Protocol > Requests > Fetch > v7', () => {
       topics,
     }).encode()
 
-    expect(buffer).toEqual(Buffer.from(require('../fixtures/v7_request.json')))
+    expect(buffer).toEqual(Buffer.from(require('../fixtures/v8_request.json')))
   })
 })

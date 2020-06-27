@@ -199,15 +199,16 @@ module.exports = class Connection {
    * @returns {Promise}
    */
   async disconnect() {
-    if (!this.connected) {
-      return true
+    this.logDebug('disconnecting...')
+    this.connected = false
+
+    this.requestQueue.destroy()
+
+    if (this.socket) {
+      this.socket.end()
+      this.socket.unref()
     }
 
-    this.logDebug('disconnecting...')
-    this.requestQueue.destroy()
-    this.connected = false
-    this.socket.end()
-    this.socket.unref()
     this.logDebug('disconnected')
     return true
   }
@@ -314,6 +315,8 @@ module.exports = class Connection {
 
     try {
       const payloadDecoded = await response.decode(payload)
+      // KIP-219: If the response indicates that the client-side needs to throttle, do that.
+      this.requestQueue.maybeThrottle(payloadDecoded.clientSideThrottleTime)
       const data = await response.parse(payloadDecoded)
       const isFetchApi = entry.apiName === 'Fetch'
       this.logDebug(`Response ${requestInfo(entry)}`, {

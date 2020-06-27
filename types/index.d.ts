@@ -82,6 +82,7 @@ export type PartitionMetadata = {
   leader: number
   replicas: number[]
   isr: number[]
+  offlineReplicas?: number[]
 }
 
 export interface IHeaders {

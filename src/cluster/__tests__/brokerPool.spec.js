@@ -20,7 +20,7 @@ describe('Cluster > BrokerPool', () => {
   })
 
   afterEach(async () => {
-    await brokerPool.disconnect()
+    brokerPool && (await brokerPool.disconnect())
   })
 
   it('defaults metadataMaxAge to 0', () => {
