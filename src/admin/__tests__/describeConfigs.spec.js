@@ -20,7 +20,7 @@ describe('Admin', () => {
   })
 
   afterEach(async () => {
-    await admin.disconnect()
+    admin && (await admin.disconnect())
   })
 
   describe('describeConfigs', () => {
