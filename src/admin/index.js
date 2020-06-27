@@ -603,7 +603,7 @@ module.exports = ({
       topics: await Promise.all(
         targetTopics.map(async topic => ({
           name: topic,
-          partitions: await cluster.findTopicPartitionMetadata(topic),
+          partitions: cluster.findTopicPartitionMetadata(topic),
         }))
       ),
     }

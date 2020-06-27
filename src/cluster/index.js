@@ -241,7 +241,7 @@ module.exports = class Cluster {
   /**
    * @public
    * @param {string} topic
-   * @returns {Object} Example:
+   * @returns {import("../../types").PartitionMetadata[]} Example:
    *                   [{
    *                     isr: [2],
    *                     leader: 2,

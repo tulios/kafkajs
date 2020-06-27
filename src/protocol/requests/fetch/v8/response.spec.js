@@ -1,6 +1,6 @@
 const { decode, parse } = require('./response')
 
-describe('Protocol > Requests > Fetch > v7', () => {
+describe('Protocol > Requests > Fetch > v8', () => {
   const batchContext = {
     firstOffset: expect.any(String),
     firstSequence: expect.any(Number),
@@ -16,9 +16,10 @@ describe('Protocol > Requests > Fetch > v7', () => {
   }
 
   test('response', async () => {
-    const data = await decode(Buffer.from(require('../fixtures/v7_response.json')))
+    const data = await decode(Buffer.from(require('../fixtures/v8_response.json')))
     expect(data).toEqual({
       throttleTime: 0,
+      clientSideThrottleTime: 0,
       errorCode: 0,
       sessionId: 0,
       responses: [
