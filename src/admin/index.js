@@ -115,6 +115,7 @@ module.exports = ({
           const topicNamesArray = Array.from(topicNames.values())
           await retryOnLeaderNotAvailable(async () => await broker.metadata(topicNamesArray), {
             delay: 100,
+            maxWait: timeout,
             timeoutMessage: 'Timed out while waiting for topic leaders',
           })
         }
