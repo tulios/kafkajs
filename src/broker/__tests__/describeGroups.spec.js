@@ -43,9 +43,9 @@ describe('Broker > DescribeGroups', () => {
   })
 
   afterEach(async () => {
-    await consumer.disconnect()
-    await seedBroker.disconnect()
-    await broker.disconnect()
+    consumer && (await consumer.disconnect())
+    seedBroker && (await seedBroker.disconnect())
+    broker && (await broker.disconnect())
   })
 
   test('request', async () => {

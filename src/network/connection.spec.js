@@ -230,9 +230,7 @@ describe('Network > Connection', () => {
       })
 
       afterEach(async () => {
-        if (connection) {
-          await connection.disconnect()
-        }
+        connection && (await connection.disconnect())
       })
 
       test('logs the full payload in case of non-retriable error when "KAFKAJS_DEBUG_PROTOCOL_BUFFERS" runtime flag is set', async () => {

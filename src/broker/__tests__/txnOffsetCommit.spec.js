@@ -78,9 +78,9 @@ describe('Broker > TxnOffsetCommit', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await transactionBroker.disconnect()
-    await consumerBroker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    transactionBroker && (await transactionBroker.disconnect())
+    consumerBroker && (await consumerBroker.disconnect())
   })
 
   test('request', async () => {

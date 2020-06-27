@@ -62,7 +62,7 @@ describe('Broker > Produce', () => {
   })
 
   afterEach(async () => {
-    await broker.disconnect()
+    broker && (await broker.disconnect())
     broker2 && (await broker2.disconnect())
   })
 
