@@ -30,8 +30,8 @@ describe('Broker > SyncGroup', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await groupCoordinator.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    groupCoordinator && (await groupCoordinator.disconnect())
   })
 
   test('request', async () => {

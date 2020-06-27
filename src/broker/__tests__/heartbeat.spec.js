@@ -54,9 +54,9 @@ describe('Broker > Heartbeat', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await broker.disconnect()
-    await groupCoordinator.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    broker && (await broker.disconnect())
+    groupCoordinator && (await groupCoordinator.disconnect())
   })
 
   test('request', async () => {

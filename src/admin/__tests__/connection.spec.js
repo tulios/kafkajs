@@ -15,7 +15,7 @@ describe('Admin', () => {
   let admin
 
   afterEach(async () => {
-    await admin.disconnect()
+    admin && (await admin.disconnect())
   })
 
   test('support SSL connections', async () => {
