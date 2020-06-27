@@ -333,10 +333,6 @@ module.exports = class Runner extends EventEmitter {
         const batches = await result.value
         expectedNumberOfExecutions += batches.length
 
-        if (!this.running) {
-          return
-        }
-
         batches.map(batch =>
           concurrently(async () => {
             try {
