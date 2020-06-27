@@ -28,7 +28,7 @@ const mergeTopics = (obj, { topic, partitions }) => ({
  * @param {number} connectionTimeout - in milliseconds
  * @param {number} authenticationTimeout - in milliseconds
  * @param {number} reauthenticationThreshold - in milliseconds
- * @param {number} requestTimeout - in milliseconds
+ * @param {number} [requestTimeout=30000] - in milliseconds
  * @param {number} metadataMaxAge - in milliseconds
  * @param {boolean} allowAutoTopicCreation
  * @param {number} maxInFlightRequests
@@ -49,7 +49,7 @@ module.exports = class Cluster {
     connectionTimeout,
     authenticationTimeout,
     reauthenticationThreshold,
-    requestTimeout,
+    requestTimeout = 30000,
     enforceRequestTimeout,
     metadataMaxAge,
     retry,
@@ -241,7 +241,7 @@ module.exports = class Cluster {
   /**
    * @public
    * @param {string} topic
-   * @returns {Object} Example:
+   * @returns {import("../../types").PartitionMetadata[]} Example:
    *                   [{
    *                     isr: [2],
    *                     leader: 2,

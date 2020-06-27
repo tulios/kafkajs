@@ -21,6 +21,16 @@ const maxBytesPerPartition = 1048576 // 1MB
 const maxWaitTime = 100
 const timestamp = 1509827900073
 
+expect.extend({
+  optional(v, value) {
+    const pass = typeof v === 'undefined' || v === value
+    return {
+      pass,
+      message: () => `Expected ${value} to ${pass ? 'not ' : ''}be undefined or ${value}`,
+    }
+  },
+})
+
 describe('Broker > Fetch', () => {
   let topicName, seedBroker, broker, newBrokerData
 
@@ -104,8 +114,8 @@ describe('Broker > Fetch', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await broker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    broker && (await broker.disconnect())
   })
 
   test('rejects the Promise if lookupRequest is not defined', async () => {
@@ -296,6 +306,7 @@ describe('Broker > Fetch', () => {
       let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse).toEqual({
         throttleTime: 0,
+        clientSideThrottleTime: expect.optional(0),
         errorCode: 0,
         sessionId: 0,
         responses: [
@@ -378,6 +389,7 @@ describe('Broker > Fetch', () => {
       let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse).toEqual({
         throttleTime: 0,
+        clientSideThrottleTime: expect.optional(0),
         errorCode: 0,
         sessionId: 0,
         responses: [
@@ -460,6 +472,7 @@ describe('Broker > Fetch', () => {
       let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse).toEqual({
         throttleTime: 0,
+        clientSideThrottleTime: expect.optional(0),
         errorCode: 0,
         sessionId: 0,
         responses: [
@@ -575,6 +588,7 @@ describe('Broker > Fetch', () => {
         let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
         expect(fetchResponse).toEqual({
           throttleTime: 0,
+          clientSideThrottleTime: expect.optional(0),
           errorCode: 0,
           sessionId: 0,
           responses: [
@@ -606,6 +620,7 @@ describe('Broker > Fetch', () => {
           fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
           expect(fetchResponse).toEqual({
             throttleTime: 0,
+            clientSideThrottleTime: expect.optional(0),
             errorCode: 0,
             sessionId: 0,
             responses: [
@@ -734,6 +749,7 @@ describe('Broker > Fetch', () => {
         })
         expect(fetchResponse).toEqual({
           throttleTime: 0,
+          clientSideThrottleTime: expect.optional(0),
           errorCode: 0,
           sessionId: 0,
           responses: [
@@ -825,6 +841,7 @@ describe('Broker > Fetch', () => {
           })
           expect(fetchResponse).toEqual({
             throttleTime: 0,
+            clientSideThrottleTime: expect.optional(0),
             errorCode: 0,
             sessionId: 0,
             responses: [

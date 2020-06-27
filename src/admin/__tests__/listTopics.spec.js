@@ -20,8 +20,10 @@ describe('Admin', () => {
   })
 
   afterEach(async () => {
-    await admin.deleteTopics({ topics: existingTopicNames })
-    await admin.disconnect()
+    if (admin) {
+      await admin.deleteTopics({ topics: existingTopicNames })
+      await admin.disconnect()
+    }
   })
 
   describe('listTopics', () => {
