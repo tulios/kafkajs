@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-COMPOSE_FILE=${COMPOSE_FILE:="docker-compose.2_3.yml"}
+COMPOSE_FILE=${COMPOSE_FILE:="docker-compose.2_4.yml"}
 
 echo "Running compose file: ${COMPOSE_FILE}:"
 docker-compose -f "${COMPOSE_FILE}" up --force-recreate -d
