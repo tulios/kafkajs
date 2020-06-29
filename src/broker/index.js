@@ -348,7 +348,8 @@ module.exports = class Broker {
     groupProtocols,
   }) {
     const joinGroup = this.lookupRequest(apiKeys.JoinGroup, requests.JoinGroup)
-    return await this.connection.send(
+
+    const response = await this.connection.send(
       joinGroup({
         groupId,
         sessionTimeout,
@@ -358,6 +359,21 @@ module.exports = class Broker {
         groupProtocols,
       })
     )
+
+    if (!memberId && response.errorCode && response.memberId) {
+      // retry join in case if we get error MEMBER_ID_REQUIRED
+      // KIP-394: Require member.id for initial join group request
+      return await this.joinGroup({
+        groupId,
+        sessionTimeout,
+        rebalanceTimeout,
+        memberId: response.memberId,
+        protocolType,
+        groupProtocols,
+      })
+    }
+
+    return response
   }
 
   /**
