@@ -17,9 +17,9 @@ pr:
 variables:
   - group: website_secrets
   - name: KAFKA_VERSION
-    value: 2.3
+    value: 2.4
   - name: COMPOSE_FILE
-    value: docker-compose.2_3.yml
+    value: docker-compose.2_4.yml
 
 ####### Linter
 jobs:
