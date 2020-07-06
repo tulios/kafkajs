@@ -421,7 +421,7 @@ describe('Consumer', () => {
       })
     })
 
-    it('shouldn\'t commit the previous offsets if autoCommit is disabled', async () => {
+    it("shouldn't commit the previous offsets if autoCommit is disabled", async () => {
       let raisedError = false
       consumer.run({
         autoCommit: false,
@@ -462,4 +462,3 @@ describe('Consumer', () => {
     })
   })
 })
-
