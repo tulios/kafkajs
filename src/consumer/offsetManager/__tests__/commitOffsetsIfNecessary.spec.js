@@ -16,6 +16,7 @@ describe('Consumer > OffsetMananger > commitOffsetsIfNecessary', () => {
       cluster: {
         committedOffsets: jest.fn(() => ({})),
       },
+      autoCommit: true,
     })
     offsetManager.commitOffsets = jest.fn()
     offsetManager.committedOffsets()['topic1'][0] = '-1'

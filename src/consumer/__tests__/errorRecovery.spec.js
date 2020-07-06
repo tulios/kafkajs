@@ -384,6 +384,7 @@ describe('Consumer', () => {
     it('commits the previous offsets', async () => {
       let raisedError = false
       consumer.run({
+        autoCommitInterval: 0,
         eachBatch: async ({ batch, resolveOffset }) => {
           for (const message of batch.messages) {
             if (message.key.toString() === `key-${key3}`) {
@@ -419,5 +420,46 @@ describe('Consumer', () => {
         ],
       })
     })
+
+    it('shouldn\'t commit the previous offsets if autoCommit is disabled', async () => {
+      let raisedError = false
+      consumer.run({
+        autoCommit: false,
+        eachBatch: async ({ batch, resolveOffset }) => {
+          for (const message of batch.messages) {
+            if (message.key.toString() === `key-${key3}`) {
+              raisedError = true
+              throw new Error('some error')
+            }
+            resolveOffset(message.offset)
+          }
+        },
+      })
+
+      await waitForConsumerToJoinGroup(consumer)
+      await expect(waitFor(() => raisedError)).resolves.toBeTruthy()
+      const coordinator = await cluster.findGroupCoordinator({ groupId })
+      const offsets = await coordinator.offsetFetch({
+        groupId,
+        topics: [
+          {
+            topic: topicName,
+            partitions: [{ partition: 0 }],
+          },
+        ],
+      })
+
+      expect(offsets).toEqual({
+        throttleTime: 0,
+        errorCode: 0,
+        responses: [
+          {
+            partitions: [{ errorCode: 0, metadata: '', offset: '-1', partition: 0 }],
+            topic: topicName,
+          },
+        ],
+      })
+    })
   })
 })
+

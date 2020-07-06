@@ -9,6 +9,7 @@ describe('ConsumerGroup', () => {
       logger: newLogger(),
       topics: ['topic1'],
       cluster: {},
+      autoCommit: true,
     })
   })
 

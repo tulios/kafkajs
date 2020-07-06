@@ -42,6 +42,7 @@ describe('Consumer > OffsetMananger > commitOffsets', () => {
       generationId,
       memberId,
       instrumentationEmitter: new InstrumentationEventEmitter(),
+      autoCommit: true,
     })
 
     offsetManager.getCoordinator = jest.fn(() => mockCoordinator)

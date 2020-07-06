@@ -17,6 +17,7 @@ module.exports = class OffsetManager {
     cluster,
     coordinator,
     memberAssignment,
+    autoCommit,
     autoCommitInterval,
     autoCommitThreshold,
     topicConfigurations,
@@ -41,6 +42,7 @@ module.exports = class OffsetManager {
     this.generationId = generationId
     this.memberId = memberId
 
+    this.autoCommit = autoCommit
     this.autoCommitInterval = autoCommitInterval
     this.autoCommitThreshold = autoCommitThreshold
     this.lastCommit = Date.now()
@@ -178,6 +180,10 @@ module.exports = class OffsetManager {
   }
 
   async commitOffsetsIfNecessary() {
+    if (this.autoCommit !== true) {
+      return
+    }
+
     const now = Date.now()
 
     const timeoutReached =
