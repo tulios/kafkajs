@@ -106,6 +106,12 @@ const createModPartitioner = () => ({ partitionMetadata, message }) => {
 
 const testWaitFor = async (fn, opts = {}) => waitFor(fn, { ignoreTimeout: true, ...opts })
 
+/**
+ * @param {import("types").KafkaJSError} errorType
+ * @param {() => Promise<T>} fn
+ * @returns {Promise<T>}
+ * @template T
+ */
 const retryProtocol = (errorType, fn) =>
   waitFor(
     async () => {
