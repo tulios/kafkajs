@@ -413,6 +413,15 @@ export type Broker = {
     retentionTime?: number
     topics: Array<{ topic: string; partitions: Array<{ partition: number; offset: string }> }>
   }): Promise<any>
+  fetch(request: {
+    replicaId?: number,
+    isolationLevel?: number,
+    maxWaitTime?: number,
+    minBytes?: number,
+    maxBytes?: number,
+    topics: Array<{ topic: string, partitions: Array<{ partition: number; fetchOffset: string; maxBytes: number }>}>,
+    rackId?: string,
+  }): Promise<any>
 }
 
 export type KafkaMessage = {
