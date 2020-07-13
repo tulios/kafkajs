@@ -14,7 +14,7 @@ services:
       - ./testHelpers/kafka/server-jaas_oauth.conf:/etc/kafka/server-jaas.conf:ro,z
 
   kafka1:
-    image: confluentinc/cp-kafka:5.3.1
+    image: confluentinc/cp-kafka:5.4.2
     hostname: kafka1
     container_name: kafka1
     labels:
@@ -57,7 +57,7 @@ services:
       - ./testHelpers/kafka/server-jaas_oauth.conf:/opt/kafka/config/server-jaas.conf:ro,z
   
   kafka2:
-    image: confluentinc/cp-kafka:5.3.1
+    image: confluentinc/cp-kafka:5.4.2
     hostname: kafka2
     container_name: kafka2
     labels:
@@ -100,7 +100,7 @@ services:
       - ./testHelpers/kafka/server-jaas_oauth.conf:/opt/kafka/config/server-jaas.conf:ro,z
 
   kafka3:
-    image: confluentinc/cp-kafka:5.3.1
+    image: confluentinc/cp-kafka:5.4.2
     hostname: kafka3
     container_name: kafka3
     labels:
