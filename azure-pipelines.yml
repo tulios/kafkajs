@@ -181,6 +181,7 @@ jobs:
 
   - job: test_oauthbearer
     displayName: 'OauthBearer'
+    condition: contains(variables['Build.SourceBranch'], 'refs/heads/master')
     dependsOn: lint
     variables:
       - name: test_retries
