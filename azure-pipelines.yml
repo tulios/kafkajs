@@ -17,9 +17,9 @@ pr:
 variables:
   - group: website_secrets
   - name: KAFKA_VERSION
-    value: 2.3
+    value: 2.4
   - name: COMPOSE_FILE
-    value: docker-compose.2_3.yml
+    value: docker-compose.2_4.yml
 
 ####### Linter
 jobs:
@@ -177,7 +177,36 @@ jobs:
         condition: succeededOrFailed()
         inputs:
           testRunner: JUnit
-          testResultsFiles: '**/test-report.xml'
+          testResultsFiles: "**/test-report.xml"
+
+  - job: test_oauthbearer
+    displayName: 'OauthBearer'
+    condition: contains(variables['Build.SourceBranch'], 'refs/heads/master')
+    dependsOn: lint
+    variables:
+      - name: test_retries
+        value: 2
+      - name: COMPOSE_FILE
+        value: docker-compose.2_4_oauthbearer.yml
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '10.x'
+      - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+        displayName: should skip tests
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
+        displayName: yarn install
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:oauthbearer:ci
+        displayName: test
+      - task: PublishTestResults@2
+        condition: succeededOrFailed()
+        inputs:
+          testRunner: JUnit
+          testResultsFiles: "**/test-report.xml"
 
 ####### Deploy
   - job: npm_release
