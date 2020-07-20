@@ -280,4 +280,21 @@ describe('Protocol > Encoder', () => {
       expect(Encoder.sizeOfVarLong(Long.MAX_VALUE)).toEqual(signed64(Long.MAX_VALUE).length)
     })
   })
+
+  describe('resizing', () => {
+    it('copies existing content when resizing', () => {
+      const encoder = new Encoder(4)
+      encoder.writeBuffer(B(1, 2, 3, 4))
+      encoder.writeBuffer(B(5, 6, 7, 8))
+      expect(encoder.buffer).toEqual(B(1, 2, 3, 4, 5, 6, 7, 8))
+    })
+    it('obeys offset when resizing', () => {
+      const encoder = new Encoder(4)
+      // Only two bytes in, ...
+      encoder.writeBuffer(B(1, 2))
+      // ... but this write will require resizing
+      encoder.writeBuffer(B(5, 6, 7, 8))
+      expect(encoder.buffer).toEqual(B(1, 2, 5, 6, 7, 8))
+    })
+  })
 })
