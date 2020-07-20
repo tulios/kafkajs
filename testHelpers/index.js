@@ -206,6 +206,11 @@ testIfKafka_1_1_0.only = (description, callback) => {
   return testIfKafka_1_1_0(description, callback, test.only)
 }
 
+const flakyTest = (description, callback, testFn = test) =>
+  testFn(`[flaky] ${description}`, callback)
+flakyTest.skip = (description, callback) => flakyTest(description, callback, test.skip)
+flakyTest.only = (description, callback) => flakyTest(description, callback, test.only)
+
 const unsupportedVersionResponse = () => Buffer.from({ type: 'Buffer', data: [0, 35, 0, 0, 0, 0] })
 const unsupportedVersionResponseWithTimeout = () =>
   Buffer.from({ type: 'Buffer', data: [0, 0, 0, 0, 0, 35] })
@@ -248,6 +253,7 @@ module.exports = {
   waitForConsumerToJoinGroup,
   testIfKafka_0_11,
   testIfKafka_1_1_0,
+  flakyTest,
   addPartitions,
   unsupportedVersionResponse,
   generateMessages,

@@ -11,7 +11,11 @@ const PRIVATE = {
 const TIMEOUT_MESSAGE = 'Timeout while acquiring lock (%d waiting locks)'
 
 module.exports = class Lock {
-  constructor({ timeout = 1000, description = null } = {}) {
+  constructor({ timeout, description = null } = {}) {
+    if (typeof timeout !== 'number') {
+      throw new TypeError(`'timeout' is not a number, received '${typeof timeout}'`)
+    }
+
     this[PRIVATE.LOCKED] = false
     this[PRIVATE.TIMEOUT] = timeout
     this[PRIVATE.WAITING] = new Set()

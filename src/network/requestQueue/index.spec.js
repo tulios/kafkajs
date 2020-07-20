@@ -119,6 +119,28 @@ describe('Network > RequestQueue', () => {
         })
       })
     })
+
+    it('respects the client-side throttling', async () => {
+      const sendDone = new Promise(resolve => {
+        request.sendRequest = () => {
+          resolve(Date.now())
+        }
+      })
+
+      expect(requestQueue.canSendSocketRequestImmediately())
+
+      const before = Date.now()
+      const throttledUntilBefore = requestQueue.throttledUntil
+      expect(throttledUntilBefore).toBeLessThan(before)
+
+      const clientSideThrottleTime = 500
+      requestQueue.maybeThrottle(clientSideThrottleTime)
+      expect(requestQueue.throttledUntil).toBeGreaterThanOrEqual(before + clientSideThrottleTime)
+      requestQueue.push(request)
+
+      const sentAt = await sendDone
+      expect(sentAt).toBeGreaterThanOrEqual(before + clientSideThrottleTime)
+    })
   })
 
   describe('#fulfillRequest', () => {
