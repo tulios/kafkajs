@@ -327,7 +327,7 @@ export type Admin = {
   alterConfigs(configs: { validateOnly: boolean; resources: IResourceConfig[] }): Promise<any>,
   listGroups(): Promise<{ groups: GroupOverview[] }>,
   deleteGroups(groupIds: string[]): Promise<DeleteGroupsResult[]>,
-  describeGroups(groupIds: string[]): Promise<GroupDescription[]>
+  describeGroups(groupIds: string[]): Promise<GroupDescriptions>
   logger(): Logger
   on(
     eventName: ValueOf<AdminEvents>,
@@ -520,6 +520,10 @@ export type GroupDescription = {
   protocol: string
   protocolType: string
   state: string
+}
+
+export type GroupDescriptions = {
+  groups: GroupDescription[]
 }
 
 export type TopicPartitions = { topic: string; partitions: number[] }
