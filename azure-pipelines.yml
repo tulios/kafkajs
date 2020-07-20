@@ -183,11 +183,10 @@ jobs:
     displayName: 'OauthBearer'
     dependsOn: lint
     variables:
-      test_retries:
-        - name: test_retries
-          value: 2
-        - name: COMPOSE_FILE
-          value: docker-compose.2_4_oauthbearer.yml
+      - name: test_retries
+        value: 2
+      - name: COMPOSE_FILE
+        value: docker-compose.2_4_oauthbearer.yml
     pool:
       vmImage: 'Ubuntu 16.04'
     steps:
