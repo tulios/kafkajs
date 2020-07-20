@@ -36,11 +36,13 @@
     "test:group:producer": "yarn jest --forceExit --testPathPattern 'src/producer/.*'",
     "test:group:consumer": "yarn jest --forceExit --testPathPattern 'src/consumer/.*.spec.js'",
     "test:group:others": "yarn jest --forceExit --testPathPattern 'src/(?!(broker|admin|producer|consumer)/).*'",
+    "test:group:oauthbearer": "OAUTHBEARER_ENABLED=1 yarn jest --forceExit --testNamePattern 'SASL OAUTHBEARER'",
     "test:group:broker:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:broker --ci --maxWorkers=4 --no-watchman\"",
     "test:group:admin:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:admin --ci --maxWorkers=4 --no-watchman\"",
     "test:group:producer:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:producer --ci --maxWorkers=4 --no-watchman\"",
     "test:group:consumer:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:consumer --ci --maxWorkers=4 --no-watchman\"",
     "test:group:others:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:others --ci --maxWorkers=4 --no-watchman\"",
+    "test:group:oauthbearer:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml COMPOSE_FILE='docker-compose.2_4_oauthbearer.yml' ./scripts/testWithKafka.sh \"yarn test:group:oauthbearer --ci --maxWorkers=4 --no-watchman\"",
     "test:types": "tsc -p types/"
   },
   "devDependencies": {
