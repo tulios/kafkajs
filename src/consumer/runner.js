@@ -178,6 +178,7 @@ module.exports = class Runner extends EventEmitter {
             partition,
             offset: message.offset,
             stack: e.stack,
+            error: e,
           })
         }
 
@@ -245,6 +246,7 @@ module.exports = class Runner extends EventEmitter {
           partition,
           offset: batch.firstOffset(),
           stack: e.stack,
+          error: e,
         })
       }
 

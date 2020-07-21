@@ -194,7 +194,7 @@ const runAdmin = async () => {
   const { groups } = await admin.listGroups()
   const groupIds = groups.map(({ groupId }) => groupId)
   const groupDescription = await admin.describeGroups(groupIds)
-  await admin.deleteGroups(groupDescription.map(({ groupId }) => groupId))
+  await admin.deleteGroups(groupDescription.groups.map(({ groupId }) => groupId))
 
   await admin.disconnect()
 }
