@@ -131,7 +131,7 @@ Here are some projects that we would like to build, but haven't yet been able to
 
 ## <a name="sponsors"></a> Sponsors ❤️
 
-*To become a sponsor, [reach out in our Slack community](https://kafkajs-slackin.herokuapp.com/) to get in touch with one of the maintainers.*
+*To become a sponsor, [reach out in our Slack community](https://kafkajs-slackin.herokuapp.com/) to get in touch with one of the maintainers. Also consider becoming a Github Sponsor by following any of the links under "Sponsor this project" in the sidebar.*
 
 <a href="https://www.confluent.io/confluent-cloud/?utm_source=kafkajs&utm_medium=opensource&utm_campaign=referral">
   <img src="https://raw.githubusercontent.com/tulios/kafkajs/master/logo/confluent/logo.png" width="830px">
