@@ -1,3 +1,7 @@
+/**
+ * @template T
+ * @return {{lock: Promise<T>, unlock: (v?: T) => void, unlockWithError: (e: Error) => void}}
+ */
 module.exports = () => {
   let unlock
   let unlockWithError
