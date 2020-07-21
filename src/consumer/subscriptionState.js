@@ -74,7 +74,7 @@ module.exports = class SubscriptionState {
   }
 
   /**
-   * @returns {Array<TopicPartitions>} topicPartitions
+   * @returns {Array<import("../../types").TopicPartitions>} topicPartitions
    * Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    */
   assigned() {
@@ -85,7 +85,7 @@ module.exports = class SubscriptionState {
   }
 
   /**
-   * @returns {Array<TopicPartitions>} topicPartitions
+   * @returns {Array<import("../../types").TopicPartitions>} topicPartitions
    * Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    */
   active() {
@@ -96,7 +96,7 @@ module.exports = class SubscriptionState {
   }
 
   /**
-   * @returns {Array<TopicPartitions>} topicPartitions
+   * @returns {Array<import("../../types").TopicPartitions>} topicPartitions
    * Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    */
   paused() {
