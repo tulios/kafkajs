@@ -21,16 +21,6 @@ const maxBytesPerPartition = 1048576 // 1MB
 const maxWaitTime = 100
 const timestamp = 1509827900073
 
-expect.extend({
-  optional(v, value) {
-    const pass = typeof v === 'undefined' || v === value
-    return {
-      pass,
-      message: () => `Expected ${value} to ${pass ? 'not ' : ''}be undefined or ${value}`,
-    }
-  },
-})
-
 describe('Broker > Fetch', () => {
   let topicName, seedBroker, broker, newBrokerData
 
