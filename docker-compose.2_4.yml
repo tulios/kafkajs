@@ -48,6 +48,7 @@ services:
       # suppress verbosity
       # https://github.com/confluentinc/cp-docker-images/blob/master/debian/kafka/include/etc/confluent/docker/log4j.properties.template
       KAFKA_LOG4J_LOGGERS: 'kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO'
+      CONFLUENT_SUPPORT_METRICS_ENABLE: 'false'
     volumes:
       - ./testHelpers/certs/kafka.server.keystore.jks:/etc/kafka/secrets/kafka.server.keystore.jks:ro,z
       - ./testHelpers/certs/kafka.server.truststore.jks:/etc/kafka/secrets/kafka.server.truststore.jks:ro,z
@@ -91,6 +92,7 @@ services:
       # suppress verbosity
       # https://github.com/confluentinc/cp-docker-images/blob/master/debian/kafka/include/etc/confluent/docker/log4j.properties.template
       KAFKA_LOG4J_LOGGERS: 'kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO'
+      CONFLUENT_SUPPORT_METRICS_ENABLE: 'false'
     volumes:
       - ./testHelpers/certs/kafka.server.keystore.jks:/etc/kafka/secrets/kafka.server.keystore.jks:ro,z
       - ./testHelpers/certs/kafka.server.truststore.jks:/etc/kafka/secrets/kafka.server.truststore.jks:ro,z
@@ -134,6 +136,7 @@ services:
       # suppress verbosity
       # https://github.com/confluentinc/cp-docker-images/blob/master/debian/kafka/include/etc/confluent/docker/log4j.properties.template
       KAFKA_LOG4J_LOGGERS: 'kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO'
+      CONFLUENT_SUPPORT_METRICS_ENABLE: 'false'
     volumes:
       - ./testHelpers/certs/kafka.server.keystore.jks:/etc/kafka/secrets/kafka.server.keystore.jks:ro,z
       - ./testHelpers/certs/kafka.server.truststore.jks:/etc/kafka/secrets/kafka.server.truststore.jks:ro,z
