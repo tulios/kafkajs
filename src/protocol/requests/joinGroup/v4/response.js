@@ -1,5 +1,5 @@
-const Decoder = require('../../../decoder')
-const { failure, createErrorFromCode, failIfVersionNotSupported } = require('../../../error')
+const { decode } = require('../v3/response')
+const { failure, createErrorFromCode } = require('../../../error')
 
 /**
  * JoinGroup Response (Version: 4) => throttle_time_ms error_code generation_id group_protocol leader_id member_id [members]
@@ -14,31 +14,14 @@ const { failure, createErrorFromCode, failIfVersionNotSupported } = require('../
  *     member_metadata => BYTES
  */
 
-const decode = async rawData => {
-  const decoder = new Decoder(rawData)
-  const throttleTime = decoder.readInt32()
-  const errorCode = decoder.readInt16()
-
-  failIfVersionNotSupported(errorCode)
-
-  return {
-    throttleTime,
-    errorCode,
-    generationId: decoder.readInt32(),
-    groupProtocol: decoder.readString(),
-    leaderId: decoder.readString(),
-    memberId: decoder.readString(),
-    members: decoder.readArray(decoder => ({
-      memberId: decoder.readString(),
-      memberMetadata: decoder.readBytes(),
-    })),
-  }
-}
-
 const parse = async data => {
-  // KIP-394: Require member.id for initial join group request
-  if (data.errorCode !== 79 && failure(data.errorCode)) {
-    throw createErrorFromCode(data.errorCode)
+  if (failure(data.errorCode)) {
+    const error = createErrorFromCode(data.errorCode)
+    if (error.type === 'MEMBER_ID_REQUIRED') {
+      error.memberId = data.memberId
+    }
+
+    throw error
   }
 
   return data

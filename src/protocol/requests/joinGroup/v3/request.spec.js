@@ -1,8 +1,8 @@
-const RequestV2Protocol = require('./request')
+const RequestV3Protocol = require('./request')
 
 describe('Protocol > Requests > JoinGroup > v3', () => {
   test('request', async () => {
-    const { buffer } = await RequestV2Protocol({
+    const { buffer } = await RequestV3Protocol({
       groupId: 'consumer-group-id-b522188a3a12a1f04cfb-23702-e1ff35c7-fde9-4d58-960a-2cef8af77eef',
       sessionTimeout: 30000,
       rebalanceTimeout: 60000,

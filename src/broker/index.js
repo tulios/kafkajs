@@ -349,32 +349,27 @@ module.exports = class Broker {
     groupProtocols,
   }) {
     const joinGroup = this.lookupRequest(apiKeys.JoinGroup, requests.JoinGroup)
+    const makeRequest = (assignedMemberId = memberId) =>
+      this.connection.send(
+        joinGroup({
+          groupId,
+          sessionTimeout,
+          rebalanceTimeout,
+          memberId: assignedMemberId,
+          protocolType,
+          groupProtocols,
+        })
+      )
 
-    const response = await this.connection.send(
-      joinGroup({
-        groupId,
-        sessionTimeout,
-        rebalanceTimeout,
-        memberId,
-        protocolType,
-        groupProtocols,
-      })
-    )
+    try {
+      return await makeRequest()
+    } catch (error) {
+      if (error.type === 'MEMBER_ID_REQUIRED') {
+        return makeRequest(error.memberId)
+      }
 
-    if (!memberId && response.errorCode && response.memberId) {
-      // retry join in case if we get error MEMBER_ID_REQUIRED
-      // KIP-394: Require member.id for initial join group request
-      return await this.joinGroup({
-        groupId,
-        sessionTimeout,
-        rebalanceTimeout,
-        memberId: response.memberId,
-        protocolType,
-        groupProtocols,
-      })
+      throw error
     }
-
-    return response
   }
 
   /**
