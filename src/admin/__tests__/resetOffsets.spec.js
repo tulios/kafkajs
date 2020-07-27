@@ -1,7 +1,13 @@
 const createAdmin = require('../index')
 const createConsumer = require('../../consumer')
 
-const { secureRandom, createCluster, newLogger, createTopic } = require('testHelpers')
+const {
+  secureRandom,
+  createCluster,
+  newLogger,
+  createTopic,
+  waitForConsumerToJoinGroup,
+} = require('testHelpers')
 
 describe('Admin', () => {
   let topicName, groupId, admin, consumer
@@ -14,7 +20,7 @@ describe('Admin', () => {
   })
 
   afterEach(async () => {
-    await admin.disconnect()
+    admin && (await admin.disconnect())
     consumer && (await consumer.disconnect())
   })
 
@@ -88,7 +94,8 @@ describe('Admin', () => {
       consumer = createConsumer({ groupId, cluster: createCluster(), logger: newLogger() })
       await consumer.connect()
       await consumer.subscribe({ topic: topicName })
-      await consumer.run({ eachMessage: () => true })
+      consumer.run({ eachMessage: () => true })
+      await waitForConsumerToJoinGroup(consumer)
 
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
 

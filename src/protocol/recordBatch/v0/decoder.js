@@ -95,10 +95,10 @@ const decodeRecords = async (codec, recordsDecoder, recordContext) => {
   const compressedRecordsBuffer = recordsDecoder.readAll()
   const decompressedRecordBuffer = await codec.decompress(compressedRecordsBuffer)
   const decompressedRecordDecoder = new Decoder(decompressedRecordBuffer)
-  const records = []
+  const records = new Array(length)
 
   for (let i = 0; i < length; i++) {
-    records.push(decodeRecord(decompressedRecordDecoder, recordContext))
+    records[i] = decodeRecord(decompressedRecordDecoder, recordContext)
   }
 
   return records

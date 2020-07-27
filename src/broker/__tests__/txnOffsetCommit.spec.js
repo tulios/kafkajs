@@ -78,9 +78,9 @@ describe('Broker > TxnOffsetCommit', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await transactionBroker.disconnect()
-    await consumerBroker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    transactionBroker && (await transactionBroker.disconnect())
+    consumerBroker && (await consumerBroker.disconnect())
   })
 
   test('request', async () => {
@@ -100,6 +100,7 @@ describe('Broker > TxnOffsetCommit', () => {
       ],
     })
 
+    result.topics.forEach(topic => topic.partitions.sort((p1, p2) => p1.partition - p2.partition))
     expect(result).toEqual({
       throttleTime: 0,
       topics: [

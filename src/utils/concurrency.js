@@ -6,7 +6,7 @@ const REJECTED_ERROR = new KafkaJSNonRetriableError(
 function NOOP() {}
 
 const concurrency = ({ limit, onChange = NOOP } = {}) => {
-  if (typeof limit !== 'number' || limit < 1) {
+  if (isNaN(limit) || typeof limit !== 'number' || limit < 1) {
     throw new KafkaJSNonRetriableError(`"limit" cannot be less than 1`)
   }
 

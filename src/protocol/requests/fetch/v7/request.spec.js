@@ -1,4 +1,4 @@
-const RequestV5Protocol = require('./request')
+const RequestV7Protocol = require('./request')
 
 describe('Protocol > Requests > Fetch > v7', () => {
   test('request', async () => {
@@ -13,7 +13,7 @@ describe('Protocol > Requests > Fetch > v7', () => {
       },
     ]
 
-    const { buffer } = await RequestV5Protocol({
+    const { buffer } = await RequestV7Protocol({
       replicaId: -1,
       maxWaitTime,
       minBytes,
