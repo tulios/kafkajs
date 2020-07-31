@@ -348,9 +348,9 @@ describe('Consumer > Runner', () => {
       expect(onCrash).toHaveBeenCalledWith(unknownError)
     })
 
-    it('should still catch request errors from BufferedAsyncIterator even if running is false', async () => {
+    it('should ignore request errors from BufferedAsyncIterator on stopped consumer', async () => {
       const rejectedRequest = new Promise((resolve, reject) => {
-        setTimeout(() => reject(new Error('Failed or manually rejected request')), 100)
+        setTimeout(() => reject(new Error('Failed or manually rejected request')), 10)
       })
 
       consumerGroup.fetch.mockImplementationOnce(
@@ -358,7 +358,7 @@ describe('Consumer > Runner', () => {
           new Promise(resolve =>
             setTimeout(() => {
               resolve(BufferedAsyncIterator([rejectedRequest, Promise.resolve([])]))
-            }, 100)
+            }, 10)
           )
       )
 
@@ -366,7 +366,8 @@ describe('Consumer > Runner', () => {
       await runner.start()
       runner.running = false
 
-      await expect(runner.fetch()).rejects.toThrow('Failed or manually rejected request')
+      runner.fetch()
+      await sleep(100)
     })
   })
 })

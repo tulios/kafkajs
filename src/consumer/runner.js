@@ -327,8 +327,20 @@ module.exports = class Runner extends EventEmitter {
 
     while (true) {
       const result = iterator.next()
+
       if (result.done) {
         break
+      }
+
+      if (!this.running) {
+        result.value.catch(error => {
+          this.logger.debug('Ignoring error in fetch request while stopping runner', {
+            error: error.message || error,
+            stack: error.stack,
+          })
+        })
+
+        continue
       }
 
       enqueuedTasks.push(async () => {
