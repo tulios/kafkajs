@@ -1,5 +1,6 @@
 const { decode } = require('../v3/response')
-const { failure, createErrorFromCode } = require('../../../error')
+const { KafkaJSMemberIdRequired } = require('../../../../errors')
+const { failure, createErrorFromCode, errorCodes } = require('../../../error')
 
 /**
  * JoinGroup Response (Version: 4) => throttle_time_ms error_code generation_id group_protocol leader_id member_id [members]
@@ -14,14 +15,19 @@ const { failure, createErrorFromCode } = require('../../../error')
  *     member_metadata => BYTES
  */
 
+const { code: MEMBER_ID_REQUIRED_ERROR_CODE } = errorCodes.find(
+  e => e.type === 'MEMBER_ID_REQUIRED'
+)
+
 const parse = async data => {
   if (failure(data.errorCode)) {
-    const error = createErrorFromCode(data.errorCode)
-    if (error.type === 'MEMBER_ID_REQUIRED') {
-      error.memberId = data.memberId
+    if (data.errorCode === MEMBER_ID_REQUIRED_ERROR_CODE) {
+      throw new KafkaJSMemberIdRequired(createErrorFromCode(data.errorCode), {
+        memberId: data.memberId,
+      })
     }
 
-    throw error
+    throw createErrorFromCode(data.errorCode)
   }
 
   return data

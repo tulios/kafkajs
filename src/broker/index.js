@@ -364,7 +364,7 @@ module.exports = class Broker {
     try {
       return await makeRequest()
     } catch (error) {
-      if (error.type === 'MEMBER_ID_REQUIRED') {
+      if (error.name === 'KafkaJSMemberIdRequired') {
         return makeRequest(error.memberId)
       }
 
