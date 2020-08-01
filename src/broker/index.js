@@ -349,16 +349,27 @@ module.exports = class Broker {
     groupProtocols,
   }) {
     const joinGroup = this.lookupRequest(apiKeys.JoinGroup, requests.JoinGroup)
-    return await this.connection.send(
-      joinGroup({
-        groupId,
-        sessionTimeout,
-        rebalanceTimeout,
-        memberId,
-        protocolType,
-        groupProtocols,
-      })
-    )
+    const makeRequest = (assignedMemberId = memberId) =>
+      this.connection.send(
+        joinGroup({
+          groupId,
+          sessionTimeout,
+          rebalanceTimeout,
+          memberId: assignedMemberId,
+          protocolType,
+          groupProtocols,
+        })
+      )
+
+    try {
+      return await makeRequest()
+    } catch (error) {
+      if (error.name === 'KafkaJSMemberIdRequired') {
+        return makeRequest(error.memberId)
+      }
+
+      throw error
+    }
   }
 
   /**

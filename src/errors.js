@@ -34,6 +34,14 @@ class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
   }
 }
 
+class KafkaJSMemberIdRequired extends KafkaJSProtocolError {
+  constructor(e, { memberId }) {
+    super(e)
+    this.memberId = memberId
+    this.name = 'KafkaJSMemberIdRequired'
+  }
+}
+
 class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
   constructor(e, { retryCount, retryTime }) {
     super(e)
@@ -172,6 +180,7 @@ module.exports = {
   KafkaJSSASLAuthenticationError,
   KafkaJSNumberOfRetriesExceeded,
   KafkaJSOffsetOutOfRange,
+  KafkaJSMemberIdRequired,
   KafkaJSGroupCoordinatorNotFound,
   KafkaJSNotImplemented,
   KafkaJSMetadataNotLoaded,
