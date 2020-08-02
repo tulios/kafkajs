@@ -63,6 +63,40 @@ const versions = {
       requestTimeout: requestTimeout({ rebalanceTimeout, sessionTimeout }),
     }
   },
+  3: ({ groupId, sessionTimeout, rebalanceTimeout, memberId, protocolType, groupProtocols }) => {
+    const request = require('./v3/request')
+    const response = require('./v3/response')
+
+    return {
+      request: request({
+        groupId,
+        sessionTimeout,
+        rebalanceTimeout,
+        memberId,
+        protocolType,
+        groupProtocols,
+      }),
+      response,
+      requestTimeout: requestTimeout({ rebalanceTimeout, sessionTimeout }),
+    }
+  },
+  4: ({ groupId, sessionTimeout, rebalanceTimeout, memberId, protocolType, groupProtocols }) => {
+    const request = require('./v4/request')
+    const response = require('./v4/response')
+
+    return {
+      request: request({
+        groupId,
+        sessionTimeout,
+        rebalanceTimeout,
+        memberId,
+        protocolType,
+        groupProtocols,
+      }),
+      response,
+      requestTimeout: requestTimeout({ rebalanceTimeout, sessionTimeout }),
+    }
+  },
 }
 
 module.exports = {
