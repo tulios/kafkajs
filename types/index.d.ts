@@ -309,7 +309,7 @@ export type Admin = {
     timeout?: number
     topicPartitions: ITopicPartitionConfig[]
   }): Promise<boolean>
-  fetchTopicMetadata(options: { topics: string[] }): Promise<{ topics: Array<ITopicMetadata> }>
+  fetchTopicMetadata(options?: { topics: string[] }): Promise<{ topics: Array<ITopicMetadata> }>
   fetchOffsets(options: {
     groupId: string
     topic: string
