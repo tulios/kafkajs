@@ -317,13 +317,8 @@ module.exports = class Runner extends EventEmitter {
       })
     }
 
-    const concurrently = limitConcurrency({ limit: this.partitionsConsumedConcurrently })
-
-    if (!this.running) {
-      return
-    }
-
     const { lock, unlock, unlockWithError } = barrier()
+    const concurrently = limitConcurrency({ limit: this.partitionsConsumedConcurrently })
 
     let requestsCompleted = false
     let numberOfExecutions = 0
@@ -332,15 +327,23 @@ module.exports = class Runner extends EventEmitter {
 
     while (true) {
       const result = iterator.next()
+
       if (result.done) {
         break
       }
 
-      enqueuedTasks.push(async () => {
-        if (!this.running) {
-          return
-        }
+      if (!this.running) {
+        result.value.catch(error => {
+          this.logger.debug('Ignoring error in fetch request while stopping runner', {
+            error: error.message || error,
+            stack: error.stack,
+          })
+        })
 
+        continue
+      }
+
+      enqueuedTasks.push(async () => {
         const batches = await result.value
         expectedNumberOfExecutions += batches.length
 
@@ -370,10 +373,6 @@ module.exports = class Runner extends EventEmitter {
       })
     }
 
-    if (!this.running) {
-      return
-    }
-
     await Promise.all(enqueuedTasks.map(fn => fn()))
     requestsCompleted = true
 
@@ -384,6 +383,10 @@ module.exports = class Runner extends EventEmitter {
     const error = await lock
     if (error) {
       throw error
+    }
+
+    if (!this.running) {
+      return
     }
 
     await this.autoCommitOffsets()
