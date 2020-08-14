@@ -1,7 +1,8 @@
 ---
-id: getting-started
+id: version-1.11.0-getting-started
 title: Getting Started
 sidebar_label: Getting Started
+original_id: getting-started
 ---
 
 Install KafkaJS using [`yarn`](https://yarnpkg.com/en/package/kafkajs):
@@ -49,7 +50,7 @@ Finally, to verify that our message has indeed been produced to the topic, let's
 const consumer = kafka.consumer({ groupId: 'test-group' })
 
 await consumer.connect()
-await consumer.subscribe({ topic: 'test-topic', fromBeginning: true })
+await consumer.subscribe({ topic: 'test-topic' })
 
 await consumer.run({
   eachMessage: async ({ topic, partition, message }) => {
