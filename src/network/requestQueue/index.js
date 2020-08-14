@@ -75,11 +75,11 @@ module.exports = class RequestQueue {
           if (Date.now() - request.sentAt > request.requestTimeout) {
             request.timeoutRequest()
           }
-
-          if (!this.isConnected()) {
-            this.destroy()
-          }
         })
+
+        if (!this.isConnected()) {
+          this.destroy()
+        }
       }, Math.min(this.requestTimeout, 100))
     }
   }
