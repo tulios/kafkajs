@@ -1,0 +1,105 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Pre-releases · KafkaJS</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Stable KafkaJS versions can take a while to be released. Release candidates are usually deployed in production for at least a week before general availability. We do this to make sure that all releases are stable, and we trust our services to verify most production use-cases. Although this process guarantees some quality, it can be too slow or unpredictable. Some versions go out faster than others, and it can be frustrating if you need a particular feature that has not been included in a stable release yet."/><meta name="docsearch:version" content="1.11.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Pre-releases · KafkaJS"/><meta property="og:type" content="website"/><meta property="og:url" content="https://kafka.js.org/"/><meta property="og:description" content="Stable KafkaJS versions can take a while to be released. Release candidates are usually deployed in production for at least a week before general availability. We do this to make sure that all releases are stable, and we trust our services to verify most production use-cases. Although this process guarantees some quality, it can be too slow or unpredictable. Some versions go out faster than others, and it can be frustrating if you need a particular feature that has not been included in a stable release yet."/><meta property="og:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"/><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-133751873-1"></script><script>
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments); }
+              gtag('js', new Date());
+              gtag('config', 'UA-133751873-1');
+            </script><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/kafkajs-logoV2.svg" alt="KafkaJS"/><h2 class="headerTitleWithLogo">KafkaJS</h2></a><a href="/versions"><h3>1.11.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/1.11.0/getting-started" target="_self">Docs</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class=""><a href="https://github.com/tulios/kafkajs" target="_self">GitHub</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Usage</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Usage</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/1.11.0/introduction">Intro to Kafka</a></li><li class="navListItem"><a class="navItem" href="/docs/1.11.0/getting-started">Getting Started</a></li><li class="navListItem"><a class="navItem" href="/docs/1.11.0/configuration">Client Configuration</a></li><li class="navListItem"><a class="navItem" href="/docs/1.11.0/producing">Producing Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/1.11.0/transactions">Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/1.11.0/consuming">Consuming Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/1.11.0/admin">Admin Client</a></li><li class="navListItem"><a class="navItem" href="/docs/1.11.0/instrumentation-events">Instrumentation Events</a></li><li class="navListItem"><a class="navItem" href="/docs/1.11.0/custom-logger">Custom Logger</a></li><li class="navListItem"><a class="navItem" href="/docs/1.11.0/retry-detailed">Retry Mechanism Explained</a></li><li class="navListItem"><a class="navItem" href="/docs/1.11.0/faq">FAQ</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/1.11.0/pre-releases">Pre-releases</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Examples</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/1.11.0/running-kafka-in-development">Running Kafka in Development</a></li><li class="navListItem"><a class="navItem" href="/docs/1.11.0/producer-example">Producer</a></li><li class="navListItem"><a class="navItem" href="/docs/1.11.0/consumer-example">Consumer</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Developing KafkaJS</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/1.11.0/contribution-guide">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/1.11.0/development-environment">Development Environment</a></li><li class="navListItem"><a class="navItem" href="/docs/1.11.0/testing">Testing</a></li><li class="navListItem"><a class="navItem" href="/docs/1.11.0/development-resources">Resources</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/tulios/kafkajs/edit/master/docs/PreReleases.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">Pre-releases</h1></header><article><div><span><p>Stable KafkaJS versions can take a while to be released. Release candidates are usually deployed in production for at least a week before general availability. We do this to make sure that all releases are stable, and we trust our services to verify most production use-cases. Although this process guarantees some quality, it can be too slow or unpredictable. Some versions go out faster than others, and it can be frustrating if you need a particular feature that has not been included in a stable release yet.</p>
+<p>In the past, the recommendation was to point your <code>package.json</code> to the commit hash with the change you needed, but this approach has some complications. Companies usually proxy NPM and have some expectations on how dependencies are handled, your CI or deploy server might not have access to GitHub, among other issues. This process was an extra barrier for users to try out the new code, helping us test and perfect the next release.</p>
+<p>To alleviate this issue, we are now automatically creating pre-release versions on every merge to master containing changes to <code>src/</code>, <code>index.js</code> or, <code>package.json</code>.</p>
+<h2><a class="anchor" aria-hidden="true" id="using-pre-release-versions"></a><a href="#using-pre-release-versions" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Using pre-release versions</h2>
+<p>To use the latest pre-release version, run:</p>
+<pre><code class="hljs css language-sh"><span class="hljs-comment"># Yarn</span>
+yarn add kafkajs@beta
+
+<span class="hljs-comment"># Npm</span>
+npm install --save kafkajs@beta
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="versioning"></a><a href="#versioning" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Versioning</h2>
+<p>If the current stable version is <code>1.9.3</code> and we merge a new PR to master, a pre-release will be generated with the version <code>1.10.0-beta.0</code>. It will always use the next minor version. If a second PR is merged, the next version would be <code>1.10.0-beta.1</code>, since we are generating a new pre-release for the same stable version, it will continue incrementing the last number. If we release a patch, it will continue to make beta releases using the next minor, so stable on <code>1.9.4</code> will continue to generate <code>1.10.0-beta.N</code>.</p>
+<h2><a class="anchor" aria-hidden="true" id="pre-release-package-changes"></a><a href="#pre-release-package-changes" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Pre-release package changes</h2>
+<p>In order to know what a pre-release version contains, we have added a new attribute to the <code>package.json</code> of pre-release versions, <code>kafkajs</code>:</p>
+<pre><code class="hljs css language-javascript">{
+  <span class="hljs-comment">// package.json</span>
+  <span class="hljs-string">"kafkajs"</span>: {
+    <span class="hljs-string">"sha"</span>: <span class="hljs-string">"43e325e18133b8d6c1c80f8e95ef8610c44ec631"</span>,
+    <span class="hljs-string">"compare"</span>: <span class="hljs-string">"https://github.com/tulios/kafkajs/compare/v1.9.3...43e325e18133b8d6c1c80f8e95ef8610c44ec631"</span>
+  }
+}
+</code></pre>
+<p>This contains the git SHA used to generate the version and the GitHub URL to quickly compare the differences with the stable version at the time of the pre-release creation.</p>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/1.11.0/faq"><span class="arrow-prev">← </span><span>FAQ</span></a><a class="docs-next button" href="/docs/1.11.0/running-kafka-in-development"><span>Running Kafka in Development</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#using-pre-release-versions">Using pre-release versions</a></li><li><a href="#versioning">Versioning</a></li><li><a href="#pre-release-package-changes">Pre-release package changes</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/kafkajs-logoV2.svg" alt="KafkaJS" width="52" height="84"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Usage</a></div><div><h5>Community</h5><a href="https://kafkajs-slackin.herokuapp.com">Slack</a></div><div><h5>More</h5><a href="https://github.com/tulios/kafkajs">GitHub</a><a class="github-button" href="https://github.com/tulios/kafkajs" data-icon="octicon-star" data-count-href="/tulios/kafkajs/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><a href="https://badge.fury.io/js/kafkajs"><img src="https://badge.fury.io/js/kafkajs.svg" alt="npm version" height="18"/></a></div></section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '7c56b6be30976fce32eb287e2af6cf06',
+                indexName: 'kafka_js',
+                inputSelector: '#search_input_react',
+                algoliaOptions: {}
+              });
+            </script></body></html>
