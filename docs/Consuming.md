@@ -225,7 +225,8 @@ kafka.consumer({
   maxBytes: <Number>,
   maxWaitTimeInMs: <Number>,
   retry: <Object>,
-  maxInFlightRequests: <Number>
+  maxInFlightRequests: <Number>,
+  rackId: <String>
 })
 ```
 
@@ -244,6 +245,7 @@ kafka.consumer({
 | retry                  | See [retry](Configuration.md#retry) for more information                                                                                                                                                                                                                                                                                           | `{ retries: 5 }`                 |
 | readUncommitted        | Configures the consumer isolation level. If `false` (default), the consumer will not return any transactional messages which were not committed.                                                                                                                                                                                                   | `false`                           |
 | maxInFlightRequests | Max number of requests that may be in progress at any time. If falsey then no limit.                                    | `null` _(no limit)_ |
+| rackId                 | Configure the "rack" in which the consumer resides to enable [follower fetching](#follower-fetching)                 | `null` _(fetch from the leader always)_ |
 
 ## <a name="pause-resume"></a> Pause & Resume
 
@@ -427,3 +429,11 @@ const data = await consumer.describeGroup()
 ## <a name="compression"></a> Compression
 
 KafkaJS only support GZIP natively, but [other codecs can be supported](Producing.md#compression-other).
+
+## <a name="follower-fetching"></a> Follower Fetching
+
+KafkaJS supports "follower fetching", where the consumer tries to fetch data preferentially from a broker in the same "rack", rather than always going to the leader. This can considerably reduce operational costs if data transfer across "racks" is metered. There may also be performance benefits if the network speed between these "racks" is limited.
+
+The meaning of "rack" is very flexible, and can be used to model setups such as data centers, regions/availability zones, or other topologies.
+
+See also [this blog post](https://www.confluent.io/blog/multi-region-data-replication/) for the bigger context.
