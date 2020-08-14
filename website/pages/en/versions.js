@@ -50,18 +50,12 @@ function Versions(props) {
               </tr>
             </tbody>
           </table>
-          <p>
-            This is the version that is configured automatically when you first
-            install this project.
-          </p>
           <h3 id="rc">Pre-release versions</h3>
           <table className="versions">
             <tbody>
               <tr>
                 <th>master</th>
                 <td>
-                  {/* You are supposed to change this href where appropriate
-                        Example: href="<baseUrl>/docs(/:language)/next/:id" */}
                   <a
                     href={`${siteConfig.baseUrl}${siteConfig.docsUrl}/${
                       props.language ? props.language + '/' : ''
@@ -75,7 +69,6 @@ function Versions(props) {
               </tr>
             </tbody>
           </table>
-          <p>Other text describing this section.</p>
           <h3 id="archive">Past Versions</h3>
           <p>Here you can find previous versions of the documentation.</p>
           <table className="versions">
