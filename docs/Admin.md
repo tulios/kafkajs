@@ -166,6 +166,18 @@ await admin.fetchTopicOffsets(topic)
 // ]
 ```
 
+## <a name="fetch-topic-offsets-by-timestamp"></a> Fetch topic offsets by timestamp
+
+Specify a `timestamp` to get the earliest offset on each partition where the message's timestamp is greater than or equal to the given timestamp.
+
+```javascript
+await admin.fetchTopicOffsetsByTimestamp(topic, timestamp)
+// [
+//   { partition: 0, offset: '3244' },
+//   { partition: 1, offset: '3113' },
+// ]
+```
+
 ## <a name="fetch-offsets"></a> Fetch consumer group offsets
 
 `fetchOffsets` returns the consumer group offset for a topic.
@@ -222,6 +234,15 @@ await admin.setOffsets({
         { partition: 3, offset: '19' },
     ]
 })
+```
+
+## <a name="reset-offsets-by-timestamp"></a> Reset consumer group offsets by timestamp
+
+Combining `fetchTopicOffsetsByTimestamp` and `setOffsets` can reset a consumer group's offsets on each partition to the earliest offset whose timestamp is greater than or equal to the given timestamp.
+The consumer group must have no running instances when performing the reset. Otherwise, the command will be rejected.
+
+```javascript
+await admin.setOffsets({ groupId, topic, partitions: await admin.fetchTopicOffsetsByTimestamp(topic, timestamp) })
 ```
 
 ## <a name="describe-cluster"></a> Describe cluster
