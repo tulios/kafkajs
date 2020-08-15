@@ -44,6 +44,16 @@ const findTopicPartitions = async (cluster, topic) => {
     .sort()
 }
 
+/**
+ *
+ * @param {Object} params
+ * @param {import("../../types").Logger=} params.logger
+ * @param {import('../instrumentation/emitter')=} params.instrumentationEmitter
+ * @param {import('../../types').RetryOptions} params.retry
+ * @param {import("../../types").Cluster} params.cluster
+ *
+ * @returns {import("../../types").Admin}
+ */
 module.exports = ({
   logger: rootLogger,
   instrumentationEmitter: rootInstrumentationEmitter,
