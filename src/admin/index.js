@@ -47,7 +47,7 @@ const findTopicPartitions = async (cluster, topic) => {
 /**
  *
  * @param {Object} params
- * @param {import("../../types").Logger=} params.logger
+ * @param {import("../../types").Logger} params.logger
  * @param {import('../instrumentation/emitter')=} params.instrumentationEmitter
  * @param {import('../../types').RetryOptions} params.retry
  * @param {import("../../types").Cluster} params.cluster
