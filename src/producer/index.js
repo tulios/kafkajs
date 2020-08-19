@@ -19,12 +19,12 @@ const { CONNECT, DISCONNECT } = events
  * @param {Object} params
  * @param {import('../../types').Cluster} params.cluster
  * @param {import('../../types').Logger} params.Logger
- * @param {import('../../types').ICustomPartitioner=} params.createPartitioner
+ * @param {import('../../types').ICustomPartitioner} [params.createPartitioner]
  * @param {import('../../types').RetryOptions} params.retry
- * @param {boolean=} params.idempotent
- * @param {string=} params.transactionalId
- * @param {number=} params.transactionTimeout
- * @param {import('../instrumentation/emitter')=} params.instrumentationEmitter
+ * @param {boolean} [params.idempotent]
+ * @param {string} [params.transactionalId]
+ * @param {number} [params.transactionTimeout]
+ * @param {import('../instrumentation/emitter')} [params.instrumentationEmitter]
  *
  * @returns {import('../../types').Producer}
  */

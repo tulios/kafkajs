@@ -48,7 +48,7 @@ const findTopicPartitions = async (cluster, topic) => {
  *
  * @param {Object} params
  * @param {import("../../types").Logger} params.logger
- * @param {import('../instrumentation/emitter')=} params.instrumentationEmitter
+ * @param {import('../instrumentation/emitter')} [params.instrumentationEmitter]
  * @param {import('../../types').RetryOptions} params.retry
  * @param {import("../../types").Cluster} params.cluster
  *
@@ -295,7 +295,7 @@ module.exports = ({
 
   /**
    * @param {string} topic
-   * @param {number=} timestamp
+   * @param {number} [timestamp]
    */
 
   const fetchTopicOffsetsByTimestamp = async (topic, timestamp) => {
