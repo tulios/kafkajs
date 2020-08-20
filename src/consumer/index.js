@@ -24,6 +24,24 @@ const specialOffsets = [
 ]
 
 /**
+ * @param {Object} params
+ * @param {import("../../types").Cluster} params.cluster
+ * @param {String} params.groupId
+ * @param {import('../../types').RetryOptions} params.retry
+ * @param {import('../../types').Logger} params.logger
+ * @param {import('../../types').PartitionAssigner[]} [params.partitionAssigners]
+ * @param {number} [params.sessionTimeout]
+ * @param {number} [params.rebalanceTimeout]
+ * @param {number} [params.heartbeatInterval]
+ * @param {number} [params.maxBytesPerPartition]
+ * @param {number} [params.minBytes]
+ * @param {number} [params.maxBytes]
+ * @param {number} [params.maxWaitTimeInMs]
+ * @param {number} [params.isolationLevel]
+ * @param {string} [params.rackId]
+ * @param {import('../instrumentation/emitter')} [params.instrumentationEmitter]
+ * @param {number} params.metadataMaxAge
+ *
  * @returns {import("../../types").Consumer}
  */
 module.exports = ({

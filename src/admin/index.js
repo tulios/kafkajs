@@ -44,6 +44,16 @@ const findTopicPartitions = async (cluster, topic) => {
     .sort()
 }
 
+/**
+ *
+ * @param {Object} params
+ * @param {import("../../types").Logger} params.logger
+ * @param {import('../instrumentation/emitter')} [params.instrumentationEmitter]
+ * @param {import('../../types').RetryOptions} params.retry
+ * @param {import("../../types").Cluster} params.cluster
+ *
+ * @returns {import("../../types").Admin}
+ */
 module.exports = ({
   logger: rootLogger,
   instrumentationEmitter: rootInstrumentationEmitter,
@@ -271,6 +281,63 @@ module.exports = ({
           high: offset,
           low: lowPartitions.find(({ partition: lowPartition }) => lowPartition === partition)
             .offset,
+        }))
+      } catch (e) {
+        if (e.type === 'UNKNOWN_TOPIC_OR_PARTITION') {
+          await cluster.refreshMetadata()
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
+   * @param {string} topic
+   * @param {number} [timestamp]
+   */
+
+  const fetchTopicOffsetsByTimestamp = async (topic, timestamp) => {
+    if (!topic || typeof topic !== 'string') {
+      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.addTargetTopic(topic)
+        await cluster.refreshMetadataIfNecessary()
+
+        const metadata = cluster.findTopicPartitionMetadata(topic)
+        const partitions = metadata.map(p => ({ partition: p.partitionId }))
+
+        const high = await cluster.fetchTopicsOffset([
+          {
+            topic,
+            fromBeginning: false,
+            partitions,
+          },
+        ])
+        const { partitions: highPartitions } = high.pop()
+
+        const offsets = await cluster.fetchTopicsOffset([
+          {
+            topic,
+            fromTimestamp: timestamp,
+            partitions,
+          },
+        ])
+        const { partitions: lowPartitions } = offsets.pop()
+
+        return lowPartitions.map(({ partition, offset }) => ({
+          partition,
+          offset:
+            parseInt(offset, 10) >= 0
+              ? offset
+              : highPartitions.find(({ partition: highPartition }) => highPartition === partition)
+                  .offset,
         }))
       } catch (e) {
         if (e.type === 'UNKNOWN_TOPIC_OR_PARTITION') {
@@ -870,6 +937,7 @@ module.exports = ({
     events,
     fetchOffsets,
     fetchTopicOffsets,
+    fetchTopicOffsetsByTimestamp,
     setOffsets,
     resetOffsets,
     describeConfigs,
