@@ -74,6 +74,7 @@ describe('Broker > Fetch', () => {
     partitionLeaderEpoch: expect.any(Number),
     producerEpoch: 0,
     producerId: '-1',
+    timestampType: 0,
     ...options,
   })
 

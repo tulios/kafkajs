@@ -2,7 +2,9 @@ const Decoder = require('../../decoder')
 const { KafkaJSPartialMessageError } = require('../../../errors')
 const { lookupCodecByRecordBatchAttributes } = require('../../message/compression')
 const RecordDecoder = require('../record/v0/decoder')
+const TimestampTypes = require('../../timestampTypes')
 
+const TIMESTAMP_TYPE_FLAG_MASK = 0x8
 const TRANSACTIONAL_FLAG_MASK = 0x10
 const CONTROL_FLAG_MASK = 0x20
 
@@ -58,6 +60,11 @@ module.exports = async fetchDecoder => {
 
   const inTransaction = (attributes & TRANSACTIONAL_FLAG_MASK) > 0
   const isControlBatch = (attributes & CONTROL_FLAG_MASK) > 0
+  const timestampType =
+    (attributes & TIMESTAMP_TYPE_FLAG_MASK) > 0
+      ? TimestampTypes.LOG_APPEND_TIME
+      : TimestampTypes.CREATE_TIME
+
   const codec = lookupCodecByRecordBatchAttributes(attributes)
 
   const recordContext = {
@@ -71,6 +78,7 @@ module.exports = async fetchDecoder => {
     producerEpoch,
     firstSequence,
     maxTimestamp,
+    timestampType,
   }
 
   const records = await decodeRecords(codec, decoder, { ...recordContext, magicByte })

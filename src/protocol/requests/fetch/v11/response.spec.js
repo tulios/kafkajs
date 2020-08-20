@@ -13,6 +13,7 @@ describe('Protocol > Requests > Fetch > v11', () => {
     partitionLeaderEpoch: expect.any(Number),
     producerEpoch: expect.any(Number),
     producerId: expect.any(String),
+    timestampType: expect.any(Number),
   }
 
   test('response', async () => {
