@@ -30,7 +30,7 @@ module.exports = class Runner extends EventEmitter {
    * @param {(payload: import("../../types").EachBatchPayload) => Promise<void>} options.eachBatch
    * @param {(payload: import("../../types").EachMessagePayload) => Promise<void>} options.eachMessage
    * @param {number} [options.heartbeatInterval]
-   * @param {(reason: any) => PromiseLike<never>} [options.onCrash]
+   * @param {(reason: Error) => void} options.onCrash
    * @param {import("../../types").RetryOptions} [options.retry]
    * @param {boolean} [options.autoCommit=true]
    */
