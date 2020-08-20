@@ -3,6 +3,9 @@
 import * as tls from 'tls'
 import * as net from 'net'
 
+type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
+type XOR<T, U> = (T | U) extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
+
 export class Kafka {
   constructor(config: KafkaConfig)
   producer(config?: ProducerConfig): Producer
@@ -136,9 +139,7 @@ export type Cluster = {
     topics: Array<{
       topic: string
       partitions: Array<{ partition: number }>
-      fromBeginning?: boolean
-      fromTimestamp?: number
-    }>
+    } & XOR<{ fromBeginning: boolean }, { fromTimestamp: number }>>
   ): Promise<{ topic: string; partitions: Array<{ partition: number; offset: string }> }>
 }
 
@@ -423,7 +424,7 @@ export type Broker = {
     maxWaitTime?: number,
     minBytes?: number,
     maxBytes?: number,
-    topics: Array<{ topic: string, partitions: Array<{ partition: number; fetchOffset: string; maxBytes: number }>}>,
+    topics: Array<{ topic: string, partitions: Array<{ partition: number; fetchOffset: string; maxBytes: number }> }>,
     rackId?: string,
   }): Promise<any>
 }
@@ -797,7 +798,7 @@ export class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSError {
 }
 
 export class KafkaJSDeleteGroupsError extends KafkaJSError {
-  constructor(e: Error | string, groups?: KafkaJSDeleteGroupsErrorGroups[] )
+  constructor(e: Error | string, groups?: KafkaJSDeleteGroupsErrorGroups[])
 }
 
 export interface KafkaJSDeleteGroupsErrorGroups {

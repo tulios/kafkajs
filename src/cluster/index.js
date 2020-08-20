@@ -32,7 +32,7 @@ const mergeTopics = (obj, { topic, partitions }) => ({
  * @param {number} metadataMaxAge - in milliseconds
  * @param {boolean} allowAutoTopicCreation
  * @param {number} maxInFlightRequests
- * @param {IsolationLevel} isolationLevel
+ * @param {number} isolationLevel
  * @param {Object} retry
  * @param {Logger} logger
  * @param {Map} offsets
