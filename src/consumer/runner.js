@@ -20,6 +20,20 @@ const CONSUMING_START = 'consuming-start'
 const CONSUMING_STOP = 'consuming-stop'
 
 module.exports = class Runner extends EventEmitter {
+  /**
+   * @param {object} options
+   * @param {import("../../types").Logger} options.logger
+   * @param {import("./consumerGroup")} options.consumerGroup
+   * @param {import("../instrumentation/emitter")} options.instrumentationEmitter
+   * @param {boolean} [options.eachBatchAutoResolve=true]
+   * @param {number} [options.partitionsConsumedConcurrently]
+   * @param {(payload: import("../../types").EachBatchPayload) => Promise<void>} options.eachBatch
+   * @param {(payload: import("../../types").EachMessagePayload) => Promise<void>} options.eachMessage
+   * @param {number} [options.heartbeatInterval]
+   * @param {(reason: Error) => void} options.onCrash
+   * @param {import("../../types").RetryOptions} [options.retry]
+   * @param {boolean} [options.autoCommit=true]
+   */
   constructor({
     logger,
     consumerGroup,
