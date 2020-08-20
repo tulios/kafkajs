@@ -37,11 +37,11 @@ await admin.createTopics({
     validateOnly: <boolean>,
     waitForLeaders: <boolean>
     timeout: <Number>,
-    topics: <Topic[]>,
+    topics: <ITopicConfig[]>,
 })
 ```
 
-`Topic` structure:
+`ITopicConfig` structure:
 
 ```javascript
 {
