@@ -100,7 +100,18 @@ describe('Broker > Produce', () => {
     )
     expect(response1).toEqual({
       topics: [
-        { topicName, partitions: [{ errorCode: 0, offset: '0', partition: 0, timestamp: '-1' }] },
+        {
+          topicName,
+          partitions: [
+            {
+              errorCode: 0,
+              baseOffset: '0',
+              partition: 0,
+              logAppendTime: '-1',
+              logStartOffset: '0',
+            },
+          ],
+        },
       ],
       throttleTime: 0,
     })
@@ -108,7 +119,18 @@ describe('Broker > Produce', () => {
     const response2 = await broker2.produce({ topicData: createTopicData() })
     expect(response2).toEqual({
       topics: [
-        { topicName, partitions: [{ errorCode: 0, offset: '3', partition: 0, timestamp: '-1' }] },
+        {
+          topicName,
+          partitions: [
+            {
+              errorCode: 0,
+              baseOffset: '3',
+              partition: 0,
+              logAppendTime: '-1',
+              logStartOffset: '0',
+            },
+          ],
+        },
       ],
       throttleTime: 0,
     })
@@ -142,7 +164,18 @@ describe('Broker > Produce', () => {
 
     expect(response1).toEqual({
       topics: [
-        { topicName, partitions: [{ errorCode: 0, offset: '0', partition: 0, timestamp: '-1' }] },
+        {
+          topicName,
+          partitions: [
+            {
+              errorCode: 0,
+              baseOffset: '0',
+              partition: 0,
+              logAppendTime: '-1',
+              logStartOffset: '0',
+            },
+          ],
+        },
       ],
       throttleTime: 0,
     })
@@ -154,7 +187,18 @@ describe('Broker > Produce', () => {
 
     expect(response2).toEqual({
       topics: [
-        { topicName, partitions: [{ errorCode: 0, offset: '3', partition: 0, timestamp: '-1' }] },
+        {
+          topicName,
+          partitions: [
+            {
+              errorCode: 0,
+              baseOffset: '3',
+              partition: 0,
+              logAppendTime: '-1',
+              logStartOffset: '0',
+            },
+          ],
+        },
       ],
       throttleTime: 0,
     })

@@ -348,21 +348,23 @@ describe('Producer', () => {
 
       expect(await sendMessages()).toEqual([
         {
+          baseOffset: '0',
           topicName,
           errorCode: 0,
-          offset: '0',
           partition: 0,
-          timestamp: '-1',
+          logAppendTime: '-1',
+          logStartOffset: '0',
         },
       ])
 
       expect(await sendMessages()).toEqual([
         {
+          baseOffset: '10',
           topicName,
           errorCode: 0,
-          offset: '10',
           partition: 0,
-          timestamp: '-1',
+          logAppendTime: '-1',
+          logStartOffset: '0',
         },
       ])
     })
@@ -417,18 +419,20 @@ describe('Producer', () => {
       expect(result.sort(byTopicName)).toEqual(
         [
           {
+            baseOffset: '0',
             topicName: topics[0],
             errorCode: 0,
-            offset: '0',
             partition: 0,
-            timestamp: '-1',
+            logStartOffset: '0',
+            logAppendTime: '-1',
           },
           {
             topicName: topics[1],
             errorCode: 0,
-            offset: '0',
+            baseOffset: '0',
             partition: 0,
-            timestamp: '-1',
+            logStartOffset: '0',
+            logAppendTime: '-1',
           },
         ].sort(byTopicName)
       )
@@ -439,16 +443,18 @@ describe('Producer', () => {
           {
             topicName: topics[0],
             errorCode: 0,
-            offset: '10',
+            baseOffset: '10',
             partition: 0,
-            timestamp: '-1',
+            logAppendTime: '-1',
+            logStartOffset: '0',
           },
           {
             topicName: topics[1],
             errorCode: 0,
-            offset: '10',
+            baseOffset: '10',
             partition: 0,
-            timestamp: '-1',
+            logAppendTime: '-1',
+            logStartOffset: '0',
           },
         ].sort(byTopicName)
       )
@@ -517,9 +523,10 @@ describe('Producer', () => {
         {
           topicName,
           errorCode: 0,
-          offset: '0',
+          baseOffset: '0',
           partition: 0,
-          timestamp: '-1',
+          logAppendTime: '-1',
+          logStartOffset: '0',
         },
       ])
 
