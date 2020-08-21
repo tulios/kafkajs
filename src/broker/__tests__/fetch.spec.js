@@ -9,6 +9,7 @@ const {
   newLogger,
   createTopic,
   retryProtocol,
+  testIfKafka_0_10,
   testIfKafka_0_11,
   generateMessages,
 } = require('testHelpers')
@@ -115,7 +116,7 @@ describe('Broker > Fetch', () => {
     await expect(broker.fetch({ topics: [] })).rejects.toEqual(new Error('Broker not connected'))
   })
 
-  test('request', async () => {
+  testIfKafka_0_10('request', async () => {
     const targetPartition = 0
     const messages = createMessages()
     let topicData = createTopicData(targetPartition, messages)
@@ -189,7 +190,7 @@ describe('Broker > Fetch', () => {
     expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
   })
 
-  test('request with GZIP', async () => {
+  testIfKafka_0_10('request with GZIP', async () => {
     const targetPartition = 0
     const messages = createMessages()
     let topicData = createTopicData(targetPartition, messages)
