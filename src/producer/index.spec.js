@@ -108,11 +108,9 @@ describe('Producer', () => {
   }
 
   test('reconnects the cluster if disconnected', async () => {
-    const cluster = createCluster(
-      Object.assign(connectionOpts(), {
-        createPartitioner: createModPartitioner,
-      })
-    )
+    const cluster = createCluster({
+      createPartitioner: createModPartitioner,
+    })
 
     await createTopic({ topic: topicName })
 
@@ -325,11 +323,9 @@ describe('Producer', () => {
     const acks = idempotent ? -1 : 1
 
     test('produce messages', async () => {
-      const cluster = createCluster(
-        Object.assign(connectionOpts(), {
-          createPartitioner: createModPartitioner,
-        })
-      )
+      const cluster = createCluster({
+        createPartitioner: createModPartitioner,
+      })
 
       await createTopic({ topic: topicName })
 
@@ -370,11 +366,9 @@ describe('Producer', () => {
     })
 
     test('it should allow sending an empty list of messages', async () => {
-      const cluster = createCluster(
-        Object.assign(connectionOpts(), {
-          createPartitioner: createModPartitioner,
-        })
-      )
+      const cluster = createCluster({
+        createPartitioner: createModPartitioner,
+      })
 
       await createTopic({ topic: topicName })
 
@@ -461,11 +455,9 @@ describe('Producer', () => {
     })
 
     test('sendBatch should allow sending an empty list of topicMessages', async () => {
-      const cluster = createCluster(
-        Object.assign(connectionOpts(), {
-          createPartitioner: createModPartitioner,
-        })
-      )
+      const cluster = createCluster({
+        createPartitioner: createModPartitioner,
+      })
 
       await createTopic({ topic: topicName })
 
@@ -476,11 +468,9 @@ describe('Producer', () => {
     })
 
     test('sendBatch should consolidate topicMessages by topic', async () => {
-      const cluster = createCluster(
-        Object.assign(connectionOpts(), {
-          createPartitioner: createModPartitioner,
-        })
-      )
+      const cluster = createCluster({
+        createPartitioner: createModPartitioner,
+      })
 
       await createTopic({ topic: topicName, partitions: 1 })
 
@@ -563,11 +553,9 @@ describe('Producer', () => {
     })
 
     testIfKafka_0_11('produce messages for Kafka 0.11', async () => {
-      const cluster = createCluster(
-        Object.assign(connectionOpts(), {
-          createPartitioner: createModPartitioner,
-        })
-      )
+      const cluster = createCluster({
+        createPartitioner: createModPartitioner,
+      })
 
       await createTopic({ topic: topicName })
 
@@ -608,11 +596,9 @@ describe('Producer', () => {
     })
 
     testIfKafka_0_11('produce messages for Kafka 0.11 without specifying message key', async () => {
-      const cluster = createCluster(
-        Object.assign(connectionOpts(), {
-          createPartitioner: createModPartitioner,
-        })
-      )
+      const cluster = createCluster({
+        createPartitioner: createModPartitioner,
+      })
 
       await createTopic({ topic: topicName })
 
@@ -633,11 +619,9 @@ describe('Producer', () => {
     })
 
     testIfKafka_0_11('produce messages for Kafka 0.11 with headers', async () => {
-      const cluster = createCluster(
-        Object.assign(connectionOpts(), {
-          createPartitioner: createModPartitioner,
-        })
-      )
+      const cluster = createCluster({
+        createPartitioner: createModPartitioner,
+      })
 
       await createTopic({ topic: topicName })
 
@@ -689,11 +673,9 @@ describe('Producer', () => {
     testProduceMessages(true)
 
     test('throws an error if sending a message with acks != -1', async () => {
-      const cluster = createCluster(
-        Object.assign(connectionOpts(), {
-          createPartitioner: createModPartitioner,
-        })
-      )
+      const cluster = createCluster({
+        createPartitioner: createModPartitioner,
+      })
 
       producer = createProducer({ cluster, logger: newLogger(), idempotent: true })
       await producer.connect()
@@ -730,11 +712,9 @@ describe('Producer', () => {
     })
 
     test('sets the default retry value to MAX_SAFE_INTEGER', async () => {
-      const cluster = createCluster(
-        Object.assign(connectionOpts(), {
-          createPartitioner: createModPartitioner,
-        })
-      )
+      const cluster = createCluster({
+        createPartitioner: createModPartitioner,
+      })
 
       producer = createProducer({ cluster, logger: newLogger(), idempotent: true })
       expect(retrySpy).toHaveBeenCalledWith({ retries: Number.MAX_SAFE_INTEGER })
@@ -756,11 +736,9 @@ describe('Producer', () => {
     })
 
     test('only calls initProducerId if unitialized', async () => {
-      const cluster = createCluster(
-        Object.assign(connectionOpts(), {
-          createPartitioner: createModPartitioner,
-        })
-      )
+      const cluster = createCluster({
+        createPartitioner: createModPartitioner,
+      })
 
       producer = createProducer({ cluster, logger: newLogger(), idempotent: true })
 
@@ -783,11 +761,9 @@ describe('Producer', () => {
     const testTransactionEnd = (shouldCommit = true) => {
       const endFn = shouldCommit ? 'commit' : 'abort'
       testIfKafka_0_11(`transaction flow ${endFn}`, async () => {
-        const cluster = createCluster(
-          Object.assign(connectionOpts(), {
-            createPartitioner: createModPartitioner,
-          })
-        )
+        const cluster = createCluster({
+          createPartitioner: createModPartitioner,
+        })
 
         await createTopic({ topic: topicName })
 
@@ -840,11 +816,9 @@ describe('Producer', () => {
     testTransactionEnd(false)
 
     testIfKafka_0_11('allows sending messages outside a transaction', async () => {
-      const cluster = createCluster(
-        Object.assign(connectionOpts(), {
-          createPartitioner: createModPartitioner,
-        })
-      )
+      const cluster = createCluster({
+        createPartitioner: createModPartitioner,
+      })
 
       await createTopic({ topic: topicName })
 
