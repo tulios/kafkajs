@@ -1,9 +1,6 @@
 const { KafkaJSServerDoesNotSupportApiKey } = require('../../errors')
 const { lookup } = require('./index')
 
-const API_KEY_PRODUCE = 0
-const API_KEY_FETCH = 1
-
 describe('Protocol > Requests > lookup', () => {
   describe('when the client support more versions than the server', () => {
     it('returns the maximum version supported by the server', async () => {
