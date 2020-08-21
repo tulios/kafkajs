@@ -29,7 +29,6 @@ module.exports = class Broker {
   constructor({
     connection,
     logger,
-    allowExperimentalV011,
     nodeId = null,
     versions = null,
     authenticationTimeout = 1000,
@@ -42,7 +41,6 @@ module.exports = class Broker {
     this.rootLogger = logger
     this.logger = logger.namespace('Broker')
     this.versions = versions
-    this.allowExperimentalV011 = allowExperimentalV011
     this.authenticationTimeout = authenticationTimeout
     this.reauthenticationThreshold = reauthenticationThreshold
     this.allowAutoTopicCreation = allowAutoTopicCreation
@@ -94,7 +92,7 @@ module.exports = class Broker {
         this.versions = await this.apiVersions()
       }
 
-      this.lookupRequest = lookup(this.versions, this.allowExperimentalV011)
+      this.lookupRequest = lookup(this.versions)
 
       if (this.supportAuthenticationProtocol === null) {
         try {

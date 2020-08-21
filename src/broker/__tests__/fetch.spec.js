@@ -270,7 +270,6 @@ describe('Broker > Fetch', () => {
       broker = new Broker({
         connection: createConnection(newBrokerData),
         logger: newLogger(),
-        allowExperimentalV011: true,
       })
       await broker.connect()
     })
@@ -535,7 +534,7 @@ describe('Broker > Fetch', () => {
       transactionalId = `transactional-id-${secureRandom()}`
 
       producer = createProducer({
-        cluster: createCluster({ allowExperimentalV011: true }),
+        cluster: createCluster(),
         logger: newLogger(),
         transactionalId,
         maxInFlightRequests: 1,
@@ -544,7 +543,6 @@ describe('Broker > Fetch', () => {
       broker = new Broker({
         connection: createConnection(newBrokerData),
         logger: newLogger(),
-        allowExperimentalV011: true,
       })
       await broker.connect()
 

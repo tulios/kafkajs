@@ -175,7 +175,6 @@ describe('Broker > Produce', () => {
       broker2 = new Broker({
         connection: createConnection(newBrokerData),
         logger: newLogger(),
-        allowExperimentalV011: true,
       })
       await broker2.connect()
 
@@ -261,7 +260,6 @@ describe('Broker > Produce', () => {
       broker2 = new Broker({
         connection: createConnection(newBrokerData),
         logger: newLogger(),
-        allowExperimentalV011: true,
       })
       await broker2.connect()
 
@@ -335,7 +333,6 @@ describe('Broker > Produce', () => {
       broker2 = new Broker({
         connection: createConnection(newBrokerData),
         logger: newLogger(),
-        allowExperimentalV011: true,
       })
       await broker2.connect()
 
@@ -396,7 +393,6 @@ describe('Broker > Produce', () => {
       broker2 = new Broker({
         connection: createConnection(newBrokerData),
         logger: newLogger(),
-        allowExperimentalV011: true,
       })
       await broker2.connect()
 
@@ -477,7 +473,6 @@ describe('Broker > Produce', () => {
       broker2 = new Broker({
         connection: createConnection(newBrokerData),
         logger: newLogger(),
-        allowExperimentalV011: true,
       })
       await broker2.connect()
 

@@ -558,7 +558,6 @@ describe('Producer', () => {
     testIfKafka_0_11('produce messages for Kafka 0.11', async () => {
       const cluster = createCluster(
         Object.assign(connectionOpts(), {
-          allowExperimentalV011: true,
           createPartitioner: createModPartitioner,
         })
       )
@@ -604,7 +603,6 @@ describe('Producer', () => {
     testIfKafka_0_11('produce messages for Kafka 0.11 without specifying message key', async () => {
       const cluster = createCluster(
         Object.assign(connectionOpts(), {
-          allowExperimentalV011: true,
           createPartitioner: createModPartitioner,
         })
       )
@@ -630,7 +628,6 @@ describe('Producer', () => {
     testIfKafka_0_11('produce messages for Kafka 0.11 with headers', async () => {
       const cluster = createCluster(
         Object.assign(connectionOpts(), {
-          allowExperimentalV011: true,
           createPartitioner: createModPartitioner,
         })
       )
@@ -687,7 +684,6 @@ describe('Producer', () => {
     test('throws an error if sending a message with acks != -1', async () => {
       const cluster = createCluster(
         Object.assign(connectionOpts(), {
-          allowExperimentalV011: true,
           createPartitioner: createModPartitioner,
         })
       )
@@ -729,7 +725,6 @@ describe('Producer', () => {
     test('sets the default retry value to MAX_SAFE_INTEGER', async () => {
       const cluster = createCluster(
         Object.assign(connectionOpts(), {
-          allowExperimentalV011: true,
           createPartitioner: createModPartitioner,
         })
       )
@@ -756,7 +751,6 @@ describe('Producer', () => {
     test('only calls initProducerId if unitialized', async () => {
       const cluster = createCluster(
         Object.assign(connectionOpts(), {
-          allowExperimentalV011: true,
           createPartitioner: createModPartitioner,
         })
       )
@@ -784,7 +778,6 @@ describe('Producer', () => {
       testIfKafka_0_11(`transaction flow ${endFn}`, async () => {
         const cluster = createCluster(
           Object.assign(connectionOpts(), {
-            allowExperimentalV011: true,
             createPartitioner: createModPartitioner,
           })
         )
@@ -842,7 +835,6 @@ describe('Producer', () => {
     testIfKafka_0_11('allows sending messages outside a transaction', async () => {
       const cluster = createCluster(
         Object.assign(connectionOpts(), {
-          allowExperimentalV011: true,
           createPartitioner: createModPartitioner,
         })
       )
@@ -883,11 +875,7 @@ describe('Producer', () => {
     })
 
     testIfKafka_0_11('supports sending offsets', async () => {
-      const cluster = createCluster(
-        Object.assign(connectionOpts(), {
-          allowExperimentalV011: true,
-        })
-      )
+      const cluster = createCluster()
 
       const markOffsetAsCommittedSpy = jest.spyOn(cluster, 'markOffsetAsCommitted')
 

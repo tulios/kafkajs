@@ -25,7 +25,6 @@ describe('Consumer', () => {
     await createTopic({ topic: topicName })
 
     cluster = createCluster({
-      allowExperimentalV011: true,
       maxInFlightRequests: 1,
     })
 

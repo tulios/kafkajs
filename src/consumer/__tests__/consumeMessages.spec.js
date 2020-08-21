@@ -246,7 +246,7 @@ describe('Consumer', () => {
     const topicName2 = `test-topic2-${secureRandom()}`
     await createTopic({ topic: topicName2 })
 
-    cluster = createCluster({ allowExperimentalV011: true })
+    cluster = createCluster()
     producer = createProducer({
       cluster,
       createPartitioner: createModPartitioner,
@@ -371,7 +371,7 @@ describe('Consumer', () => {
   })
 
   testIfKafka_0_11('consume GZIP messages with 0.11 format', async () => {
-    cluster = createCluster({ allowExperimentalV011: true })
+    cluster = createCluster()
     producer = createProducer({
       cluster,
       createPartitioner: createModPartitioner,
@@ -659,7 +659,7 @@ describe('Consumer', () => {
 
   describe('transactions', () => {
     testIfKafka_0_11('accepts messages from an idempotent producer', async () => {
-      cluster = createCluster({ allowExperimentalV011: true })
+      cluster = createCluster()
       producer = createProducer({
         cluster,
         createPartitioner: createModPartitioner,
@@ -705,7 +705,7 @@ describe('Consumer', () => {
     })
 
     testIfKafka_0_11('accepts messages from committed transactions', async () => {
-      cluster = createCluster({ allowExperimentalV011: true })
+      cluster = createCluster()
       producer = createProducer({
         cluster,
         createPartitioner: createModPartitioner,
@@ -781,7 +781,7 @@ describe('Consumer', () => {
     })
 
     testIfKafka_0_11('does not receive aborted messages', async () => {
-      cluster = createCluster({ allowExperimentalV011: true })
+      cluster = createCluster()
       producer = createProducer({
         cluster,
         createPartitioner: createModPartitioner,
@@ -853,7 +853,7 @@ describe('Consumer', () => {
       async () => {
         const isolationLevel = ISOLATION_LEVEL.READ_UNCOMMITTED
 
-        cluster = createCluster({ allowExperimentalV011: true, isolationLevel })
+        cluster = createCluster({ isolationLevel })
         producer = createProducer({
           cluster,
           createPartitioner: createModPartitioner,
@@ -907,7 +907,7 @@ describe('Consumer', () => {
     testIfKafka_0_11(
       'respects offsets sent by a committed transaction ("consume-transform-produce" flow)',
       async () => {
-        cluster = createCluster({ allowExperimentalV011: true })
+        cluster = createCluster()
         producer = createProducer({
           cluster,
           logger: newLogger(),
@@ -1023,7 +1023,6 @@ describe('Consumer', () => {
       'does not respect offsets sent by an aborted transaction ("consume-transform-produce" flow)',
       async () => {
         cluster = createCluster({
-          allowExperimentalV011: true,
           isolationLevel: ISOLATION_LEVEL.READ_COMMITTED,
         })
         producer = createProducer({
