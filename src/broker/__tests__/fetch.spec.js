@@ -9,8 +9,8 @@ const {
   newLogger,
   createTopic,
   retryProtocol,
-  testIfKafka_0_10,
-  testIfKafka_0_11,
+  testIfKafkaAtMost_0_10,
+  testIfKafkaAtLeast_0_11,
   generateMessages,
 } = require('testHelpers')
 const { Types: Compression } = require('../../protocol/message/compression')
@@ -116,7 +116,7 @@ describe('Broker > Fetch', () => {
     await expect(broker.fetch({ topics: [] })).rejects.toEqual(new Error('Broker not connected'))
   })
 
-  testIfKafka_0_10('request', async () => {
+  testIfKafkaAtMost_0_10('request', async () => {
     const targetPartition = 0
     const messages = createMessages()
     let topicData = createTopicData(targetPartition, messages)
@@ -190,7 +190,7 @@ describe('Broker > Fetch', () => {
     expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
   })
 
-  testIfKafka_0_10('request with GZIP', async () => {
+  testIfKafkaAtMost_0_10('request with GZIP', async () => {
     const targetPartition = 0
     const messages = createMessages()
     let topicData = createTopicData(targetPartition, messages)
@@ -275,7 +275,7 @@ describe('Broker > Fetch', () => {
       await broker.connect()
     })
 
-    testIfKafka_0_11('request', async () => {
+    testIfKafkaAtLeast_0_11('request', async () => {
       const targetPartition = 0
       const messages = createMessages()
       let topicData = createTopicData(targetPartition, messages)
@@ -359,7 +359,7 @@ describe('Broker > Fetch', () => {
       expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
     })
 
-    testIfKafka_0_11('request with headers', async () => {
+    testIfKafkaAtLeast_0_11('request with headers', async () => {
       const targetPartition = 0
       const messages = createMessages(0, true)
       let topicData = createTopicData(targetPartition, messages)
@@ -443,7 +443,7 @@ describe('Broker > Fetch', () => {
       expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
     })
 
-    testIfKafka_0_11('request with GZIP', async () => {
+    testIfKafkaAtLeast_0_11('request with GZIP', async () => {
       const targetPartition = 0
       const messages = createMessages()
       let topicData = createTopicData(targetPartition, messages)
@@ -550,7 +550,7 @@ describe('Broker > Fetch', () => {
       retry = createRetrier({ retries: 5 })
     })
 
-    testIfKafka_0_11(
+    testIfKafkaAtLeast_0_11(
       'returns transactional messages only after transaction has ended for an isolation level of "read_committed" (default)',
       async () => {
         const targetPartition = 0
@@ -707,7 +707,7 @@ describe('Broker > Fetch', () => {
       }
     )
 
-    testIfKafka_0_11(
+    testIfKafkaAtLeast_0_11(
       'returns transactional messages immediately for an isolation level of "read_uncommitted"',
       async () => {
         const targetPartition = 0

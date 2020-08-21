@@ -33,7 +33,7 @@ const {
   sslBrokers,
   saslBrokers,
   newLogger,
-  testIfKafka_0_11,
+  testIfKafkaAtLeast_0_11,
   createTopic,
   waitForMessages,
 } = require('testHelpers')
@@ -552,7 +552,7 @@ describe('Producer', () => {
       ])
     })
 
-    testIfKafka_0_11('produce messages for Kafka 0.11', async () => {
+    testIfKafkaAtLeast_0_11('produce messages for Kafka 0.11', async () => {
       const cluster = createCluster({
         createPartitioner: createModPartitioner,
       })
@@ -595,30 +595,33 @@ describe('Producer', () => {
       ])
     })
 
-    testIfKafka_0_11('produce messages for Kafka 0.11 without specifying message key', async () => {
-      const cluster = createCluster({
-        createPartitioner: createModPartitioner,
-      })
-
-      await createTopic({ topic: topicName })
-
-      producer = createProducer({ cluster, logger: newLogger(), idempotent })
-      await producer.connect()
-
-      await expect(
-        producer.send({
-          acks,
-          topic: topicName,
-          messages: [
-            {
-              value: 'test-value',
-            },
-          ],
+    testIfKafkaAtLeast_0_11(
+      'produce messages for Kafka 0.11 without specifying message key',
+      async () => {
+        const cluster = createCluster({
+          createPartitioner: createModPartitioner,
         })
-      ).toResolve()
-    })
 
-    testIfKafka_0_11('produce messages for Kafka 0.11 with headers', async () => {
+        await createTopic({ topic: topicName })
+
+        producer = createProducer({ cluster, logger: newLogger(), idempotent })
+        await producer.connect()
+
+        await expect(
+          producer.send({
+            acks,
+            topic: topicName,
+            messages: [
+              {
+                value: 'test-value',
+              },
+            ],
+          })
+        ).toResolve()
+      }
+    )
+
+    testIfKafkaAtLeast_0_11('produce messages for Kafka 0.11 with headers', async () => {
       const cluster = createCluster({
         createPartitioner: createModPartitioner,
       })
@@ -760,7 +763,7 @@ describe('Producer', () => {
 
     const testTransactionEnd = (shouldCommit = true) => {
       const endFn = shouldCommit ? 'commit' : 'abort'
-      testIfKafka_0_11(`transaction flow ${endFn}`, async () => {
+      testIfKafkaAtLeast_0_11(`transaction flow ${endFn}`, async () => {
         const cluster = createCluster({
           createPartitioner: createModPartitioner,
         })
@@ -815,7 +818,7 @@ describe('Producer', () => {
     testTransactionEnd(true)
     testTransactionEnd(false)
 
-    testIfKafka_0_11('allows sending messages outside a transaction', async () => {
+    testIfKafkaAtLeast_0_11('allows sending messages outside a transaction', async () => {
       const cluster = createCluster({
         createPartitioner: createModPartitioner,
       })
@@ -855,7 +858,7 @@ describe('Producer', () => {
       })
     })
 
-    testIfKafka_0_11('supports sending offsets', async () => {
+    testIfKafkaAtLeast_0_11('supports sending offsets', async () => {
       const cluster = createCluster()
 
       const markOffsetAsCommittedSpy = jest.spyOn(cluster, 'markOffsetAsCommitted')

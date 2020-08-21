@@ -15,7 +15,7 @@ const {
   waitFor,
   waitForMessages,
   waitForNextEvent,
-  testIfKafka_0_11,
+  testIfKafkaAtLeast_0_11,
   waitForConsumerToJoinGroup,
   generateMessages,
 } = require('testHelpers')
@@ -242,7 +242,7 @@ describe('Consumer', () => {
     ])
   })
 
-  testIfKafka_0_11('consume messages with 0.11 format', async () => {
+  testIfKafkaAtLeast_0_11('consume messages with 0.11 format', async () => {
     const topicName2 = `test-topic2-${secureRandom()}`
     await createTopic({ topic: topicName2 })
 
@@ -370,7 +370,7 @@ describe('Consumer', () => {
     expect(messagesFromTopic2.map(m => m.message.offset)).toEqual(messages2.map((_, i) => `${i}`))
   })
 
-  testIfKafka_0_11('consume GZIP messages with 0.11 format', async () => {
+  testIfKafkaAtLeast_0_11('consume GZIP messages with 0.11 format', async () => {
     cluster = createCluster()
     producer = createProducer({
       cluster,
@@ -658,7 +658,7 @@ describe('Consumer', () => {
   })
 
   describe('transactions', () => {
-    testIfKafka_0_11('accepts messages from an idempotent producer', async () => {
+    testIfKafkaAtLeast_0_11('accepts messages from an idempotent producer', async () => {
       cluster = createCluster()
       producer = createProducer({
         cluster,
@@ -704,7 +704,7 @@ describe('Consumer', () => {
       expect(messagesConsumed[99].message.value.toString()).toMatch(/value-idempotent-99/)
     })
 
-    testIfKafka_0_11('accepts messages from committed transactions', async () => {
+    testIfKafkaAtLeast_0_11('accepts messages from committed transactions', async () => {
       cluster = createCluster()
       producer = createProducer({
         cluster,
@@ -780,7 +780,7 @@ describe('Consumer', () => {
       expect(messagesConsumed[number - 2].message.value.toString()).toMatch(/value-txn2-99/)
     })
 
-    testIfKafka_0_11('does not receive aborted messages', async () => {
+    testIfKafkaAtLeast_0_11('does not receive aborted messages', async () => {
       cluster = createCluster()
       producer = createProducer({
         cluster,
@@ -848,7 +848,7 @@ describe('Consumer', () => {
       expect(messagesConsumed[10].message.value.toString()).toMatch(/value-committed-txn-9/)
     })
 
-    testIfKafka_0_11(
+    testIfKafkaAtLeast_0_11(
       'receives aborted messages for an isolation level of READ_UNCOMMITTED',
       async () => {
         const isolationLevel = ISOLATION_LEVEL.READ_UNCOMMITTED
@@ -904,7 +904,7 @@ describe('Consumer', () => {
       }
     )
 
-    testIfKafka_0_11(
+    testIfKafkaAtLeast_0_11(
       'respects offsets sent by a committed transaction ("consume-transform-produce" flow)',
       async () => {
         cluster = createCluster()
@@ -1019,7 +1019,7 @@ describe('Consumer', () => {
       }
     )
 
-    testIfKafka_0_11(
+    testIfKafkaAtLeast_0_11(
       'does not respect offsets sent by an aborted transaction ("consume-transform-produce" flow)',
       async () => {
         cluster = createCluster({
