@@ -53,7 +53,7 @@ describe('Cluster > ConnectionBuilder', () => {
   })
 
   test('accepts overrides for host, port and rack', async () => {
-    const connection = await builder.build({
+    const connection = await builder.assign({
       host: 'host.another',
       port: 8888,
       rack: 'rack',

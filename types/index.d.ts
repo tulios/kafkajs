@@ -14,8 +14,14 @@ export class Kafka {
   logger(): Logger
 }
 
+export interface DiscoveryResult {
+  brokers: KafkaConfig["brokers"]
+  sasl?: SASLOptions
+}
+export type DiscoveryFunction = () => Promise<DiscoveryResult>;
+
 export interface KafkaConfig {
-  brokers: string[]
+  brokers: string[] | DiscoveryFunction
   ssl?: tls.ConnectionOptions | boolean
   sasl?: SASLOptions
   clientId?: string
