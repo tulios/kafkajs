@@ -29,7 +29,7 @@ module.exports = ({
   let index = 0
 
   return {
-    build: ({ host, port, rack } = {}) => {
+    build: async ({ host, port, rack } = {}) => {
       if (!host) {
         // Always rotate the seed broker
         const [seedHost, seedPort] = shuffledBrokers[index++ % size].split(':')
@@ -37,6 +37,24 @@ module.exports = ({
         port = Number(seedPort)
       }
 
+      return new Connection({
+        host,
+        port,
+        rack,
+        ssl,
+        sasl,
+        clientId,
+        socketFactory,
+        connectionTimeout,
+        requestTimeout,
+        enforceRequestTimeout,
+        maxInFlightRequests,
+        instrumentationEmitter,
+        retry,
+        logger,
+      })
+    },
+    assign: ({ host, port, rack }) => {
       return new Connection({
         host,
         port,

@@ -28,8 +28,8 @@ describe('Cluster > ConnectionBuilder', () => {
     })
   })
 
-  test('creates a new connection using a random broker', () => {
-    const connection = builder.build()
+  test('creates a new connection using a random broker', async () => {
+    const connection = await builder.build()
     expect(connection).toBeInstanceOf(Connection)
     expect(connection.host).toBeOneOf(['host.test', 'host2.test', 'host3.test'])
     expect(connection.port).toBeOneOf([7777, 7778, 7779])
@@ -42,18 +42,18 @@ describe('Cluster > ConnectionBuilder', () => {
     expect(connection.socketFactory).toBe(socketFactory)
   })
 
-  test('when called without host and port iterates throught the seed brokers', () => {
-    const connections = Array(brokers.length)
-      .fill()
-      .map(() => {
-        const { host, port } = builder.build()
-        return `${host}:${port}`
-      })
+  test('when called without host and port iterates throught the seed brokers', async () => {
+    const connections = []
+    for (let i = 0; i < brokers.length; i++) {
+      const { host, port } = await builder.build()
+      connections.push(`${host}:${port}`)
+    }
+
     expect(connections).toIncludeSameMembers(brokers)
   })
 
-  test('accepts overrides for host, port and rack', () => {
-    const connection = builder.build({
+  test('accepts overrides for host, port and rack', async () => {
+    const connection = await builder.build({
       host: 'host.another',
       port: 8888,
       rack: 'rack',
