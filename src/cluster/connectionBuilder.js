@@ -29,11 +29,11 @@ module.exports = ({
     getNext = async () => {
       try {
         const discovered = await brokers()
-        const [host, port] = shuffle(discovered.brokers)[0].split(':')
+        const [seedHost, seedPort] = shuffle(discovered.brokers)[0].split(':')
 
         return {
-          host,
-          port,
+          host: seedHost,
+          port: Number(seedPort),
           sasl: discovered.sasl,
         }
       } catch (e) {
@@ -56,6 +56,7 @@ module.exports = ({
       return {
         host: seedHost,
         port: Number(seedPort),
+        sasl,
       }
     }
   }
@@ -67,8 +68,8 @@ module.exports = ({
       return new Connection({
         host: broker.host,
         port: broker.port,
+        sasl: broker.sasl,
         ssl,
-        sasl: broker.sasl || sasl,
         clientId,
         socketFactory,
         connectionTimeout,
