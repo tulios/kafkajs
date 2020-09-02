@@ -17,6 +17,7 @@ describe('Cluster > BrokerPool', () => {
       connectionBuilder: createConnectionBuilder(),
       logger: newLogger(),
     })
+    await brokerPool.initSeedBroker()
   })
 
   afterEach(async () => {

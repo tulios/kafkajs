@@ -44,11 +44,6 @@ module.exports = class BrokerPool {
         ...options,
       })
 
-    this.seedBroker = this.createBroker({
-      connection: this.connectionBuilder.build(),
-      logger: this.rootLogger,
-    })
-
     this.brokers = {}
     this.metadata = null
     this.metadataExpireAt = null
@@ -62,7 +57,21 @@ module.exports = class BrokerPool {
    */
   hasConnectedBrokers() {
     const brokers = values(this.brokers)
-    return !!brokers.find(broker => broker.isConnected()) || this.seedBroker.isConnected()
+    return (
+      !!brokers.find(broker => broker.isConnected()) ||
+      (this.seedBroker && this.seedBroker.isConnected())
+    )
+  }
+
+  async initSeedBroker() {
+    if (this.seedBroker) {
+      await this.seedBroker.disconnect()
+    }
+
+    this.seedBroker = this.createBroker({
+      connection: await this.connectionBuilder.build(),
+      logger: this.rootLogger,
+    })
   }
 
   /**
@@ -74,6 +83,10 @@ module.exports = class BrokerPool {
       return
     }
 
+    if (!this.seedBroker) {
+      await this.initSeedBroker()
+    }
+
     return this.retrier(async (bail, retryCount, retryTime) => {
       try {
         await this.seedBroker.connect()
@@ -81,10 +94,7 @@ module.exports = class BrokerPool {
       } catch (e) {
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
           // Connection builder will always rotate the seed broker
-          this.seedBroker = this.createBroker({
-            connection: this.connectionBuilder.build(),
-            logger: this.rootLogger,
-          })
+          await this.initSeedBroker()
           this.logger.error(
             `Failed to connect to seed broker, trying another broker from the list: ${e.message}`,
             { retryCount, retryTime }
@@ -104,7 +114,7 @@ module.exports = class BrokerPool {
    * @returns {Promise}
    */
   async disconnect() {
-    await this.seedBroker.disconnect()
+    this.seedBroker && (await this.seedBroker.disconnect())
     await Promise.all(values(this.brokers).map(broker => broker.disconnect()))
 
     this.brokers = {}
@@ -128,6 +138,7 @@ module.exports = class BrokerPool {
         this.metadataExpireAt = Date.now() + this.metadataMaxAge
 
         const replacedBrokers = []
+
         this.brokers = this.metadata.brokers.reduce((result, { nodeId, host, port, rack }) => {
           if (result[nodeId]) {
             if (!hasBrokerBeenReplaced(result[nodeId], { host, port, rack })) {
@@ -150,7 +161,7 @@ module.exports = class BrokerPool {
               logger: this.rootLogger,
               versions: this.versions,
               supportAuthenticationProtocol: this.supportAuthenticationProtocol,
-              connection: this.connectionBuilder.build({ host, port, rack }),
+              connection: this.connectionBuilder.assign({ host, port, rack }),
               nodeId,
             }),
           })
@@ -285,7 +296,7 @@ module.exports = class BrokerPool {
           }
 
           // Rebuild the connection since it can't recover from illegal SASL state
-          broker.connection = this.connectionBuilder.build({
+          broker.connection = await this.connectionBuilder.build({
             host: broker.connection.host,
             port: broker.connection.port,
             rack: broker.connection.rack,
