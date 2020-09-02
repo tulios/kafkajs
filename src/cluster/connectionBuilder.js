@@ -29,7 +29,10 @@ module.exports = ({
     getNext = async () => {
       try {
         const discovered = await brokers()
-        const [seedHost, seedPort] = shuffle(discovered.brokers)[0].split(':')
+
+        const brokersList = Array.isArray(discovered) ? discovered : discovered.brokers
+
+        const [seedHost, seedPort] = shuffle(brokersList)[0].split(':')
 
         return {
           host: seedHost,

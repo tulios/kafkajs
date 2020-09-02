@@ -98,4 +98,62 @@ describe('Cluster > ConnectionBuilder', () => {
       'Failed to connect: expected brokers array and got nothing'
     )
   })
+
+  it('brokers can be function that returns array of host:port strings', async () => {
+    const builder = connectionBuilder({
+      socketFactory,
+      brokers: () => ['host.test:7777'],
+      ssl,
+      sasl,
+      clientId,
+      connectionTimeout,
+      retry,
+      logger,
+    })
+
+    const connection = await builder.build()
+    expect(connection).toBeInstanceOf(Connection)
+    expect(connection.host).toBe('host.test')
+    expect(connection.port).toBe(7777)
+  })
+
+  it('brokers can be async function that returns array of host:port strings', async () => {
+    const builder = connectionBuilder({
+      socketFactory,
+      brokers: async () => ['host.test:7777'],
+      ssl,
+      sasl,
+      clientId,
+      connectionTimeout,
+      retry,
+      logger,
+    })
+
+    const connection = await builder.build()
+    expect(connection).toBeInstanceOf(Connection)
+    expect(connection.host).toBe('host.test')
+    expect(connection.port).toBe(7777)
+  })
+
+  it('brokers can be async function that returns brokers and sasl parameters', async () => {
+    const builder = connectionBuilder({
+      socketFactory,
+      brokers: async () => ({
+        brokers: ['host.test:7777'],
+        sasl: { username: 'user' },
+      }),
+      ssl,
+      sasl,
+      clientId,
+      connectionTimeout,
+      retry,
+      logger,
+    })
+
+    const connection = await builder.build()
+    expect(connection).toBeInstanceOf(Connection)
+    expect(connection.host).toBe('host.test')
+    expect(connection.port).toBe(7777)
+    expect(connection.sasl).toEqual({ username: 'user' })
+  })
 })
