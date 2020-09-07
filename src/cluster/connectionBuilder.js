@@ -29,15 +29,16 @@ module.exports = ({
     getNext = async () => {
       try {
         const discovered = await brokers()
-
         const brokersList = Array.isArray(discovered) ? discovered : discovered.brokers
-
         const [seedHost, seedPort] = shuffle(brokersList)[0].split(':')
+
+        if (discovered.sasl) {
+          sasl = discovered.sasl
+        }
 
         return {
           host: seedHost,
           port: Number(seedPort),
-          sasl: discovered.sasl,
         }
       } catch (e) {
         throw new KafkaJSConnectionError('dynamic brokers function crashed, retrying...')
@@ -59,38 +60,25 @@ module.exports = ({
       return {
         host: seedHost,
         port: Number(seedPort),
-        sasl,
       }
     }
   }
 
   return {
-    build: async () => {
-      const broker = await getNext()
+    build: async ({ host, port, rack } = {}) => {
+      if (!host) {
+        const broker = await getNext()
 
-      return new Connection({
-        host: broker.host,
-        port: broker.port,
-        sasl: broker.sasl,
-        ssl,
-        clientId,
-        socketFactory,
-        connectionTimeout,
-        requestTimeout,
-        enforceRequestTimeout,
-        maxInFlightRequests,
-        instrumentationEmitter,
-        retry,
-        logger,
-      })
-    },
-    assign: ({ host, port, rack }) => {
+        host = broker.host
+        port = broker.port
+      }
+
       return new Connection({
         host,
         port,
         rack,
-        ssl,
         sasl,
+        ssl,
         clientId,
         socketFactory,
         connectionTimeout,
