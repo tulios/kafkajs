@@ -18,7 +18,7 @@ export interface DiscoveryResult {
   brokers: KafkaConfig["brokers"]
   sasl?: SASLOptions
 }
-export type DiscoveryFunction = () => Promise<DiscoveryResult>;
+export type DiscoveryFunction = () => Promise<DiscoveryResult|string[]>;
 
 export interface KafkaConfig {
   brokers: string[] | DiscoveryFunction
