@@ -59,11 +59,11 @@ module.exports = class BrokerPool {
     const brokers = values(this.brokers)
     return (
       !!brokers.find(broker => broker.isConnected()) ||
-      (this.seedBroker && this.seedBroker.isConnected())
+      (this.seedBroker ? this.seedBroker.isConnected() : false)
     )
   }
 
-  async initSeedBroker() {
+  async createSeedBroker() {
     if (this.seedBroker) {
       await this.seedBroker.disconnect()
     }
@@ -84,7 +84,7 @@ module.exports = class BrokerPool {
     }
 
     if (!this.seedBroker) {
-      await this.initSeedBroker()
+      await this.createSeedBroker()
     }
 
     return this.retrier(async (bail, retryCount, retryTime) => {
@@ -94,7 +94,7 @@ module.exports = class BrokerPool {
       } catch (e) {
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
           // Connection builder will always rotate the seed broker
-          await this.initSeedBroker()
+          await this.createSeedBroker()
           this.logger.error(
             `Failed to connect to seed broker, trying another broker from the list: ${e.message}`,
             { retryCount, retryTime }
