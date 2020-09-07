@@ -59,11 +59,11 @@ module.exports = class BrokerPool {
     const brokers = values(this.brokers)
     return (
       !!brokers.find(broker => broker.isConnected()) ||
-      (this.seedBroker && this.seedBroker.isConnected())
+      (this.seedBroker ? this.seedBroker.isConnected() : false)
     )
   }
 
-  async initSeedBroker() {
+  async createSeedBroker() {
     if (this.seedBroker) {
       await this.seedBroker.disconnect()
     }
@@ -84,7 +84,7 @@ module.exports = class BrokerPool {
     }
 
     if (!this.seedBroker) {
-      await this.initSeedBroker()
+      await this.createSeedBroker()
     }
 
     return this.retrier(async (bail, retryCount, retryTime) => {
@@ -94,7 +94,7 @@ module.exports = class BrokerPool {
       } catch (e) {
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
           // Connection builder will always rotate the seed broker
-          await this.initSeedBroker()
+          await this.createSeedBroker()
           this.logger.error(
             `Failed to connect to seed broker, trying another broker from the list: ${e.message}`,
             { retryCount, retryTime }
@@ -139,33 +139,38 @@ module.exports = class BrokerPool {
 
         const replacedBrokers = []
 
-        this.brokers = this.metadata.brokers.reduce((result, { nodeId, host, port, rack }) => {
-          if (result[nodeId]) {
-            if (!hasBrokerBeenReplaced(result[nodeId], { host, port, rack })) {
-              return result
+        this.brokers = await this.metadata.brokers.reduce(
+          async (resultPromise, { nodeId, host, port, rack }) => {
+            const result = await resultPromise
+
+            if (result[nodeId]) {
+              if (!hasBrokerBeenReplaced(result[nodeId], { host, port, rack })) {
+                return result
+              }
+
+              replacedBrokers.push(result[nodeId])
             }
 
-            replacedBrokers.push(result[nodeId])
-          }
+            if (host === seedHost && port === seedPort) {
+              this.seedBroker.nodeId = nodeId
+              this.seedBroker.connection.rack = rack
+              return assign(result, {
+                [nodeId]: this.seedBroker,
+              })
+            }
 
-          if (host === seedHost && port === seedPort) {
-            this.seedBroker.nodeId = nodeId
-            this.seedBroker.connection.rack = rack
             return assign(result, {
-              [nodeId]: this.seedBroker,
+              [nodeId]: this.createBroker({
+                logger: this.rootLogger,
+                versions: this.versions,
+                supportAuthenticationProtocol: this.supportAuthenticationProtocol,
+                connection: await this.connectionBuilder.build({ host, port, rack }),
+                nodeId,
+              }),
             })
-          }
-
-          return assign(result, {
-            [nodeId]: this.createBroker({
-              logger: this.rootLogger,
-              versions: this.versions,
-              supportAuthenticationProtocol: this.supportAuthenticationProtocol,
-              connection: this.connectionBuilder.assign({ host, port, rack }),
-              nodeId,
-            }),
-          })
-        }, this.brokers)
+          },
+          this.brokers
+        )
 
         const freshBrokerIds = this.metadata.brokers.map(({ nodeId }) => `${nodeId}`).sort()
         const currentBrokerIds = keys(this.brokers).sort()

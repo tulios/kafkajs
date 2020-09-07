@@ -17,7 +17,6 @@ describe('Cluster > BrokerPool', () => {
       connectionBuilder: createConnectionBuilder(),
       logger: newLogger(),
     })
-    await brokerPool.initSeedBroker()
   })
 
   afterEach(async () => {
@@ -29,8 +28,8 @@ describe('Cluster > BrokerPool', () => {
   })
 
   describe('#connect', () => {
-    it('connects to the seed broker when the broker pool is created', async () => {
-      expect(brokerPool.seedBroker.isConnected()).toEqual(false)
+    it('when the broker pool is created seed broker is null', async () => {
+      expect(brokerPool.seedBroker).toEqual(undefined)
       await brokerPool.connect()
       expect(brokerPool.seedBroker.isConnected()).toEqual(true)
     })
@@ -42,6 +41,8 @@ describe('Cluster > BrokerPool', () => {
     })
 
     test('select a different seed broker on ILLEGAL_SASL_STATE error', async () => {
+      await brokerPool.createSeedBroker()
+
       const originalSeedPort = brokerPool.seedBroker.connection.port
       const illegalStateError = new KafkaJSProtocolError({
         message: 'ILLEGAL_SASL_STATE',
@@ -58,6 +59,8 @@ describe('Cluster > BrokerPool', () => {
     })
 
     test('select a different seed broker on connection errors', async () => {
+      await brokerPool.createSeedBroker()
+
       const originalSeedPort = brokerPool.seedBroker.connection.port
       brokerPool.seedBroker.connect = jest.fn(() => {
         throw new KafkaJSConnectionError('Test connection error')
