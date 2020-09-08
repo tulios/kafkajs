@@ -2,7 +2,6 @@ jest.mock('../../utils/shuffle', () => jest.fn())
 
 const Broker = require('../index')
 const mockShuffle = require('../../utils/shuffle')
-const shuffle = jest.requireActual('../../utils/shuffle')
 
 const { createConnection, newLogger } = require('testHelpers')
 
@@ -30,8 +29,6 @@ describe('Broker > Fetch', () => {
   }
 
   beforeEach(async () => {
-    mockShuffle.mockImplementation(shuffle)
-
     connection = createConnection()
     connection.send = jest.fn()
     broker = new Broker({
