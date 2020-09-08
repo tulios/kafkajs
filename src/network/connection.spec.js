@@ -288,6 +288,9 @@ describe('Network > Connection', () => {
         protocol.response.parse = () => {
           throw new Error('non-retriable')
         }
+
+        expect(protocol.logResponseError).not.toBe(false)
+
         await connection.connect()
 
         await expect(connection.send(protocol)).rejects.toBeTruthy()
@@ -295,14 +298,15 @@ describe('Network > Connection', () => {
         expect(errorStub).toHaveBeenCalled()
       })
 
-      it('does not log errors when called with logResponseError=false', async () => {
+      it('does not log errors when protocol.logResponseError=false', async () => {
         const protocol = metadata({ topics: [] })
         protocol.response.parse = () => {
           throw new Error('non-retriable')
         }
+        protocol.logResponseError = false
         await connection.connect()
 
-        await expect(connection.send(protocol, { logResponseError: false })).rejects.toBeTruthy()
+        await expect(connection.send(protocol)).rejects.toBeTruthy()
 
         expect(errorStub).not.toHaveBeenCalled()
       })

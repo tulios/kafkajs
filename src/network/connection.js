@@ -271,11 +271,10 @@ module.exports = class Connection {
    *                          "decode" and "parse"
    *
    * @param {number} [protocol.requestTimeout=null] Override for the default requestTimeout
-   * @param {object} [options={}]
-   * @param {boolean} [options.logResponseError=true] Whether to log response errors
+   * @param {boolean} [protocol.logResponseError=true] Whether to log errors
    * @returns {Promise<data>} where data is the return of "response#parse"
    */
-  async send({ request, response, requestTimeout = null }, { logResponseError = true } = {}) {
+  async send({ request, response, requestTimeout = null, logResponseError = true }) {
     this.failIfNotConnected()
 
     const expectResponse = !request.expectResponse || request.expectResponse()
