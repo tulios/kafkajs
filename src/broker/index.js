@@ -307,7 +307,7 @@ module.exports = class Broker {
     // Shuffle topic-partitions to ensure fair response allocation across partitions (KIP-74)
     const flattenedTopicPartitions = topics.reduce((topicPartitions, { topic, partitions }) => {
       partitions.forEach(partition => {
-        topicPartitions.push({ topic, partitions: [partition] })
+        topicPartitions.push({ topic, partition })
       })
       return topicPartitions
     }, [])
@@ -316,13 +316,13 @@ module.exports = class Broker {
 
     // Consecutive partitions for the same topic can be combined into a single `topic` entry
     const consolidatedTopicPartitions = shuffledTopicPartitions.reduce(
-      (topicPartitions, { topic, partitions }) => {
+      (topicPartitions, { topic, partition }) => {
         const last = topicPartitions[topicPartitions.length - 1]
 
         if (last != null && last.topic === topic) {
-          topicPartitions[topicPartitions.length - 1].partitions.push(partitions[0])
+          topicPartitions[topicPartitions.length - 1].partitions.push(partition)
         } else {
-          topicPartitions.push({ topic, partitions })
+          topicPartitions.push({ topic, partitions: [partition] })
         }
 
         return topicPartitions

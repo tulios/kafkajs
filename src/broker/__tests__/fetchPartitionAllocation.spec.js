@@ -49,18 +49,27 @@ describe('Broker > Fetch', () => {
    */
   test('it should randomize the order of the requested topic-partitions', async () => {
     const topics = [createFetchTopic('topic-a', 3), createFetchTopic('topic-b', 2)]
+    const flattened = [
+      { topic: topics[0].topic, partition: topics[0].partitions[0] },
+      { topic: topics[0].topic, partition: topics[0].partitions[1] },
+      { topic: topics[0].topic, partition: topics[0].partitions[2] },
+      { topic: topics[1].topic, partition: topics[1].partitions[0] },
+      { topic: topics[1].topic, partition: topics[1].partitions[1] },
+    ]
 
     mockShuffle.mockImplementationOnce(() => [
-      { topic: topics[0].topic, partitions: [topics[0].partitions[0]] },
-      { topic: topics[1].topic, partitions: [topics[1].partitions[0]] },
+      flattened[0],
+      flattened[3],
       // test that consecutive partitions for same topic are merged
-      { topic: topics[0].topic, partitions: [topics[0].partitions[1]] },
-      { topic: topics[0].topic, partitions: [topics[0].partitions[2]] },
-      { topic: topics[1].topic, partitions: [topics[1].partitions[1]] },
+      flattened[1],
+      flattened[2],
+      flattened[4],
     ])
     fetchRequestMock = jest.fn()
 
     await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
+
+    expect(mockShuffle).toHaveBeenCalledWith(flattened)
 
     expect(fetchRequestMock).toHaveBeenCalledWith(
       expect.objectContaining({
