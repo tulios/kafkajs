@@ -152,10 +152,13 @@ module.exports = class Broker {
     for (const candidateVersion of availableVersions) {
       try {
         const apiVersions = requests.ApiVersions.protocol({ version: candidateVersion })
-        response = await this.connection.send({
-          ...apiVersions(),
-          requestTimeout: this.connection.connectionTimeout,
-        })
+        response = await this.connection.send(
+          {
+            ...apiVersions(),
+            requestTimeout: this.connection.connectionTimeout,
+          },
+          { logResponseError: false }
+        )
         break
       } catch (e) {
         if (e.type !== 'UNSUPPORTED_VERSION') {
@@ -389,7 +392,7 @@ module.exports = class Broker {
     groupProtocols,
   }) {
     const joinGroup = this.lookupRequest(apiKeys.JoinGroup, requests.JoinGroup)
-    const makeRequest = (assignedMemberId = memberId) =>
+    const makeRequest = ({ assignedMemberId = memberId, logResponseError = false } = {}) =>
       this.connection.send(
         joinGroup({
           groupId,
@@ -398,14 +401,15 @@ module.exports = class Broker {
           memberId: assignedMemberId,
           protocolType,
           groupProtocols,
-        })
+        }),
+        { logResponseError }
       )
 
     try {
       return await makeRequest()
     } catch (error) {
       if (error.name === 'KafkaJSMemberIdRequired') {
-        return makeRequest(error.memberId)
+        return makeRequest({ assignedMemberId: error.memberId, logResponseError: true })
       }
 
       throw error
