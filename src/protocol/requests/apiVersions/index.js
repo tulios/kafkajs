@@ -4,7 +4,7 @@ const versions = {
   0: () => {
     const request = require('./v0/request')
     const response = require('./v0/response')
-    return { request: request(), response, logResponseError }
+    return { request: request(), response, logResponseError: true }
   },
   1: () => {
     const request = require('./v1/request')
