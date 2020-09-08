@@ -36,7 +36,6 @@ describe('Broker > Fetch', () => {
       logger: newLogger(),
     })
 
-    broker.isConnected = () => true
     broker.lookupRequest = () => fetchRequestMock
   })
 
