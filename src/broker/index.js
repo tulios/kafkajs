@@ -5,6 +5,7 @@ const { requests, lookup } = require('../protocol/requests')
 const { KafkaJSNonRetriableError } = require('../errors')
 const apiKeys = require('../protocol/requests/apiKeys')
 const SASLAuthenticator = require('./saslAuthenticator')
+const shuffle = require('../utils/shuffle')
 
 const PRIVATE = {
   SHOULD_REAUTHENTICATE: Symbol('private:Broker:shouldReauthenticate'),
@@ -187,8 +188,9 @@ module.exports = class Broker {
    */
   async metadata(topics = []) {
     const metadata = this.lookupRequest(apiKeys.Metadata, requests.Metadata)
+    const shuffledTopics = shuffle(topics)
     return await this.connection.send(
-      metadata({ topics, allowAutoTopicCreation: this.allowAutoTopicCreation })
+      metadata({ topics: shuffledTopics, allowAutoTopicCreation: this.allowAutoTopicCreation })
     )
   }
 
@@ -301,8 +303,43 @@ module.exports = class Broker {
   }) {
     // TODO: validate topics not null/empty
     const fetch = this.lookupRequest(apiKeys.Fetch, requests.Fetch)
+
+    // Shuffle topic-partitions to ensure fair response allocation across partitions (KIP-74)
+    const flattenedTopicPartitions = topics.reduce((topicPartitions, { topic, partitions }) => {
+      partitions.forEach(partition => {
+        topicPartitions.push({ topic, partitions: [partition] })
+      })
+      return topicPartitions
+    }, [])
+
+    const shuffledTopicPartitions = shuffle(flattenedTopicPartitions)
+
+    // Consecutive partitions for the same topic can be combined into a single `topic` entry
+    const consolidatedTopicPartitions = shuffledTopicPartitions.reduce(
+      (topicPartitions, { topic, partitions }) => {
+        const last = topicPartitions[topicPartitions.length - 1]
+
+        if (last != null && last.topic === topic) {
+          topicPartitions[topicPartitions.length - 1].partitions.push(partitions[0])
+        } else {
+          topicPartitions.push({ topic, partitions })
+        }
+
+        return topicPartitions
+      },
+      []
+    )
+
     return await this.connection.send(
-      fetch({ replicaId, isolationLevel, maxWaitTime, minBytes, maxBytes, topics, rackId })
+      fetch({
+        replicaId,
+        isolationLevel,
+        maxWaitTime,
+        minBytes,
+        maxBytes,
+        topics: consolidatedTopicPartitions,
+        rackId,
+      })
     )
   }
 

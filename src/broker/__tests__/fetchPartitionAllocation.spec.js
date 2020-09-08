@@ -1,0 +1,83 @@
+jest.mock('../../utils/shuffle', () => jest.fn())
+
+const Broker = require('../index')
+const mockShuffle = require('../../utils/shuffle')
+const shuffle = jest.requireActual('../../utils/shuffle')
+
+const { createConnection, newLogger } = require('testHelpers')
+
+const minBytes = 1
+const maxBytes = 10485760 // 10MB
+const maxBytesPerPartition = 1048576 // 1MB
+const maxWaitTime = 100
+
+describe('Broker > Fetch', () => {
+  let broker, connection, fetchRequestMock
+
+  const createFetchTopic = (name, numPartitions) => {
+    const partitions = Array(numPartitions)
+      .fill()
+      .map((_, i) => ({
+        partition: i,
+        fetchOffset: 0,
+        maxBytes: maxBytesPerPartition,
+      }))
+
+    return {
+      topic: name,
+      partitions,
+    }
+  }
+
+  beforeEach(async () => {
+    mockShuffle.mockImplementation(shuffle)
+
+    connection = createConnection()
+    connection.send = jest.fn()
+    broker = new Broker({
+      connection,
+      logger: newLogger(),
+    })
+
+    broker.isConnected = () => true
+    broker.lookupRequest = () => fetchRequestMock
+  })
+
+  /**
+   * When requesting data for topic-partitions with more data than `maxBytes`,
+   * the response will be allocated in the order
+   * the topic-partitions appear in the request. To avoid biasing consumption,
+   * the order of all topic-partitions is randomized on each request.
+   *
+   * @see https://cwiki.apache.org/confluence/display/KAFKA/KIP-74%3A+Add+Fetch+Response+Size+Limit+in+Bytes
+   */
+  test('it should randomize the order of the requested topic-partitions', async () => {
+    const topics = [createFetchTopic('topic-a', 3), createFetchTopic('topic-b', 2)]
+
+    mockShuffle.mockImplementationOnce(() => [
+      { topic: topics[0].topic, partitions: [topics[0].partitions[0]] },
+      { topic: topics[1].topic, partitions: [topics[1].partitions[0]] },
+      // test that consecutive partitions for same topic are merged
+      { topic: topics[0].topic, partitions: [topics[0].partitions[1]] },
+      { topic: topics[0].topic, partitions: [topics[0].partitions[2]] },
+      { topic: topics[1].topic, partitions: [topics[1].partitions[1]] },
+    ])
+    fetchRequestMock = jest.fn()
+
+    await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
+
+    expect(fetchRequestMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        topics: [
+          { topic: topics[0].topic, partitions: [topics[0].partitions[0]] },
+          { topic: topics[1].topic, partitions: [topics[1].partitions[0]] },
+          {
+            topic: topics[0].topic,
+            partitions: [topics[0].partitions[1], topics[0].partitions[2]],
+          },
+          { topic: topics[1].topic, partitions: [topics[1].partitions[1]] },
+        ],
+      })
+    )
+  })
+})
