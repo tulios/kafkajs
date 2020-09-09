@@ -12,6 +12,8 @@ const requestTimeout = ({ rebalanceTimeout, sessionTimeout }) => {
   return Number.isSafeInteger(timeout + NETWORK_DELAY) ? timeout + NETWORK_DELAY : timeout
 }
 
+const logResponseError = memberId => memberId != null && memberId !== ''
+
 const versions = {
   0: ({ groupId, sessionTimeout, memberId, protocolType, groupProtocols }) => {
     const request = require('./v0/request')
@@ -95,6 +97,7 @@ const versions = {
       }),
       response,
       requestTimeout: requestTimeout({ rebalanceTimeout, sessionTimeout }),
+      logResponseError: logResponseError(memberId),
     }
   },
 }

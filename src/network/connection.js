@@ -262,17 +262,19 @@ module.exports = class Connection {
 
   /**
    * @public
-   * @param {object} request It is defined by the protocol and consists of an object with "apiKey",
+   * @param {object} protocol
+   * @param {object} protocol.request It is defined by the protocol and consists of an object with "apiKey",
    *                         "apiVersion", "apiName" and an "encode" function. The encode function
    *                         must return an instance of Encoder
    *
-   * @param {object} response It is defined by the protocol and consists of an object with two functions:
+   * @param {object} protocol.response It is defined by the protocol and consists of an object with two functions:
    *                          "decode" and "parse"
    *
-   * @param {number} [requestTimeout=null] Override for the default requestTimeout
+   * @param {number} [protocol.requestTimeout=null] Override for the default requestTimeout
+   * @param {boolean} [protocol.logResponseError=true] Whether to log errors
    * @returns {Promise<data>} where data is the return of "response#parse"
    */
-  async send({ request, response, requestTimeout = null }) {
+  async send({ request, response, requestTimeout = null, logResponseError = true }) {
     this.failIfNotConnected()
 
     const expectResponse = !request.expectResponse || request.expectResponse()
@@ -327,7 +329,7 @@ module.exports = class Connection {
 
       return data
     } catch (e) {
-      if (entry.apiName !== 'ApiVersions') {
+      if (logResponseError) {
         this.logError(`Response ${requestInfo(entry)}`, {
           error: e.message,
           correlationId,
