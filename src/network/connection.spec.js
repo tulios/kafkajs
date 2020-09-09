@@ -89,11 +89,12 @@ describe('Network > Connection', () => {
   })
 
   describe('#send', () => {
-    let apiVersions
+    let apiVersions, metadata
 
     beforeEach(() => {
       connection = new Connection(connectionOpts())
       apiVersions = requests.ApiVersions.protocol({ version: 0 })
+      metadata = requests.Metadata.protocol({ version: 0 })
     })
 
     test('resolves the Promise with the response', async () => {
@@ -266,6 +267,48 @@ describe('Network > Connection', () => {
           type: 'Buffer',
           data: '[filtered]',
         })
+      })
+    })
+
+    describe('Error logging', () => {
+      let connection, errorStub
+
+      beforeEach(() => {
+        connection = new Connection(connectionOpts())
+        errorStub = jest.fn()
+        connection.logger.error = errorStub
+      })
+
+      afterEach(async () => {
+        connection && (await connection.disconnect())
+      })
+
+      it('logs error responses by default', async () => {
+        const protocol = metadata({ topics: [] })
+        protocol.response.parse = () => {
+          throw new Error('non-retriable')
+        }
+
+        expect(protocol.logResponseError).not.toBe(false)
+
+        await connection.connect()
+
+        await expect(connection.send(protocol)).rejects.toBeTruthy()
+
+        expect(errorStub).toHaveBeenCalled()
+      })
+
+      it('does not log errors when protocol.logResponseError=false', async () => {
+        const protocol = metadata({ topics: [] })
+        protocol.response.parse = () => {
+          throw new Error('non-retriable')
+        }
+        protocol.logResponseError = false
+        await connection.connect()
+
+        await expect(connection.send(protocol)).rejects.toBeTruthy()
+
+        expect(errorStub).not.toHaveBeenCalled()
       })
     })
   })

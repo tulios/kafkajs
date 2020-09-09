@@ -294,6 +294,10 @@ jobs:
         displayName: 'Comment on PR'
         env:
           GH_TOKEN: $(GH_TOKEN)
+      - bash: ./scripts/pipeline/triggerCanaryAppPipeline.sh
+        displayName: Trigger canary app pipeline
+        env:
+          GH_TOKEN: $(GH_TOKEN)
       # - bash: echo "##vso[task.setvariable variable=RELEASE_TAG;isOutput=true]v$PRE_RELEASE_VERSION"
       #   displayName: Set tag name
       # - task: GithubRelease@0
