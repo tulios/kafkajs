@@ -8,7 +8,7 @@ const {
   createTopic,
   createModPartitioner,
   newLogger,
-  testIfKafka_0_11,
+  testIfKafkaAtLeast_0_11,
   waitForMessages,
   generateMessages,
   waitForConsumerToJoinGroup,
@@ -25,7 +25,6 @@ describe('Consumer', () => {
     await createTopic({ topic: topicName })
 
     cluster = createCluster({
-      allowExperimentalV011: true,
       maxInFlightRequests: 1,
     })
 
@@ -51,7 +50,7 @@ describe('Consumer', () => {
     producer && (await producer.disconnect())
   })
 
-  testIfKafka_0_11('forwards empty control batches to eachBatch', async () => {
+  testIfKafkaAtLeast_0_11('forwards empty control batches to eachBatch', async () => {
     jest.spyOn(cluster, 'refreshMetadataIfNecessary')
 
     await consumer.connect()

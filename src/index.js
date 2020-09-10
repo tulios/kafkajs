@@ -36,7 +36,6 @@ module.exports = class Client {
     socketFactory = defaultSocketFactory(),
     logLevel = INFO,
     logCreator = LoggerConsole,
-    allowExperimentalV011 = true,
   }) {
     this[PRIVATE.OFFSETS] = new Map()
     this[PRIVATE.LOGGER] = createLogger({ level: logLevel, logCreator })
@@ -65,7 +64,6 @@ module.exports = class Client {
         metadataMaxAge,
         instrumentationEmitter,
         allowAutoTopicCreation,
-        allowExperimentalV011,
         maxInFlightRequests,
         isolationLevel,
       })

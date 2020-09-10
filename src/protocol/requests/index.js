@@ -47,26 +47,14 @@ const requests = {
   DeleteGroups: require('./deleteGroups'),
 }
 
-const BEGIN_EXPERIMENTAL_V011_REQUEST_VERSION = {
-  [apiKeys.Produce]: 3,
-  [apiKeys.Fetch]: 4,
-}
-
 const names = Object.keys(apiKeys)
 const keys = Object.values(apiKeys)
 const findApiName = apiKey => names[keys.indexOf(apiKey)]
 
-const lookup = (versions, allowExperimentalV011) => (apiKey, definition) => {
+const lookup = versions => (apiKey, definition) => {
   const version = versions[apiKey]
   const availableVersions = definition.versions.map(Number)
-  const allowedVersions = allowExperimentalV011
-    ? availableVersions
-    : availableVersions.filter(
-        version =>
-          !BEGIN_EXPERIMENTAL_V011_REQUEST_VERSION[apiKey] ||
-          version < BEGIN_EXPERIMENTAL_V011_REQUEST_VERSION[apiKey]
-      )
-  const bestImplementedVersion = Math.max.apply(this, allowedVersions)
+  const bestImplementedVersion = Math.max.apply(this, availableVersions)
 
   if (!version || version.maxVersion == null) {
     throw new KafkaJSServerDoesNotSupportApiKey(
