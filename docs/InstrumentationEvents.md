@@ -3,9 +3,7 @@ id: instrumentation-events
 title: Instrumentation Events
 ---
 
-> **Experimental** - This feature may be removed or changed in new versions of KafkaJS
-
-Some operations are instrumented using `EventEmitter`. To receive the events use the method `consumer#on`, `producer#on` and `admin#on`, example:
+Some operations are instrumented using `EventEmitter`. To receive the events use the method `consumer.on()`, `producer.on()` and `admin.on()`, example:
 
 ```javascript
 const { HEARTBEAT } = consumer.events
@@ -31,149 +29,40 @@ Instrumentation Event:
 
 ### <a name="consumer"></a> Consumer
 
-* consumer.events.HEARTBEAT  
-  payload: {`groupId`, `memberId`, `groupGenerationId`}
-
-* consumer.events.COMMIT_OFFSETS  
-  payload: {`groupId`, `memberId`, `groupGenerationId`, `topics`}
-
-* consumer.events.GROUP_JOIN  
-  payload: {`groupId`, `memberId`, `leaderId`, `isLeader`, `memberAssignment`, `duration`}
-
-* consumer.events.FETCH_START
-  payload: {}
-
-* consumer.events.FETCH
-  payload: {`numberOfBatches`, `duration`}
-
-* consumer.events.START_BATCH_PROCESS  
-  payload: {`topic`, `partition`, `highWatermark`, `offsetLag`, `offsetLagLow`, `batchSize`, `firstOffset`, `lastOffset`}
-
-* consumer.events.END_BATCH_PROCESS  
-  payload: {`topic`, `partition`, `highWatermark`, `offsetLag`, `offsetLagLow`, `batchSize`, `firstOffset`, `lastOffset`, `duration`}
-
-* consumer.events.CONNECT
-
-* consumer.events.DISCONNECT
-
-* consumer.events.STOP
-
-* consumer.events.CRASH
-  payload: {`error`, `groupId`}
-
-* consumer.events.REQUEST
-  payload: {
-    `broker`,
-    `clientId`,
-    `correlationId`,
-    `size`,
-    `createdAt`,
-    `sentAt`,
-    `pendingDuration`,
-    `duration`,
-    `apiName`,
-    `apiKey`,
-    `apiVersion`
-  }
-
-* consumer.events.REQUEST_TIMEOUT
-  payload: {
-    `broker`,
-    `clientId`,
-    `correlationId`,
-    `createdAt`,
-    `sentAt`,
-    `pendingDuration`,
-    `apiName`,
-    `apiKey`,
-    `apiVersion`
-  }
-
-* consumer.events.REQUEST_QUEUE_SIZE
-  payload: {
-    `broker`,
-    `clientId`,
-    `queueSize`
-  }
+| event               | payload                                                                                                                                                                                                       | description |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
+| REQUEST             | {`broker`, `clientId`, `correlationId`, `size`, `createdAt`, `sentAt`, `pendingDuration`, `duration`, `apiName`, `apiKey`, `apiVersion`} | Emitted on every network request to a broker |
+| CONNECT             |                                                                                                                                                                                                               | Consumer connected to a broker. |
+| GROUP_JOIN          | {`groupId`, `memberId`, `leaderId`, `isLeader`, `memberAssignment`, `groupProtocol`, `duration`}                                                                                                                   | Consumer has joined the group. |
+| FETCH_START         | {}                                                                                                                                                                                                            | Starting to fetch messages from brokers. |
+| FETCH               | {`numberOfBatches`, `duration`}                                                                                                                                                                           | Finished fetching messages from the brokers. |
+| START_BATCH_PROCESS | {`topic`, `partition`, `highWatermark`, `offsetLag`, `offsetLagLow`, `batchSize`, `firstOffset`, `lastOffset`}                                                                                | Starting user processing of a batch of messages. |
+| END_BATCH_PROCESS   | {`topic`, `partition`, `highWatermark`, `offsetLag`, `offsetLagLow`, `batchSize`, `firstOffset`, `lastOffset`, `duration`}                                                                  | Finished processing a batch. This includes user-land processing via `eachMessage`/`eachBatch`. |
+| COMMIT_OFFSETS      | {`groupId`, `memberId`, `groupGenerationId`, `topics`}                                                                                                                                                | Committed offsets. |
+| STOP                |                                                                                                                                                                                                               | Consumer has stopped. |
+| DISCONNECT          |                                                                                                                                                                                                               | Consumer has disconnected. |
+| CRASH               | {`error`, `groupId`}                                                                                                                                                                                      | Consumer has crashed. In the case of CRASH, the consumer will try to restart itself. If the error is not retriable, the consumer will instead stop and exit.If your application wants to react to the error, such as by cleanly shutting down resources,</br>restarting the consumer itself, or exiting the process entirely, it should listen to the CRASH event. |
+| HEARTBEAT           | {`groupId`, `memberId`, `groupGenerationId`}                                                                                                                                                            | Heartbeat sent to the coordinator. |
+| REQUEST_TIMEOUT     | {`broker`, `clientId`, `correlationId`, `createdAt`, `sentAt`, `pendingDuration`, `apiName`, `apiKey`, `apiVersion`}                                 | Request to a broker has timed out. |
+| REQUEST_QUEUE_SIZE  | {`broker`, `clientId`, `queueSize`}                                                                                                                                                      | All requests go through a request queue where concurrency is managed (`maxInflightRequests`). Whenever the size of the queue changes, this event is emitted. |
 
 ### <a name="producer"></a> Producer
 
-* producer.events.CONNECT
+| event               | payload                                                                                                                                                                                                       | description |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
+| REQUEST             | {`broker`, `clientId`, `correlationId`, `size`, `createdAt`, `sentAt`, `pendingDuration`, `duration`, `apiName`, `apiKey`, `apiVersion`} | Emitted on every network request to a broker. |
+| CONNECT            |                                                                                                                                                                                                               | Producer connected to a broker. |
+| DISCONNECT         |                                                                                                                                                                                                               | Producer has disconnected. |
+| REQUEST_TIMEOUT    | {`broker`, `clientId`, `correlationId`, `createdAt`, `sentAt`, `pendingDuration`, `apiName`, `apiKey`, `apiVersion`}                                 | Request to a broker has timed out. |
+| REQUEST_QUEUE_SIZE | {`broker`, `clientId`, `queueSize`}                                                                                                                                                      | All requests go through a request queue where concurrency is managed (`maxInflightRequests`). Whenever the size of the queue changes, this event is emitted. |
 
-* producer.events.DISCONNECT
-
-* producer.events.REQUEST
-  payload: {
-    `broker`,
-    `clientId`,
-    `correlationId`,
-    `size`,
-    `createdAt`,
-    `sentAt`,
-    `pendingDuration`,
-    `duration`,
-    `apiName`,
-    `apiKey`,
-    `apiVersion`
-  }
-
-* producer.events.REQUEST_TIMEOUT
-  payload: {
-    `broker`,
-    `clientId`,
-    `correlationId`,
-    `createdAt`,
-    `sentAt`,
-    `pendingDuration`,
-    `apiName`,
-    `apiKey`,
-    `apiVersion`
-  }
-
-* producer.events.REQUEST_QUEUE_SIZE
-  payload: {
-    `broker`,
-    `clientId`,
-    `queueSize`
-  }
 
 ### <a name="admin"></a> Admin
 
-* admin.events.CONNECT
-
-* admin.events.DISCONNECT
-
-* admin.events.REQUEST
-  payload: {
-    `broker`,
-    `clientId`,
-    `correlationId`,
-    `size`,
-    `createdAt`,
-    `sentAt`,
-    `pendingDuration`,
-    `duration`,
-    `apiName`,
-    `apiKey`,
-    `apiVersion`
-  }
-
-* admin.events.REQUEST_TIMEOUT
-  payload: {
-    `broker`,
-    `clientId`,
-    `correlationId`,
-    `createdAt`,
-    `sentAt`,
-    `pendingDuration`,
-    `apiName`,
-    `apiKey`,
-    `apiVersion`
-  }
-
-* admin.events.REQUEST_QUEUE_SIZE
-  payload: {
-    `broker`,
-    `clientId`,
-    `queueSize`
-  }
+| event               | payload                                                                                                                                                                                                       | description |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
+| REQUEST             | {`broker`, `clientId`, `correlationId`, `size`, `createdAt`, `sentAt`, `pendingDuration`, `duration`, `apiName`, `apiKey`, `apiVersion`} | Emitted on every network request to a broker. |
+| CONNECT            |                                                                                                                                                                                                               | Admin client connected to a broker |
+| DISCONNECT         |                                                                                                                                                                                                               | Admin client has disconnected. |
+| REQUEST_TIMEOUT    | {`broker`, `clientId`, `correlationId`, `createdAt`, `sentAt`, `pendingDuration`, `apiName`, `apiKey`, `apiVersion`}                                 | Request to a broker has timed out. |
+| REQUEST_QUEUE_SIZE | {`broker`, `clientId`, `queueSize`}                                                                                                                                                      | All requests go through a request queue where concurrency is managed (`maxInflightRequests`). Whenever the size of the queue changes, this event is emitted. |

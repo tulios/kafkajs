@@ -60,7 +60,7 @@ module.exports = class OffsetManager {
     }
 
     let offset = this.resolvedOffsets[topic][partition]
-    if (Long.fromValue(offset).equals(-1)) {
+    if (isInvalidOffset(offset)) {
       offset = '0'
     }
 
@@ -101,23 +101,22 @@ module.exports = class OffsetManager {
    * @returns {Long}
    */
   countResolvedOffsets() {
-    const toPartitions = topic => keys(this.resolvedOffsets[topic])
+    const committedOffsets = this.committedOffsets()
 
     const subtractOffsets = (resolvedOffset, committedOffset) => {
       const resolvedOffsetLong = Long.fromValue(resolvedOffset)
-      return committedOffset === '-1'
+      return isInvalidOffset(committedOffset)
         ? resolvedOffsetLong
         : resolvedOffsetLong.subtract(Long.fromValue(committedOffset))
     }
 
-    const subtractPartitionOffsets = (topic, partition) =>
-      subtractOffsets(
-        this.resolvedOffsets[topic][partition],
-        this.committedOffsets()[topic][partition]
+    const subtractPartitionOffsets = (resolvedTopicOffsets, committedTopicOffsets) =>
+      keys(resolvedTopicOffsets).map(partition =>
+        subtractOffsets(resolvedTopicOffsets[partition], committedTopicOffsets[partition])
       )
 
     const subtractTopicOffsets = topic =>
-      toPartitions(topic).map(partition => subtractPartitionOffsets(topic, partition))
+      subtractPartitionOffsets(this.resolvedOffsets[topic], committedOffsets[topic])
 
     const offsetsDiff = this.topics.map(subtractTopicOffsets)
     return flatten(offsetsDiff).reduce((sum, offset) => sum.add(offset), Long.fromValue(0))

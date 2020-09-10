@@ -1,0 +1,30 @@
+{
+  "version-1.11.0-docs": {
+    "Usage": [
+      "version-1.11.0-introduction",
+      "version-1.11.0-getting-started",
+      "version-1.11.0-configuration",
+      "version-1.11.0-producing",
+      "version-1.11.0-transactions",
+      "version-1.11.0-consuming",
+      "version-1.11.0-admin",
+      "version-1.11.0-instrumentation-events",
+      "version-1.11.0-custom-logger",
+      "version-1.11.0-retry-detailed",
+      "version-1.11.0-faq",
+      "version-1.11.0-pre-releases"
+    ],
+    "Examples": [
+      "version-1.11.0-running-kafka-in-development",
+      "version-1.11.0-producer-example",
+      "version-1.11.0-consumer-example"
+    ],
+    "API Reference": [],
+    "Developing KafkaJS": [
+      "version-1.11.0-contribution-guide",
+      "version-1.11.0-development-environment",
+      "version-1.11.0-testing",
+      "version-1.11.0-development-resources"
+    ]
+  }
+}

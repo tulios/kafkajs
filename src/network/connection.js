@@ -15,6 +15,8 @@ const requestInfo = ({ apiName, apiKey, apiVersion }) =>
  * @param {number} port
  * @param {Object} logger
  * @param {string} clientId='kafkajs'
+ * @param {number} requestTimeout The maximum amount of time the client will wait for the response of a request,
+ *                                in milliseconds
  * @param {string} [rack=null]
  * @param {Object} [ssl=null] Options for the TLS Secure Context. It accepts all options,
  *                            usually "cert", "key" and "ca". More information at
@@ -23,8 +25,6 @@ const requestInfo = ({ apiName, apiKey, apiVersion }) =>
  *                             key "mechanism". Connection is not actively using the SASL attributes
  *                             but acting as a data object for this information
  * @param {number} [connectionTimeout=1000] The connection timeout, in milliseconds
- * @param {number} [requestTimeout=30000] The maximum amount of time the client will wait for the response of a request,
- *                                        in milliseconds
  * @param {Object} [retry=null] Configurations for the built-in retry mechanism. More information at the
  *                              retry module inside network
  * @param {number} [maxInFlightRequests=null] The maximum number of unacknowledged requests on a connection before
@@ -37,12 +37,12 @@ module.exports = class Connection {
     port,
     logger,
     socketFactory,
+    requestTimeout,
     rack = null,
     ssl = null,
     sasl = null,
     clientId = 'kafkajs',
     connectionTimeout = 1000,
-    requestTimeout = 30000,
     enforceRequestTimeout = false,
     maxInFlightRequests = null,
     instrumentationEmitter = null,
@@ -199,15 +199,16 @@ module.exports = class Connection {
    * @returns {Promise}
    */
   async disconnect() {
-    if (!this.connected) {
-      return true
+    this.logDebug('disconnecting...')
+    this.connected = false
+
+    this.requestQueue.destroy()
+
+    if (this.socket) {
+      this.socket.end()
+      this.socket.unref()
     }
 
-    this.logDebug('disconnecting...')
-    this.requestQueue.destroy()
-    this.connected = false
-    this.socket.end()
-    this.socket.unref()
     this.logDebug('disconnected')
     return true
   }
@@ -261,17 +262,19 @@ module.exports = class Connection {
 
   /**
    * @public
-   * @param {object} request It is defined by the protocol and consists of an object with "apiKey",
+   * @param {object} protocol
+   * @param {object} protocol.request It is defined by the protocol and consists of an object with "apiKey",
    *                         "apiVersion", "apiName" and an "encode" function. The encode function
    *                         must return an instance of Encoder
    *
-   * @param {object} response It is defined by the protocol and consists of an object with two functions:
+   * @param {object} protocol.response It is defined by the protocol and consists of an object with two functions:
    *                          "decode" and "parse"
    *
-   * @param {number} [requestTimeout=null] Override for the default requestTimeout
+   * @param {number} [protocol.requestTimeout=null] Override for the default requestTimeout
+   * @param {boolean} [protocol.logResponseError=true] Whether to log errors
    * @returns {Promise<data>} where data is the return of "response#parse"
    */
-  async send({ request, response, requestTimeout = null }) {
+  async send({ request, response, requestTimeout = null, logResponseError = true }) {
     this.failIfNotConnected()
 
     const expectResponse = !request.expectResponse || request.expectResponse()
@@ -314,6 +317,8 @@ module.exports = class Connection {
 
     try {
       const payloadDecoded = await response.decode(payload)
+      // KIP-219: If the response indicates that the client-side needs to throttle, do that.
+      this.requestQueue.maybeThrottle(payloadDecoded.clientSideThrottleTime)
       const data = await response.parse(payloadDecoded)
       const isFetchApi = entry.apiName === 'Fetch'
       this.logDebug(`Response ${requestInfo(entry)}`, {
@@ -324,7 +329,7 @@ module.exports = class Connection {
 
       return data
     } catch (e) {
-      if (entry.apiName !== 'ApiVersions') {
+      if (logResponseError) {
         this.logError(`Response ${requestInfo(entry)}`, {
           error: e.message,
           correlationId,

@@ -164,6 +164,11 @@ describe('Utils > Long', () => {
       expect(zero.isZero()).toEqual(true)
     })
 
+    it('isNegative()', () => {
+      expect(new Long(BigInt(-15)).isNegative()).toEqual(true)
+      expect(new Long(BigInt(2)).isNegative()).toEqual(false)
+    })
+
     it('multiply()', () => {
       const mult = input1.multiply(input2)
       expect(mult).toEqual({ value: 65n })

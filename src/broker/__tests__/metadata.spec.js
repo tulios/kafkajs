@@ -36,6 +36,10 @@ describe('Broker > Metadata', () => {
       async () => await broker.metadata([topicName])
     )
 
+    // We can run this test on both clusters with a broker.rack configuration and brokers
+    // without, but that is painful to describe in jest. Work out the values for the rack
+    // setting separately.
+    const rackValues = response.brokers.some(({ rack }) => Boolean(rack))
     expect(response).toMatchObject({
       throttleTime: 0,
       brokers: expect.arrayContaining([
@@ -43,7 +47,7 @@ describe('Broker > Metadata', () => {
           host: 'localhost',
           nodeId: expect.any(Number),
           port: expect.any(Number),
-          rack: null,
+          rack: rackValues ? expect.any(String) : null,
         },
       ]),
       clusterId: expect.stringMatching(/[a-zA-Z0-9-]/),

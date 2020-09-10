@@ -11,7 +11,11 @@ const PRIVATE = {
 const TIMEOUT_MESSAGE = 'Timeout while acquiring lock (%d waiting locks)'
 
 module.exports = class Lock {
-  constructor({ timeout = 1000, description = null } = {}) {
+  constructor({ timeout, description = null } = {}) {
+    if (typeof timeout !== 'number') {
+      throw new TypeError(`'timeout' is not a number, received '${typeof timeout}'`)
+    }
+
     this[PRIVATE.LOCKED] = false
     this[PRIVATE.TIMEOUT] = timeout
     this[PRIVATE.WAITING] = new Set()
@@ -39,10 +43,12 @@ module.exports = class Lock {
       }
 
       this[PRIVATE.WAITING].add(tryToAcquire)
-      timeoutId = setTimeout(
-        () => reject(new KafkaJSLockTimeout(this[PRIVATE.TIMEOUT_ERROR_MESSAGE]())),
-        this[PRIVATE.TIMEOUT]
-      )
+      timeoutId = setTimeout(() => {
+        // The message should contain the number of waiters _including_ this one
+        const error = new KafkaJSLockTimeout(this[PRIVATE.TIMEOUT_ERROR_MESSAGE]())
+        this[PRIVATE.WAITING].delete(tryToAcquire)
+        reject(error)
+      }, this[PRIVATE.TIMEOUT])
     })
   }
 

@@ -16,6 +16,37 @@ describe('Protocol > Encoder', () => {
   const B = (...args) => Buffer.from(args)
   const L = value => Long.fromString(`${value}`)
 
+  describe('writeEncoder', () => {
+    it('should throw if the value is not an Encoder', () => {
+      const encoder = new Encoder()
+      expect(() => encoder.writeEncoder()).toThrow('value should be an instance of Encoder')
+    })
+
+    it('should append the value buffer to the existing encoder', () => {
+      const encoder = new Encoder().writeBuffer(B(1)).writeEncoder(new Encoder().writeBuffer(B(2)))
+      expect(encoder.buffer).toEqual(B(1, 2))
+    })
+  })
+
+  describe('writeEncoderArray', () => {
+    it('should throw if any of the elements in the array are not encoders', () => {
+      const values = [new Encoder(), 'not an encoder']
+      expect(() => new Encoder().writeEncoderArray(values)).toThrow(
+        'all values should be an instance of Encoder[]'
+      )
+    })
+
+    it('should append all encoder values to the existing encoder', () => {
+      const values = [
+        new Encoder().writeBuffer(B(1)),
+        new Encoder().writeBuffer(B(2)),
+        new Encoder().writeBuffer(B(3)),
+      ]
+
+      expect(new Encoder().writeEncoderArray(values).buffer).toEqual(B(1, 2, 3))
+    })
+  })
+
   describe('varint', () => {
     test('encode signed int32 numbers', () => {
       expect(signed32(0)).toEqual(B(0x00))
@@ -247,6 +278,23 @@ describe('Protocol > Encoder', () => {
       )
       expect(Encoder.sizeOfVarLong(Long.MIN_VALUE)).toEqual(signed64(Long.MIN_VALUE).length)
       expect(Encoder.sizeOfVarLong(Long.MAX_VALUE)).toEqual(signed64(Long.MAX_VALUE).length)
+    })
+  })
+
+  describe('resizing', () => {
+    it('copies existing content when resizing', () => {
+      const encoder = new Encoder(4)
+      encoder.writeBuffer(B(1, 2, 3, 4))
+      encoder.writeBuffer(B(5, 6, 7, 8))
+      expect(encoder.buffer).toEqual(B(1, 2, 3, 4, 5, 6, 7, 8))
+    })
+    it('obeys offset when resizing', () => {
+      const encoder = new Encoder(4)
+      // Only two bytes in, ...
+      encoder.writeBuffer(B(1, 2))
+      // ... but this write will require resizing
+      encoder.writeBuffer(B(5, 6, 7, 8))
+      expect(encoder.buffer).toEqual(B(1, 2, 5, 6, 7, 8))
     })
   })
 })

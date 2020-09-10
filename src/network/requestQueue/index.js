@@ -36,6 +36,23 @@ module.exports = class RequestQueue {
     this.inflight = new Map()
     this.pending = []
 
+    /**
+     * Until when this request queue is throttled and shouldn't send requests
+     *
+     * The value represents the timestamp of the end of the throttling in ms-since-epoch. If the value
+     * is smaller than the current timestamp no throttling is active.
+     *
+     * @type {number}
+     */
+    this.throttledUntil = -1
+
+    /**
+     * Timeout id if we have scheduled a check for pending requests due to client-side throttling
+     *
+     * @type {null|NodeJS.Timeout}
+     */
+    this.throttleCheckTimeoutId = null
+
     this[PRIVATE.EMIT_QUEUE_SIZE_EVENT] = () => {
       instrumentationEmitter &&
         instrumentationEmitter.emit(events.NETWORK_REQUEST_QUEUE_SIZE, {
@@ -58,12 +75,19 @@ module.exports = class RequestQueue {
           if (Date.now() - request.sentAt > request.requestTimeout) {
             request.timeoutRequest()
           }
-
-          if (!this.isConnected()) {
-            this.destroy()
-          }
         })
+
+        if (!this.isConnected()) {
+          this.destroy()
+        }
       }, Math.min(this.requestTimeout, 100))
+    }
+  }
+
+  maybeThrottle(clientSideThrottleTime) {
+    if (clientSideThrottleTime) {
+      const minimumThrottledUntil = Date.now() + clientSideThrottleTime
+      this.throttledUntil = Math.max(minimumThrottledUntil, this.throttledUntil)
     }
   }
 
@@ -99,39 +123,41 @@ module.exports = class RequestQueue {
       },
       timeout: () => {
         this.inflight.delete(correlationId)
-        const pendingRequest = this.pending.pop()
-        pendingRequest && pendingRequest.send()
+        this.checkPendingRequests()
       },
     })
 
-    // TODO: Remove the "null" check once this is validated in production and
-    // can receive a default value
-    const shouldEnqueue =
-      this.maxInFlightRequests != null && this.inflight.size >= this.maxInFlightRequests
-
-    if (shouldEnqueue) {
-      this.pending.push(socketRequest)
-
-      this.logger.debug(`Request enqueued`, {
-        clientId: this.clientId,
-        broker: this.broker,
-        correlationId,
-      })
-
-      this[PRIVATE.EMIT_QUEUE_SIZE_EVENT]()
+    if (this.canSendSocketRequestImmediately()) {
+      this.sendSocketRequest(socketRequest)
       return
     }
 
+    this.pending.push(socketRequest)
+    this.scheduleCheckPendingRequests()
+
+    this.logger.debug(`Request enqueued`, {
+      clientId: this.clientId,
+      broker: this.broker,
+      correlationId,
+    })
+
+    this[PRIVATE.EMIT_QUEUE_SIZE_EVENT]()
+  }
+
+  /**
+   * @param {SocketRequest} socketRequest
+   */
+  sendSocketRequest(socketRequest) {
     socketRequest.send()
 
     if (!socketRequest.expectResponse) {
       this.logger.debug(`Request does not expect a response, resolving immediately`, {
         clientId: this.clientId,
         broker: this.broker,
-        correlationId,
+        correlationId: socketRequest.correlationId,
       })
 
-      this.inflight.delete(correlationId)
+      this.inflight.delete(socketRequest.correlationId)
       socketRequest.completed({ size: 0, payload: null })
     }
   }
@@ -144,23 +170,9 @@ module.exports = class RequestQueue {
    */
   fulfillRequest({ correlationId, payload, size }) {
     const socketRequest = this.inflight.get(correlationId)
-
-    if (this.pending.length > 0) {
-      const pendingRequest = this.pending.pop()
-      pendingRequest.send()
-
-      this.logger.debug(`Consumed pending request`, {
-        clientId: this.clientId,
-        broker: this.broker,
-        correlationId: pendingRequest.correlationId,
-        pendingDuration: pendingRequest.pendingDuration,
-        currentPendingQueueSize: this.pending.length,
-      })
-
-      this[PRIVATE.EMIT_QUEUE_SIZE_EVENT]()
-    }
-
     this.inflight.delete(correlationId)
+
+    this.checkPendingRequests()
 
     if (!socketRequest) {
       this.logger.warn(`Response without match`, {
@@ -197,5 +209,61 @@ module.exports = class RequestQueue {
    */
   destroy() {
     clearInterval(this.requestTimeoutIntervalId)
+    clearTimeout(this.throttleCheckTimeoutId)
+    this.throttleCheckTimeoutId = null
+  }
+
+  canSendSocketRequestImmediately() {
+    const shouldEnqueue =
+      (this.maxInFlightRequests != null && this.inflight.size >= this.maxInFlightRequests) ||
+      this.throttledUntil > Date.now()
+
+    return !shouldEnqueue
+  }
+
+  /**
+   * Check and process pending requests either now or in the future
+   *
+   * This function will send out as many pending requests as possible taking throttling and
+   * in-flight limits into account.
+   */
+  checkPendingRequests() {
+    while (this.pending.length > 0 && this.canSendSocketRequestImmediately()) {
+      const pendingRequest = this.pending.pop()
+      this.sendSocketRequest(pendingRequest)
+
+      this.logger.debug(`Consumed pending request`, {
+        clientId: this.clientId,
+        broker: this.broker,
+        correlationId: pendingRequest.correlationId,
+        pendingDuration: pendingRequest.pendingDuration,
+        currentPendingQueueSize: this.pending.length,
+      })
+
+      this[PRIVATE.EMIT_QUEUE_SIZE_EVENT]()
+    }
+
+    this.scheduleCheckPendingRequests()
+  }
+
+  /**
+   * Ensure that pending requests will be checked in the future
+   *
+   * If there is a client-side throttling in place this will ensure that we will check
+   * the pending request queue eventually.
+   */
+  scheduleCheckPendingRequests() {
+    // If we're throttled: Schedule checkPendingRequests when the throttle
+    // should be resolved. If there is already something scheduled we assume that that
+    // will be fine, and potentially fix up a new timeout if needed at that time.
+    // Note that if we're merely "overloaded" by having too many inflight requests
+    // we will anyways check the queue when one of them gets fulfilled.
+    const timeUntilUnthrottled = this.throttledUntil - Date.now()
+    if (timeUntilUnthrottled > 0 && !this.throttleCheckTimeoutId) {
+      this.throttleCheckTimeoutId = setTimeout(() => {
+        this.throttleCheckTimeoutId = null
+        this.checkPendingRequests()
+      }, timeUntilUnthrottled)
+    }
   }
 }

@@ -2,18 +2,22 @@ const shuffle = require('./shuffle')
 
 describe('Utils > shuffle', () => {
   it('shuffles', () => {
-    const array = [1, 2, 3]
-    jest
-      .spyOn(Math, 'random')
-      .mockImplementationOnce(() => 0.4)
-      .mockImplementationOnce(() => 0.7)
-      .mockImplementationOnce(() => 0.4)
-      .mockImplementationOnce(() => 0.6)
-      .mockImplementationOnce(() => 0.6)
-      .mockImplementationOnce(() => 0.6)
+    const array = Array(500)
+      .fill()
+      .map((_, i) => i)
+    const shuffled = shuffle(array)
 
-    expect(shuffle(array)).toEqual([1, 3, 2])
-    expect(shuffle(array)).toEqual([3, 2, 1])
-    expect(Math.random).toHaveBeenCalledTimes(6)
+    expect(shuffled).not.toEqual(array)
+    expect(shuffled).toIncludeSameMembers(array)
+  })
+
+  it('returns the same order for single element arrays', () => {
+    expect(shuffle([1])).toEqual([1])
+  })
+
+  it('throws if it receives a non-array', () => {
+    expect(() => shuffle()).toThrowError(TypeError)
+    expect(() => shuffle('foo')).toThrowError(TypeError)
+    expect(() => shuffle({})).toThrowError(TypeError)
   })
 })

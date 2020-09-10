@@ -22,7 +22,11 @@ const { keys } = Object
 
 const STALE_METADATA_ERRORS = [
   'LEADER_NOT_AVAILABLE',
+  // Fetch before v9 uses NOT_LEADER_FOR_PARTITION
   'NOT_LEADER_FOR_PARTITION',
+  // Fetch after v9 uses {FENCED,UNKNOWN}_LEADER_EPOCH
+  'FENCED_LEADER_EPOCH',
+  'UNKNOWN_LEADER_EPOCH',
   'UNKNOWN_TOPIC_OR_PARTITION',
 ]
 
@@ -44,7 +48,10 @@ module.exports = class ConsumerGroup {
     autoCommitInterval,
     autoCommitThreshold,
     isolationLevel,
+    rackId,
+    metadataMaxAge,
   }) {
+    /** @type {import("../../types").Cluster} */
     this.cluster = cluster
     this.groupId = groupId
     this.topics = topics
@@ -62,6 +69,8 @@ module.exports = class ConsumerGroup {
     this.autoCommitInterval = autoCommitInterval
     this.autoCommitThreshold = autoCommitThreshold
     this.isolationLevel = isolationLevel
+    this.rackId = rackId
+    this.metadataMaxAge = metadataMaxAge
 
     this.seekOffset = new SeekOffsets()
     this.coordinator = null
@@ -72,6 +81,15 @@ module.exports = class ConsumerGroup {
     this.groupProtocol = null
 
     this.partitionsPerSubscribedTopic = null
+    /**
+     * Preferred read replica per topic and partition
+     *
+     * Each of the partitions tracks the preferred read replica (`nodeId`) and a timestamp
+     * until when that preference is valid.
+     *
+     * @type {{[topicName: string]: {[partition: number]: {nodeId: number, expireAt: number}}}
+     */
+    this.preferredReadReplicasPerTopicPartition = {}
     this.offsetManager = null
     this.subscriptionState = new SubscriptionState()
 
@@ -217,7 +235,7 @@ module.exports = class ConsumerGroup {
           assignedPartitions,
         })
 
-        // If the consumer is not aware of all assigned partions, refresh metadata
+        // If the consumer is not aware of all assigned partitions, refresh metadata
         // and update the list of partitions per subscribed topic. It's enough to perform
         // this operation once since refresh metadata will update metadata for all topics
         await this.cluster.refreshMetadata()
@@ -323,7 +341,8 @@ module.exports = class ConsumerGroup {
   async fetch() {
     try {
       const { topics, maxBytesPerPartition, maxWaitTime, minBytes, maxBytes } = this
-      const requestsPerLeader = {}
+      /** @type {{[nodeId: string]: {topic: string, partitions: { partition: number; fetchOffset: string; maxBytes: number }[]}[]}} */
+      const requestsPerNode = {}
 
       await this.cluster.refreshMetadataIfNecessary()
       this.checkForStaleAssignment()
@@ -369,16 +388,16 @@ module.exports = class ConsumerGroup {
       )
 
       for (const topicPartition of activeTopicPartitions) {
-        const partitionsPerLeader = this.cluster.findLeaderForPartitions(
+        const partitionsPerNode = this.findReadReplicaForPartitions(
           topicPartition.topic,
           topicPartition.partitions
         )
 
-        const leaders = keys(partitionsPerLeader)
+        const nodeIds = keys(partitionsPerNode)
         const committedOffsets = this.offsetManager.committedOffsets()
 
-        for (const leader of leaders) {
-          const partitions = partitionsPerLeader[leader]
+        for (const nodeId of nodeIds) {
+          const partitions = partitionsPerNode[nodeId]
             .filter(partition => {
               /**
                * When recovering from OffsetOutOfRange, each partition can recover
@@ -404,25 +423,28 @@ module.exports = class ConsumerGroup {
               maxBytes: maxBytesPerPartition,
             }))
 
-          requestsPerLeader[leader] = requestsPerLeader[leader] || []
-          requestsPerLeader[leader].push({ topic: topicPartition.topic, partitions })
+          requestsPerNode[nodeId] = requestsPerNode[nodeId] || []
+          requestsPerNode[nodeId].push({ topic: topicPartition.topic, partitions })
         }
       }
 
-      const requests = keys(requestsPerLeader).map(async nodeId => {
+      const requests = keys(requestsPerNode).map(async nodeId => {
         const broker = await this.cluster.findBroker({ nodeId })
         const { responses } = await broker.fetch({
           maxWaitTime,
           minBytes,
           maxBytes,
           isolationLevel: this.isolationLevel,
-          topics: requestsPerLeader[nodeId],
+          topics: requestsPerNode[nodeId],
+          rackId: this.rackId,
         })
 
         const batchesPerPartition = responses.map(({ topicName, partitions }) => {
-          const topicRequestData = requestsPerLeader[nodeId].find(
-            ({ topic }) => topic === topicName
-          )
+          const topicRequestData = requestsPerNode[nodeId].find(({ topic }) => topic === topicName)
+          let preferredReadReplicas = this.preferredReadReplicasPerTopicPartition[topicName]
+          if (!preferredReadReplicas) {
+            this.preferredReadReplicasPerTopicPartition[topicName] = preferredReadReplicas = {}
+          }
 
           return partitions
             .filter(
@@ -431,6 +453,24 @@ module.exports = class ConsumerGroup {
                 !this.subscriptionState.isPaused(topicName, partitionData.partition)
             )
             .map(partitionData => {
+              const { partition, preferredReadReplica } = partitionData
+              if (preferredReadReplica != null && preferredReadReplica !== -1) {
+                const { nodeId: currentPreferredReadReplica } =
+                  preferredReadReplicas[partition] || {}
+                if (currentPreferredReadReplica !== preferredReadReplica) {
+                  this.logger.info(`Preferred read replica is now ${preferredReadReplica}`, {
+                    groupId: this.groupId,
+                    memberId: this.memberId,
+                    topic: topicName,
+                    partition,
+                  })
+                }
+                preferredReadReplicas[partition] = {
+                  nodeId: preferredReadReplica,
+                  expireAt: Date.now() + this.metadataMaxAge,
+                }
+              }
+
               const partitionRequestData = topicRequestData.partitions.find(
                 ({ partition }) => partition === partitionData.partition
               )
@@ -512,17 +552,29 @@ module.exports = class ConsumerGroup {
   }
 
   async recoverFromOffsetOutOfRange(e) {
-    this.logger.error('Offset out of range, resetting to default offset', {
-      topic: e.topic,
-      partition: e.partition,
-      groupId: this.groupId,
-      memberId: this.memberId,
-    })
+    // If we are fetching from a follower try with the leader before resetting offsets
+    const preferredReadReplicas = this.preferredReadReplicasPerTopicPartition[e.topic]
+    if (preferredReadReplicas && typeof preferredReadReplicas[e.partition] === 'number') {
+      this.logger.info('Offset out of range while fetching from follower, retrying with leader', {
+        topic: e.topic,
+        partition: e.partition,
+        groupId: this.groupId,
+        memberId: this.memberId,
+      })
+      delete preferredReadReplicas[e.partition]
+    } else {
+      this.logger.error('Offset out of range, resetting to default offset', {
+        topic: e.topic,
+        partition: e.partition,
+        groupId: this.groupId,
+        memberId: this.memberId,
+      })
 
-    await this.offsetManager.setDefaultOffset({
-      topic: e.topic,
-      partition: e.partition,
-    })
+      await this.offsetManager.setDefaultOffset({
+        topic: e.topic,
+        partition: e.partition,
+      })
+    }
   }
 
   generatePartitionsPerSubscribedTopic() {
@@ -561,5 +613,66 @@ module.exports = class ConsumerGroup {
 
   hasSeekOffset({ topic, partition }) {
     return this.seekOffset.has(topic, partition)
+  }
+
+  /**
+   * For each of the partitions find the best nodeId to read it from
+   *
+   * @param {string} topic
+   * @param {number[]} partitions
+   * @returns {{[nodeId: number]: number[]}} per-node assignment of partitions
+   * @see Cluster~findLeaderForPartitions
+   */
+  // Invariant: The resulting object has each partition referenced exactly once
+  findReadReplicaForPartitions(topic, partitions) {
+    const partitionMetadata = this.cluster.findTopicPartitionMetadata(topic)
+    const preferredReadReplicas = this.preferredReadReplicasPerTopicPartition[topic]
+    return partitions.reduce((result, id) => {
+      const partitionId = parseInt(id, 10)
+      const metadata = partitionMetadata.find(p => p.partitionId === partitionId)
+      if (!metadata) {
+        return result
+      }
+
+      if (metadata.leader == null) {
+        throw new KafkaJSError('Invalid partition metadata', { topic, partitionId, metadata })
+      }
+
+      // Pick the preferred replica if there is one, and it isn't known to be offline, otherwise the leader.
+      let nodeId = metadata.leader
+      if (preferredReadReplicas) {
+        const { nodeId: preferredReadReplica, expireAt } = preferredReadReplicas[partitionId] || {}
+        if (Date.now() >= expireAt) {
+          this.logger.debug('Preferred read replica information has expired, using leader', {
+            topic,
+            partitionId,
+            groupId: this.groupId,
+            memberId: this.memberId,
+            preferredReadReplica,
+            leader: metadata.leader,
+          })
+          // Drop the entry
+          delete preferredReadReplicas[partitionId]
+        } else if (preferredReadReplica != null) {
+          // Valid entry, check whether it is not offline
+          // Note that we don't delete the preference here, and rather hope that eventually that replica comes online again
+          const offlineReplicas = metadata.offlineReplicas
+          if (Array.isArray(offlineReplicas) && offlineReplicas.includes(nodeId)) {
+            this.logger.debug('Preferred read replica is offline, using leader', {
+              topic,
+              partitionId,
+              groupId: this.groupId,
+              memberId: this.memberId,
+              preferredReadReplica,
+              leader: metadata.leader,
+            })
+          } else {
+            nodeId = preferredReadReplica
+          }
+        }
+      }
+      const current = result[nodeId] || []
+      return { ...result, [nodeId]: [...current, partitionId] }
+    }, {})
   }
 }

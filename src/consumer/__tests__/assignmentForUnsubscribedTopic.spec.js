@@ -6,6 +6,7 @@ const {
   createTopic,
   newLogger,
   waitForConsumerToJoinGroup,
+  flakyTest,
 } = require('testHelpers')
 
 describe('Consumer', () => {
@@ -61,7 +62,7 @@ describe('Consumer', () => {
     expect(event.payload.memberAssignment[topicNames[1]]).toBeUndefined()
   })
 
-  it('starts consuming from new topics after already having assignments', async () => {
+  flakyTest('starts consuming from new topics after already having assignments', async () => {
     consumer2 = createConsumer({
       cluster: createCluster({ metadataMaxAge: 50 }),
       groupId,

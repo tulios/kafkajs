@@ -61,8 +61,8 @@ describe('Broker > EndTxn', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await transactionBroker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    transactionBroker && (await transactionBroker.disconnect())
   })
 
   test('commit transaction', async () => {

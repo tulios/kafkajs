@@ -111,6 +111,17 @@ describe('Client', () => {
       )
     })
 
+    it('creates consumer with the default options', () => {
+      const client = new Client({})
+      client.consumer()
+
+      expect(createConsumer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          retry: { retries: 5 },
+        })
+      )
+    })
+
     it('merges local admin options with the client options', () => {
       const client = new Client({ retry: { initialRetryTime: 100 } })
       client.admin({ retry: { multiplier: 3 } })

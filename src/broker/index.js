@@ -5,6 +5,7 @@ const { requests, lookup } = require('../protocol/requests')
 const { KafkaJSNonRetriableError } = require('../errors')
 const apiKeys = require('../protocol/requests/apiKeys')
 const SASLAuthenticator = require('./saslAuthenticator')
+const shuffle = require('../utils/shuffle')
 
 const PRIVATE = {
   SHOULD_REAUTHENTICATE: Symbol('private:Broker:shouldReauthenticate'),
@@ -14,6 +15,7 @@ const PRIVATE = {
  * Each node in a Kafka cluster is called broker. This class contains
  * the high-level operations a node can perform.
  *
+ * @type {import("../../types").Broker}
  * @param {Connection} connection
  * @param {Object} logger
  * @param {Object} [versions=null] The object with all available versions and APIs
@@ -180,14 +182,15 @@ module.exports = class Broker {
 
   /**
    * @public
+   * @type {import("../../types").Broker['metadata']}
    * @param {Array} [topics=[]] An array of topics to fetch metadata for.
    *                            If no topics are specified fetch metadata for all topics
-   * @returns {Promise}
    */
   async metadata(topics = []) {
     const metadata = this.lookupRequest(apiKeys.Metadata, requests.Metadata)
+    const shuffledTopics = shuffle(topics)
     return await this.connection.send(
-      metadata({ topics, allowAutoTopicCreation: this.allowAutoTopicCreation })
+      metadata({ topics: shuffledTopics, allowAutoTopicCreation: this.allowAutoTopicCreation })
     )
   }
 
@@ -285,6 +288,8 @@ module.exports = class Broker {
    *                            ]
    *                          }
    *                        ]
+   * @param {string} rackId='' A rack identifier for this client. This can be any string value which indicates where this
+   *                           client is physically located. It corresponds with the broker config `broker.rack`.
    * @returns {Promise}
    */
   async fetch({
@@ -294,11 +299,47 @@ module.exports = class Broker {
     minBytes = 1,
     maxBytes = 10485760,
     topics,
+    rackId = '',
   }) {
     // TODO: validate topics not null/empty
     const fetch = this.lookupRequest(apiKeys.Fetch, requests.Fetch)
+
+    // Shuffle topic-partitions to ensure fair response allocation across partitions (KIP-74)
+    const flattenedTopicPartitions = topics.reduce((topicPartitions, { topic, partitions }) => {
+      partitions.forEach(partition => {
+        topicPartitions.push({ topic, partition })
+      })
+      return topicPartitions
+    }, [])
+
+    const shuffledTopicPartitions = shuffle(flattenedTopicPartitions)
+
+    // Consecutive partitions for the same topic can be combined into a single `topic` entry
+    const consolidatedTopicPartitions = shuffledTopicPartitions.reduce(
+      (topicPartitions, { topic, partition }) => {
+        const last = topicPartitions[topicPartitions.length - 1]
+
+        if (last != null && last.topic === topic) {
+          topicPartitions[topicPartitions.length - 1].partitions.push(partition)
+        } else {
+          topicPartitions.push({ topic, partitions: [partition] })
+        }
+
+        return topicPartitions
+      },
+      []
+    )
+
     return await this.connection.send(
-      fetch({ replicaId, isolationLevel, maxWaitTime, minBytes, maxBytes, topics })
+      fetch({
+        replicaId,
+        isolationLevel,
+        maxWaitTime,
+        minBytes,
+        maxBytes,
+        topics: consolidatedTopicPartitions,
+        rackId,
+      })
     )
   }
 
@@ -348,16 +389,27 @@ module.exports = class Broker {
     groupProtocols,
   }) {
     const joinGroup = this.lookupRequest(apiKeys.JoinGroup, requests.JoinGroup)
-    return await this.connection.send(
-      joinGroup({
-        groupId,
-        sessionTimeout,
-        rebalanceTimeout,
-        memberId,
-        protocolType,
-        groupProtocols,
-      })
-    )
+    const makeRequest = (assignedMemberId = memberId) =>
+      this.connection.send(
+        joinGroup({
+          groupId,
+          sessionTimeout,
+          rebalanceTimeout,
+          memberId: assignedMemberId,
+          protocolType,
+          groupProtocols,
+        })
+      )
+
+    try {
+      return await makeRequest()
+    } catch (error) {
+      if (error.name === 'KafkaJSMemberIdRequired') {
+        return makeRequest(error.memberId)
+      }
+
+      throw error
+    }
   }
 
   /**

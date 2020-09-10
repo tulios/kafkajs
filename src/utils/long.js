@@ -86,6 +86,14 @@ class Long {
   }
 
   /**
+   * Tests if this Long's value is negative.
+   * @returns {boolean}
+   */
+  isNegative() {
+    return this.value < BitInt(0)
+  }
+
+  /**
    * Converts the Long to a string written in the specified radix.
    * @returns {string}
    * @override

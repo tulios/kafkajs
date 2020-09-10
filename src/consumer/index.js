@@ -23,9 +23,31 @@ const specialOffsets = [
   Long.fromValue(LATEST_OFFSET).toString(),
 ]
 
+/**
+ * @param {Object} params
+ * @param {import("../../types").Cluster} params.cluster
+ * @param {String} params.groupId
+ * @param {import('../../types').RetryOptions} params.retry
+ * @param {import('../../types').Logger} params.logger
+ * @param {import('../../types').PartitionAssigner[]} [params.partitionAssigners]
+ * @param {number} [params.sessionTimeout]
+ * @param {number} [params.rebalanceTimeout]
+ * @param {number} [params.heartbeatInterval]
+ * @param {number} [params.maxBytesPerPartition]
+ * @param {number} [params.minBytes]
+ * @param {number} [params.maxBytes]
+ * @param {number} [params.maxWaitTimeInMs]
+ * @param {number} [params.isolationLevel]
+ * @param {string} [params.rackId]
+ * @param {import('../instrumentation/emitter')} [params.instrumentationEmitter]
+ * @param {number} params.metadataMaxAge
+ *
+ * @returns {import("../../types").Consumer}
+ */
 module.exports = ({
   cluster,
   groupId,
+  retry,
   logger: rootLogger,
   partitionAssigners = [roundRobin],
   sessionTimeout = 30000,
@@ -35,9 +57,10 @@ module.exports = ({
   minBytes = 1,
   maxBytes = 10485760, // 10MB
   maxWaitTimeInMs = 5000,
-  retry = { retries: 10 },
   isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
+  rackId = '',
   instrumentationEmitter: rootInstrumentationEmitter,
+  metadataMaxAge,
 }) => {
   if (!groupId) {
     throw new KafkaJSNonRetriableError('Consumer groupId must be a non-empty string.')
@@ -77,6 +100,8 @@ module.exports = ({
       autoCommitInterval,
       autoCommitThreshold,
       isolationLevel,
+      rackId,
+      metadataMaxAge,
     })
   }
 
@@ -103,17 +128,13 @@ module.exports = ({
     })
   }
 
-  /**
-   * @returns {Promise}
-   */
+  /** @type {import("../../types").Consumer["connect"]} */
   const connect = async () => {
     await cluster.connect()
     instrumentationEmitter.emit(CONNECT)
   }
 
-  /**
-   * @return {Promise}
-   */
+  /** @type {import("../../types").Consumer["disconnect"]} */
   const disconnect = async () => {
     try {
       await stop()
@@ -123,9 +144,7 @@ module.exports = ({
     } catch (e) {}
   }
 
-  /**
-   * @return {Promise}
-   */
+  /** @type {import("../../types").Consumer["stop"]} */
   const stop = async () => {
     try {
       if (runner) {
@@ -139,11 +158,7 @@ module.exports = ({
     } catch (e) {}
   }
 
-  /**
-   * @param {string | RegExp} topic
-   * @param {boolean} [fromBeginning=false]
-   * @return {Promise}
-   */
+  /** @type {import("../../types").Consumer["subscribe"]} */
   const subscribe = async ({ topic, fromBeginning = false }) => {
     if (consumerGroup) {
       throw new KafkaJSNonRetriableError('Cannot subscribe to topic while consumer is running')
@@ -186,17 +201,7 @@ module.exports = ({
     await cluster.addMultipleTargetTopics(topicsToSubscribe)
   }
 
-  /**
-   * @param {boolean} [autoCommit=true]
-   * @param {number} [autoCommitInterval=null]
-   * @param {number} [autoCommitThreshold=null]
-   * @param {boolean} [eachBatchAutoResolve=true] Automatically resolves the last offset of the batch when the
-   *                                              the callback succeeds
-   * @param {number} [partitionsConsumedConcurrently=1]
-   * @param {Function} [eachBatch=null]
-   * @param {Function} [eachMessage=null]
-   * @return {Promise}
-   */
+  /** @type {import("../../types").Consumer["run"]} */
   const run = async ({
     autoCommit = true,
     autoCommitInterval = null,
@@ -232,7 +237,6 @@ module.exports = ({
 
     const restart = onCrash => {
       consumerGroup = createConsumerGroup({
-        autoCommit,
         autoCommitInterval,
         autoCommitThreshold,
       })
@@ -256,6 +260,7 @@ module.exports = ({
 
       if (e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true) {
         const shouldRestart =
+          !retry ||
           !retry.restartOnFailure ||
           (await retry.restartOnFailure(e).catch(error => {
             logger.error(
@@ -271,7 +276,7 @@ module.exports = ({
           }))
 
         if (shouldRestart) {
-          const retryTime = e.retryTime || retry.initialRetryTime || initialRetryTime
+          const retryTime = e.retryTime || (retry && retry.initialRetryTime) || initialRetryTime
           logger.error(`Restarting the consumer in ${retryTime}ms`, {
             retryCount: e.retryCount,
             retryTime,
@@ -286,11 +291,7 @@ module.exports = ({
     await start(onCrash)
   }
 
-  /**
-   * @param {string} eventName
-   * @param {AsyncFunction} listener
-   * @return {Function} removeListener
-   */
+  /** @type {import("../../types").Consumer["on"]} */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {
       throw new KafkaJSNonRetriableError(`Event name should be one of ${eventKeys}`)
@@ -308,7 +309,8 @@ module.exports = ({
   }
 
   /**
-   * @param {Array<TopicPartitionOffsetAndMetadata>} topicPartitions
+   * @type {import("../../types").Consumer["commitOffsets"]}
+   * @param topicPartitions
    *   Example: [{ topic: 'topic-name', partition: 0, offset: '1', metadata: 'event-id-3' }]
    */
   const commitOffsets = async (topicPartitions = []) => {
@@ -337,7 +339,7 @@ module.exports = ({
 
         if (metadata !== null && typeof metadata !== 'string') {
           throw new KafkaJSNonRetriableError(
-            `Invalid offset metatadta, expected string or null, received ${metadata}`
+            `Invalid offset metadata, expected string or null, received ${metadata}`
           )
         }
 
@@ -368,11 +370,7 @@ module.exports = ({
     })
   }
 
-  /**
-   * @param {string} topic
-   * @param {number} partition
-   * @param {string} offset
-   */
+  /** @type {import("../../types").Consumer["seek"]} */
   const seek = ({ topic, partition, offset }) => {
     if (!topic) {
       throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
@@ -404,23 +402,7 @@ module.exports = ({
     consumerGroup.seek({ topic, partition, offset: seekOffset.toString() })
   }
 
-  /**
-   * @returns Promise<GroupDescription>
-   *
-   * @typedef {Object} GroupDescription
-   * @property {string} groupId
-   * @property {Array<MemberDescription>} members
-   * @property {string} protocol
-   * @property {string} protocolType
-   * @property {string} state
-   *
-   * @typedef {Object} MemberDescription
-   * @property {string} clientHost
-   * @property {string} clientId
-   * @property {string} memberId
-   * @property {Buffer} memberAssignment
-   * @property {Buffer} memberMetadata
-   */
+  /** @type {import("../../types").Consumer["describeGroup"]} */
   const describeGroup = async () => {
     const coordinator = await cluster.findGroupCoordinator({ groupId })
     const retrier = createRetry(retry)
@@ -431,12 +413,9 @@ module.exports = ({
   }
 
   /**
-   * @param {Array<TopicPartitions>} topicPartitions
+   * @type {import("../../types").Consumer["pause"]}
+   * @param topicPartitions
    *   Example: [{ topic: 'topic-name', partitions: [1, 2] }]
-   *
-   * @typedef {Object} TopicPartitions
-   * @property {string} topic
-   * @property {Array<{number}>} [partitions]
    */
   const pause = (topicPartitions = []) => {
     for (const topicPartition of topicPartitions) {
@@ -466,7 +445,7 @@ module.exports = ({
   /**
    * Returns the list of topic partitions paused on this consumer
    *
-   * @returns {Array<TopicPartitions>}
+   * @type {import("../../types").Consumer["paused"]}
    */
   const paused = () => {
     if (!consumerGroup) {
@@ -477,12 +456,9 @@ module.exports = ({
   }
 
   /**
-   * @param {Array<TopicPartitions>} topicPartitions
+   * @type {import("../../types").Consumer["resume"]}
+   * @param topicPartitions
    *  Example: [{ topic: 'topic-name', partitions: [1, 2] }]
-   *
-   * @typedef {Object} TopicPartitions
-   * @property {string} topic
-   * @property {Array<{number}>} [partitions]
    */
   const resume = (topicPartitions = []) => {
     for (const topicPartition of topicPartitions) {

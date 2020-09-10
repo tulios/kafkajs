@@ -18,6 +18,16 @@ The option `retry` can be used to customize the configuration for the admin.
 
 Take a look at [Retry](Configuration.md#default-retry) for more information.
 
+## <a name="list-topics"></a> List topics
+
+`listTopics` lists the names of all existing topics, and returns an array of strings.
+The method will throw exceptions in case of errors.
+
+```javascript
+await admin.listTopics()
+// [ 'topic-1', 'topic-2', 'topic-3', ... ]
+```
+
 ## <a name="create-topics"></a> Create topics
 
 `createTopics` will resolve to `true` if the topic was created successfully or `false` if it already exists. The method will throw exceptions in case of errors.
@@ -27,11 +37,11 @@ await admin.createTopics({
     validateOnly: <boolean>,
     waitForLeaders: <boolean>
     timeout: <Number>,
-    topics: <Topic[]>,
+    topics: <ITopicConfig[]>,
 })
 ```
 
-`Topic` structure:
+`ITopicConfig` structure:
 
 ```javascript
 {
@@ -156,6 +166,18 @@ await admin.fetchTopicOffsets(topic)
 // ]
 ```
 
+## <a name="fetch-topic-offsets-by-timestamp"></a> Fetch topic offsets by timestamp
+
+Specify a `timestamp` to get the earliest offset on each partition where the message's timestamp is greater than or equal to the given timestamp.
+
+```javascript
+await admin.fetchTopicOffsetsByTimestamp(topic, timestamp)
+// [
+//   { partition: 0, offset: '3244' },
+//   { partition: 1, offset: '3113' },
+// ]
+```
+
 ## <a name="fetch-offsets"></a> Fetch consumer group offsets
 
 `fetchOffsets` returns the consumer group offset for a topic.
@@ -212,6 +234,15 @@ await admin.setOffsets({
         { partition: 3, offset: '19' },
     ]
 })
+```
+
+## <a name="reset-offsets-by-timestamp"></a> Reset consumer group offsets by timestamp
+
+Combining `fetchTopicOffsetsByTimestamp` and `setOffsets` can reset a consumer group's offsets on each partition to the earliest offset whose timestamp is greater than or equal to the given timestamp.
+The consumer group must have no running instances when performing the reset. Otherwise, the command will be rejected.
+
+```javascript
+await admin.setOffsets({ groupId, topic, partitions: await admin.fetchTopicOffsetsByTimestamp(topic, timestamp) })
 ```
 
 ## <a name="describe-cluster"></a> Describe cluster
@@ -377,14 +408,6 @@ List groups available on the broker.
 await admin.listGroups()
 ```
 
-Example:
-
-```javascript
-const { ResourceTypes } = require('kafkajs')
-
-await admin.listGroups()
-```
-
 Example response:
 
 ```javascript
@@ -393,6 +416,33 @@ Example response:
         {groupId: 'testgroup', protocolType: 'consumer'}
     ]
 }
+```
+
+## <a name="describe-groups"></a> Describe groups
+
+Describe consumer groups by `groupId`s. This is similar to [consumer.describeGroup()](Consuming.md#describe-group), except
+it allows you to describe multiple groups and does not require you to have a consumer be part of any of those groups.
+
+```js
+await admin.describeGroups([ 'testgroup' ])
+// {
+//   groups: [{
+//     errorCode: 0,
+//     groupId: 'testgroup',
+//     members: [
+//       {
+//         clientHost: '/172.19.0.1',
+//         clientId: 'test-3e93246fe1f4efa7380a',
+//         memberAssignment: Buffer,
+//         memberId: 'test-3e93246fe1f4efa7380a-ff87d06d-5c87-49b8-a1f1-c4f8e3ffe7eb',
+//         memberMetadata: Buffer,
+//       },
+//     ],
+//     protocol: 'RoundRobinAssigner',
+//     protocolType: 'consumer',
+//     state: 'Stable',
+//   }]
+// }
 ```
 
 ## <a name="delete-groups"></a> Delete groups
@@ -408,8 +458,6 @@ await admin.deleteGroups([groupId])
 Example:
 
 ```javascript
-const { ResourceTypes } = require('kafkajs')
-
 await admin.deleteGroups(['group-test'])
 ```
 

@@ -12,9 +12,7 @@ module.exports = class SeekOffsets extends Map {
       return
     }
 
-    const [key, offset] = Array.from(this.entries())
-      .reverse()
-      .pop()
+    const [key, offset] = this.entries().next().value
     this.delete(key)
     const [topic, partition] = key
     return { topic, partition, offset }

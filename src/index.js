@@ -19,6 +19,8 @@ const PRIVATE = {
   OFFSETS: Symbol('private:Kafka:offsets'),
 }
 
+const DEFAULT_METADATA_MAX_AGE = 300000
+
 module.exports = class Client {
   constructor({
     brokers,
@@ -40,7 +42,7 @@ module.exports = class Client {
     this[PRIVATE.LOGGER] = createLogger({ level: logLevel, logCreator })
     this[PRIVATE.CLUSTER_RETRY] = retry
     this[PRIVATE.CREATE_CLUSTER] = ({
-      metadataMaxAge = 300000,
+      metadataMaxAge,
       allowAutoTopicCreation = true,
       maxInFlightRequests = null,
       instrumentationEmitter = null,
@@ -75,7 +77,7 @@ module.exports = class Client {
   producer({
     createPartitioner,
     retry,
-    metadataMaxAge,
+    metadataMaxAge = DEFAULT_METADATA_MAX_AGE,
     allowAutoTopicCreation,
     idempotent,
     transactionalId,
@@ -108,7 +110,7 @@ module.exports = class Client {
   consumer({
     groupId,
     partitionAssigners,
-    metadataMaxAge,
+    metadataMaxAge = DEFAULT_METADATA_MAX_AGE,
     sessionTimeout,
     rebalanceTimeout,
     heartbeatInterval,
@@ -116,10 +118,11 @@ module.exports = class Client {
     minBytes,
     maxBytes,
     maxWaitTimeInMs,
-    retry,
+    retry = { retries: 5 },
     allowAutoTopicCreation,
     maxInFlightRequests,
     readUncommitted = false,
+    rackId = '',
   } = {}) {
     const isolationLevel = readUncommitted
       ? ISOLATION_LEVEL.READ_UNCOMMITTED
@@ -149,6 +152,8 @@ module.exports = class Client {
       maxWaitTimeInMs,
       isolationLevel,
       instrumentationEmitter,
+      rackId,
+      metadataMaxAge,
     })
   }
 

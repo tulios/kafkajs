@@ -14,7 +14,7 @@ describe('Broker > FindGroupCoordinator', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
   })
 
   test('request', async () => {

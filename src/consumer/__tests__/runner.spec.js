@@ -208,10 +208,10 @@ describe('Consumer > Runner', () => {
   })
 
   it('calls onCrash for any other errors', async () => {
-    const unknowError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
+    const unknownError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
     consumerGroup.join
       .mockImplementationOnce(() => {
-        throw unknowError
+        throw unknownError
       })
       .mockImplementationOnce(() => true)
 
@@ -223,7 +223,7 @@ describe('Consumer > Runner', () => {
     await sleep(100)
 
     expect(runner.scheduleFetch).not.toHaveBeenCalled()
-    expect(onCrash).toHaveBeenCalledWith(unknowError)
+    expect(onCrash).toHaveBeenCalledWith(unknownError)
   })
 
   it('crashes on KafkaJSNotImplemented errors', async () => {
@@ -274,10 +274,68 @@ describe('Consumer > Runner', () => {
       expect(consumerGroup.join).toHaveBeenCalledTimes(1)
     })
 
+    it('correctly catch exceptions in parallel "eachBatch" processing', async () => {
+      runner = new Runner({
+        consumerGroup,
+        instrumentationEmitter: new InstrumentationEventEmitter(),
+        eachBatchAutoResolve: false,
+        eachBatch: async () => {
+          throw new Error('Error while processing batches in parallel')
+        },
+        onCrash,
+        logger: newLogger(),
+        partitionsConsumedConcurrently: 10,
+      })
+
+      const batch = new Batch(topicName, 0, {
+        partition,
+        highWatermark: 5,
+        messages: [{ offset: 4, key: '1', value: '2' }],
+      })
+
+      const longRunningRequest = new Promise(resolve => {
+        setTimeout(() => resolve([]), 100)
+      })
+
+      consumerGroup.fetch.mockImplementationOnce(() =>
+        BufferedAsyncIterator([longRunningRequest, Promise.resolve([batch])])
+      )
+
+      runner.scheduleFetch = jest.fn()
+      await runner.start()
+
+      await expect(runner.fetch()).rejects.toThrow('Error while processing batches in parallel')
+    })
+
+    it('correctly catch exceptions in parallel "heartbeat" processing', async () => {
+      const batch = new Batch(topicName, 0, {
+        partition,
+        highWatermark: 5,
+        messages: [{ offset: 4, key: '1', value: '2' }],
+      })
+
+      const longRunningRequest = new Promise(resolve => {
+        setTimeout(() => resolve([]), 100)
+      })
+
+      consumerGroup.heartbeat = async () => {
+        throw new Error('Error while processing heartbeats in parallel')
+      }
+
+      consumerGroup.fetch.mockImplementationOnce(() =>
+        BufferedAsyncIterator([longRunningRequest, Promise.resolve([batch])])
+      )
+
+      runner.scheduleFetch = jest.fn()
+      await runner.start()
+
+      await expect(runner.fetch()).rejects.toThrow('Error while processing heartbeats in parallel')
+    })
+
     it('a triggered rejoin failing should cause a crash', async () => {
-      const unknowError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
+      const unknownError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
       consumerGroup.join.mockImplementationOnce(() => {
-        throw unknowError
+        throw unknownError
       })
       consumerGroup.commitOffsets.mockImplementationOnce(() => {
         throw rebalancingError()
@@ -287,7 +345,29 @@ describe('Consumer > Runner', () => {
 
       await sleep(100)
 
-      expect(onCrash).toHaveBeenCalledWith(unknowError)
+      expect(onCrash).toHaveBeenCalledWith(unknownError)
+    })
+
+    it('should ignore request errors from BufferedAsyncIterator on stopped consumer', async () => {
+      const rejectedRequest = new Promise((resolve, reject) => {
+        setTimeout(() => reject(new Error('Failed or manually rejected request')), 10)
+      })
+
+      consumerGroup.fetch.mockImplementationOnce(
+        () =>
+          new Promise(resolve =>
+            setTimeout(() => {
+              resolve(BufferedAsyncIterator([rejectedRequest, Promise.resolve([])]))
+            }, 10)
+          )
+      )
+
+      runner.scheduleFetch = jest.fn()
+      await runner.start()
+      runner.running = false
+
+      runner.fetch()
+      await sleep(100)
     })
   })
 })

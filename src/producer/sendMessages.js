@@ -18,9 +18,8 @@ module.exports = ({ logger, cluster, partitioner, eosManager }) => {
   return async ({ acks, timeout, compression, topicMessages }) => {
     const responsePerBroker = new Map()
 
-    for (const { topic } of topicMessages) {
-      await cluster.addTargetTopic(topic)
-    }
+    const topics = topicMessages.map(({ topic }) => topic)
+    await cluster.addMultipleTargetTopics(topics)
 
     const createProducerRequests = async responsePerBroker => {
       const topicMetadata = new Map()
@@ -30,7 +29,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager }) => {
       for (const { topic, messages } of topicMessages) {
         const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
 
-        if (keys(partitionMetadata).length === 0) {
+        if (partitionMetadata.length === 0) {
           logger.debug('Producing to topic without metadata', {
             topic,
             targetTopics: Array.from(cluster.targetTopics),

@@ -47,8 +47,8 @@ describe('Consumer', () => {
   })
 
   afterEach(async () => {
-    await consumer.disconnect()
-    await producer.disconnect()
+    consumer && (await consumer.disconnect())
+    producer && (await producer.disconnect())
   })
 
   testIfKafka_0_11('forwards empty control batches to eachBatch', async () => {

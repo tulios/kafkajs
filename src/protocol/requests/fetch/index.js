@@ -125,6 +125,124 @@ const versions = {
       requestTimeout: requestTimeout(maxWaitTime),
     }
   },
+  8: ({
+    replicaId = REPLICA_ID,
+    isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
+    sessionId = 0,
+    sessionEpoch = -1,
+    forgottenTopics = [],
+    maxWaitTime,
+    minBytes,
+    maxBytes,
+    topics,
+  }) => {
+    const request = require('./v8/request')
+    const response = require('./v8/response')
+    return {
+      request: request({
+        replicaId,
+        isolationLevel,
+        sessionId,
+        sessionEpoch,
+        forgottenTopics,
+        maxWaitTime,
+        minBytes,
+        maxBytes,
+        topics,
+      }),
+      response,
+      requestTimeout: requestTimeout(maxWaitTime),
+    }
+  },
+  9: ({
+    replicaId = REPLICA_ID,
+    isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
+    sessionId = 0,
+    sessionEpoch = -1,
+    forgottenTopics = [],
+    maxWaitTime,
+    minBytes,
+    maxBytes,
+    topics,
+  }) => {
+    const request = require('./v9/request')
+    const response = require('./v9/response')
+    return {
+      request: request({
+        replicaId,
+        isolationLevel,
+        sessionId,
+        sessionEpoch,
+        forgottenTopics,
+        maxWaitTime,
+        minBytes,
+        maxBytes,
+        topics,
+      }),
+      response,
+      requestTimeout: requestTimeout(maxWaitTime),
+    }
+  },
+  10: ({
+    replicaId = REPLICA_ID,
+    isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
+    sessionId = 0,
+    sessionEpoch = -1,
+    forgottenTopics = [],
+    maxWaitTime,
+    minBytes,
+    maxBytes,
+    topics,
+  }) => {
+    const request = require('./v10/request')
+    const response = require('./v10/response')
+    return {
+      request: request({
+        replicaId,
+        isolationLevel,
+        sessionId,
+        sessionEpoch,
+        forgottenTopics,
+        maxWaitTime,
+        minBytes,
+        maxBytes,
+        topics,
+      }),
+      response,
+      requestTimeout: requestTimeout(maxWaitTime),
+    }
+  },
+  11: ({
+    replicaId = REPLICA_ID,
+    isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
+    sessionId = 0,
+    sessionEpoch = -1,
+    forgottenTopics = [],
+    maxWaitTime,
+    minBytes,
+    maxBytes,
+    topics,
+    rackId,
+  }) => {
+    const request = require('./v11/request')
+    const response = require('./v11/response')
+    return {
+      request: request({
+        replicaId,
+        isolationLevel,
+        sessionId,
+        sessionEpoch,
+        forgottenTopics,
+        maxWaitTime,
+        minBytes,
+        maxBytes,
+        topics,
+        rackId,
+      }),
+      response,
+      requestTimeout: requestTimeout(maxWaitTime),
+    }
+  },
 }
 
 module.exports = {

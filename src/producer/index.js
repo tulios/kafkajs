@@ -14,6 +14,20 @@ const eventKeys = keys(events)
 
 const { CONNECT, DISCONNECT } = events
 
+/**
+ *
+ * @param {Object} params
+ * @param {import('../../types').Cluster} params.cluster
+ * @param {import('../../types').Logger} params.Logger
+ * @param {import('../../types').ICustomPartitioner} [params.createPartitioner]
+ * @param {import('../../types').RetryOptions} params.retry
+ * @param {boolean} [params.idempotent]
+ * @param {string} [params.transactionalId]
+ * @param {number} [params.transactionTimeout]
+ * @param {import('../instrumentation/emitter')} [params.instrumentationEmitter]
+ *
+ * @returns {import('../../types').Producer}
+ */
 module.exports = ({
   cluster,
   logger: rootLogger,
@@ -83,7 +97,7 @@ module.exports = ({
 
   /**
    * Begin a transaction. The returned object contains methods to send messages
-   * to the transaction and end the transaction by comitting or aborting.
+   * to the transaction and end the transaction by committing or aborting.
    *
    * Only messages sent on the transaction object will participate in the transaction.
    *

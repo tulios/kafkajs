@@ -63,6 +63,183 @@
       },
       "transactions": {
         "title": "Transactions"
+      },
+      "version-1.10.0/version-1.10.0-admin": {
+        "title": "Admin Client"
+      },
+      "version-1.10.0/version-1.10.0-configuration": {
+        "title": "Client Configuration"
+      },
+      "version-1.10.0/version-1.10.0-consumer-example": {
+        "title": "Consumer"
+      },
+      "version-1.10.0/version-1.10.0-consuming": {
+        "title": "Consuming Messages"
+      },
+      "version-1.10.0/version-1.10.0-contribution-guide": {
+        "title": "Contributing"
+      },
+      "version-1.10.0/version-1.10.0-custom-logger": {
+        "title": "Custom Logger"
+      },
+      "version-1.10.0/version-1.10.0-development-environment": {
+        "title": "Development Environment"
+      },
+      "version-1.10.0/version-1.10.0-running-kafka-in-development": {
+        "title": "Running Kafka in Development"
+      },
+      "version-1.10.0/version-1.10.0-faq": {
+        "title": "FAQ"
+      },
+      "version-1.10.0/version-1.10.0-getting-started": {
+        "title": "Getting Started",
+        "sidebar_label": "Getting Started"
+      },
+      "version-1.10.0/version-1.10.0-instrumentation-events": {
+        "title": "Instrumentation Events"
+      },
+      "version-1.10.0/version-1.10.0-introduction": {
+        "title": "A Brief Intro to Kafka",
+        "sidebar_label": "Intro to Kafka"
+      },
+      "version-1.10.0/version-1.10.0-pre-releases": {
+        "title": "Pre-releases"
+      },
+      "version-1.10.0/version-1.10.0-producer-example": {
+        "title": "Producer"
+      },
+      "version-1.10.0/version-1.10.0-producing": {
+        "title": "Producing Messages"
+      },
+      "version-1.10.0/version-1.10.0-development-resources": {
+        "title": "Resources"
+      },
+      "version-1.10.0/version-1.10.0-retry-detailed": {
+        "title": "Retry Mechanism Explained"
+      },
+      "version-1.10.0/version-1.10.0-testing": {
+        "title": "Testing"
+      },
+      "version-1.10.0/version-1.10.0-transactions": {
+        "title": "Transactions"
+      },
+      "version-1.11.0/version-1.11.0-admin": {
+        "title": "Admin Client"
+      },
+      "version-1.11.0/version-1.11.0-configuration": {
+        "title": "Client Configuration"
+      },
+      "version-1.11.0/version-1.11.0-consumer-example": {
+        "title": "Consumer"
+      },
+      "version-1.11.0/version-1.11.0-consuming": {
+        "title": "Consuming Messages"
+      },
+      "version-1.11.0/version-1.11.0-contribution-guide": {
+        "title": "Contributing"
+      },
+      "version-1.11.0/version-1.11.0-custom-logger": {
+        "title": "Custom Logger"
+      },
+      "version-1.11.0/version-1.11.0-development-environment": {
+        "title": "Development Environment"
+      },
+      "version-1.11.0/version-1.11.0-running-kafka-in-development": {
+        "title": "Running Kafka in Development"
+      },
+      "version-1.11.0/version-1.11.0-faq": {
+        "title": "FAQ"
+      },
+      "version-1.11.0/version-1.11.0-getting-started": {
+        "title": "Getting Started",
+        "sidebar_label": "Getting Started"
+      },
+      "version-1.11.0/version-1.11.0-instrumentation-events": {
+        "title": "Instrumentation Events"
+      },
+      "version-1.11.0/version-1.11.0-introduction": {
+        "title": "A Brief Intro to Kafka",
+        "sidebar_label": "Intro to Kafka"
+      },
+      "version-1.11.0/version-1.11.0-pre-releases": {
+        "title": "Pre-releases"
+      },
+      "version-1.11.0/version-1.11.0-producer-example": {
+        "title": "Producer"
+      },
+      "version-1.11.0/version-1.11.0-producing": {
+        "title": "Producing Messages"
+      },
+      "version-1.11.0/version-1.11.0-development-resources": {
+        "title": "Resources"
+      },
+      "version-1.11.0/version-1.11.0-retry-detailed": {
+        "title": "Retry Mechanism Explained"
+      },
+      "version-1.11.0/version-1.11.0-testing": {
+        "title": "Testing"
+      },
+      "version-1.11.0/version-1.11.0-transactions": {
+        "title": "Transactions"
+      },
+      "version-1.12.0/version-1.12.0-admin": {
+        "title": "Admin Client"
+      },
+      "version-1.12.0/version-1.12.0-configuration": {
+        "title": "Client Configuration"
+      },
+      "version-1.12.0/version-1.12.0-consumer-example": {
+        "title": "Consumer"
+      },
+      "version-1.12.0/version-1.12.0-consuming": {
+        "title": "Consuming Messages"
+      },
+      "version-1.12.0/version-1.12.0-contribution-guide": {
+        "title": "Contributing"
+      },
+      "version-1.12.0/version-1.12.0-custom-logger": {
+        "title": "Custom Logger"
+      },
+      "version-1.12.0/version-1.12.0-development-environment": {
+        "title": "Development Environment"
+      },
+      "version-1.12.0/version-1.12.0-running-kafka-in-development": {
+        "title": "Running Kafka in Development"
+      },
+      "version-1.12.0/version-1.12.0-faq": {
+        "title": "FAQ"
+      },
+      "version-1.12.0/version-1.12.0-getting-started": {
+        "title": "Getting Started",
+        "sidebar_label": "Getting Started"
+      },
+      "version-1.12.0/version-1.12.0-instrumentation-events": {
+        "title": "Instrumentation Events"
+      },
+      "version-1.12.0/version-1.12.0-introduction": {
+        "title": "A Brief Intro to Kafka",
+        "sidebar_label": "Intro to Kafka"
+      },
+      "version-1.12.0/version-1.12.0-pre-releases": {
+        "title": "Pre-releases"
+      },
+      "version-1.12.0/version-1.12.0-producer-example": {
+        "title": "Producer"
+      },
+      "version-1.12.0/version-1.12.0-producing": {
+        "title": "Producing Messages"
+      },
+      "version-1.12.0/version-1.12.0-development-resources": {
+        "title": "Resources"
+      },
+      "version-1.12.0/version-1.12.0-retry-detailed": {
+        "title": "Retry Mechanism Explained"
+      },
+      "version-1.12.0/version-1.12.0-testing": {
+        "title": "Testing"
+      },
+      "version-1.12.0/version-1.12.0-transactions": {
+        "title": "Transactions"
       }
     },
     "links": {

@@ -74,6 +74,7 @@ describe('Broker > Fetch', () => {
     partitionLeaderEpoch: expect.any(Number),
     producerEpoch: 0,
     producerId: '-1',
+    timestampType: 0,
     ...options,
   })
 
@@ -104,8 +105,8 @@ describe('Broker > Fetch', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await broker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    broker && (await broker.disconnect())
   })
 
   test('rejects the Promise if lookupRequest is not defined', async () => {
@@ -296,6 +297,7 @@ describe('Broker > Fetch', () => {
       let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse).toEqual({
         throttleTime: 0,
+        clientSideThrottleTime: expect.optional(0),
         errorCode: 0,
         sessionId: 0,
         responses: [
@@ -309,6 +311,7 @@ describe('Broker > Fetch', () => {
                 lastStableOffset: '3',
                 lastStartOffset: '0',
                 partition: 0,
+                preferredReadReplica: expect.optional(-1),
                 messages: [
                   {
                     magicByte: 2,
@@ -378,6 +381,7 @@ describe('Broker > Fetch', () => {
       let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse).toEqual({
         throttleTime: 0,
+        clientSideThrottleTime: expect.optional(0),
         errorCode: 0,
         sessionId: 0,
         responses: [
@@ -391,6 +395,7 @@ describe('Broker > Fetch', () => {
                 lastStableOffset: '3',
                 lastStartOffset: '0',
                 partition: 0,
+                preferredReadReplica: expect.optional(-1),
                 messages: [
                   {
                     magicByte: 2,
@@ -460,6 +465,7 @@ describe('Broker > Fetch', () => {
       let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse).toEqual({
         throttleTime: 0,
+        clientSideThrottleTime: expect.optional(0),
         errorCode: 0,
         sessionId: 0,
         responses: [
@@ -473,6 +479,7 @@ describe('Broker > Fetch', () => {
                 lastStableOffset: '3',
                 lastStartOffset: '0',
                 partition: 0,
+                preferredReadReplica: expect.optional(-1),
                 messages: [
                   {
                     magicByte: 2,
@@ -575,6 +582,7 @@ describe('Broker > Fetch', () => {
         let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
         expect(fetchResponse).toEqual({
           throttleTime: 0,
+          clientSideThrottleTime: expect.optional(0),
           errorCode: 0,
           sessionId: 0,
           responses: [
@@ -588,6 +596,7 @@ describe('Broker > Fetch', () => {
                   errorCode: 0,
                   highWatermark: '3',
                   partition: 0,
+                  preferredReadReplica: expect.optional(-1),
                   messages: [],
                 },
               ],
@@ -606,6 +615,7 @@ describe('Broker > Fetch', () => {
           fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
           expect(fetchResponse).toEqual({
             throttleTime: 0,
+            clientSideThrottleTime: expect.optional(0),
             errorCode: 0,
             sessionId: 0,
             responses: [
@@ -624,6 +634,7 @@ describe('Broker > Fetch', () => {
                     lastStableOffset: '4',
                     lastStartOffset: '0',
                     partition: 0,
+                    preferredReadReplica: expect.optional(-1),
                     messages: [
                       {
                         magicByte: 2,
@@ -734,6 +745,7 @@ describe('Broker > Fetch', () => {
         })
         expect(fetchResponse).toEqual({
           throttleTime: 0,
+          clientSideThrottleTime: expect.optional(0),
           errorCode: 0,
           sessionId: 0,
           responses: [
@@ -751,6 +763,7 @@ describe('Broker > Fetch', () => {
                   lastStableOffset: '0',
                   lastStartOffset: '0',
                   partition: 0,
+                  preferredReadReplica: expect.optional(-1),
                   messages: [
                     {
                       magicByte: 2,
@@ -825,6 +838,7 @@ describe('Broker > Fetch', () => {
           })
           expect(fetchResponse).toEqual({
             throttleTime: 0,
+            clientSideThrottleTime: expect.optional(0),
             errorCode: 0,
             sessionId: 0,
             responses: [
@@ -838,6 +852,7 @@ describe('Broker > Fetch', () => {
                     lastStableOffset: '4',
                     lastStartOffset: '0',
                     partition: 0,
+                    preferredReadReplica: expect.optional(-1),
                     messages: [
                       // Control record
                       {

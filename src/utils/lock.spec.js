@@ -6,7 +6,7 @@ const sleep = value => waitFor(delay => delay >= value)
 
 describe('Utils > Lock', () => {
   it('allows only one resource at a time', async () => {
-    const lock = new Lock()
+    const lock = new Lock({ timeout: 1000 })
     const resource = jest.fn()
     const callResource = async () => {
       try {
@@ -38,6 +38,33 @@ describe('Utils > Lock', () => {
     await expect(
       Promise.all([callResource(), callResource(), callResource()])
     ).rejects.toHaveProperty('message', 'Timeout while acquiring lock (2 waiting locks)')
+  })
+
+  it('throws if the lock is initiated with an undefined timeout', async () => {
+    expect(() => new Lock()).toThrowWithMessage(
+      TypeError,
+      `'timeout' is not a number, received 'undefined'`
+    )
+  })
+
+  it('allows lock to be acquired after timeout', async () => {
+    const lock = new Lock({ timeout: 60 })
+    const resource = jest.fn()
+    const callResource = async () => {
+      await lock.acquire()
+      try {
+        resource(Date.now())
+        await sleep(100)
+      } finally {
+        lock.release()
+      }
+    }
+
+    await expect(
+      Promise.all([callResource(), callResource(), callResource()])
+    ).rejects.toHaveProperty('message', 'Timeout while acquiring lock (2 waiting locks)')
+
+    await expect(callResource()).resolves.toBeUndefined()
   })
 
   describe('with a description', () => {
