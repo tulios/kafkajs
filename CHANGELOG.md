@@ -5,6 +5,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2020-09-10
+### Added
+  - Add listGroup method to admin interface #645
+  - Add describeCluster method to admin client #648
+  - Add createPartitions method to admin client #661
+  - Add deleteGroups method to admin client #646
+  - Add listTopics method to admin client #718
+  - Add describeGroups method to admin client #742
+  - Allow to handle consumer retry failure at the user level #643
+  - Support Fetch v8 protocol (including client-side throttling) #776
+  - Support Fetch v9 protocol #778
+  - Support Fetch v10 protocol #792
+  - Support Fetch v11 protocol #810
+  - Support JoinGroup v3 and v4 protocol #801
+  - Oauthbearer support #680
+  - Add new protocol errors #824
+  - Add versioning to docs #835
+  - Add fetch topic offsets by timestamp #604
+  - Support LOG_APPEND_TIME record timestamps #838
+  - Suppress JoinGroup V4+ response error log when memberId is empty #860
+
+### Changed
+  - Replace fetch promise all with async generator #570
+  - Improve balance in the RoundRobinAssigner #635
+  - Add single requestTimeout runner instead of setTimeout per request #650
+  - Provide the subscribed topics to the protocol() function #545
+  - Only wait for the lock when there are enqueued batches #670
+  - Update consumer default retries to 5 #720 (related to #719)
+  - Simplify and speed up SeekOffsets #668
+  - Remove maxInFlight option from default retry and moved into Producer ad Consumer #754
+  - Use addMultipleTargetTopics instead of looping over multiple calls to addTargetTopic #748
+  - Only disconnect the consumer and producers if they were created #784
+  - Resolve socket requests without response immediately when they have been queued #785
+  - Move default request timeout from connection to cluster #739
+  - Simplify the BufferedAsyncIterator #671
+  - Ensure fair fetch response allocation across topic-partitions #859
+
+### Fixed
+  - Type improvements and fixes #636 #664 #675 #722 #729 #758 #799 #813 #757 #749 #764 #828 #843 #839
+  - Remove invalid topics from targetTopics on INVALID_TOPIC_EXCEPTION #666
+  - Fix network buffering performance problems #669
+  - Delete the entry for the waiter when the timeout is reached #694
+  - Fix encoder instanceof issue with Encoder #685
+  - Fix default retry for consumer #719
+  - Runner#waitForConsumer uses consuming stop event instead of timers #724
+  - Fix unhandled rejections #714 #797
+  - Make Array shuffle test pass in Node >= 11.0.0 #740
+  - Use setImmediate when scheduling calls of scheduleFetch #752
+  - Improve offset commit handling #775
+  - Use the length from the message to pre-allocate the result array #771
+  - Fix application lock in case of errors before the connection is established #780
+  - Add isNaN check for concurrency limit #787
+  - Fix admin client createTopics timeout #800
+  - Avoid repeated costly copies of buffers when working with encoders #811  
+  - Fix fall-back retry config for producer #851
+
 ## [1.12.0] - 2020-01-30
 ### Added
   - Force refresh of metadata when topic is not present #556
