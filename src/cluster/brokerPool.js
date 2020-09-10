@@ -23,7 +23,6 @@ module.exports = class BrokerPool {
     connectionBuilder,
     logger,
     retry,
-    allowExperimentalV011,
     allowAutoTopicCreation,
     authenticationTimeout,
     reauthenticationThreshold,
@@ -37,7 +36,6 @@ module.exports = class BrokerPool {
 
     this.createBroker = options =>
       new Broker({
-        allowExperimentalV011,
         allowAutoTopicCreation,
         authenticationTimeout,
         reauthenticationThreshold,
