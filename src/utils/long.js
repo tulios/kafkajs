@@ -90,7 +90,7 @@ class Long {
    * @returns {boolean}
    */
   isNegative() {
-    return this.value < BitInt(0)
+    return this.value < BigInt(0)
   }
 
   /**
