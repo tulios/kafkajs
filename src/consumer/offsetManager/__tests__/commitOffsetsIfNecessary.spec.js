@@ -1,4 +1,4 @@
-const Long = require('long')
+const Long = require('../../../utils/long')
 const sleep = require('../../../utils/sleep')
 const OffsetManager = require('../index')
 

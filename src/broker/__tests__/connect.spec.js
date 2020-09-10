@@ -8,7 +8,7 @@ const {
   saslEntries,
 } = require('testHelpers')
 
-const Long = require('long')
+const Long = require('../../utils/long')
 const Broker = require('../index')
 
 describe('Broker > connect', () => {

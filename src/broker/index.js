@@ -1,4 +1,4 @@
-const Long = require('long')
+const Long = require('../utils/long')
 const Lock = require('../utils/lock')
 const { Types: Compression } = require('../protocol/message/compression')
 const { requests, lookup } = require('../protocol/requests')
