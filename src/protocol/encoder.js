@@ -1,4 +1,4 @@
-const Long = require('long')
+const Long = require('../utils/long')
 
 const INT8_SIZE = 1
 const INT16_SIZE = 2
@@ -8,7 +8,7 @@ const INT64_SIZE = 8
 const MOST_SIGNIFICANT_BIT = 0x80 // 128
 const OTHER_BITS = 0x7f // 127
 const UNSIGNED_INT32_MAX_NUMBER = 0xffffff80
-const UNSIGNED_INT64_MAX_NUMBER = Long.fromBytes([-1, -1, -1, -1, -1, -1, -1, -128])
+const UNSIGNED_INT64_MAX_NUMBER = 0xffffffffffffff80n
 
 module.exports = class Encoder {
   static encodeZigZag(value) {

@@ -1,5 +1,5 @@
 const EventEmitter = require('events')
-const Long = require('long')
+const Long = require('../utils/long')
 const createRetry = require('../retry')
 const limitConcurrency = require('../utils/concurrency')
 const { KafkaJSError } = require('../errors')

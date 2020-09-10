@@ -1,4 +1,4 @@
-const Long = require('long')
+const Long = require('../../../../utils/long')
 const HeaderDecoder = require('../../header/v0/decoder')
 const TimestampTypes = require('../../../timestampTypes')
 
