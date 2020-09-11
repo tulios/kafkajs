@@ -196,8 +196,8 @@ module.exports = class Runner extends EventEmitter {
           })
         }
 
-        // In case of errors, commit the previously consumed offsets
-        await this.consumerGroup.commitOffsets()
+        // In case of errors, commit the previously consumed offsets unless autoCommit is disabled
+        await this.autoCommitOffsets()
         throw e
       }
 

@@ -333,6 +333,43 @@ describe('Consumer', () => {
         ],
       })
     })
+
+    it('does not commit the offset if autoCommit=false', async () => {
+      let raisedError = false
+      consumer.run({
+        autoCommit: false,
+        eachMessage: async event => {
+          if (event.message.key.toString() === `key-${key3}`) {
+            raisedError = true
+            throw new Error('some error')
+          }
+        },
+      })
+
+      await waitForConsumerToJoinGroup(consumer)
+      await expect(waitFor(() => raisedError)).resolves.toBeTruthy()
+      const coordinator = await cluster.findGroupCoordinator({ groupId })
+      const offsets = await coordinator.offsetFetch({
+        groupId,
+        topics: [
+          {
+            topic: topicName,
+            partitions: [{ partition: 0 }],
+          },
+        ],
+      })
+
+      expect(offsets).toEqual({
+        throttleTime: 0,
+        errorCode: 0,
+        responses: [
+          {
+            partitions: [{ errorCode: 0, metadata: '', offset: '-1', partition: 0 }], // the offset stays the same
+            topic: topicName,
+          },
+        ],
+      })
+    })
   })
 
   describe('when eachBatch throws an error', () => {
