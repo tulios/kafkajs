@@ -1,4 +1,4 @@
-const requestV3 = require('../v5/request')
+const requestV5 = require('../v5/request')
 
 /**
  * The version number is bumped to indicate that on quota violation brokers send out responses before throttling.
@@ -25,7 +25,7 @@ module.exports = ({
   topicData,
 }) =>
   Object.assign(
-    requestV3({
+    requestV5({
       acks,
       timeout,
       transactionalId,
