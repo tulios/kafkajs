@@ -1,4 +1,4 @@
-const requestV3 = require('../v3/request')
+const requestV3 = require('../v5/request')
 
 /**
  * The version number is bumped to indicate that on quota violation brokers send out responses before throttling.
