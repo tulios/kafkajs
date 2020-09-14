@@ -1,3 +1,5 @@
+jest.setTimeout(3000)
+
 const sleep = require('../../utils/sleep')
 const { newLogger } = require('testHelpers')
 const InstrumentationEventEmitter = require('../../instrumentation/emitter')
@@ -43,23 +45,32 @@ describe('Network > RequestQueue', () => {
     })
 
     it('blocks until all pending requests are fulfilled', async () => {
-      requestQueue.maybeThrottle(50)
-      requestQueue.push(request)
+      const emitter = new InstrumentationEventEmitter()
+      requestQueue = createRequestQueue({
+        instrumentationEmitter: emitter,
+      })
 
-      expect(requestQueue.pending.length).toEqual(1)
-
-      await Promise.all([
-        requestQueue.waitForPendingRequests(),
-        Promise.resolve(
+      const removeListener = emitter.addListener(events.NETWORK_REQUEST_QUEUE_SIZE, event => {
+        if (event.payload.queueSize === 0) {
           requestQueue.fulfillRequest({
             correlationId: request.entry.correlationId,
             payload,
             size,
           })
-        ),
-      ])
+        }
+      })
 
+      requestQueue.maybeThrottle(50)
+      requestQueue.push(request)
+
+      expect(requestQueue.pending.length).toEqual(1)
+      expect(requestQueue.inflight.size).toEqual(0)
+
+      await requestQueue.waitForPendingRequests()
+
+      removeListener()
       expect(requestQueue.pending.length).toEqual(0)
+      expect(requestQueue.inflight.size).toEqual(0)
     })
   })
 
