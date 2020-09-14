@@ -1,3 +1,4 @@
+const EventEmitter = require('events')
 const SocketRequest = require('./socketRequest')
 const events = require('../instrumentationEvents')
 
@@ -5,7 +6,9 @@ const PRIVATE = {
   EMIT_QUEUE_SIZE_EVENT: Symbol('private:RequestQueue:emitQueueSizeEvent'),
 }
 
-module.exports = class RequestQueue {
+const REQUEST_QUEUE_EMPTY = 'requestQueueEmpty'
+
+module.exports = class RequestQueue extends EventEmitter {
   /**
    * @param {number} maxInFlightRequests
    * @param {number} requestTimeout
@@ -24,6 +27,7 @@ module.exports = class RequestQueue {
     logger,
     isConnected = () => true,
   }) {
+    super()
     this.instrumentationEmitter = instrumentationEmitter
     this.maxInFlightRequests = maxInFlightRequests
     this.requestTimeout = requestTimeout
@@ -54,12 +58,18 @@ module.exports = class RequestQueue {
     this.throttleCheckTimeoutId = null
 
     this[PRIVATE.EMIT_QUEUE_SIZE_EVENT] = () => {
+      const queueSize = this.pending.length
+
       instrumentationEmitter &&
         instrumentationEmitter.emit(events.NETWORK_REQUEST_QUEUE_SIZE, {
           broker: this.broker,
           clientId: this.clientId,
-          queueSize: this.pending.length,
+          queueSize,
         })
+
+      if (queueSize === 0) {
+        this.emit(REQUEST_QUEUE_EMPTY)
+      }
     }
   }
 
@@ -202,6 +212,25 @@ module.exports = class RequestQueue {
     this.pending = []
     this.inflight.clear()
     this[PRIVATE.EMIT_QUEUE_SIZE_EVENT]()
+  }
+
+  /**
+   * @public
+   */
+  waitForPendingRequests() {
+    return new Promise(resolve => {
+      if (this.pending.length === 0) {
+        return resolve()
+      }
+
+      this.logger.debug('Waiting for pending requests', {
+        clientId: this.clientId,
+        broker: this.broker,
+        currentPendingQueueSize: this.pending.length,
+      })
+
+      this.once(REQUEST_QUEUE_EMPTY, () => resolve())
+    })
   }
 
   /**

@@ -28,6 +28,41 @@ describe('Network > RequestQueue', () => {
     requestQueue = createRequestQueue()
   })
 
+  describe('#waitForPendingRequests', () => {
+    let request, send, size, payload
+
+    beforeEach(() => {
+      send = jest.fn()
+      payload = { ok: true }
+      size = 32
+      request = {
+        sendRequest: send,
+        entry: createEntry(),
+        expectResponse: true,
+      }
+    })
+
+    it('blocks until all pending requests are fulfilled', async () => {
+      requestQueue.maybeThrottle(50)
+      requestQueue.push(request)
+
+      expect(requestQueue.pending.length).toEqual(1)
+
+      await Promise.all([
+        requestQueue.waitForPendingRequests(),
+        Promise.resolve(
+          requestQueue.fulfillRequest({
+            correlationId: request.entry.correlationId,
+            payload,
+            size,
+          })
+        ),
+      ])
+
+      expect(requestQueue.pending.length).toEqual(0)
+    })
+  })
+
   describe('#push', () => {
     let request, send
 
