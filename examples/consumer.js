@@ -2,11 +2,13 @@ const fs = require('fs')
 const ip = require('ip')
 
 const { Kafka, logLevel } = require('../index')
+const PrettyConsoleLogger = require('./prettyConsoleLogger')
 
 const host = process.env.HOST_IP || ip.address()
 
 const kafka = new Kafka({
   logLevel: logLevel.INFO,
+  logCreator: PrettyConsoleLogger,
   brokers: [`${host}:9094`, `${host}:9097`, `${host}:9100`],
   clientId: 'example-consumer',
   ssl: {
@@ -24,6 +26,7 @@ const kafka = new Kafka({
 const topic = 'topic-test'
 const consumer = kafka.consumer({ groupId: 'test-group' })
 
+let msgNumber = 0
 const run = async () => {
   await consumer.connect()
   await consumer.subscribe({ topic, fromBeginning: true })
@@ -32,7 +35,8 @@ const run = async () => {
     //   console.log(batch)
     // },
     eachMessage: async ({ topic, partition, message }) => {
-      console.log({
+      msgNumber++
+      kafka.logger().info('Message processed', {
         topic,
         partition,
         offset: message.offset,
@@ -46,12 +50,13 @@ const run = async () => {
         ),
         key: message.key.toString(),
         value: message.value.toString(),
+        msgNumber,
       })
     },
   })
 }
 
-run().catch(e => console.error(`[example/consumer] ${e.message}`, e))
+run().catch(e => kafka.logger().error(`[example/consumer] ${e.message}`, { stack: e.stack }))
 
 const errorTypes = ['unhandledRejection', 'uncaughtException']
 const signalTraps = ['SIGTERM', 'SIGINT', 'SIGUSR2']
@@ -59,8 +64,8 @@ const signalTraps = ['SIGTERM', 'SIGINT', 'SIGUSR2']
 errorTypes.map(type => {
   process.on(type, async e => {
     try {
-      console.log(`process.on ${type}`)
-      console.error(e)
+      kafka.logger().info(`process.on ${type}`)
+      kafka.logger().error(e.message, { stack: e.stack })
       await consumer.disconnect()
       process.exit(0)
     } catch (_) {
@@ -71,10 +76,8 @@ errorTypes.map(type => {
 
 signalTraps.map(type => {
   process.once(type, async () => {
-    try {
-      await consumer.disconnect()
-    } finally {
-      process.kill(process.pid, type)
-    }
+    console.log('')
+    kafka.logger().info('[example/consumer] disconnecting')
+    await consumer.disconnect()
   })
 })
