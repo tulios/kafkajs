@@ -36,6 +36,8 @@ describe('Consumer', () => {
       groupId,
       logger: newLogger(),
     })
+
+    await producer.connect()
   })
 
   afterEach(async () => {

@@ -312,6 +312,7 @@ describe('Consumer > Instrumentation Events', () => {
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
     await consumer.run({ eachMessage })
 
+    await producer.connect()
     await producer.send({ acks: 1, topic: topicName, messages: [message] })
 
     await waitFor(() => crashListener.mock.calls.length > 0)
