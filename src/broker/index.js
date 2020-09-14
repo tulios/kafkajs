@@ -1,10 +1,11 @@
-const Long = require('long')
+const Long = require('../utils/long')
 const Lock = require('../utils/lock')
 const { Types: Compression } = require('../protocol/message/compression')
 const { requests, lookup } = require('../protocol/requests')
 const { KafkaJSNonRetriableError } = require('../errors')
 const apiKeys = require('../protocol/requests/apiKeys')
 const SASLAuthenticator = require('./saslAuthenticator')
+const shuffle = require('../utils/shuffle')
 
 const PRIVATE = {
   SHOULD_REAUTHENTICATE: Symbol('private:Broker:shouldReauthenticate'),
@@ -29,7 +30,6 @@ module.exports = class Broker {
   constructor({
     connection,
     logger,
-    allowExperimentalV011,
     nodeId = null,
     versions = null,
     authenticationTimeout = 1000,
@@ -42,7 +42,6 @@ module.exports = class Broker {
     this.rootLogger = logger
     this.logger = logger.namespace('Broker')
     this.versions = versions
-    this.allowExperimentalV011 = allowExperimentalV011
     this.authenticationTimeout = authenticationTimeout
     this.reauthenticationThreshold = reauthenticationThreshold
     this.allowAutoTopicCreation = allowAutoTopicCreation
@@ -94,7 +93,7 @@ module.exports = class Broker {
         this.versions = await this.apiVersions()
       }
 
-      this.lookupRequest = lookup(this.versions, this.allowExperimentalV011)
+      this.lookupRequest = lookup(this.versions)
 
       if (this.supportAuthenticationProtocol === null) {
         try {
@@ -187,8 +186,9 @@ module.exports = class Broker {
    */
   async metadata(topics = []) {
     const metadata = this.lookupRequest(apiKeys.Metadata, requests.Metadata)
+    const shuffledTopics = shuffle(topics)
     return await this.connection.send(
-      metadata({ topics, allowAutoTopicCreation: this.allowAutoTopicCreation })
+      metadata({ topics: shuffledTopics, allowAutoTopicCreation: this.allowAutoTopicCreation })
     )
   }
 
@@ -301,8 +301,43 @@ module.exports = class Broker {
   }) {
     // TODO: validate topics not null/empty
     const fetch = this.lookupRequest(apiKeys.Fetch, requests.Fetch)
+
+    // Shuffle topic-partitions to ensure fair response allocation across partitions (KIP-74)
+    const flattenedTopicPartitions = topics.reduce((topicPartitions, { topic, partitions }) => {
+      partitions.forEach(partition => {
+        topicPartitions.push({ topic, partition })
+      })
+      return topicPartitions
+    }, [])
+
+    const shuffledTopicPartitions = shuffle(flattenedTopicPartitions)
+
+    // Consecutive partitions for the same topic can be combined into a single `topic` entry
+    const consolidatedTopicPartitions = shuffledTopicPartitions.reduce(
+      (topicPartitions, { topic, partition }) => {
+        const last = topicPartitions[topicPartitions.length - 1]
+
+        if (last != null && last.topic === topic) {
+          topicPartitions[topicPartitions.length - 1].partitions.push(partition)
+        } else {
+          topicPartitions.push({ topic, partitions: [partition] })
+        }
+
+        return topicPartitions
+      },
+      []
+    )
+
     return await this.connection.send(
-      fetch({ replicaId, isolationLevel, maxWaitTime, minBytes, maxBytes, topics, rackId })
+      fetch({
+        replicaId,
+        isolationLevel,
+        maxWaitTime,
+        minBytes,
+        maxBytes,
+        topics: consolidatedTopicPartitions,
+        rackId,
+      })
     )
   }
 

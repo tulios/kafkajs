@@ -1,4 +1,4 @@
-const Long = require('long')
+const Long = require('../utils/long')
 
 const INT8_SIZE = 1
 const INT16_SIZE = 2
@@ -57,11 +57,22 @@ module.exports = class Decoder {
   }
 
   readInt64() {
-    const lowBits = this.buffer.readInt32BE(this.offset + 4)
-    const highBits = this.buffer.readInt32BE(this.offset)
-    const value = new Long(lowBits, highBits)
+    const first = this.buffer[this.offset]
+    const last = this.buffer[this.offset + 7]
+
+    const low =
+      (first << 24) + // Overflow
+      this.buffer[this.offset + 1] * 2 ** 16 +
+      this.buffer[this.offset + 2] * 2 ** 8 +
+      this.buffer[this.offset + 3]
+    const high =
+      this.buffer[this.offset + 4] * 2 ** 24 +
+      this.buffer[this.offset + 5] * 2 ** 16 +
+      this.buffer[this.offset + 6] * 2 ** 8 +
+      last
     this.offset += INT64_SIZE
-    return value
+
+    return (BigInt(low) << 32n) + BigInt(high)
   }
 
   readString() {

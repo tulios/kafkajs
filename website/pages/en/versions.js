@@ -5,22 +5,20 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-const React = require('react');
+const React = require('react')
 
-const CompLibrary = require('../../core/CompLibrary');
+const CompLibrary = require('../../core/CompLibrary')
 
-const Container = CompLibrary.Container;
+const Container = CompLibrary.Container
 
-const CWD = process.cwd();
+const CWD = process.cwd()
 
-const versions = require(`${CWD}/versions.json`);
+const versions = require(`${CWD}/versions.json`)
 
 function Versions(props) {
-  const {config: siteConfig} = props;
-  const latestVersion = versions[0];
-  const repoUrl = `https://github.com/${siteConfig.organizationName}/${
-    siteConfig.projectName
-  }`;
+  const { config: siteConfig } = props
+  const latestVersion = versions[0]
+  const repoUrl = `https://github.com/${siteConfig.organizationName}/${siteConfig.projectName}`
   return (
     <div className="docMainWrapper wrapper">
       <Container className="mainContainer versionsContainer">
@@ -40,14 +38,13 @@ function Versions(props) {
                   <a
                     href={`${siteConfig.baseUrl}${siteConfig.docsUrl}/${
                       props.language ? props.language + '/' : ''
-                    }getting-started`}>
+                    }getting-started`}
+                  >
                     Documentation
                   </a>
                 </td>
                 <td>
-                  <a href={`${repoUrl}/releases/tag/v${latestVersion}`}>
-                    Release Notes
-                  </a>
+                  <a href={`${repoUrl}/releases/tag/v${latestVersion}`}>Release Notes</a>
                 </td>
               </tr>
             </tbody>
@@ -61,7 +58,8 @@ function Versions(props) {
                   <a
                     href={`${siteConfig.baseUrl}${siteConfig.docsUrl}/${
                       props.language ? props.language + '/' : ''
-                    }next/getting-started`}>
+                    }next/getting-started`}
+                  >
                     Documentation
                   </a>
                 </td>
@@ -86,28 +84,26 @@ function Versions(props) {
                         <a
                           href={`${siteConfig.baseUrl}${siteConfig.docsUrl}/${
                             props.language ? props.language + '/' : ''
-                          }${version}/getting-started`}>
+                          }${version}/getting-started`}
+                        >
                           Documentation
                         </a>
                       </td>
                       <td>
-                        <a href={`${repoUrl}/releases/tag/v${version}`}>
-                          Release Notes
-                        </a>
+                        <a href={`${repoUrl}/releases/tag/v${version}`}>Release Notes</a>
                       </td>
                     </tr>
-                  ),
+                  )
               )}
             </tbody>
           </table>
           <p>
-            You can find past versions of this project on{' '}
-            <a href={repoUrl}>GitHub</a>.
+            You can find past versions of this project on <a href={repoUrl}>GitHub</a>.
           </p>
         </div>
       </Container>
     </div>
-  );
+  )
 }
 
-module.exports = Versions;
+module.exports = Versions

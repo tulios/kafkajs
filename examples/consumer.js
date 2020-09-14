@@ -32,8 +32,21 @@ const run = async () => {
     //   console.log(batch)
     // },
     eachMessage: async ({ topic, partition, message }) => {
-      const prefix = `${topic}[${partition} | ${message.offset}] / ${message.timestamp}`
-      console.log(`- ${prefix} ${message.key}#${message.value}`)
+      console.log({
+        topic,
+        partition,
+        offset: message.offset,
+        timestamp: message.timestamp,
+        headers: Object.keys(message.headers).reduce(
+          (headers, key) => ({
+            ...headers,
+            [key]: message.headers[key].toString(),
+          }),
+          {}
+        ),
+        key: message.key.toString(),
+        value: message.value.toString(),
+      })
     },
   })
 }

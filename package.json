@@ -1,6 +1,6 @@
 {
   "name": "kafkajs",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "description": "A modern Apache Kafka client for node.js",
   "author": "Tulio Ornelas <ornelas.tulio@gmail.com>",
   "main": "index.js",
@@ -36,7 +36,7 @@
     "test:group:producer": "yarn jest --forceExit --testPathPattern 'src/producer/.*'",
     "test:group:consumer": "yarn jest --forceExit --testPathPattern 'src/consumer/.*.spec.js'",
     "test:group:others": "yarn jest --forceExit --testPathPattern 'src/(?!(broker|admin|producer|consumer)/).*'",
-    "test:group:oauthbearer": "OAUTHBEARER_ENABLED=1 yarn jest --forceExit --testNamePattern 'SASL OAUTHBEARER'",
+    "test:group:oauthbearer": "OAUTHBEARER_ENABLED=1 yarn jest --forceExit src/producer/index.spec.js src/broker/__tests__/connect.spec.js src/consumer/__tests__/connection.spec.js src/broker/__tests__/disconnect.spec.js src/admin/__tests__/connection.spec.js",
     "test:group:broker:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:broker --ci --maxWorkers=4 --no-watchman\"",
     "test:group:admin:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:admin --ci --maxWorkers=4 --no-watchman\"",
     "test:group:producer:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:producer --ci --maxWorkers=4 --no-watchman\"",
@@ -48,11 +48,11 @@
   "devDependencies": {
     "@types/node": "^12.0.8",
     "@typescript-eslint/typescript-estree": "^1.10.2",
-    "eslint": "^6.1.0",
+    "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.0.0",
     "eslint-config-standard": "^13.0.1",
     "eslint-plugin-import": "^2.18.2",
-    "eslint-plugin-node": "^9.1.0",
+    "eslint-plugin-node": "^11.0.0",
     "eslint-plugin-prettier": "^3.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.0",
@@ -69,12 +69,10 @@
     "mockdate": "^2.0.5",
     "prettier": "^1.18.2",
     "semver": "^6.2.0",
-    "typescript": "^3.5.3",
+    "typescript": "^3.8.3",
     "uuid": "^3.3.2"
   },
-  "dependencies": {
-    "long": "^4.0.0"
-  },
+  "dependencies": {},
   "lint-staged": {
     "*.js": [
       "prettier --write",

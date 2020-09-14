@@ -3,12 +3,12 @@ const {
   connectionOpts,
   saslSCRAM256ConnectionOpts,
   newLogger,
-  testIfKafka_1_1_0,
+  testIfKafkaAtLeast_1_1_0,
   describeIfOauthbearerDisabled,
   saslEntries,
 } = require('testHelpers')
 
-const Long = require('long')
+const Long = require('../../utils/long')
 const Broker = require('../index')
 
 describe('Broker > connect', () => {
@@ -149,7 +149,7 @@ describe('Broker > connect', () => {
           expect(broker.isConnected()).toEqual(true)
         })
 
-        testIfKafka_1_1_0(`authenticate with SASL ${e.name} if configured`, async () => {
+        testIfKafkaAtLeast_1_1_0(`authenticate with SASL ${e.name} if configured`, async () => {
           broker = new Broker({
             connection: createConnection(e.opts()),
             logger: newLogger(),
@@ -163,7 +163,7 @@ describe('Broker > connect', () => {
     })
 
     describeIfOauthbearerDisabled('when SASL SCRAM is configured', () => {
-      testIfKafka_1_1_0('parallel calls to connect using SCRAM', async () => {
+      testIfKafkaAtLeast_1_1_0('parallel calls to connect using SCRAM', async () => {
         broker = new Broker({
           connection: createConnection(saslSCRAM256ConnectionOpts()),
           logger: newLogger(),

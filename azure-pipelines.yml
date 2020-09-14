@@ -181,7 +181,6 @@ jobs:
 
   - job: test_oauthbearer
     displayName: 'OauthBearer'
-    condition: contains(variables['Build.SourceBranch'], 'refs/heads/master')
     dependsOn: lint
     variables:
       - name: test_retries
@@ -234,6 +233,38 @@ jobs:
         env:
           GH_TOKEN: $(GH_TOKEN)
 
+  - job: version_website
+    displayName: 'Version website'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'))
+    dependsOn:
+      - npm_release
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '10.x'
+      - bash: |
+          git config user.name "Website Build Bot"
+          git config user.email "<>"
+        displayName: git config
+      - bash: |
+          cd website
+          yarn install
+          yarn run version "$VERSION"
+        displayName: generate version
+        env:
+          VERSION: $(Build.SourceBranch)
+          GH_TOKEN: $(GH_TOKEN)
+      - bash: |
+          git add .
+          git commit -m "Versioned docs for $VERSION"
+          git push origin master
+        displayName: commit
+        env:
+          VERSION: $(Build.SourceBranch)
+
+####### Pre-release
   - job: beta_release_check
     displayName: 'Beta release check'
     condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/heads/master'))
@@ -294,6 +325,10 @@ jobs:
         displayName: 'Comment on PR'
         env:
           GH_TOKEN: $(GH_TOKEN)
+      - bash: ./scripts/pipeline/triggerCanaryAppPipeline.sh
+        displayName: Trigger canary app pipeline
+        env:
+          GH_TOKEN: $(GH_TOKEN)
       # - bash: echo "##vso[task.setvariable variable=RELEASE_TAG;isOutput=true]v$PRE_RELEASE_VERSION"
       #   displayName: Set tag name
       # - task: GithubRelease@0
@@ -304,6 +339,7 @@ jobs:
       #     tagSource: manual
       #     tag: '$(RELEASE_TAG)'
 
+####### Website
   - job: website_deploy
     displayName: 'Website'
     condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/heads/master'))

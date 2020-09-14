@@ -91,7 +91,7 @@ class Index extends React.Component {
         <Block layout="fourColumn">
           {[
             {
-              title: '(Almost) No Dependencies',
+              title: 'No Dependencies',
               content:
                 'Committed to staying lean and dependency free. 100% Javascript, with no native addons required.',
             },

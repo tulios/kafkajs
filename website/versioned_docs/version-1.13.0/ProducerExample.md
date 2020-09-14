@@ -1,4 +1,12 @@
-const fs = require('fs')
+---
+id: version-1.13.0-producer-example
+title: Producer
+original_id: producer-example
+---
+
+The following example assumes that you are using the local Kafka configuration described in [Running Kafka in Development](DockerLocal.md).
+
+```javascript
 const ip = require('ip')
 
 const { Kafka, CompressionTypes, logLevel } = require('../index')
@@ -7,18 +15,8 @@ const host = process.env.HOST_IP || ip.address()
 
 const kafka = new Kafka({
   logLevel: logLevel.DEBUG,
-  brokers: [`${host}:9094`, `${host}:9097`, `${host}:9100`],
+  brokers: [`${host}:9092`],
   clientId: 'example-producer',
-  ssl: {
-    servername: 'localhost',
-    rejectUnauthorized: false,
-    ca: [fs.readFileSync('./testHelpers/certs/cert-signed', 'utf-8')],
-  },
-  sasl: {
-    mechanism: 'plain',
-    username: 'test',
-    password: 'testtest',
-  },
 })
 
 const topic = 'topic-test'
@@ -28,9 +26,6 @@ const getRandomNumber = () => Math.round(Math.random(10) * 1000)
 const createMessage = num => ({
   key: `key-${num}`,
   value: `value-${num}-${new Date().toISOString()}`,
-  headers: {
-    'correlation-id': `${num}-${Date.now()}`,
-  },
 })
 
 const sendMessage = () => {
@@ -77,3 +72,8 @@ signalTraps.map(type => {
     }
   })
 })
+```
+
+## <a name="ssl-and-sasl-authentication"></a> SSL & SASL Authentication
+
+See the [Consumer Example](ConsumerExample.md#ssl-and-sasl-authentication).

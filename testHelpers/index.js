@@ -277,21 +277,24 @@ const addPartitions = async ({ topic, partitions }) => {
   })
 }
 
-const testIfKafkaVersion = version => (description, callback, testFn = test) => {
-  return semver.gte(semver.coerce(process.env.KAFKA_VERSION), semver.coerce(version))
-    ? testFn(description, callback)
-    : test.skip(description, callback)
+const testIfKafkaVersion = (version, versionComparator) => {
+  const scopedTest = (description, callback, testFn = test) => {
+    return versionComparator(semver.coerce(process.env.KAFKA_VERSION), semver.coerce(version))
+      ? testFn(description, callback)
+      : test.skip(description, callback)
+  }
+
+  scopedTest.only = (description, callback) => scopedTest(description, callback, test.only)
+
+  return scopedTest
 }
 
-const testIfKafka_0_11 = testIfKafkaVersion('0.11')
-testIfKafka_0_11.only = (description, callback) => {
-  return testIfKafka_0_11(description, callback, test.only)
-}
+const testIfKafkaVersionLTE = version => testIfKafkaVersion(version, semver.lte)
+const testIfKafkaVersionGTE = version => testIfKafkaVersion(version, semver.gte)
 
-const testIfKafka_1_1_0 = testIfKafkaVersion('1.1')
-testIfKafka_1_1_0.only = (description, callback) => {
-  return testIfKafka_1_1_0(description, callback, test.only)
-}
+const testIfKafkaAtMost_0_10 = testIfKafkaVersionLTE('0.10')
+const testIfKafkaAtLeast_0_11 = testIfKafkaVersionGTE('0.11')
+const testIfKafkaAtLeast_1_1_0 = testIfKafkaVersionGTE('1.1')
 
 const flakyTest = (description, callback, testFn = test) =>
   testFn(`[flaky] ${description}`, callback)
@@ -359,8 +362,9 @@ module.exports = {
   waitForMessages,
   waitForNextEvent,
   waitForConsumerToJoinGroup,
-  testIfKafka_0_11,
-  testIfKafka_1_1_0,
+  testIfKafkaAtMost_0_10,
+  testIfKafkaAtLeast_0_11,
+  testIfKafkaAtLeast_1_1_0,
   flakyTest,
   describeIfOauthbearerEnabled,
   describeIfOauthbearerDisabled,

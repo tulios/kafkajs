@@ -1,4 +1,4 @@
-const Long = require('long')
+const Long = require('../utils/long')
 const ABORTED_MESSAGE_KEY = Buffer.from([0, 0, 0, 0])
 
 const isAbortMarker = ({ key }) => {
