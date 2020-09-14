@@ -5,6 +5,7 @@ const Decoder = require('../protocol/decoder')
 const Encoder = require('../protocol/encoder')
 const { KafkaJSRequestTimeoutError } = require('../errors')
 const Connection = require('./connection')
+const { CONNECTED_STATUS } = require('./connectionStatus')
 
 describe('Network > Connection', () => {
   // According to RFC 5737:
@@ -177,31 +178,19 @@ describe('Network > Connection', () => {
         request: {
           apiKey: -1,
           apiVersion: 0,
-          expectResponse() {
-            return true
-          },
-          encode() {
-            return new Encoder()
-          },
+          expectResponse: () => true,
+          encode: () => new Encoder(),
         },
         response: {
-          decode() {
-            return {
-              clientSideThrottleTime,
-            }
-          },
-          parse() {
-            return {}
-          },
+          decode: () => ({ clientSideThrottleTime }),
+          parse: () => ({}),
         },
       }
 
       // Setup the socket connection to accept the request
       const correlationId = 383
-      connection.nextCorrelationId = () => {
-        return correlationId
-      }
-      connection.connected = true
+      connection.nextCorrelationId = () => correlationId
+      connection.connectionStatus = CONNECTED_STATUS.CONNECTED
       connection.socket = {
         write() {
           // Simulate a happy response
