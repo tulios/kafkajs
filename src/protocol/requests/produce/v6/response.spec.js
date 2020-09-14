@@ -19,6 +19,7 @@ describe('Protocol > Requests > Produce > v6', () => {
         },
       ],
       throttleTime: 0,
+      clientSideThrottleTime: 0,
     })
 
     await expect(parse(data)).resolves.toBeTruthy()
