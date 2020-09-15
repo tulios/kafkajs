@@ -38,8 +38,8 @@ const {
   waitForMessages,
 } = require('testHelpers')
 const createRetrier = require('../retry')
-
 const { KafkaJSNonRetriableError } = require('../errors')
+const sleep = require('../utils/sleep')
 
 describe('Producer', () => {
   let topicName, producer, consumer
@@ -79,8 +79,40 @@ describe('Producer', () => {
     )
   })
 
+  test('throws an error if the producer is not connected', async () => {
+    producer = createProducer({ cluster: createCluster(), logger: newLogger() })
+    await expect(
+      producer.send({
+        topic: topicName,
+        messages: [{ key: 'key', value: 'value' }],
+      })
+    ).rejects.toThrow(/The producer is disconnected/)
+  })
+
+  test('throws an error if the producer is disconnecting', async () => {
+    const cluster = createCluster()
+    const originalDisconnect = cluster.disconnect
+    cluster.disconnect = async () => {
+      await sleep(10)
+      return originalDisconnect.apply(cluster)
+    }
+
+    producer = createProducer({ cluster, logger: newLogger() })
+    await producer.connect()
+
+    producer.disconnect() // slow disconnect should give a disconnecting status
+    await expect(
+      producer.send({
+        topic: topicName,
+        messages: [{ key: 'key', value: 'value' }],
+      })
+    ).rejects.toThrow(/The producer is disconnecting/)
+    cluster.disconnect = originalDisconnect
+  })
+
   test('allows messages with a null value to support tombstones', async () => {
     producer = createProducer({ cluster: createCluster(), logger: newLogger() })
+    await producer.connect()
     await producer.send({ acks: 1, topic: topicName, messages: [{ foo: 'bar', value: null }] })
   })
 
