@@ -43,7 +43,7 @@ describe('Cluster > fetchTopicsOffset', () => {
   })
 
   afterEach(async () => {
-    await producer.disconnect()
+    producer && (await producer.disconnect())
     cluster && (await cluster.disconnect())
   })
 
