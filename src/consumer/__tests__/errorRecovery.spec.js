@@ -1,7 +1,7 @@
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
 const { MemberMetadata, MemberAssignment } = require('../../consumer/assignerProtocol')
-const { KafkaJSError } = require('../../errors')
+const { KafkaJSError, KafkaJSNumberOfRetriesExceeded } = require('../../errors')
 
 const sleep = require('../../utils/sleep')
 const {
@@ -159,7 +159,16 @@ describe('Consumer', () => {
   })
 
   it('recovers from retriable failures when "restartOnFailure" returns true', async () => {
-    const restartOnFailure = jest.fn(async () => true)
+    const errorMessage = '💣'
+    let receivedErrorMessage
+    const restartOnFailure = jest
+      .fn()
+      .mockImplementationOnce(async e => {
+        receivedErrorMessage = e.message
+        return true
+      })
+      .mockImplementationOnce(async () => false)
+
     consumer = createConsumer({
       cluster,
       groupId,
@@ -169,27 +178,23 @@ describe('Consumer', () => {
       maxBytesPerPartition: 180,
       retry: {
         retries: 0,
-        initialRetryTime: 1,
+        initialRetryTime: 10,
         restartOnFailure,
       },
     })
     const crashListener = jest.fn()
     consumer.on(consumer.events.CRASH, crashListener)
 
-    const error = new KafkaJSError(new Error('💣'), { retriable: true })
-
     await consumer.connect()
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-    const coordinator = await cluster.findGroupCoordinator({ groupId })
-    const original = coordinator.joinGroup
-    coordinator.joinGroup = async () => {
-      coordinator.joinGroup = original
-      throw error
+    const runOpts = {
+      eachMessage: async () => {
+        throw new Error(errorMessage)
+      },
     }
-
-    const eachMessage = jest.fn()
-    await consumer.run({ eachMessage })
+    jest.spyOn(runOpts, 'eachMessage')
+    await consumer.run(runOpts)
 
     const key = secureRandom()
     const message = { key: `key-${key}`, value: `value-${key}` }
@@ -200,13 +205,16 @@ describe('Consumer', () => {
       id: expect.any(Number),
       timestamp: expect.any(Number),
       type: 'consumer.crash',
-      payload: { error, groupId },
+      payload: { groupId, error: expect.any(KafkaJSError) },
     })
 
     await waitFor(() => restartOnFailure.mock.calls.length > 0)
-    expect(restartOnFailure).toHaveBeenCalledWith(error)
+    expect(restartOnFailure).toHaveBeenCalledWith(expect.any(KafkaJSNumberOfRetriesExceeded))
+    expect(receivedErrorMessage).toEqual(errorMessage)
 
-    await expect(waitFor(() => eachMessage.mock.calls.length)).resolves.toBeGreaterThanOrEqual(1)
+    await expect(
+      waitFor(() => runOpts.eachMessage.mock.calls.length)
+    ).resolves.toBeGreaterThanOrEqual(1)
   })
 
   it('allows the user to bail out of restarting on retriable errors', async () => {
