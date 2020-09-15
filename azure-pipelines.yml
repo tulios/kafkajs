@@ -148,6 +148,8 @@ jobs:
         displayName: docker-compose pull
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:consumer:ci
         displayName: test
+        env:
+          NODE_OPTIONS: --max-old-space-size=6655 # 6.5 GB (agents run on Standard_DS2_v2 - https://docs.microsoft.com/en-us/azure/virtual-machines/dv2-dsv2-series#dsv2-series)
       - task: PublishTestResults@2
         condition: succeededOrFailed()
         inputs:
