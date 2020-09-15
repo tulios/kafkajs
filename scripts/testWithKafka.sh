@@ -3,7 +3,7 @@
 testCommand="$1"
 extraArgs="$2"
 
-export COMPOSE_FILE=${COMPOSE_FILE:="docker-compose.2_3.yml"}
+export COMPOSE_FILE=${COMPOSE_FILE:="docker-compose.2_4.yml"}
 export KAFKAJS_DEBUG_PROTOCOL_BUFFERS=${KAFKAJS_DEBUG_PROTOCOL_BUFFERS:=1}
 
 find_container_id() {
@@ -37,7 +37,14 @@ $PWD/scripts/waitForKafka.js
 echo
 echo -e "Create SCRAM credentials"
 $PWD/scripts/createScramCredentials.sh
+
+set +x
 echo
+echo -e "Running tests with NODE_OPTIONS=${NODE_OPTIONS}"
+echo -e "Heap size in MB:"
+node -e "console.log((require('v8').getHeapStatistics().total_available_size / 1024 / 1024).toFixed(2))"
+echo
+set -x
 
 eval "${testCommand} ${extraArgs}"
 TEST_EXIT=$?
