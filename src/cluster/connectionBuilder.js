@@ -33,15 +33,11 @@ module.exports = ({
         port = Number(randomBroker.split(':')[1])
       }
 
-      if (typeof sasl === 'function') {
-        sasl = await sasl()
-      }
-
       return new Connection({
         host,
         port,
         rack,
-        sasl,
+        sasl: typeof sasl === 'function' ? await sasl() : sasl,
         ssl,
         clientId,
         socketFactory,
