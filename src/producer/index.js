@@ -1,4 +1,5 @@
 const createRetry = require('../retry')
+const { CONNECTION_STATUS } = require('../network/connectionStatus')
 const { DefaultPartitioner } = require('./partitioners/')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const createEosManager = require('./eosManager')
@@ -38,6 +39,7 @@ module.exports = ({
   transactionTimeout,
   instrumentationEmitter: rootInstrumentationEmitter,
 }) => {
+  let connectionStatus = CONNECTION_STATUS.DISCONNECTED
   retry = retry || { retries: idempotent ? Number.MAX_SAFE_INTEGER : 5 }
 
   if (idempotent && retry.retries < 1) {
@@ -70,6 +72,7 @@ module.exports = ({
     eosManager: idempotentEosManager,
     idempotent,
     retrier,
+    getConnectionStatus: () => connectionStatus,
   })
 
   let transactionalEosManager
@@ -147,6 +150,7 @@ module.exports = ({
       retrier,
       eosManager: transactionalEosManager,
       idempotent: true,
+      getConnectionStatus: () => connectionStatus,
     })
 
     const isActive = () => transactionalEosManager.isInTransaction() && !transactionDidEnd
@@ -217,6 +221,7 @@ module.exports = ({
      */
     connect: async () => {
       await cluster.connect()
+      connectionStatus = CONNECTION_STATUS.CONNECTED
       instrumentationEmitter.emit(CONNECT)
 
       if (idempotent && !idempotentEosManager.isInitialized()) {
@@ -227,7 +232,9 @@ module.exports = ({
      * @return {Promise}
      */
     disconnect: async () => {
+      connectionStatus = CONNECTION_STATUS.DISCONNECTING
       await cluster.disconnect()
+      connectionStatus = CONNECTION_STATUS.DISCONNECT
       instrumentationEmitter.emit(DISCONNECT)
     },
     isIdempotent: () => {

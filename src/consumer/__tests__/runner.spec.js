@@ -349,18 +349,18 @@ describe('Consumer > Runner', () => {
     })
 
     it('should ignore request errors from BufferedAsyncIterator on stopped consumer', async () => {
-      const rejectedRequest = new Promise((resolve, reject) => {
-        setTimeout(() => reject(new Error('Failed or manually rejected request')), 10)
-      })
+      const rejectedRequest = () =>
+        new Promise((resolve, reject) => {
+          setTimeout(() => reject(new Error('Failed or manually rejected request')), 10)
+        })
 
-      consumerGroup.fetch.mockImplementationOnce(
-        () =>
-          new Promise(resolve =>
-            setTimeout(() => {
-              resolve(BufferedAsyncIterator([rejectedRequest, Promise.resolve([])]))
-            }, 10)
-          )
-      )
+      consumerGroup.fetch.mockImplementationOnce(() => {
+        return new Promise(resolve =>
+          setTimeout(() => {
+            resolve(BufferedAsyncIterator([rejectedRequest(), Promise.resolve([])]))
+          }, 10)
+        )
+      })
 
       runner.scheduleFetch = jest.fn()
       await runner.start()

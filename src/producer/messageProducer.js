@@ -1,13 +1,35 @@
 const createSendMessages = require('./sendMessages')
-const { KafkaJSNonRetriableError } = require('../errors')
+const { KafkaJSError, KafkaJSNonRetriableError } = require('../errors')
+const { CONNECTION_STATUS } = require('../network/connectionStatus')
 
-module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrier }) => {
+module.exports = ({
+  logger,
+  cluster,
+  partitioner,
+  eosManager,
+  idempotent,
+  retrier,
+  getConnectionStatus,
+}) => {
   const sendMessages = createSendMessages({
     logger,
     cluster,
     partitioner,
     eosManager,
   })
+
+  const validateConnectionStatus = () => {
+    const connectionStatus = getConnectionStatus()
+
+    switch (connectionStatus) {
+      case CONNECTION_STATUS.DISCONNECTING:
+        throw new KafkaJSNonRetriableError(
+          `The producer is disconnecting; therefore, it can't safely accept messages anymore`
+        )
+      case CONNECTION_STATUS.DISCONNECTED:
+        throw new KafkaJSError('The producer is disconnected')
+    }
+  }
 
   /**
    * @typedef {Object} TopicMessages
@@ -56,6 +78,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrie
       }
     }
 
+    validateConnectionStatus()
     const mergedTopicMessages = topicMessages.reduce((merged, { topic, messages }) => {
       const index = merged.findIndex(({ topic: mergedTopic }) => topic === mergedTopic)
 
