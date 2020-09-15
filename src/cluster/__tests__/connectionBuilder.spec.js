@@ -49,7 +49,7 @@ describe('Cluster > ConnectionBuilder', () => {
       connections.push(`${host}:${port}`)
     }
 
-    expect(connections).toIncludeAnyMembers(brokers)
+    expect(connections).toIncludeSameMembers(brokers)
   })
 
   test('accepts overrides for host, port and rack', async () => {

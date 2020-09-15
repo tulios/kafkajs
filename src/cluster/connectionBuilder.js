@@ -21,13 +21,15 @@ module.exports = ({
   logger,
   instrumentationEmitter = null,
 }) => {
+  let index = 0
+
   return {
     build: async ({ host, port, rack } = {}) => {
       if (!host) {
         const list = typeof brokers === 'function' ? await brokers() : brokers
         validateBrokers(list)
 
-        const randomBroker = list[Math.floor(Math.random() * list.length)]
+        const randomBroker = list[index++ % list.length]
 
         host = randomBroker.split(':')[0]
         port = Number(randomBroker.split(':')[1])
