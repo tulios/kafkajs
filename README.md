@@ -45,7 +45,7 @@ KafkaJS is a modern [Apache Kafka](https://kafka.apache.org/) client for Node.js
 * Transactional support for producers and consumers
 * Message headers
 * GZIP compression
-  * Snappy and LZ4 compression through pluggable codecs
+  * Snappy, LZ4 and ZSTD compression through pluggable codecs
 * Plain, SSL and SASL_SSL implementations
 * Support for SCRAM-SHA-256 and SCRAM-SHA-512
 * Support for AWS IAM authentication
