@@ -9,8 +9,6 @@ const {
   events: { GROUP_JOIN, FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS },
 } = require('./instrumentationEvents')
 
-const isTestMode = process.env.NODE_ENV === 'test'
-
 const isRebalancing = e =>
   e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
 
@@ -155,9 +153,7 @@ module.exports = class Runner extends EventEmitter {
     this.running = false
 
     try {
-      if (!isTestMode) {
         await this.waitForConsumer()
-      }
       await this.consumerGroup.leave()
     } catch (e) {}
   }
