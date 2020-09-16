@@ -1,5 +1,6 @@
 jest.setTimeout(30000)
 
+const createAdmin = require('../../admin')
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
 const { Types } = require('../../protocol/message/compression')
@@ -21,7 +22,7 @@ const {
 } = require('testHelpers')
 
 describe('Consumer', () => {
-  let topicName, groupId, cluster, producer, consumer
+  let topicName, groupId, cluster, producer, consumer, admin
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
@@ -30,6 +31,11 @@ describe('Consumer', () => {
     await createTopic({ topic: topicName })
 
     cluster = createCluster()
+    admin = createAdmin({
+      cluster,
+      logger: newLogger(),
+    })
+
     producer = createProducer({
       cluster,
       createPartitioner: createModPartitioner,
@@ -45,6 +51,7 @@ describe('Consumer', () => {
   })
 
   afterEach(async () => {
+    admin && (await admin.disconnect())
     consumer && (await consumer.disconnect())
     producer && (await producer.disconnect())
   })
@@ -240,6 +247,60 @@ describe('Consumer', () => {
       expect.any(Function),
       expect.any(Function),
     ])
+  })
+
+  it('commits the last offsets processed before stopping', async () => {
+    jest.spyOn(cluster, 'refreshMetadataIfNecessary')
+
+    await Promise.all([admin.connect(), consumer.connect(), producer.connect()])
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    const messagesConsumed = []
+    consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+    await waitForConsumerToJoinGroup(consumer)
+
+    // stop the consumer right after processing the batch, the offsets should be
+    // committed in the end
+    consumer.on(consumer.events.END_BATCH_PROCESS, async () => {
+      await consumer.stop()
+    })
+
+    const messages = Array(100)
+      .fill()
+      .map(() => {
+        const value = secureRandom()
+        return { key: `key-${value}`, value: `value-${value}` }
+      })
+
+    await producer.send({ acks: 1, topic: topicName, messages })
+    await waitForMessages(messagesConsumed, { number: messages.length })
+
+    expect(cluster.refreshMetadataIfNecessary).toHaveBeenCalled()
+
+    expect(messagesConsumed[0]).toEqual({
+      topic: topicName,
+      partition: 0,
+      message: expect.objectContaining({
+        key: Buffer.from(messages[0].key),
+        value: Buffer.from(messages[0].value),
+        offset: '0',
+      }),
+    })
+
+    expect(messagesConsumed[messagesConsumed.length - 1]).toEqual({
+      topic: topicName,
+      partition: 0,
+      message: expect.objectContaining({
+        key: Buffer.from(messages[messages.length - 1].key),
+        value: Buffer.from(messages[messages.length - 1].value),
+        offset: '99',
+      }),
+    })
+
+    // check if all offsets are present
+    expect(messagesConsumed.map(m => m.message.offset)).toEqual(messages.map((_, i) => `${i}`))
+    const [partition] = await admin.fetchOffsets({ groupId, topic: topicName })
+    expect(partition.offset).toEqual('100') // check if offsets were committed
   })
 
   testIfKafkaAtLeast_0_11('consume messages with 0.11 format', async () => {
