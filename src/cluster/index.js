@@ -118,6 +118,15 @@ module.exports = class Cluster {
 
   /**
    * @public
+   * @param {String} host
+   * @param {Number} port
+   */
+  removeBroker({ host, port }) {
+    this.brokerPool.removeBroker({ host, port })
+  }
+
+  /**
+   * @public
    * @returns {Promise<null>}
    */
   async refreshMetadata() {
