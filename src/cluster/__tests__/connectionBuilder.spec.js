@@ -1,7 +1,7 @@
 const { newLogger } = require('testHelpers')
 const connectionBuilder = require('../connectionBuilder')
 const Connection = require('../../network/connection')
-const { KafkaJSConnectionError } = require('../../errors')
+const { KafkaJSConnectionError, KafkaJSNonRetriableError } = require('../../errors')
 
 describe('Cluster > ConnectionBuilder', () => {
   let builder
@@ -42,7 +42,7 @@ describe('Cluster > ConnectionBuilder', () => {
     expect(connection.socketFactory).toBe(socketFactory)
   })
 
-  test('when called without host and port picks random seed broker', async () => {
+  test('when called without host and port iterates throught the seed brokers', async () => {
     const connections = []
     for (let i = 0; i < brokers.length; i++) {
       const { host, port } = await builder.build()
@@ -76,7 +76,7 @@ describe('Cluster > ConnectionBuilder', () => {
         logger,
       }).build()
     ).rejects.toEqual(
-      new KafkaJSConnectionError('Failed to connect: expected brokers array and got nothing')
+      new KafkaJSNonRetriableError('Failed to connect: expected brokers array and got nothing')
     )
   })
 
@@ -93,7 +93,24 @@ describe('Cluster > ConnectionBuilder', () => {
         logger,
       }).build()
     ).rejects.toEqual(
-      new KafkaJSConnectionError('Failed to connect: expected brokers array and got nothing')
+      new KafkaJSNonRetriableError('Failed to connect: expected brokers array and got nothing')
+    )
+  })
+
+  it('throws an KafkaJSConnectionError if brokers is function and returning null', async () => {
+    await expect(
+      connectionBuilder({
+        socketFactory,
+        brokers: () => null,
+        ssl,
+        sasl,
+        clientId,
+        connectionTimeout,
+        retry,
+        logger,
+      }).build()
+    ).rejects.toEqual(
+      new KafkaJSConnectionError('Failed to connect: brokers function returned nothing')
     )
   })
 
@@ -131,24 +148,5 @@ describe('Cluster > ConnectionBuilder', () => {
     expect(connection).toBeInstanceOf(Connection)
     expect(connection.host).toBe('host.test')
     expect(connection.port).toBe(7777)
-  })
-
-  it('sasl can be async function that returns sasl parameters', async () => {
-    const builder = connectionBuilder({
-      socketFactory,
-      brokers,
-      sasl: async () => ({
-        username: 'user',
-      }),
-      ssl,
-      clientId,
-      connectionTimeout,
-      retry,
-      logger,
-    })
-
-    const connection = await builder.build()
-    expect(connection).toBeInstanceOf(Connection)
-    expect(connection.sasl).toEqual({ username: 'user' })
   })
 })

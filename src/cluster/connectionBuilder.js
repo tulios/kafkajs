@@ -1,10 +1,18 @@
 const Connection = require('../network/connection')
-const { KafkaJSConnectionError } = require('../errors')
+const { KafkaJSConnectionError, KafkaJSNonRetriableError } = require('../errors')
 
-const validateBrokers = brokers => {
-  if (!brokers || brokers.length === 0) {
-    throw new KafkaJSConnectionError(`Failed to connect: expected brokers array and got nothing`)
+const getBrokers = async brokers => {
+  const dynamic = typeof brokers === 'function'
+
+  const list = dynamic ? await brokers() : brokers
+
+  if (!list || list.length === 0) {
+    throw dynamic
+      ? new KafkaJSConnectionError(`Failed to connect: brokers function returned nothing`)
+      : new KafkaJSNonRetriableError(`Failed to connect: expected brokers array and got nothing`)
   }
+
+  return list
 }
 
 module.exports = ({
@@ -26,8 +34,7 @@ module.exports = ({
   return {
     build: async ({ host, port, rack } = {}) => {
       if (!host) {
-        const list = typeof brokers === 'function' ? await brokers() : brokers
-        validateBrokers(list)
+        const list = await getBrokers(brokers)
 
         const randomBroker = list[index++ % list.length]
 
@@ -39,7 +46,7 @@ module.exports = ({
         host,
         port,
         rack,
-        sasl: typeof sasl === 'function' ? await sasl() : sasl,
+        sasl,
         ssl,
         clientId,
         socketFactory,
