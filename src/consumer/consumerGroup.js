@@ -543,7 +543,11 @@ module.exports = class ConsumerGroup {
       await this.recoverFromOffsetOutOfRange(e)
     }
 
-    if (e.name === 'KafkaJSBrokerNotFound') {
+    if (e.name === 'KafkaJSConnectionClosedError') {
+      this.cluster.removeBroker({ host: e.host, port: e.port })
+    }
+
+    if (e.name === 'KafkaJSBrokerNotFound' || e.name === 'KafkaJSConnectionClosedError') {
       this.logger.debug(`${e.message}, refreshing metadata and retrying...`)
       await this.cluster.refreshMetadata()
     }

@@ -100,6 +100,10 @@ module.exports = ({
           topicMessages: mergedTopicMessages,
         })
       } catch (error) {
+        if (error.name === 'KafkaJSConnectionClosedError') {
+          cluster.removeBroker({ host: error.host, port: error.port })
+        }
+
         if (!cluster.isConnected()) {
           logger.debug(`Cluster has disconnected, reconnecting: ${error.message}`, {
             retryCount,
@@ -114,6 +118,7 @@ module.exports = ({
         // for this topic has increased in the meantime
         if (
           error.name === 'KafkaJSConnectionError' ||
+          error.name === 'KafkaJSConnectionClosedError' ||
           (error.name === 'KafkaJSProtocolError' && error.retriable)
         ) {
           logger.error(`Failed to send messages: ${error.message}`, { retryCount, retryTime })
