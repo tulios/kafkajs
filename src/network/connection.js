@@ -2,7 +2,7 @@ const createRetry = require('../retry')
 const createSocket = require('./socket')
 const createRequest = require('../protocol/request')
 const Decoder = require('../protocol/decoder')
-const { KafkaJSConnectionError } = require('../errors')
+const { KafkaJSConnectionError, KafkaJSConnectionClosedError } = require('../errors')
 const { INT_32_MAX_VALUE } = require('../constants')
 const getEnv = require('../env')
 const RequestQueue = require('./requestQueue')
@@ -130,18 +130,20 @@ module.exports = class Connection {
         clearTimeout(timeoutId)
 
         const wasConnected = this.connected
-        await this.disconnect()
 
         if (this.authHandlers) {
           this.authHandlers.onError()
         } else if (wasConnected) {
           this.logDebug('Kafka server has closed connection')
           this.rejectRequests(
-            new KafkaJSConnectionError('Closed connection', {
-              broker: `${this.host}:${this.port}`,
+            new KafkaJSConnectionClosedError('Closed connection', {
+              host: this.host,
+              port: this.port,
             })
           )
         }
+
+        await this.disconnect()
       }
 
       const onError = async e => {
