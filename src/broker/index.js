@@ -9,6 +9,7 @@ const shuffle = require('../utils/shuffle')
 
 const PRIVATE = {
   SHOULD_REAUTHENTICATE: Symbol('private:Broker:shouldReauthenticate'),
+  SEND_REQUEST: Symbol('private:Broker:sendRequest'),
 }
 
 /**
@@ -150,7 +151,7 @@ module.exports = class Broker {
     for (const candidateVersion of availableVersions) {
       try {
         const apiVersions = requests.ApiVersions.protocol({ version: candidateVersion })
-        response = await this.connection.send({
+        response = await this[PRIVATE.SEND_REQUEST]({
           ...apiVersions(),
           requestTimeout: this.connection.connectionTimeout,
         })
@@ -187,7 +188,7 @@ module.exports = class Broker {
   async metadata(topics = []) {
     const metadata = this.lookupRequest(apiKeys.Metadata, requests.Metadata)
     const shuffledTopics = shuffle(topics)
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       metadata({ topics: shuffledTopics, allowAutoTopicCreation: this.allowAutoTopicCreation })
     )
   }
@@ -250,7 +251,7 @@ module.exports = class Broker {
     compression = Compression.None,
   }) {
     const produce = this.lookupRequest(apiKeys.Produce, requests.Produce)
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       produce({
         acks,
         timeout,
@@ -328,7 +329,7 @@ module.exports = class Broker {
       []
     )
 
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       fetch({
         replicaId,
         isolationLevel,
@@ -350,7 +351,7 @@ module.exports = class Broker {
    */
   async heartbeat({ groupId, groupGenerationId, memberId }) {
     const heartbeat = this.lookupRequest(apiKeys.Heartbeat, requests.Heartbeat)
-    return await this.connection.send(heartbeat({ groupId, groupGenerationId, memberId }))
+    return await this[PRIVATE.SEND_REQUEST](heartbeat({ groupId, groupGenerationId, memberId }))
   }
 
   /**
@@ -362,7 +363,7 @@ module.exports = class Broker {
   async findGroupCoordinator({ groupId, coordinatorType }) {
     // TODO: validate groupId, mandatory
     const findCoordinator = this.lookupRequest(apiKeys.GroupCoordinator, requests.GroupCoordinator)
-    return await this.connection.send(findCoordinator({ groupId, coordinatorType }))
+    return await this[PRIVATE.SEND_REQUEST](findCoordinator({ groupId, coordinatorType }))
   }
 
   /**
@@ -388,7 +389,7 @@ module.exports = class Broker {
   }) {
     const joinGroup = this.lookupRequest(apiKeys.JoinGroup, requests.JoinGroup)
     const makeRequest = (assignedMemberId = memberId) =>
-      this.connection.send(
+      this[PRIVATE.SEND_REQUEST](
         joinGroup({
           groupId,
           sessionTimeout,
@@ -418,7 +419,7 @@ module.exports = class Broker {
    */
   async leaveGroup({ groupId, memberId }) {
     const leaveGroup = this.lookupRequest(apiKeys.LeaveGroup, requests.LeaveGroup)
-    return await this.connection.send(leaveGroup({ groupId, memberId }))
+    return await this[PRIVATE.SEND_REQUEST](leaveGroup({ groupId, memberId }))
   }
 
   /**
@@ -431,7 +432,7 @@ module.exports = class Broker {
    */
   async syncGroup({ groupId, generationId, memberId, groupAssignment }) {
     const syncGroup = this.lookupRequest(apiKeys.SyncGroup, requests.SyncGroup)
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       syncGroup({
         groupId,
         generationId,
@@ -460,7 +461,9 @@ module.exports = class Broker {
    */
   async listOffsets({ replicaId, isolationLevel, topics }) {
     const listOffsets = this.lookupRequest(apiKeys.ListOffsets, requests.ListOffsets)
-    const result = await this.connection.send(listOffsets({ replicaId, isolationLevel, topics }))
+    const result = await this[PRIVATE.SEND_REQUEST](
+      listOffsets({ replicaId, isolationLevel, topics })
+    )
 
     // ListOffsets >= v1 will return a single `offset` rather than an array of `offsets` (ListOffsets V0).
     // Normalize to just return `offset`.
@@ -493,7 +496,7 @@ module.exports = class Broker {
    */
   async offsetCommit({ groupId, groupGenerationId, memberId, retentionTime, topics }) {
     const offsetCommit = this.lookupRequest(apiKeys.OffsetCommit, requests.OffsetCommit)
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       offsetCommit({
         groupId,
         groupGenerationId,
@@ -520,7 +523,7 @@ module.exports = class Broker {
    */
   async offsetFetch({ groupId, topics }) {
     const offsetFetch = this.lookupRequest(apiKeys.OffsetFetch, requests.OffsetFetch)
-    return await this.connection.send(offsetFetch({ groupId, topics }))
+    return await this[PRIVATE.SEND_REQUEST](offsetFetch({ groupId, topics }))
   }
 
   /**
@@ -530,7 +533,7 @@ module.exports = class Broker {
    */
   async describeGroups({ groupIds }) {
     const describeGroups = this.lookupRequest(apiKeys.DescribeGroups, requests.DescribeGroups)
-    return await this.connection.send(describeGroups({ groupIds }))
+    return await this[PRIVATE.SEND_REQUEST](describeGroups({ groupIds }))
   }
 
   /**
@@ -551,7 +554,7 @@ module.exports = class Broker {
    */
   async createTopics({ topics, validateOnly = false, timeout = 5000 }) {
     const createTopics = this.lookupRequest(apiKeys.CreateTopics, requests.CreateTopics)
-    return await this.connection.send(createTopics({ topics, validateOnly, timeout }))
+    return await this[PRIVATE.SEND_REQUEST](createTopics({ topics, validateOnly, timeout }))
   }
 
   /**
@@ -572,7 +575,9 @@ module.exports = class Broker {
    */
   async createPartitions({ topicPartitions, validateOnly = false, timeout = 5000 }) {
     const createPartitions = this.lookupRequest(apiKeys.CreatePartitions, requests.CreatePartitions)
-    return await this.connection.send(createPartitions({ topicPartitions, validateOnly, timeout }))
+    return await this[PRIVATE.SEND_REQUEST](
+      createPartitions({ topicPartitions, validateOnly, timeout })
+    )
   }
 
   /**
@@ -585,7 +590,7 @@ module.exports = class Broker {
    */
   async deleteTopics({ topics, timeout = 5000 }) {
     const deleteTopics = this.lookupRequest(apiKeys.DeleteTopics, requests.DeleteTopics)
-    return await this.connection.send(deleteTopics({ topics, timeout }))
+    return await this[PRIVATE.SEND_REQUEST](deleteTopics({ topics, timeout }))
   }
 
   /**
@@ -601,7 +606,7 @@ module.exports = class Broker {
    */
   async describeConfigs({ resources, includeSynonyms = false }) {
     const describeConfigs = this.lookupRequest(apiKeys.DescribeConfigs, requests.DescribeConfigs)
-    return await this.connection.send(describeConfigs({ resources, includeSynonyms }))
+    return await this[PRIVATE.SEND_REQUEST](describeConfigs({ resources, includeSynonyms }))
   }
 
   /**
@@ -622,7 +627,7 @@ module.exports = class Broker {
    */
   async alterConfigs({ resources, validateOnly = false }) {
     const alterConfigs = this.lookupRequest(apiKeys.AlterConfigs, requests.AlterConfigs)
-    return await this.connection.send(alterConfigs({ resources, validateOnly }))
+    return await this[PRIVATE.SEND_REQUEST](alterConfigs({ resources, validateOnly }))
   }
 
   /**
@@ -636,7 +641,7 @@ module.exports = class Broker {
    */
   async initProducerId({ transactionalId, transactionTimeout }) {
     const initProducerId = this.lookupRequest(apiKeys.InitProducerId, requests.InitProducerId)
-    return await this.connection.send(initProducerId({ transactionalId, transactionTimeout }))
+    return await this[PRIVATE.SEND_REQUEST](initProducerId({ transactionalId, transactionTimeout }))
   }
 
   /**
@@ -661,7 +666,7 @@ module.exports = class Broker {
       apiKeys.AddPartitionsToTxn,
       requests.AddPartitionsToTxn
     )
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       addPartitionsToTxn({ transactionalId, producerId, producerEpoch, topics })
     )
   }
@@ -679,7 +684,7 @@ module.exports = class Broker {
    */
   async addOffsetsToTxn({ transactionalId, producerId, producerEpoch, groupId }) {
     const addOffsetsToTxn = this.lookupRequest(apiKeys.AddOffsetsToTxn, requests.AddOffsetsToTxn)
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       addOffsetsToTxn({ transactionalId, producerId, producerEpoch, groupId })
     )
   }
@@ -709,7 +714,7 @@ module.exports = class Broker {
    */
   async txnOffsetCommit({ transactionalId, groupId, producerId, producerEpoch, topics }) {
     const txnOffsetCommit = this.lookupRequest(apiKeys.TxnOffsetCommit, requests.TxnOffsetCommit)
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       txnOffsetCommit({ transactionalId, groupId, producerId, producerEpoch, topics })
     )
   }
@@ -727,7 +732,7 @@ module.exports = class Broker {
    */
   async endTxn({ transactionalId, producerId, producerEpoch, transactionResult }) {
     const endTxn = this.lookupRequest(apiKeys.EndTxn, requests.EndTxn)
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       endTxn({ transactionalId, producerId, producerEpoch, transactionResult })
     )
   }
@@ -739,7 +744,7 @@ module.exports = class Broker {
    */
   async listGroups() {
     const listGroups = this.lookupRequest(apiKeys.ListGroups, requests.ListGroups)
-    return await this.connection.send(listGroups())
+    return await this[PRIVATE.SEND_REQUEST](listGroups())
   }
 
   /**
@@ -750,10 +755,10 @@ module.exports = class Broker {
    */
   async deleteGroups(groupIds) {
     const deleteGroups = this.lookupRequest(apiKeys.DeleteGroups, requests.DeleteGroups)
-    return await this.connection.send(deleteGroups(groupIds))
+    return await this[PRIVATE.SEND_REQUEST](deleteGroups(groupIds))
   }
 
-  /***
+  /**
    * @private
    */
   [PRIVATE.SHOULD_REAUTHENTICATE]() {
@@ -772,5 +777,20 @@ module.exports = class Broker {
 
     const reauthenticateAt = millisSince.add(this.reauthenticationThreshold)
     return reauthenticateAt.greaterThanOrEqual(this.sessionLifetime)
+  }
+
+  /**
+   * @private
+   */
+  async [PRIVATE.SEND_REQUEST](protocolRequest) {
+    try {
+      return await this.connection.send(protocolRequest)
+    } catch (e) {
+      if (e.name === 'KafkaJSConnectionClosedError') {
+        await this.disconnect()
+      }
+
+      throw e
+    }
   }
 }
