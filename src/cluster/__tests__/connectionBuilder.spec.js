@@ -75,9 +75,7 @@ describe('Cluster > ConnectionBuilder', () => {
         retry,
         logger,
       }).build()
-    ).rejects.toEqual(
-      new KafkaJSNonRetriableError('Failed to connect: expected brokers array and got nothing')
-    )
+    ).rejects.toEqual(new KafkaJSNonRetriableError('Failed to connect: brokers array is empty'))
   })
 
   it('throws an exception if brokers is null', async () => {
@@ -93,7 +91,7 @@ describe('Cluster > ConnectionBuilder', () => {
         logger,
       }).build()
     ).rejects.toEqual(
-      new KafkaJSNonRetriableError('Failed to connect: expected brokers array and got nothing')
+      new KafkaJSNonRetriableError('Failed to connect: brokers parameter should not be null')
     )
   })
 
@@ -111,6 +109,25 @@ describe('Cluster > ConnectionBuilder', () => {
       }).build()
     ).rejects.toEqual(
       new KafkaJSConnectionError('Failed to connect: brokers function returned nothing')
+    )
+  })
+
+  it('throws an KafkaJSConnectionError if brokers is function crashes', async () => {
+    await expect(
+      connectionBuilder({
+        socketFactory,
+        brokers: () => {
+          throw new Error('oh a crash!')
+        },
+        ssl,
+        sasl,
+        clientId,
+        connectionTimeout,
+        retry,
+        logger,
+      }).build()
+    ).rejects.toEqual(
+      new KafkaJSConnectionError('Failed to connect: brokers function returned exception')
     )
   })
 
