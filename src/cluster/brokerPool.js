@@ -113,6 +113,26 @@ module.exports = class BrokerPool {
 
   /**
    * @public
+   * @param {String} host
+   * @param {Number} port
+   */
+  removeBroker({ host, port }) {
+    const removedBroker = values(this.brokers).find(
+      broker => broker.connection.host === host && broker.connection.port === port
+    )
+
+    if (removedBroker) {
+      delete this.brokers[removedBroker.nodeId]
+      this.metadataExpireAt = null
+
+      if (this.seedBroker.nodeId === removedBroker.nodeId) {
+        this.seedBroker = shuffle(values(this.brokers))[0]
+      }
+    }
+  }
+
+  /**
+   * @public
    * @param {Array<String>} topics
    * @returns {Promise<null>}
    */
