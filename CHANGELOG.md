@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2020-09-21
+### Added
+  - Support Produce v6 protocol #869
+  - Support Produce v7 protocol (support for ZSTD compression) #869
+  - Broker rediscovery with config.brokers parameter taking a callback function #854 #882
+
+### Changed
+  - Remove long.js in favor of BigInt #663
+  - Remove allowExperimentalV011 flag #847
+
+### Fixed
+  - Only commit offsets on eachMessage failures if autoCommit is enabled #866
+  - Fix consumer offsets not committed if consumer stop was invoked right after the batch process #874
+  - Remove brokers with closed connections from the brokers list #878
+  - Type improvements and fixes #877
+
 ## [1.13.0] - 2020-09-10
 ### Added
   - Add listGroup method to admin interface #645
