@@ -1,7 +1,7 @@
 const { newLogger } = require('testHelpers')
 const connectionBuilder = require('../connectionBuilder')
 const Connection = require('../../network/connection')
-const { KafkaJSNonRetriableError } = require('../../errors')
+const { KafkaJSConnectionError, KafkaJSNonRetriableError } = require('../../errors')
 
 describe('Cluster > ConnectionBuilder', () => {
   let builder
@@ -28,8 +28,8 @@ describe('Cluster > ConnectionBuilder', () => {
     })
   })
 
-  test('creates a new connection using a random broker', () => {
-    const connection = builder.build()
+  test('creates a new connection using a random broker', async () => {
+    const connection = await builder.build()
     expect(connection).toBeInstanceOf(Connection)
     expect(connection.host).toBeOneOf(['host.test', 'host2.test', 'host3.test'])
     expect(connection.port).toBeOneOf([7777, 7778, 7779])
@@ -42,18 +42,18 @@ describe('Cluster > ConnectionBuilder', () => {
     expect(connection.socketFactory).toBe(socketFactory)
   })
 
-  test('when called without host and port iterates throught the seed brokers', () => {
-    const connections = Array(brokers.length)
-      .fill()
-      .map(() => {
-        const { host, port } = builder.build()
-        return `${host}:${port}`
-      })
+  test('when called without host and port iterates throught the seed brokers', async () => {
+    const connections = []
+    for (let i = 0; i < brokers.length; i++) {
+      const { host, port } = await builder.build()
+      connections.push(`${host}:${port}`)
+    }
+
     expect(connections).toIncludeSameMembers(brokers)
   })
 
-  test('accepts overrides for host, port and rack', () => {
-    const connection = builder.build({
+  test('accepts overrides for host, port and rack', async () => {
+    const connection = await builder.build({
       host: 'host.another',
       port: 8888,
       rack: 'rack',
@@ -63,9 +63,9 @@ describe('Cluster > ConnectionBuilder', () => {
     expect(connection.rack).toEqual('rack')
   })
 
-  it('throws an exception if brokers list is empty', () => {
-    expect(() => {
-      builder = connectionBuilder({
+  it('throws an exception if brokers list is empty', async () => {
+    await expect(
+      connectionBuilder({
         socketFactory,
         brokers: [],
         ssl,
@@ -74,16 +74,13 @@ describe('Cluster > ConnectionBuilder', () => {
         connectionTimeout,
         retry,
         logger,
-      })
-    }).toThrow(
-      KafkaJSNonRetriableError,
-      'Failed to connect: expected brokers array and got nothing'
-    )
+      }).build()
+    ).rejects.toEqual(new KafkaJSNonRetriableError('Failed to connect: brokers array is empty'))
   })
 
-  it('throws an exception if brokers is null', () => {
-    expect(() => {
-      builder = connectionBuilder({
+  it('throws an exception if brokers is null', async () => {
+    await expect(
+      connectionBuilder({
         socketFactory,
         brokers: null,
         ssl,
@@ -92,10 +89,81 @@ describe('Cluster > ConnectionBuilder', () => {
         connectionTimeout,
         retry,
         logger,
-      })
-    }).toThrow(
-      KafkaJSNonRetriableError,
-      'Failed to connect: expected brokers array and got nothing'
+      }).build()
+    ).rejects.toEqual(
+      new KafkaJSNonRetriableError('Failed to connect: brokers parameter should not be null')
     )
+  })
+
+  it('throws an KafkaJSConnectionError if brokers is function and returning null', async () => {
+    await expect(
+      connectionBuilder({
+        socketFactory,
+        brokers: () => null,
+        ssl,
+        sasl,
+        clientId,
+        connectionTimeout,
+        retry,
+        logger,
+      }).build()
+    ).rejects.toEqual(
+      new KafkaJSConnectionError('Failed to connect: brokers function returned nothing')
+    )
+  })
+
+  it('throws an KafkaJSConnectionError if brokers is function crashes', async () => {
+    await expect(
+      connectionBuilder({
+        socketFactory,
+        brokers: () => {
+          throw new Error('oh a crash!')
+        },
+        ssl,
+        sasl,
+        clientId,
+        connectionTimeout,
+        retry,
+        logger,
+      }).build()
+    ).rejects.toEqual(
+      new KafkaJSConnectionError('Failed to connect: brokers function returned exception')
+    )
+  })
+
+  it('brokers can be function that returns array of host:port strings', async () => {
+    const builder = connectionBuilder({
+      socketFactory,
+      brokers: () => ['host.test:7777'],
+      ssl,
+      sasl,
+      clientId,
+      connectionTimeout,
+      retry,
+      logger,
+    })
+
+    const connection = await builder.build()
+    expect(connection).toBeInstanceOf(Connection)
+    expect(connection.host).toBe('host.test')
+    expect(connection.port).toBe(7777)
+  })
+
+  it('brokers can be async function that returns array of host:port strings', async () => {
+    const builder = connectionBuilder({
+      socketFactory,
+      brokers: async () => ['host.test:7777'],
+      ssl,
+      sasl,
+      clientId,
+      connectionTimeout,
+      retry,
+      logger,
+    })
+
+    const connection = await builder.build()
+    expect(connection).toBeInstanceOf(Connection)
+    expect(connection.host).toBe('host.test')
+    expect(connection.port).toBe(7777)
   })
 })

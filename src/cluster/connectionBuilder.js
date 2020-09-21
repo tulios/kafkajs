@@ -1,12 +1,5 @@
 const Connection = require('../network/connection')
-const { KafkaJSNonRetriableError } = require('../errors')
-const shuffle = require('../utils/shuffle')
-
-const validateBrokers = brokers => {
-  if (!brokers || brokers.length === 0) {
-    throw new KafkaJSNonRetriableError(`Failed to connect: expected brokers array and got nothing`)
-  }
-}
+const { KafkaJSConnectionError, KafkaJSNonRetriableError } = require('../errors')
 
 module.exports = ({
   socketFactory,
@@ -22,27 +15,53 @@ module.exports = ({
   logger,
   instrumentationEmitter = null,
 }) => {
-  validateBrokers(brokers)
-
-  const shuffledBrokers = shuffle(brokers)
-  const size = brokers.length
   let index = 0
 
+  const getBrokers = async () => {
+    if (!brokers) {
+      throw new KafkaJSNonRetriableError(`Failed to connect: brokers parameter should not be null`)
+    }
+
+    // static list
+    if (Array.isArray(brokers)) {
+      if (!brokers.length) {
+        throw new KafkaJSNonRetriableError(`Failed to connect: brokers array is empty`)
+      }
+      return brokers
+    }
+
+    // dynamic brokers
+    let list
+    try {
+      list = await brokers()
+    } catch (e) {
+      logger.error(e)
+      throw new KafkaJSConnectionError(`Failed to connect: brokers function returned exception`)
+    }
+
+    if (!list || list.length === 0) {
+      throw new KafkaJSConnectionError(`Failed to connect: brokers function returned nothing`)
+    }
+    return list
+  }
+
   return {
-    build: ({ host, port, rack } = {}) => {
+    build: async ({ host, port, rack } = {}) => {
       if (!host) {
-        // Always rotate the seed broker
-        const [seedHost, seedPort] = shuffledBrokers[index++ % size].split(':')
-        host = seedHost
-        port = Number(seedPort)
+        const list = await getBrokers()
+
+        const randomBroker = list[index++ % list.length]
+
+        host = randomBroker.split(':')[0]
+        port = Number(randomBroker.split(':')[1])
       }
 
       return new Connection({
         host,
         port,
         rack,
-        ssl,
         sasl,
+        ssl,
         clientId,
         socketFactory,
         connectionTimeout,
