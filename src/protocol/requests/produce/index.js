@@ -62,6 +62,38 @@ const versions = {
       response,
     }
   },
+  6: ({ acks, timeout, compression, topicData, transactionalId, producerId, producerEpoch }) => {
+    const request = require('./v6/request')
+    const response = require('./v6/response')
+    return {
+      request: request({
+        acks,
+        timeout,
+        compression,
+        topicData,
+        transactionalId,
+        producerId,
+        producerEpoch,
+      }),
+      response,
+    }
+  },
+  7: ({ acks, timeout, compression, topicData, transactionalId, producerId, producerEpoch }) => {
+    const request = require('./v7/request')
+    const response = require('./v7/response')
+    return {
+      request: request({
+        acks,
+        timeout,
+        compression,
+        topicData,
+        transactionalId,
+        producerId,
+        producerEpoch,
+      }),
+      response,
+    }
+  },
 }
 
 module.exports = {

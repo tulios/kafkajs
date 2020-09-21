@@ -1,4 +1,4 @@
-[![Build Status](https://dev.azure.com/tulios/kafkajs/_apis/build/status/tulios.kafkajs?branchName=master)](https://dev.azure.com/tulios/kafkajs/_build/latest?definitionId=2&branchName=master) [![npm version](https://badge.fury.io/js/kafkajs.svg)](https://badge.fury.io/js/kafkajs) [![Slack Channel](https://kafkajs-slackin.herokuapp.com/badge.svg)](https://kafkajs-slackin.herokuapp.com/)
+[![npm version](https://img.shields.io/npm/v/kafkajs?color=%2344cc11&label=stable)](https://www.npmjs.com/package/kafkajs) [![npm pre-release version](https://img.shields.io/npm/v/kafkajs/beta?label=pre-release)](https://www.npmjs.com/package/kafkajs) [![Build Status](https://dev.azure.com/tulios/kafkajs/_apis/build/status/tulios.kafkajs?branchName=master)](https://dev.azure.com/tulios/kafkajs/_build/latest?definitionId=2&branchName=master) [![Slack Channel](https://kafkajs-slackin.herokuapp.com/badge.svg)](https://kafkajs-slackin.herokuapp.com/)
 <br />
 <p align="center">
   <a href="https://kafka.js.org">
@@ -45,7 +45,7 @@ KafkaJS is a modern [Apache Kafka](https://kafka.apache.org/) client for Node.js
 * Transactional support for producers and consumers
 * Message headers
 * GZIP compression
-  * Snappy and LZ4 compression through pluggable codecs
+  * Snappy, LZ4 and ZSTD compression through pluggable codecs
 * Plain, SSL and SASL_SSL implementations
 * Support for SCRAM-SHA-256 and SCRAM-SHA-512
 * Support for AWS IAM authentication

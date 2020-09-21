@@ -114,6 +114,7 @@ describe('Broker > Produce', () => {
         },
       ],
       throttleTime: 0,
+      clientSideThrottleTime: 0,
     })
 
     const response2 = await broker2.produce({ topicData: createTopicData() })
@@ -133,6 +134,7 @@ describe('Broker > Produce', () => {
         },
       ],
       throttleTime: 0,
+      clientSideThrottleTime: 0,
     })
   })
 
@@ -178,6 +180,7 @@ describe('Broker > Produce', () => {
         },
       ],
       throttleTime: 0,
+      clientSideThrottleTime: 0,
     })
 
     const response2 = await broker2.produce({
@@ -201,6 +204,7 @@ describe('Broker > Produce', () => {
         },
       ],
       throttleTime: 0,
+      clientSideThrottleTime: 0,
     })
   })
 
@@ -243,6 +247,7 @@ describe('Broker > Produce', () => {
           },
         ],
         throttleTime: 0,
+        clientSideThrottleTime: 0,
       })
 
       const response2 = await broker2.produce({ topicData: createTopicData() })
@@ -262,6 +267,7 @@ describe('Broker > Produce', () => {
           },
         ],
         throttleTime: 0,
+        clientSideThrottleTime: 0,
       })
     })
 
@@ -333,6 +339,7 @@ describe('Broker > Produce', () => {
           },
         ],
         throttleTime: 0,
+        clientSideThrottleTime: 0,
       })
 
       // We have to syncronise the sequence number between the producer and the broker
@@ -401,6 +408,7 @@ describe('Broker > Produce', () => {
           },
         ],
         throttleTime: 0,
+        clientSideThrottleTime: 0,
       })
 
       const response2 = await broker2.produce({ topicData: createTopicData() })
@@ -420,6 +428,7 @@ describe('Broker > Produce', () => {
           },
         ],
         throttleTime: 0,
+        clientSideThrottleTime: 0,
       })
     })
 
@@ -465,6 +474,7 @@ describe('Broker > Produce', () => {
           },
         ],
         throttleTime: 0,
+        clientSideThrottleTime: 0,
       })
 
       const response2 = await broker2.produce({
@@ -488,6 +498,7 @@ describe('Broker > Produce', () => {
           },
         ],
         throttleTime: 0,
+        clientSideThrottleTime: 0,
       })
     })
 
@@ -553,6 +564,7 @@ describe('Broker > Produce', () => {
             },
           ],
           throttleTime: 0,
+          clientSideThrottleTime: 0,
         })
       }
     )

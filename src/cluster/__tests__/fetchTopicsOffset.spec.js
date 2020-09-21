@@ -38,10 +38,12 @@ describe('Cluster > fetchTopicsOffset', () => {
       createPartitioner: createModPartitioner,
     })
 
+    await producer.connect()
     await sendSampleMessages()
   })
 
   afterEach(async () => {
+    producer && (await producer.disconnect())
     cluster && (await cluster.disconnect())
   })
 

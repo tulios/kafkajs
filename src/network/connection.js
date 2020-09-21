@@ -2,10 +2,11 @@ const createRetry = require('../retry')
 const createSocket = require('./socket')
 const createRequest = require('../protocol/request')
 const Decoder = require('../protocol/decoder')
-const { KafkaJSConnectionError } = require('../errors')
+const { KafkaJSConnectionError, KafkaJSConnectionClosedError } = require('../errors')
 const { INT_32_MAX_VALUE } = require('../constants')
 const getEnv = require('../env')
 const RequestQueue = require('./requestQueue')
+const { CONNECTION_STATUS, CONNECTED_STATUS } = require('./connectionStatus')
 
 const requestInfo = ({ apiName, apiKey, apiVersion }) =>
   `${apiName}(key: ${apiKey}, version: ${apiVersion})`
@@ -68,7 +69,7 @@ module.exports = class Connection {
     this.bytesNeeded = Decoder.int32Size()
     this.chunks = []
 
-    this.connected = false
+    this.connectionStatus = CONNECTION_STATUS.DISCONNECTED
     this.correlationId = 0
     this.requestQueue = new RequestQueue({
       instrumentationEmitter,
@@ -98,6 +99,10 @@ module.exports = class Connection {
       this.shouldLogBuffers && env.KAFKAJS_DEBUG_EXTENDED_PROTOCOL_BUFFERS === '1'
   }
 
+  get connected() {
+    return CONNECTED_STATUS.includes(this.connectionStatus)
+  }
+
   /**
    * @public
    * @returns {Promise}
@@ -112,7 +117,7 @@ module.exports = class Connection {
 
       const onConnect = () => {
         clearTimeout(timeoutId)
-        this.connected = true
+        this.connectionStatus = CONNECTION_STATUS.CONNECTED
         this.requestQueue.scheduleRequestTimeoutCheck()
         resolve(true)
       }
@@ -125,18 +130,20 @@ module.exports = class Connection {
         clearTimeout(timeoutId)
 
         const wasConnected = this.connected
-        await this.disconnect()
 
         if (this.authHandlers) {
           this.authHandlers.onError()
         } else if (wasConnected) {
           this.logDebug('Kafka server has closed connection')
           this.rejectRequests(
-            new KafkaJSConnectionError('Closed connection', {
-              broker: `${this.host}:${this.port}`,
+            new KafkaJSConnectionClosedError('Closed connection', {
+              host: this.host,
+              port: this.port,
             })
           )
         }
+
+        await this.disconnect()
       }
 
       const onError = async e => {
@@ -199,9 +206,10 @@ module.exports = class Connection {
    * @returns {Promise}
    */
   async disconnect() {
+    this.connectionStatus = CONNECTION_STATUS.DISCONNECTING
     this.logDebug('disconnecting...')
-    this.connected = false
 
+    await this.requestQueue.waitForPendingRequests()
     this.requestQueue.destroy()
 
     if (this.socket) {
@@ -209,6 +217,7 @@ module.exports = class Connection {
       this.socket.unref()
     }
 
+    this.connectionStatus = CONNECTION_STATUS.DISCONNECTED
     this.logDebug('disconnected')
     return true
   }
@@ -317,8 +326,13 @@ module.exports = class Connection {
 
     try {
       const payloadDecoded = await response.decode(payload)
-      // KIP-219: If the response indicates that the client-side needs to throttle, do that.
+
+      /**
+       * @see KIP-219
+       * If the response indicates that the client-side needs to throttle, do that.
+       */
       this.requestQueue.maybeThrottle(payloadDecoded.clientSideThrottleTime)
+
       const data = await response.parse(payloadDecoded)
       const isFetchApi = entry.apiName === 'Fetch'
       this.logDebug(`Response ${requestInfo(entry)}`, {

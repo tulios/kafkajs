@@ -9,8 +9,6 @@ const {
   events: { GROUP_JOIN, FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS },
 } = require('./instrumentationEvents')
 
-const isTestMode = process.env.NODE_ENV === 'test'
-
 const isRebalancing = e =>
   e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
 
@@ -155,9 +153,7 @@ module.exports = class Runner extends EventEmitter {
     this.running = false
 
     try {
-      if (!isTestMode) {
-        await this.waitForConsumer()
-      }
+      await this.waitForConsumer()
       await this.consumerGroup.leave()
     } catch (e) {}
   }
@@ -167,10 +163,12 @@ module.exports = class Runner extends EventEmitter {
       if (!this.consuming) {
         return resolve()
       }
+
       this.logger.debug('waiting for consumer to finish...', {
         groupId: this.consumerGroup.groupId,
         memberId: this.consumerGroup.memberId,
       })
+
       this.once(CONSUMING_STOP, () => resolve())
     })
   }
@@ -399,10 +397,6 @@ module.exports = class Runner extends EventEmitter {
       throw error
     }
 
-    if (!this.running) {
-      return
-    }
-
     await this.autoCommitOffsets()
     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
   }
@@ -413,6 +407,7 @@ module.exports = class Runner extends EventEmitter {
         groupId: this.consumerGroup.groupId,
         memberId: this.consumerGroup.memberId,
       })
+
       return
     }
 
@@ -421,7 +416,10 @@ module.exports = class Runner extends EventEmitter {
         this.consuming = true
         await this.fetch()
         this.consuming = false
-        setImmediate(() => this.scheduleFetch())
+
+        if (this.running) {
+          setImmediate(() => this.scheduleFetch())
+        }
       } catch (e) {
         if (!this.running) {
           this.logger.debug('consumer not running, exiting', {

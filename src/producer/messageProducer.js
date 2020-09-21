@@ -1,13 +1,35 @@
 const createSendMessages = require('./sendMessages')
-const { KafkaJSNonRetriableError } = require('../errors')
+const { KafkaJSError, KafkaJSNonRetriableError } = require('../errors')
+const { CONNECTION_STATUS } = require('../network/connectionStatus')
 
-module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrier }) => {
+module.exports = ({
+  logger,
+  cluster,
+  partitioner,
+  eosManager,
+  idempotent,
+  retrier,
+  getConnectionStatus,
+}) => {
   const sendMessages = createSendMessages({
     logger,
     cluster,
     partitioner,
     eosManager,
   })
+
+  const validateConnectionStatus = () => {
+    const connectionStatus = getConnectionStatus()
+
+    switch (connectionStatus) {
+      case CONNECTION_STATUS.DISCONNECTING:
+        throw new KafkaJSNonRetriableError(
+          `The producer is disconnecting; therefore, it can't safely accept messages anymore`
+        )
+      case CONNECTION_STATUS.DISCONNECTED:
+        throw new KafkaJSError('The producer is disconnected')
+    }
+  }
 
   /**
    * @typedef {Object} TopicMessages
@@ -56,6 +78,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrie
       }
     }
 
+    validateConnectionStatus()
     const mergedTopicMessages = topicMessages.reduce((merged, { topic, messages }) => {
       const index = merged.findIndex(({ topic: mergedTopic }) => topic === mergedTopic)
 
@@ -77,6 +100,10 @@ module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrie
           topicMessages: mergedTopicMessages,
         })
       } catch (error) {
+        if (error.name === 'KafkaJSConnectionClosedError') {
+          cluster.removeBroker({ host: error.host, port: error.port })
+        }
+
         if (!cluster.isConnected()) {
           logger.debug(`Cluster has disconnected, reconnecting: ${error.message}`, {
             retryCount,
@@ -91,6 +118,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrie
         // for this topic has increased in the meantime
         if (
           error.name === 'KafkaJSConnectionError' ||
+          error.name === 'KafkaJSConnectionClosedError' ||
           (error.name === 'KafkaJSProtocolError' && error.retriable)
         ) {
           logger.error(`Failed to send messages: ${error.message}`, { retryCount, retryTime })

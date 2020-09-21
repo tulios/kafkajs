@@ -545,9 +545,16 @@ describe('Broker > Fetch', () => {
         connection: createConnection(newBrokerData),
         logger: newLogger(),
       })
+
       await broker.connect()
+      await producer.connect()
 
       retry = createRetrier({ retries: 5 })
+    })
+
+    afterEach(async () => {
+      await producer.disconnect()
+      await broker.disconnect()
     })
 
     testIfKafkaAtLeast_0_11(

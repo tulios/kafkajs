@@ -62,6 +62,15 @@ class KafkaJSConnectionError extends KafkaJSError {
   }
 }
 
+class KafkaJSConnectionClosedError extends KafkaJSConnectionError {
+  constructor(e, { host, port } = {}) {
+    super(e, { broker: `${host}:${port}` })
+    this.host = host
+    this.port = port
+    this.name = 'KafkaJSConnectionClosedError'
+  }
+}
+
 class KafkaJSRequestTimeoutError extends KafkaJSError {
   constructor(e, { broker, correlationId, createdAt, sentAt, pendingDuration } = {}) {
     super(e)
@@ -176,6 +185,7 @@ module.exports = {
   KafkaJSBrokerNotFound,
   KafkaJSProtocolError,
   KafkaJSConnectionError,
+  KafkaJSConnectionClosedError,
   KafkaJSRequestTimeoutError,
   KafkaJSSASLAuthenticationError,
   KafkaJSNumberOfRetriesExceeded,
