@@ -240,6 +240,36 @@
       },
       "version-1.12.0/version-1.12.0-transactions": {
         "title": "Transactions"
+      },
+      "version-1.13.0/version-1.13.0-admin": {
+        "title": "Admin Client"
+      },
+      "version-1.13.0/version-1.13.0-configuration": {
+        "title": "Client Configuration"
+      },
+      "version-1.13.0/version-1.13.0-consumer-example": {
+        "title": "Consumer"
+      },
+      "version-1.13.0/version-1.13.0-consuming": {
+        "title": "Consuming Messages"
+      },
+      "version-1.13.0/version-1.13.0-contribution-guide": {
+        "title": "Contributing"
+      },
+      "version-1.13.0/version-1.13.0-development-environment": {
+        "title": "Development Environment"
+      },
+      "version-1.13.0/version-1.13.0-running-kafka-in-development": {
+        "title": "Running Kafka in Development"
+      },
+      "version-1.13.0/version-1.13.0-instrumentation-events": {
+        "title": "Instrumentation Events"
+      },
+      "version-1.13.0/version-1.13.0-producer-example": {
+        "title": "Producer"
+      },
+      "version-1.13.0/version-1.13.0-producing": {
+        "title": "Producing Messages"
       }
     },
     "links": {
