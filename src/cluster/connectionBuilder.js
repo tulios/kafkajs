@@ -35,12 +35,17 @@ module.exports = ({
     try {
       list = await brokers()
     } catch (e) {
-      logger.error(e)
-      throw new KafkaJSConnectionError(`Failed to connect: brokers function returned exception`)
+      const wrappedError = new KafkaJSConnectionError(
+        `Failed to connect: "config.brokers" threw: ${e.message}`
+      )
+      wrappedError.stack = `${wrappedError.name}\n  Caused by: ${e.stack}`
+      throw wrappedError
     }
 
     if (!list || list.length === 0) {
-      throw new KafkaJSConnectionError(`Failed to connect: brokers function returned nothing`)
+      throw new KafkaJSConnectionError(
+        `Failed to connect: "config.brokers" returned void or empty array`
+      )
     }
     return list
   }
