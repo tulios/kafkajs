@@ -1,0 +1,142 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>A Brief Intro to Kafka · KafkaJS</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Kafka is a messaging system that safely moves data between systems. Depending on how each component is"/><meta name="docsearch:version" content="1.13.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="A Brief Intro to Kafka · KafkaJS"/><meta property="og:type" content="website"/><meta property="og:url" content="https://kafka.js.org/"/><meta property="og:description" content="Kafka is a messaging system that safely moves data between systems. Depending on how each component is"/><meta property="og:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"/><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-133751873-1"></script><script>
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments); }
+              gtag('js', new Date());
+              gtag('config', 'UA-133751873-1');
+            </script><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/kafkajs-logoV2.svg" alt="KafkaJS"/><h2 class="headerTitleWithLogo">KafkaJS</h2></a><a href="/versions"><h3>1.13.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/1.13.0/getting-started" target="_self">Docs</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class=""><a href="https://github.com/tulios/kafkajs" target="_self">GitHub</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Usage</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Usage</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/docs/1.13.0/introduction">Intro to Kafka</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/getting-started">Getting Started</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/configuration">Client Configuration</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/producing">Producing Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/transactions">Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/consuming">Consuming Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/admin">Admin Client</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/instrumentation-events">Instrumentation Events</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/custom-logger">Custom Logger</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/retry-detailed">Retry Mechanism Explained</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/faq">FAQ</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/pre-releases">Pre-releases</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Examples</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/1.13.0/running-kafka-in-development">Running Kafka in Development</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/producer-example">Producer</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/consumer-example">Consumer</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Developing KafkaJS</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/1.13.0/contribution-guide">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/development-environment">Development Environment</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/testing">Testing</a></li><li class="navListItem"><a class="navItem" href="/docs/1.13.0/development-resources">Resources</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/tulios/kafkajs/edit/master/docs/KafkaIntro.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">A Brief Intro to Kafka</h1></header><article><div><span><p>Kafka is a messaging system that safely moves data between systems. Depending on how each component is
+configured, it can act as a transport for real-time event tracking or as a replicated distributed database. Although it is commonly referred to as a queue, it is more accurate to say that it is something in between a queue and a database, with attributes and tradeoffs from both types of systems.</p>
+<h2><a class="anchor" aria-hidden="true" id="glossary"></a><a href="#glossary" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Glossary</h2>
+<table>
+<thead>
+<tr><th>Term</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>Cluster</td><td>The collective group of machines that Kafka is running on</td></tr>
+<tr><td>Broker</td><td>A single Kafka instance</td></tr>
+<tr><td>Topic</td><td>Topics are used to organize data. You always read and write to and from a particular topic</td></tr>
+<tr><td>Partition</td><td>Data in a topic is spread across a number of partitions. Each partition can be thought of as a log file, ordered by time. To guarantee that you read messages in the correct order, only one instance can read from a particular partition at a time.</td></tr>
+<tr><td>Producer</td><td>A client that writes data to one or more Kafka topics</td></tr>
+<tr><td>Consumer</td><td>A client that reads data from one or more Kafka topics</td></tr>
+<tr><td>Replica</td><td>Partitions are typically replicated to one or more brokers to avoid data loss.</td></tr>
+<tr><td>Leader</td><td>Although a partition may be replicated to one or more brokers, a single broker is elected the leader for that partition, and is the only one who is allowed to write or read to/from that partition</td></tr>
+<tr><td>Consumer group</td><td>A collective group of consumer instances, identified by a <a href="https://kafka.js.org/docs/consuming#a-name-options-a-options"><code>groupId</code></a>. In a horizontally scaled application, each instance would be a consumer and together they would act as a consumer group.</td></tr>
+<tr><td>Group Coordinator</td><td>An instance in the consumer group that is responsible for assigning partitions to consume from to the consumers in the group</td></tr>
+<tr><td>Offset</td><td>A certain point in the partition log. When a consumer has consumed a message, it &quot;commits&quot; that offset, meaning that it tells the broker that the consumer group has consumed that message. If the consumer group is restarted, it will restart from the highest committed offset.</td></tr>
+<tr><td>Rebalance</td><td>When a consumer has joined or left a consumer group (such as during booting or shutdown), the group has to &quot;rebalance&quot;, meaning that a group coordinator has to be chosen and partitions need to be assigned to the members of the consumer group.</td></tr>
+<tr><td>Heartbeat</td><td>The mechanism by which the cluster knows which consumers are alive. Every now and then (<a href="https://kafka.js.org/docs/consuming#a-name-options-a-options"><code>heartbeatInterval</code></a>), each consumer has to send a heartbeat request to the cluster leader. If one fails to do so for a certain period (<a href="https://kafka.js.org/docs/consuming#a-name-options-a-options"><code>sessionTimeout</code></a>), it is considered dead and will be removed from the consumer group, triggering a rebalance.</td></tr>
+</tbody>
+</table>
+<h2><a class="anchor" aria-hidden="true" id="message-formats"></a><a href="#message-formats" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Message Formats</h2>
+<p>Although we commonly refer to the data in topics as &quot;messages&quot;, there is no uniform shape that messages take. From Kafka's perspective, a message is just a key-value pair, where both key and value are just sequences of bytes. It is up to the data producer and the consumers to agree on a format. Commonly you will find plain-text schemaless messages in for example JSON, or binary formats with an enforced schema such as AVRO.</p>
+<h3><a class="anchor" aria-hidden="true" id="plain-text-json"></a><a href="#plain-text-json" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Plain-Text JSON</h3>
+<p>JSON needs no introduction. It's simple and easy to work with. The only thing we need to do is turn the message <code>Buffer</code> into a string and parse it, for example like this:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> producer.send({
+  topic,
+  <span class="hljs-attr">messages</span>: [{
+    <span class="hljs-attr">key</span>: <span class="hljs-string">'my-key'</span>,
+    <span class="hljs-attr">value</span>: <span class="hljs-built_in">JSON</span>.stringify({ <span class="hljs-attr">some</span>: <span class="hljs-string">'data'</span> })
+  }]
+})
+
+<span class="hljs-keyword">const</span> eachMessage = <span class="hljs-keyword">async</span> ({ <span class="hljs-comment">/*topic, partition,*/</span> message }) =&gt; {
+  <span class="hljs-comment">// From Kafka's perspective, both key and value are just bytes</span>
+  <span class="hljs-comment">// so we need to parse them.</span>
+  <span class="hljs-built_in">console</span>.log({
+    <span class="hljs-attr">key</span>: message.key.toString(),
+    <span class="hljs-attr">value</span>: <span class="hljs-built_in">JSON</span>.parse(message.value.toString())
+  })
+
+  <span class="hljs-comment">/**
+   * { key: 'my-key', value: { some: 'data' } }
+   */</span>
+}
+</code></pre>
+<p>The downside of using JSON is that it does not enforce any kind of schema, so after you have parsed the message, you have no way of knowing what fields are available and what types they have. The data producer makes no guarantees that fields will be present or that their types won't change, making it challenging and error-prone to work with.</p>
+<h3><a class="anchor" aria-hidden="true" id="avro"></a><a href="#avro" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>AVRO</h3>
+<p><a href="https://avro.apache.org/docs/current/">AVRO</a> is a data serialization system that turns your messages into a compact binary format according to a defined schema. This allows the consumer to know exactly what each message contains, and the producer to be aware when they are making potentially breaking changes to the schema.</p>
+<p>A schema in AVDL format looks something like this:</p>
+<pre><code class="hljs">@namespace(<span class="hljs-string">"com.kafkajs.fixtures"</span>)
+protocol SimpleProto {
+  <span class="hljs-built_in">record</span> Simple {
+    <span class="hljs-built_in">string</span> foo;
+  }
+}
+</code></pre>
+<p>In order to encode or decode a message, the producer or consumer needs to have access to the correct schema. This can be read directly from a file, or fetched from a central schema registry. If so, the message contains the id of the schema used to encode it, which can be used to find the corresponding schema.</p>
+<p>For NodeJS, this is commonly done using <a href="https://www.npmjs.com/package/@kafkajs/confluent-schema-registry">confluent-schema-registry</a>.</p>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-next button" href="/docs/1.13.0/getting-started"><span>Getting Started</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#glossary">Glossary</a></li><li><a href="#message-formats">Message Formats</a><ul class="toc-headings"><li><a href="#plain-text-json">Plain-Text JSON</a></li><li><a href="#avro">AVRO</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/kafkajs-logoV2.svg" alt="KafkaJS" width="52" height="84"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Usage</a></div><div><h5>Community</h5><a href="https://kafkajs-slackin.herokuapp.com">Slack</a></div><div><h5>More</h5><a href="https://github.com/tulios/kafkajs">GitHub</a><a class="github-button" href="https://github.com/tulios/kafkajs" data-icon="octicon-star" data-count-href="/tulios/kafkajs/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><a href="https://badge.fury.io/js/kafkajs"><img src="https://badge.fury.io/js/kafkajs.svg" alt="npm version" height="18"/></a></div></section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '7c56b6be30976fce32eb287e2af6cf06',
+                indexName: 'kafka_js',
+                inputSelector: '#search_input_react',
+                algoliaOptions: {}
+              });
+            </script></body></html>
