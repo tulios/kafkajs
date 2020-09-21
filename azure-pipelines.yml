@@ -253,14 +253,16 @@ jobs:
       - bash: |
           cd website
           yarn install
-          yarn run version "$VERSION"
+          DOC_VERSION=$(echo "$VERSION" | sed -e "s/^refs\/tags\/v//")
+          yarn run version "$DOC_VERSION"
         displayName: generate version
         env:
           VERSION: $(Build.SourceBranch)
           GH_TOKEN: $(GH_TOKEN)
       - bash: |
           git add .
-          git commit -m "Versioned docs for $VERSION"
+          DOC_VERSION=$(echo "$VERSION" | sed -e "s/^refs\/tags\/v//")
+          git commit -m "Versioned docs for $DOC_VERSION"
           git push origin master
         displayName: commit
         env:
