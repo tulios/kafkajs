@@ -71,8 +71,6 @@ let intervalId
 const run = async () => {
   await producer.connect()
   intervalId = setInterval(sendMessage, 3000)
-  // await sendMessage()
-  // await producer.disconnect()
 }
 
 run().catch(e => kafka.logger().error(`[example/producer] ${e.message}`, { stack: e.stack }))
