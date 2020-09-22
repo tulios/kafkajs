@@ -102,8 +102,7 @@ class CompressionWorkerPool extends EventEmitter {
 
     const sendPayload = worker => {
       worker[PRIVATE.WORKER_STATUS] = WORKER_STATUS.BUSY
-
-      worker.once('message', sharedBuffer => {
+      const onMessage = sharedBuffer => {
         try {
           const sharedArray = new Uint8Array(sharedBuffer)
 
@@ -114,16 +113,21 @@ class CompressionWorkerPool extends EventEmitter {
 
           success(Buffer.from(sharedArray.slice(1)))
         } finally {
+          worker.removeListener('error', onError)
           worker[PRIVATE.WORKER_STATUS] = WORKER_STATUS.AVAILABLE
           this.emit(INTERNAL_EVENTS.WORKER_AVAILABLE)
         }
-      })
+      }
 
-      worker.once('error', e => {
+      const onError = e => {
         failure(e)
+        worker.removeListener('message', onMessage)
         worker[PRIVATE.WORKER_STATUS] = WORKER_STATUS.AVAILABLE
         this.emit(INTERNAL_EVENTS.WORKER_AVAILABLE)
-      })
+      }
+
+      worker.once('message', onMessage)
+      worker.once('error', onError)
 
       worker.postMessage(payload)
     }
