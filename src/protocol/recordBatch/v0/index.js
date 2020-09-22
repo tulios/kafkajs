@@ -2,6 +2,10 @@ const Long = require('../../../utils/long')
 const Encoder = require('../../encoder')
 const crc32C = require('../crc32C')
 const { Types: Compression, lookupCodec } = require('../../message/compression')
+const {
+  getCompressionWorkerPool,
+  isCompressionWorkerPoolAvailable,
+} = require('../../message/compression/workerPool')
 
 const MAGIC_BYTE = 2
 const COMPRESSION_MASK = 3 // The lowest 3 bits
@@ -75,13 +79,22 @@ const RecordBatch = async ({
   return new Encoder().writeInt64(firstOffset).writeBytes(batch.buffer)
 }
 
-const compressRecords = async (compression, records) => {
-  const codec = lookupCodec(compression)
+const compressRecords = async (compressionType, records) => {
   const recordsEncoder = new Encoder()
-
   recordsEncoder.writeEncoderArray(records)
 
-  return codec.compress(recordsEncoder)
+  if (isCompressionWorkerPoolAvailable()) {
+    const compressionWorkerPool = getCompressionWorkerPool()
+    const workerCompressedRecords = await compressionWorkerPool.compress(
+      compressionType,
+      recordsEncoder.buffer
+    )
+    return workerCompressedRecords
+  }
+
+  const codec = lookupCodec(compressionType)
+  const compressedRecords = await codec.compress(recordsEncoder)
+  return compressedRecords
 }
 
 module.exports = {

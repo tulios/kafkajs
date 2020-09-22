@@ -3,6 +3,10 @@ const { KafkaJSPartialMessageError } = require('../../../errors')
 const { lookupCodecByRecordBatchAttributes } = require('../../message/compression')
 const RecordDecoder = require('../record/v0/decoder')
 const TimestampTypes = require('../../timestampTypes')
+const {
+  getCompressionWorkerPool,
+  isCompressionWorkerPoolAvailable,
+} = require('../../message/compression/workerPool')
 
 const TIMESTAMP_TYPE_FLAG_MASK = 0x8
 const TRANSACTIONAL_FLAG_MASK = 0x10
@@ -81,7 +85,7 @@ module.exports = async fetchDecoder => {
     timestampType,
   }
 
-  const records = await decodeRecords(codec, decoder, { ...recordContext, magicByte })
+  const records = await decodeRecords(attributes, codec, decoder, { ...recordContext, magicByte })
 
   return {
     ...recordContext,
@@ -89,7 +93,20 @@ module.exports = async fetchDecoder => {
   }
 }
 
-const decodeRecords = async (codec, recordsDecoder, recordContext) => {
+const decompressRecords = async (attributes, codec, compressedRecordsBuffer) => {
+  if (isCompressionWorkerPoolAvailable()) {
+    const compressionWorkerPool = getCompressionWorkerPool()
+    const decompressedRecords = await compressionWorkerPool.decompress(
+      attributes,
+      compressedRecordsBuffer
+    )
+    return decompressedRecords
+  }
+
+  return codec.decompress(compressedRecordsBuffer)
+}
+
+const decodeRecords = async (attributes, codec, recordsDecoder, recordContext) => {
   if (!codec) {
     return recordsDecoder.readArray(decoder => decodeRecord(decoder, recordContext))
   }
@@ -101,7 +118,12 @@ const decodeRecords = async (codec, recordsDecoder, recordContext) => {
   }
 
   const compressedRecordsBuffer = recordsDecoder.readAll()
-  const decompressedRecordBuffer = await codec.decompress(compressedRecordsBuffer)
+  const decompressedRecordBuffer = await decompressRecords(
+    attributes,
+    codec,
+    compressedRecordsBuffer
+  )
+
   const decompressedRecordDecoder = new Decoder(decompressedRecordBuffer)
   const records = new Array(length)
 

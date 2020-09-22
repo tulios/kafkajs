@@ -1,5 +1,6 @@
 const fs = require('fs')
 const ip = require('ip')
+const path = require('path')
 
 const { Kafka, CompressionTypes, logLevel } = require('../index')
 const PrettyConsoleLogger = require('./prettyConsoleLogger')
@@ -21,6 +22,12 @@ const kafka = new Kafka({
     username: 'test',
     password: 'testtest',
   },
+})
+
+kafka.startCompressionWorkerPool({
+  numberOfThreads: 1,
+  logLevel: logLevel.DEBUG,
+  logCreatorPath: path.join(__dirname, './prettyConsoleLogger'),
 })
 
 const topic = 'topic-test'
@@ -64,6 +71,8 @@ let intervalId
 const run = async () => {
   await producer.connect()
   intervalId = setInterval(sendMessage, 3000)
+  // await sendMessage()
+  // await producer.disconnect()
 }
 
 run().catch(e => kafka.logger().error(`[example/producer] ${e.message}`, { stack: e.stack }))

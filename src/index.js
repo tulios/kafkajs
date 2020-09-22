@@ -3,6 +3,8 @@ const {
   LEVELS: { INFO },
 } = require('./loggers')
 
+const { createCompressionWorkerPool } = require('./protocol/message/compression/workerPool')
+
 const InstrumentationEventEmitter = require('./instrumentation/emitter')
 const LoggerConsole = require('./loggers/console')
 const Cluster = require('./cluster')
@@ -46,8 +48,8 @@ module.exports = class Client {
       maxInFlightRequests = null,
       instrumentationEmitter = null,
       isolationLevel,
-    }) =>
-      new Cluster({
+    }) => {
+      return new Cluster({
         logger: this[PRIVATE.LOGGER],
         retry: this[PRIVATE.CLUSTER_RETRY],
         offsets: this[PRIVATE.OFFSETS],
@@ -67,6 +69,17 @@ module.exports = class Client {
         maxInFlightRequests,
         isolationLevel,
       })
+    }
+  }
+
+  startCompressionWorkerPool(args = {}) {
+    createCompressionWorkerPool({
+      enabled: false,
+      numberOfThreads: 1,
+      logLevel: INFO,
+      logLevelCreatorPath: null,
+      ...args,
+    })
   }
 
   /**
