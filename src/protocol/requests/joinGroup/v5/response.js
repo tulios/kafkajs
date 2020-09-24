@@ -47,6 +47,7 @@ const decode = async rawData => {
 
   return {
     throttleTime,
+    clientSideThrottleTime: throttleTime,
     errorCode,
     generationId: decoder.readInt32(),
     groupProtocol: decoder.readString(),

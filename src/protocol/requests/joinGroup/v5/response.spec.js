@@ -5,6 +5,7 @@ describe('Protocol > Requests > JoinGroup > v5', () => {
     const data = await decode(Buffer.from(require('../fixtures/v5_response.json')))
     expect(data).toEqual({
       throttleTime: 0,
+      clientSideThrottleTime: 0,
       errorCode: 0,
       generationId: 1,
       groupProtocol: 'AssignerName',

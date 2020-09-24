@@ -2,6 +2,9 @@ const Encoder = require('../../../encoder')
 const { JoinGroup: apiKey } = require('../../apiKeys')
 
 /**
+ * Version 5 adds group_instance_id to identify members across restarts.
+ * @see https://cwiki.apache.org/confluence/display/KAFKA/KIP-345%3A+Introduce+static+membership+protocol+to+reduce+consumer+rebalances
+ *
  * JoinGroup Request (Version: 5) => group_id session_timeout rebalance_timeout member_id group_instance_id protocol_type [group_protocols]
  *   group_id => STRING
  *   session_timeout => INT32

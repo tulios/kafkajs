@@ -1,6 +1,9 @@
 const requestV3 = require('../v3/request')
 
 /**
+ * Starting in version 4, the client needs to issue a second request to join group
+ * with assigned id.
+ *
  * JoinGroup Request (Version: 4) => group_id session_timeout rebalance_timeout member_id protocol_type [group_protocols]
  *   group_id => STRING
  *   session_timeout => INT32
