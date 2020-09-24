@@ -19,9 +19,15 @@ if (isMainThread) {
   )
 }
 
-const { logLevel, logCreatorPath } = workerData
-const logCreator = logCreatorPath ? require(logCreatorPath) : LoggerConsole
-const rootLogger = createLogger({ level: logLevel || INFO, logCreator })
+const { logLevel, setupScriptPath } = workerData
+const setupWorker = require(setupScriptPath)
+const { logCreator } = setupWorker()
+
+const rootLogger = createLogger({
+  level: logLevel || INFO,
+  logCreator: logCreator || LoggerConsole,
+})
+
 const threadLogger = rootLogger.namespace(`CompressionWorkerThread#${threadId}`)
 
 const decompressTask = async ({ attributes, compressedRecordsBuffer }) => {

@@ -37,15 +37,15 @@ class CompressionWorkerPool extends EventEmitter {
   /**
    * @param {number} numberOfThreads. Default 1
    * @param {logLevels} logLevel
-   * @param {string} logCreatorPath
+   * @param {string} setupScriptPath
    */
-  constructor({ numberOfThreads, logLevel, logCreatorPath } = {}) {
+  constructor({ numberOfThreads, logLevel, setupScriptPath } = {}) {
     super()
     this.numberOfThreads = numberOfThreads || 1
     this[PRIVATE.WORKERS] = []
 
     for (let i = 0; i < numberOfThreads; i++) {
-      this[PRIVATE.CREATE_WORKER]({ logLevel, logCreatorPath })
+      this[PRIVATE.CREATE_WORKER]({ logLevel, setupScriptPath })
     }
   }
 
@@ -140,9 +140,9 @@ class CompressionWorkerPool extends EventEmitter {
     execute()
   }
 
-  [PRIVATE.CREATE_WORKER]({ logLevel, logCreatorPath }) {
+  [PRIVATE.CREATE_WORKER]({ logLevel, setupScriptPath }) {
     const worker = new workerThreads.Worker(WORKER_PATH, {
-      workerData: { logLevel, logCreatorPath },
+      workerData: { logLevel, setupScriptPath },
     })
 
     worker.unref()
@@ -162,7 +162,7 @@ let compressionWorkerPool
 /**
  * @param {number} numberOfThreads
  * @param {logLevels} logLevel
- * @param {string} logCreatorPath
+ * @param {string} setupScriptPath
  */
 const createCompressionWorkerPool = args => {
   failIfWorkerThreadsNotAvailable()

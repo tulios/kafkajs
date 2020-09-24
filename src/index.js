@@ -72,12 +72,17 @@ module.exports = class Client {
     }
   }
 
+  /**
+   * @public
+   * @param {number} numberOfThreads
+   * @param {logLevels} logLevel
+   * @param {string} setupScriptPath
+   */
   startCompressionWorkerPool(args = {}) {
     createCompressionWorkerPool({
-      enabled: false,
       numberOfThreads: 1,
       logLevel: INFO,
-      logLevelCreatorPath: null,
+      setupScriptPath: null,
       ...args,
     })
   }
