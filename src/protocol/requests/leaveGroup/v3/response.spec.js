@@ -5,6 +5,7 @@ describe('Protocol > Requests > LeaveGroup > v3', () => {
     const data = await decode(Buffer.from(require('../fixtures/v3_response.json')))
     expect(data).toEqual({
       throttleTime: 0,
+      clientSideThrottleTime: 0,
       errorCode: 0,
       members: [
         {

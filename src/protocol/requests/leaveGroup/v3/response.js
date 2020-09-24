@@ -20,7 +20,7 @@ const decode = async rawData => {
 
   failIfVersionNotSupported(errorCode)
 
-  return { throttleTime, errorCode, members }
+  return { throttleTime, clientSideThrottleTime: throttleTime, errorCode, members }
 }
 
 const decodeMembers = decoder => ({
