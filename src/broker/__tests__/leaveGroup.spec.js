@@ -35,7 +35,7 @@ describe('Broker > LeaveGroup', () => {
   })
 
   test('request', async () => {
-    const { generationId, memberId, members } = await groupCoordinator.joinGroup({
+    const { generationId, memberId } = await groupCoordinator.joinGroup({
       groupId,
       sessionTimeout: 30000,
       rebalanceTimeout: 60000,
