@@ -9,9 +9,6 @@ const { KafkaJSNonRetriableError } = require('../errors')
 
 const { values, keys } = Object
 const eventNames = values(events)
-const eventKeys = keys(events)
-  .map(key => `producer.events.${key}`)
-  .join(', ')
 
 const { CONNECT, DISCONNECT } = events
 
@@ -84,7 +81,7 @@ module.exports = ({
    */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {
-      throw new KafkaJSNonRetriableError(`Event name should be one of ${eventKeys}`)
+      throw new KafkaJSNonRetriableError(`Event name should be one of ${eventNames.join(', ')}`)
     }
 
     return instrumentationEmitter.addListener(unwrapEvent(eventName), event => {
