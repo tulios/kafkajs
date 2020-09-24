@@ -1,3 +1,5 @@
+## GZIP
+
 Parameters:
 1000 * 100 messages
 16 workers
@@ -90,5 +92,64 @@ info:  ┃ [0] {
 info:  ┃ [1]   "timestamp": "2020-09-22T13:51:38.982Z",
 info:  ┃ [2]   "logger": "kafkajs",
 info:  ┃ [3]   "duration": 24725.4134
+info:  ┗ [4] }
+```
+
+## Snappy
+
+Parameters:
+1000 * 100 messages
+15 workers
+
+```
+info:  ┏ Finished single-threaded operations
+info:  ┃ [0] {
+info:  ┃ [1]   "timestamp": "2020-09-24T14:14:04.833Z",
+info:  ┃ [2]   "logger": "kafkajs",
+info:  ┃ [3]   "duration": 5597.4399
+info:  ┗ [4] }
+info:  ┏ Finished multi-threaded operations
+info:  ┃ [0] {
+info:  ┃ [1]   "timestamp": "2020-09-24T14:14:10.995Z",
+info:  ┃ [2]   "logger": "kafkajs",
+info:  ┃ [3]   "duration": 6026.1829
+info:  ┗ [4] }
+```
+
+Parameters
+10000 * 100 messages
+15 workers
+
+```
+info:  ┏ Finished single-threaded operations
+info:  ┃ [0] {
+info:  ┃ [1]   "timestamp": "2020-09-24T14:14:04.833Z",
+info:  ┃ [2]   "logger": "kafkajs",
+info:  ┃ [3]   "duration": 50358.5431
+info:  ┗ [4] }
+info:  ┏ Finished multi-threaded operations
+info:  ┃ [0] {
+info:  ┃ [1]   "timestamp": "2020-09-24T14:14:10.995Z",
+info:  ┃ [2]   "logger": "kafkajs",
+info:  ┃ [3]   "duration": 53925.259
+info:  ┗ [4] }
+```
+
+Parameters
+1000 * 1000 messages
+15 workers
+
+```
+info:  ┏ Finished single-threaded operations
+info:  ┃ [0] {
+info:  ┃ [1]   "timestamp": "2020-09-24T14:14:04.833Z",
+info:  ┃ [2]   "logger": "kafkajs",
+info:  ┃ [3]   "duration": 50358.5431
+info:  ┗ [4] }
+info:  ┏ Finished multi-threaded operations
+info:  ┃ [0] {
+info:  ┃ [1]   "timestamp": "2020-09-24T14:14:10.995Z",
+info:  ┃ [2]   "logger": "kafkajs",
+info:  ┃ [3]   "duration": 53925.259
 info:  ┗ [4] }
 ```

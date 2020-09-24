@@ -2,12 +2,14 @@ const fs = require('fs')
 const ip = require('ip')
 const os = require('os')
 const path = require('path')
+const SnappyCodec = require('kafkajs-snappy')
 
-const { Kafka, logLevel, CompressionTypes } = require('../index')
+const { Kafka, logLevel, CompressionTypes, CompressionCodecs } = require('../index')
 const sleep = require('../src/utils/sleep')
 const { waitFor } = require('../testHelpers')
 const PrettyConsoleLogger = require('./prettyConsoleLogger')
 
+CompressionCodecs[CompressionTypes.Snappy] = SnappyCodec
 const host = process.env.HOST_IP || ip.address()
 
 const kafka = new Kafka({
@@ -30,7 +32,9 @@ const kafka = new Kafka({
 const topicName = `topic-test-${Date.now()}`
 const producer = kafka.producer()
 
-const messagesToProduce = 100
+const messagesToProduce = 1000
+const numberOFMessages = 1000
+
 const bigText =
   'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse eu mi sit amet nisl vulputate sagittis ut at justo. Nullam porta eros sit amet nibh interdum fermentum. Aliquam dignissim felis in magna maximus, ut consectetur lacus malesuada. Ut velit lorem, pulvinar vitae elit vel, efficitur sagittis lorem. Nulla risus ex, mollis ut ante et, iaculis elementum turpis. Vivamus vitae ante nisi. Mauris tristique sit amet sapien vitae fermentum. Cras et luctus lacus. Phasellus sit amet quam et turpis tempor rutrum eu at nulla. Maecenas sit amet viverra purus, in posuere nibh. Pellentesque facilisis sit amet mi non volutpat. In interdum urna sit amet rhoncus gravida. Nulla non imperdiet orci. Vestibulum luctus sollicitudin pellentesque. Aliquam porttitor ut quam nec dapibus. Curabitur at dignissim tellus. Nunc blandit, tortor non aliquet ultrices, odio ligula pretium nibh, id faucibus urna eros eget lacus. Curabitur facilisis rutrum tristique. Vestibulum in tristique nunc. Nunc in lorem id nunc sodales viverra id sit amet massa. Aliquam nec suscipit magna. Nam gravida lectus at urna venenatis posuere. Maecenas pharetra neque sed tincidunt molestie. Fusce facilisis maximus eros id sodales. Quisque venenatis purus vel massa tempor fermentum. Phasellus congue pellentesque massa sit amet egestas. Duis neque metus, rutrum a aliquet et, venenatis sit amet ante. Proin sed felis id nibh consectetur mattis. Quisque tempor fermentum nisi non sollicitudin. Fusce posuere faucibus libero et semper. Aliquam ut nibh quis libero aliquet accumsan. Donec nec justo vel eros consequat volutpat in non dolor. Phasellus congue orci et enim porttitor, quis sagittis enim convallis. Praesent est diam, vestibulum eget mauris eleifend, tristique pharetra dui. Nunc imperdiet est non lectus consequat congue. Donec luctus enim mauris, sit amet consequat lectus malesuada non. Nulla vehicula auctor justo non luctus. Sed quis neque sodales, consectetur urna et, venenatis dui. Mauris magna turpis, ullamcorper nec velit convallis, sagittis tristique metus.'
 
@@ -49,14 +53,14 @@ const createMessage = num => ({
 })
 
 const sendMessage = topic => {
-  const messages = Array(10000)
+  const messages = Array(numberOFMessages)
     .fill()
     .map((_, i) => createMessage(i))
 
   return producer
     .send({
       topic,
-      compression: CompressionTypes.GZIP,
+      compression: CompressionTypes.Snappy,
       messages,
     })
     .catch(e => kafka.logger().error(`[example/producer] ${e.message}`, { stack: e.stack }))
@@ -80,6 +84,14 @@ const consumeMessages = async (consumer, expectedNumberOfMessages) => {
 }
 
 let singleThreadConsumer, multiThreadConsumer, admin
+
+const disconnect = async () => {
+  await admin.disconnect()
+  await singleThreadConsumer.disconnect()
+  await multiThreadConsumer.disconnect()
+  await producer.disconnect()
+}
+
 const run = async () => {
   admin = kafka.admin()
   await admin.connect()
@@ -115,7 +127,7 @@ const run = async () => {
   kafka.startCompressionWorkerPool({
     numberOfThreads: os.cpus().length - 1,
     // logLevel: logLevel.DEBUG,
-    logCreatorPath: path.join(__dirname, './prettyConsoleLogger'),
+    setupScriptPath: path.join(__dirname, './workerSetup'),
   })
 
   await sleep(100)
@@ -135,6 +147,8 @@ const run = async () => {
   kafka.logger().info('Finished multi-threaded operations', {
     duration: multiThreadDuration[0] * 1000 + multiThreadDuration[1] / 1000000,
   })
+
+  await disconnect()
 }
 
 run().catch(e => kafka.logger().error(`[example/consumer] ${e.message}`, { stack: e.stack }))
@@ -147,10 +161,7 @@ errorTypes.map(type => {
     try {
       kafka.logger().info(`process.on ${type}`)
       kafka.logger().error(e.message, { stack: e.stack })
-      await admin.disconnect()
-      await singleThreadConsumer.disconnect()
-      await multiThreadConsumer.disconnect()
-      await producer.disconnect()
+      await disconnect()
       process.exit(0)
     } catch (_) {
       process.exit(1)
@@ -162,9 +173,6 @@ signalTraps.map(type => {
   process.once(type, async () => {
     console.log('')
     kafka.logger().info('[example/consumer] disconnecting')
-    await admin.disconnect()
-    await singleThreadConsumer.disconnect()
-    await multiThreadConsumer.disconnect()
-    await producer.disconnect()
+    await disconnect()
   })
 })
