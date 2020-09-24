@@ -4,6 +4,7 @@ const { parse } = require('../v3/response')
 /**
  * Starting in version 4, on quota violation, brokers send out responses
  * before throttling.
+ * @see https://cwiki.apache.org/confluence/display/KAFKA/KIP-345%3A+Introduce+static+membership+protocol+to+reduce+consumer+rebalances
  *
  * OffsetCommit Response (Version: 4) => throttle_time_ms [responses]
  *   throttle_time_ms => INT32
