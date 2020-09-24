@@ -257,14 +257,10 @@ module.exports = ({
 
       await disconnect()
 
-      instrumentationEmitter.emit(CRASH, {
-        error: e,
-        groupId,
-      })
-
-      if (e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true) {
-        const shouldRestart =
-          !retry ||
+      const isErrorRetriable = e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true
+      const shouldRestart =
+        isErrorRetriable &&
+        (!retry ||
           !retry.restartOnFailure ||
           (await retry.restartOnFailure(e).catch(error => {
             logger.error(
@@ -277,18 +273,23 @@ module.exports = ({
             )
 
             return true
-          }))
+          })))
 
-        if (shouldRestart) {
-          const retryTime = e.retryTime || (retry && retry.initialRetryTime) || initialRetryTime
-          logger.error(`Restarting the consumer in ${retryTime}ms`, {
-            retryCount: e.retryCount,
-            retryTime,
-            groupId,
-          })
+      instrumentationEmitter.emit(CRASH, {
+        error: e,
+        groupId,
+        restart: shouldRestart,
+      })
 
-          setTimeout(() => restart(onCrash), retryTime)
-        }
+      if (shouldRestart) {
+        const retryTime = e.retryTime || (retry && retry.initialRetryTime) || initialRetryTime
+        logger.error(`Restarting the consumer in ${retryTime}ms`, {
+          retryCount: e.retryCount,
+          retryTime,
+          groupId,
+        })
+
+        setTimeout(() => restart(onCrash), retryTime)
       }
     }
 
