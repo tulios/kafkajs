@@ -321,7 +321,34 @@ describe('Consumer > Instrumentation Events', () => {
       id: expect.any(Number),
       timestamp: expect.any(Number),
       type: 'consumer.crash',
-      payload: { error, groupId },
+      payload: { error, groupId, restart: true },
+    })
+  })
+
+  it('emits crash events with restart=false', async () => {
+    const crashListener = jest.fn()
+    const error = new Error('💣💥')
+    const eachMessage = jest.fn().mockImplementationOnce(() => {
+      throw error
+    })
+
+    consumer = createTestConsumer({ retry: { retries: 0, restartOnFailure: async () => false } })
+    consumer.on(consumer.events.CRASH, crashListener)
+
+    await consumer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.run({ eachMessage })
+
+    await producer.connect()
+    await producer.send({ acks: 1, topic: topicName, messages: [message] })
+
+    await waitFor(() => crashListener.mock.calls.length > 0)
+
+    expect(crashListener).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.crash',
+      payload: { error, groupId, restart: false },
     })
   })
 
