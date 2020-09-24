@@ -90,6 +90,6 @@ describe('Broker > Heartbeat', () => {
       memberId,
     })
 
-    expect(response).toEqual({ throttleTime: 0, errorCode: 0 })
+    expect(response).toEqual({ throttleTime: 0, clientSideThrottleTime: 0, errorCode: 0 })
   })
 })
