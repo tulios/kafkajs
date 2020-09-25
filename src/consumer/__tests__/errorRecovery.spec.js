@@ -152,7 +152,7 @@ describe('Consumer', () => {
       id: expect.any(Number),
       timestamp: expect.any(Number),
       type: 'consumer.crash',
-      payload: { error, groupId },
+      payload: { error, groupId, restart: true },
     })
 
     await expect(waitFor(() => eachMessage.mock.calls.length)).resolves.toBe(1)
@@ -205,7 +205,7 @@ describe('Consumer', () => {
       id: expect.any(Number),
       timestamp: expect.any(Number),
       type: 'consumer.crash',
-      payload: { groupId, error: expect.any(KafkaJSError) },
+      payload: { groupId, error: expect.any(KafkaJSError), restart: true },
     })
 
     await waitFor(() => restartOnFailure.mock.calls.length > 0)
