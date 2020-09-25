@@ -60,6 +60,11 @@ describe('Broker > SyncGroup', () => {
       groupAssignment,
     })
 
-    expect(response).toEqual({ throttleTime: 0, errorCode: 0, memberAssignment })
+    expect(response).toEqual({
+      throttleTime: 0,
+      clientSideThrottleTime: 0,
+      errorCode: 0,
+      memberAssignment,
+    })
   })
 })
