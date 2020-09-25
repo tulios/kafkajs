@@ -3,8 +3,8 @@
 import * as tls from 'tls'
 import * as net from 'net'
 
-type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
-type XOR<T, U> = (T | U) extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
+type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never }
+type XOR<T, U> = T | U extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U
 
 export class Kafka {
   constructor(config: KafkaConfig)
@@ -14,7 +14,7 @@ export class Kafka {
   logger(): Logger
 }
 
-export type BrokersFunction = () => string[] | Promise<string[]>;
+export type BrokersFunction = () => string[] | Promise<string[]>
 
 export interface KafkaConfig {
   brokers: string[] | BrokersFunction
@@ -41,8 +41,8 @@ export type ISocketFactory = (
 
 export type SASLMechanism = 'plain' | 'scram-sha-256' | 'scram-sha-512' | 'aws' | 'oauthbearer'
 
-export interface OauthbearerProviderResponse { 
-  value: string 
+export interface OauthbearerProviderResponse {
+  value: string
 }
 
 export interface SASLOptions {
@@ -143,16 +143,18 @@ export type Cluster = {
   findGroupCoordinatorMetadata(group: { groupId: string }): Promise<CoordinatorMetadata>
   defaultOffset(config: { fromBeginning: boolean }): number
   fetchTopicsOffset(
-    topics: Array<{
-      topic: string
-      partitions: Array<{ partition: number }>
-    } & XOR<{ fromBeginning: boolean }, { fromTimestamp: number }>>
+    topics: Array<
+      {
+        topic: string
+        partitions: Array<{ partition: number }>
+      } & XOR<{ fromBeginning: boolean }, { fromTimestamp: number }>
+    >
   ): Promise<{ topic: string; partitions: Array<{ partition: number; offset: string }> }>
 }
 
 export type Assignment = { [topic: string]: number[] }
 
-export type GroupMember = { memberId: string, memberMetadata: Buffer }
+export type GroupMember = { memberId: string; memberMetadata: Buffer }
 
 export type GroupMemberAssignment = { memberId: string; memberAssignment: Buffer }
 
@@ -161,10 +163,7 @@ export type GroupState = { name: string; metadata: Buffer }
 export type Assigner = {
   name: string
   version: number
-  assign(group: {
-    members: GroupMember[]
-    topics: string[]
-  }): Promise<GroupMemberAssignment[]>
+  assign(group: { members: GroupMember[]; topics: string[] }): Promise<GroupMemberAssignment[]>
   protocol(subscription: { topics: string[] }): GroupState
 }
 
@@ -324,22 +323,22 @@ export type Admin = {
     groupId: string
     topic: string
   }): Promise<Array<SeekEntry & { metadata: string | null }>>
-  fetchTopicOffsets(
-    topic: string
-  ): Promise<Array<SeekEntry & { high: string; low: string }>>
-  fetchTopicOffsetsByTimestamp(
-    topic: string, timestamp?: number
-  ): Promise<Array<SeekEntry>>
-  describeCluster(): Promise<{ brokers: Array<{ nodeId: number; host: string; port: number }>; controller: number | null, clusterId: string }>
+  fetchTopicOffsets(topic: string): Promise<Array<SeekEntry & { high: string; low: string }>>
+  fetchTopicOffsetsByTimestamp(topic: string, timestamp?: number): Promise<Array<SeekEntry>>
+  describeCluster(): Promise<{
+    brokers: Array<{ nodeId: number; host: string; port: number }>
+    controller: number | null
+    clusterId: string
+  }>
   setOffsets(options: { groupId: string; topic: string; partitions: SeekEntry[] }): Promise<void>
   resetOffsets(options: { groupId: string; topic: string; earliest: boolean }): Promise<void>
   describeConfigs(configs: {
     resources: ResourceConfigQuery[]
     includeSynonyms: boolean
   }): Promise<DescribeConfigResponse>
-  alterConfigs(configs: { validateOnly: boolean; resources: IResourceConfig[] }): Promise<any>,
-  listGroups(): Promise<{ groups: GroupOverview[] }>,
-  deleteGroups(groupIds: string[]): Promise<DeleteGroupsResult[]>,
+  alterConfigs(configs: { validateOnly: boolean; resources: IResourceConfig[] }): Promise<any>
+  listGroups(): Promise<{ groups: GroupOverview[] }>
+  deleteGroups(groupIds: string[]): Promise<DeleteGroupsResult[]>
   describeGroups(groupIds: string[]): Promise<GroupDescriptions>
   logger(): Logger
   on(
@@ -411,7 +410,7 @@ export type Broker = {
   metadata(
     topics: string[]
   ): Promise<{
-    brokers: Array<{ nodeId: number; host: string; port: number, rack?: string }>
+    brokers: Array<{ nodeId: number; host: string; port: number; rack?: string }>
     topicMetadata: Array<{
       topicErrorCode: number
       topic: number
@@ -426,13 +425,16 @@ export type Broker = {
     topics: Array<{ topic: string; partitions: Array<{ partition: number; offset: string }> }>
   }): Promise<any>
   fetch(request: {
-    replicaId?: number,
-    isolationLevel?: number,
-    maxWaitTime?: number,
-    minBytes?: number,
-    maxBytes?: number,
-    topics: Array<{ topic: string, partitions: Array<{ partition: number; fetchOffset: string; maxBytes: number }> }>,
-    rackId?: string,
+    replicaId?: number
+    isolationLevel?: number
+    maxWaitTime?: number
+    minBytes?: number
+    maxBytes?: number
+    topics: Array<{
+      topic: string
+      partitions: Array<{ partition: number; fetchOffset: string; maxBytes: number }>
+    }>
+    rackId?: string
   }): Promise<any>
 }
 
@@ -575,12 +577,12 @@ export type Batch = {
 }
 
 export type GroupOverview = {
-  groupId: string,
+  groupId: string
   protocolType: string
 }
 
 export type DeleteGroupsResult = {
-  groupId: string,
+  groupId: string
   errorCode?: number
 }
 
@@ -650,6 +652,7 @@ export type ConsumerEndBatchProcessEvent = InstrumentationEvent<
 export type ConsumerCrashEvent = InstrumentationEvent<{
   error: Error
   groupId: string
+  restart: boolean
 }>
 
 export interface OffsetsByTopicPartition {
