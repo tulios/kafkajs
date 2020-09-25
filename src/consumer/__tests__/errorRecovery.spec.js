@@ -16,7 +16,7 @@ const {
 } = require('testHelpers')
 
 describe('Consumer', () => {
-  let topicName, groupId, cluster, producer, consumer
+  let topicName, groupId, cluster, producer, consumer, consumer2
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
@@ -42,6 +42,7 @@ describe('Consumer', () => {
 
   afterEach(async () => {
     consumer && (await consumer.disconnect())
+    consumer2 && (await consumer2.disconnect())
     producer && (await producer.disconnect())
   })
 
@@ -114,7 +115,8 @@ describe('Consumer', () => {
   })
 
   it('recovers from crashes due to retriable errors', async () => {
-    consumer = createConsumer({
+    const groupId = `consumer-group-id-${secureRandom()}`
+    consumer2 = createConsumer({
       cluster,
       groupId,
       logger: newLogger(),
@@ -126,12 +128,12 @@ describe('Consumer', () => {
       },
     })
     const crashListener = jest.fn()
-    consumer.on(consumer.events.CRASH, crashListener)
+    consumer2.on(consumer.events.CRASH, crashListener)
 
     const error = new KafkaJSError(new Error('💣'), { retriable: true })
 
-    await consumer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer2.connect()
+    await consumer2.subscribe({ topic: topicName, fromBeginning: true })
 
     const coordinator = await cluster.findGroupCoordinator({ groupId })
     const original = coordinator.joinGroup
@@ -141,7 +143,7 @@ describe('Consumer', () => {
     }
 
     const eachMessage = jest.fn()
-    await consumer.run({ eachMessage })
+    await consumer2.run({ eachMessage })
 
     const key = secureRandom()
     const message = { key: `key-${key}`, value: `value-${key}` }
