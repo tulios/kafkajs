@@ -2,13 +2,19 @@ const createAdmin = require('../index')
 const { secureRandom, createCluster, newLogger, createTopic } = require('testHelpers')
 
 describe('Admin', () => {
-  let topicName, groupId, admin, consumer
+  let admin, cluster, consumer, groupId, logger, topicName
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
     groupId = `consumer-group-id-${secureRandom()}`
 
     await createTopic({ topic: topicName })
+
+    logger = newLogger()
+    cluster = createCluster()
+    admin = createAdmin({ cluster, logger })
+
+    await admin.connect()
   })
 
   afterEach(async () => {
@@ -18,7 +24,6 @@ describe('Admin', () => {
 
   describe('fetchOffsets', () => {
     test('throws an error if the groupId is invalid', async () => {
-      admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
       await expect(admin.fetchOffsets({ groupId: null })).rejects.toHaveProperty(
         'message',
         'Invalid groupId null'
@@ -26,7 +31,6 @@ describe('Admin', () => {
     })
 
     test('throws an error if the topic name is not a valid string', async () => {
-      admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
       await expect(admin.fetchOffsets({ groupId: 'groupId', topic: null })).rejects.toHaveProperty(
         'message',
         'Invalid topic null'
@@ -34,10 +38,6 @@ describe('Admin', () => {
     })
 
     test('returns unresolved consumer group offsets', async () => {
-      const cluster = createCluster()
-      admin = createAdmin({ cluster, logger: newLogger() })
-
-      await admin.connect()
       const offsets = await admin.fetchOffsets({
         groupId,
         topic: topicName,
@@ -47,10 +47,6 @@ describe('Admin', () => {
     })
 
     test('returns the current consumer group offset', async () => {
-      const cluster = createCluster()
-      admin = createAdmin({ cluster, logger: newLogger() })
-
-      await admin.connect()
       await admin.setOffsets({
         groupId,
         topic: topicName,
