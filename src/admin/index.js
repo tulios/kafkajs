@@ -7,6 +7,7 @@ const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentat
 const { LEVELS } = require('../loggers')
 const { KafkaJSNonRetriableError, KafkaJSDeleteGroupsError } = require('../errors')
 const RESOURCE_TYPES = require('../protocol/resourceTypes')
+const { EARLIEST_OFFSET } = require('../constants')
 
 const { CONNECT, DISCONNECT } = events
 
@@ -43,6 +44,11 @@ const findTopicPartitions = async (cluster, topic) => {
     .map(({ partitionId }) => partitionId)
     .sort()
 }
+const indexByPartition = array =>
+  array.reduce(
+    (obj, { partition, ...props }) => Object.assign(obj, { [partition]: { ...props } }),
+    {}
+  )
 
 /**
  *
@@ -355,7 +361,7 @@ module.exports = ({
    * @param {string} topic
    * @return {Promise}
    */
-  const fetchOffsets = async ({ groupId, topic }) => {
+  const fetchOffsets = async ({ groupId, topic, resolveOffsets = false }) => {
     if (!groupId) {
       throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
     }
@@ -368,12 +374,29 @@ module.exports = ({
     const coordinator = await cluster.findGroupCoordinator({ groupId })
     const partitionsToFetch = partitions.map(partition => ({ partition }))
 
-    const { responses } = await coordinator.offsetFetch({
+    let { responses: consumerOffsets } = await coordinator.offsetFetch({
       groupId,
       topics: [{ topic, partitions: partitionsToFetch }],
     })
 
-    return responses
+    if (resolveOffsets) {
+      const indexedOffsets = indexByPartition(await fetchTopicOffsets(topic))
+      consumerOffsets = consumerOffsets.map(({ topic, partitions }) => ({
+        topic,
+        partitions: partitions.map(({ offset, partition, ...props }) => ({
+          partition,
+          offset:
+            Number(offset) === EARLIEST_OFFSET
+              ? indexedOffsets[partition].low
+              : indexedOffsets[partition].high,
+          ...props,
+        })),
+      }))
+      const [{ partitions }] = consumerOffsets
+      await setOffsets({ groupId, topic, partitions })
+    }
+
+    return consumerOffsets
       .filter(response => response.topic === topic)
       .map(({ partitions }) =>
         partitions.map(({ partition, offset, metadata }) => ({
