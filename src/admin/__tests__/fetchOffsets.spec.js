@@ -9,7 +9,6 @@ const {
   createModPartitioner,
   waitForConsumerToJoinGroup,
   generateMessages,
-  waitForMessages,
   testIfKafkaAtLeast_0_11,
 } = require('testHelpers')
 const Encoder = require('../../protocol/encoder')
@@ -74,10 +73,10 @@ describe('Admin', () => {
       expect(offsets).toEqual([{ partition: 0, offset: '13', metadata: null }])
     })
 
-    describe('when resolveOffsets option is enabled', () => {
-      let producer, consumer, messagesConsumed
+    describe('when used with the resolvedOffsets option', () => {
+      let producer, consumer
 
-      beforeEach(async () => {
+      beforeEach(async done => {
         producer = createProducer({
           cluster,
           createPartitioner: createModPartitioner,
@@ -91,21 +90,30 @@ describe('Admin', () => {
           maxWaitTimeInMs: 100,
           logger,
         })
+
         await consumer.connect()
         await consumer.subscribe({ topic: topicName, fromBeginning: true })
-
-        messagesConsumed = []
-        consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+        consumer.run({ eachMessage: () => {} })
         await waitForConsumerToJoinGroup(consumer)
 
-        const messages = generateMessages({ number: 10 })
+        consumer.on(consumer.events.END_BATCH_PROCESS, async () => {
+          // stop the consumer after the first batch, so only 5 are committed
+          await consumer.stop()
+          // send batch #2
+          await producer.send({
+            acks: 1,
+            topic: topicName,
+            messages: generateMessages({ number: 5 }),
+          })
+          done()
+        })
+
+        // send batch #1
         await producer.send({
           acks: 1,
           topic: topicName,
-          messages,
+          messages: generateMessages({ number: 5 }),
         })
-        await waitForMessages(messagesConsumed, { number: messages.length })
-        await consumer.stop()
       })
 
       afterEach(async () => {
@@ -113,7 +121,27 @@ describe('Admin', () => {
         consumer && (await consumer.disconnect())
       })
 
-      test('returns latest topic offsets after resolving, and persists them', async () => {
+      test('no reset: returns latest *committed* consumer offsets', async () => {
+        const offsetsBeforeResolving = await admin.fetchOffsets({
+          groupId,
+          topic: topicName,
+        })
+        const offsetsUponResolving = await admin.fetchOffsets({
+          groupId,
+          topic: topicName,
+          resolveOffsets: true,
+        })
+        const offsetsAfterResolving = await admin.fetchOffsets({
+          groupId,
+          topic: topicName,
+        })
+
+        expect(offsetsBeforeResolving).toEqual([{ partition: 0, offset: '5', metadata: null }])
+        expect(offsetsUponResolving).toEqual([{ partition: 0, offset: '5', metadata: null }])
+        expect(offsetsAfterResolving).toEqual([{ partition: 0, offset: '5', metadata: null }])
+      })
+
+      test('reset to latest: returns latest *topic* offsets after resolving', async () => {
         await admin.resetOffsets({ groupId, topic: topicName })
 
         const offsetsBeforeResolving = await admin.fetchOffsets({
@@ -135,7 +163,7 @@ describe('Admin', () => {
         expect(offsetsAfterResolving).toEqual([{ partition: 0, offset: '10', metadata: null }])
       })
 
-      test('returns earliest topic offsets after resolving, and persists them', async () => {
+      test('reset to earliest: returns earliest *topic* offsets after resolving', async () => {
         await admin.resetOffsets({ groupId, topic: topicName, earliest: true })
 
         const offsetsBeforeResolving = await admin.fetchOffsets({
@@ -158,7 +186,7 @@ describe('Admin', () => {
       })
 
       testIfKafkaAtLeast_0_11(
-        'will return the correct offset when earliest offset is greater than 0',
+        'will return the correct earliest offset when it is greater than 0',
         async () => {
           // simulate earliest offset = 7, by deleting first 7 messages from the topic
           const messagesToDelete = [
