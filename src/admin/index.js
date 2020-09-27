@@ -381,8 +381,6 @@ module.exports = ({
 
     if (resolveOffsets) {
       const indexedOffsets = indexByPartition(await fetchTopicOffsets(topic))
-      console.log('fetched offsets')
-      console.log(indexedOffsets[0])
       consumerOffsets = consumerOffsets.map(({ topic, partitions }) => ({
         topic,
         partitions: partitions.map(({ offset, partition, ...props }) => ({
