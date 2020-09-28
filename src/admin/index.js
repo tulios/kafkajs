@@ -359,6 +359,7 @@ module.exports = ({
   /**
    * @param {string} groupId
    * @param {string} topic
+   * @param {boolean} [resolveOffsets=false]
    * @return {Promise}
    */
   const fetchOffsets = async ({ groupId, topic, resolveOffsets = false }) => {
