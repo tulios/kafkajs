@@ -9,7 +9,7 @@ const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
 const SubscriptionState = require('./subscriptionState')
 const {
-  events: { HEARTBEAT, CONNECT },
+  events: { HEARTBEAT, CONNECT, RECEIVED_UNSUBSCRIBED_TOPICS },
 } = require('./instrumentationEvents')
 const { MemberAssignment } = require('./assignerProtocol')
 const {
@@ -185,6 +185,7 @@ module.exports = class ConsumerGroup {
     const decodedMemberAssignment = MemberAssignment.decode(memberAssignment)
     const decodedAssignment =
       decodedMemberAssignment != null ? decodedMemberAssignment.assignment : {}
+
     this.logger.debug('Received assignment', {
       groupId,
       generationId,
@@ -196,13 +197,18 @@ module.exports = class ConsumerGroup {
     const topicsNotSubscribed = arrayDiff(assignedTopics, topicsSubscribed)
 
     if (topicsNotSubscribed.length > 0) {
-      this.logger.warn('Consumer group received unsubscribed topics', {
+      const payload = {
         groupId,
         generationId,
         memberId,
         assignedTopics,
         topicsSubscribed,
         topicsNotSubscribed,
+      }
+
+      this.instrumentationEmitter.emit(RECEIVED_UNSUBSCRIBED_TOPICS, payload)
+      this.logger.warn('Consumer group received unsubscribed topics', {
+        ...payload,
         helpUrl: websiteUrl(
           'docs/faq',
           'why-am-i-receiving-messages-for-topics-i-m-not-subscribed-to'
