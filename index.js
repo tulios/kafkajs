@@ -19,7 +19,7 @@ module.exports = {
    * @deprecated
    * @see https://github.com/tulios/kafkajs/issues/649
    *
-   * Use ConfigResourceTypes
+   * Use ConfigResourceTypes instead
    */
   ResourceTypes,
   ConfigResourceTypes,

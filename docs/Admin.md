@@ -276,7 +276,7 @@ await admin.describeConfigs({
 
 ```javascript
 {
-    type: <ResourceType>,
+    type: <ConfigResourceType>,
     name: <String>,
     configNames: <String[]>
 }
@@ -285,13 +285,13 @@ await admin.describeConfigs({
 Returning all configs for a given resource:
 
 ```javascript
-const { ResourceTypes } = require('kafkajs')
+const { ConfigResourceTypes } = require('kafkajs')
 
 await admin.describeConfigs({
   includeSynonyms: false,
   resources: [
     {
-      type: ResourceTypes.TOPIC,
+      type: ConfigResourceTypes.TOPIC,
       name: 'topic-name'
     }
   ]
@@ -301,13 +301,13 @@ await admin.describeConfigs({
 Returning specific configs for a given resource:
 
 ```javascript
-const { ResourceTypes } = require('kafkajs')
+const { ConfigResourceTypes } = require('kafkajs')
 
 await admin.describeConfigs({
   includeSynonyms: false,
   resources: [
     {
-      type: ResourceTypes.TOPIC,
+      type: ConfigResourceTypes.TOPIC,
       name: 'topic-name',
       configNames: ['cleanup.policy']
     }
@@ -315,7 +315,7 @@ await admin.describeConfigs({
 })
 ```
 
-Take a look at [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) for a complete list of resources.
+Take a look at [configResourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/configResourceTypes.js) for a complete list of resources.
 
 Example response:
 
@@ -340,6 +340,8 @@ Example response:
 }
 ```
 
+*NOTE:* [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) is deprecated as it mistakenly  has the ACL resource types instead of the config resource types.
+
 ## <a name="alter-configs"></a> Alter configs
 
 Update the configuration for the specified resources.
@@ -355,7 +357,7 @@ await admin.alterConfigs({
 
 ```javascript
 {
-    type: <ResourceType>,
+    type: <ConfigResourceType>,
     name: <String>,
     configEntries: <ResourceConfigEntry[]>
 }
@@ -373,18 +375,18 @@ await admin.alterConfigs({
 Example:
 
 ```javascript
-const { ResourceTypes } = require('kafkajs')
+const { ConfigResourceTypes } = require('kafkajs')
 
 await admin.alterConfigs({
     resources: [{
-        type: ResourceTypes.TOPIC,
+        type: ConfigResourceTypes.TOPIC,
         name: 'topic-name',
         configEntries: [{ name: 'cleanup.policy', value: 'compact' }]
     }]
 })
 ```
 
-Take a look at [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) for a complete list of resources.
+Take a look at [configResourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/configResourceTypes.js) for a complete list of resources.
 
 Example response:
 
@@ -399,6 +401,8 @@ Example response:
     throttleTime: 0,
 }
 ```
+
+*NOTE:* [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) is deprecated as it mistakenly  has the ACL resource types instead of the config resource types.
 
 ## <a name="list-groups"></a> List groups
 
