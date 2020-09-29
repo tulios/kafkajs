@@ -384,16 +384,20 @@ module.exports = ({
       const indexedOffsets = indexByPartition(await fetchTopicOffsets(topic))
       consumerOffsets = consumerOffsets.map(({ topic, partitions }) => ({
         topic,
-        partitions: partitions.map(({ offset, partition, ...props }) => ({
-          partition,
-          offset:
-            Number(offset) === EARLIEST_OFFSET
-              ? indexedOffsets[partition].low
-              : Number(offset) === LATEST_OFFSET
-              ? indexedOffsets[partition].high
-              : offset,
-          ...props,
-        })),
+        partitions: partitions.map(({ offset, partition, ...props }) => {
+          let resolvedOffset = offset
+          if (Number(offset) === EARLIEST_OFFSET) {
+            resolvedOffset = indexedOffsets[partition].low
+          }
+          if (Number(offset) === LATEST_OFFSET) {
+            resolvedOffset = indexedOffsets[partition].high
+          }
+          return {
+            partition,
+            offset: resolvedOffset,
+            ...props,
+          }
+        }),
       }))
       const [{ partitions }] = consumerOffsets
       await setOffsets({ groupId, topic, partitions })
