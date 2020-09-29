@@ -599,6 +599,7 @@ export type ConsumerEvents = {
   DISCONNECT: 'consumer.disconnect'
   STOP: 'consumer.stop'
   CRASH: 'consumer.crash'
+  RECEIVED_UNSUBSCRIBED_TOPICS: 'consumer.received_unsubscribed_topics'
   REQUEST: 'consumer.network.request'
   REQUEST_TIMEOUT: 'consumer.network.request_timeout'
   REQUEST_QUEUE_SIZE: 'consumer.network.request_queue_size'
@@ -654,6 +655,14 @@ export type ConsumerCrashEvent = InstrumentationEvent<{
   error: Error
   groupId: string
   restart: boolean
+}>
+export type ConsumerReceivedUnsubcribedTopicsEvent = InstrumentationEvent<{
+  groupId: string
+  generationId: number
+  memberId: string
+  assignedTopics: string[]
+  topicsSubscribed: string[]
+  topicsNotSubscribed: string[]
 }>
 
 export interface OffsetsByTopicPartition {
