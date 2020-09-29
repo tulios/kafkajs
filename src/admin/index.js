@@ -1,12 +1,14 @@
 const createRetry = require('../retry')
 const flatten = require('../utils/flatten')
 const waitFor = require('../utils/waitFor')
+const groupBy = require('../utils/groupBy')
 const createConsumer = require('../consumer')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentationEvents')
 const { LEVELS } = require('../loggers')
 const { KafkaJSNonRetriableError, KafkaJSDeleteGroupsError } = require('../errors')
 const RESOURCE_TYPES = require('../protocol/resourceTypes')
+const CONFIG_RESOURCE_TYPES = require('../protocol/configResourceTypes')
 
 const { CONNECT, DISCONNECT } = events
 
@@ -471,13 +473,32 @@ module.exports = ({
     })
   }
 
+  const isBrokerConfig = type =>
+    [CONFIG_RESOURCE_TYPES.BROKER, CONFIG_RESOURCE_TYPES.BROKER_LOGGER].includes(type)
+
+  /**
+   * Broker configs can only be returned by the target broker
+   *
+   * @see
+   * https://github.com/apache/kafka/blob/821c1ac6641845aeca96a43bc2b946ecec5cba4f/clients/src/main/java/org/apache/kafka/clients/admin/KafkaAdminClient.java#L3783
+   * https://github.com/apache/kafka/blob/821c1ac6641845aeca96a43bc2b946ecec5cba4f/clients/src/main/java/org/apache/kafka/clients/admin/KafkaAdminClient.java#L2027
+   *
+   * @param {Broker} defaultBroker. Broker used in case the configuration is not a broker config
+   */
+  const groupResourcesByBroker = ({ resources, defaultBroker }) =>
+    groupBy(resources, async ({ type, name: nodeId }) => {
+      return isBrokerConfig(type)
+        ? await cluster.findBroker({ nodeId: String(nodeId) })
+        : defaultBroker
+    })
+
   /**
    * @param {Array<ResourceConfigQuery>} resources
    * @param {boolean} [includeSynonyms=false]
    * @return {Promise}
    *
    * @typedef {Object} ResourceConfigQuery
-   * @property {ResourceType} type
+   * @property {ConfigResourceType} type
    * @property {string} name
    * @property {Array<String>} [configNames=[]]
    */
@@ -490,7 +511,7 @@ module.exports = ({
       throw new KafkaJSNonRetriableError('Resources array cannot be empty')
     }
 
-    const validResourceTypes = Object.values(RESOURCE_TYPES)
+    const validResourceTypes = Object.values(CONFIG_RESOURCE_TYPES)
     const invalidType = resources.find(r => !validResourceTypes.includes(r.type))
 
     if (invalidType) {
@@ -523,9 +544,28 @@ module.exports = ({
     return retrier(async (bail, retryCount, retryTime) => {
       try {
         await cluster.refreshMetadata()
-        const broker = await cluster.findControllerBroker()
-        const response = await broker.describeConfigs({ resources, includeSynonyms })
-        return response
+        const controller = await cluster.findControllerBroker()
+        const resourcerByBroker = await groupResourcesByBroker({
+          resources,
+          defaultBroker: controller,
+        })
+
+        const describeConfigsAction = async broker => {
+          const targetBroker = broker || controller
+          return targetBroker.describeConfigs({
+            resources: resourcerByBroker.get(targetBroker),
+            includeSynonyms,
+          })
+        }
+
+        const brokers = Array.from(resourcerByBroker.keys())
+        const responses = await Promise.all(brokers.map(describeConfigsAction))
+        const responseResources = responses.reduce(
+          (result, { resources }) => [...result, ...resources],
+          []
+        )
+
+        return { resources: responseResources }
       } catch (e) {
         if (e.type === 'NOT_CONTROLLER') {
           logger.warn('Could not describe configs', { error: e.message, retryCount, retryTime })
@@ -543,7 +583,7 @@ module.exports = ({
    * @return {Promise}
    *
    * @typedef {Object} ResourceConfig
-   * @property {ResourceType} type
+   * @property {ConfigResourceType} type
    * @property {string} name
    * @property {Array<ResourceConfigEntry>} configEntries
    *
@@ -601,9 +641,28 @@ module.exports = ({
     return retrier(async (bail, retryCount, retryTime) => {
       try {
         await cluster.refreshMetadata()
-        const broker = await cluster.findControllerBroker()
-        const response = await broker.alterConfigs({ resources, validateOnly: !!validateOnly })
-        return response
+        const controller = await cluster.findControllerBroker()
+        const resourcerByBroker = await groupResourcesByBroker({
+          resources,
+          defaultBroker: controller,
+        })
+
+        const alterConfigsAction = async broker => {
+          const targetBroker = broker || controller
+          return targetBroker.alterConfigs({
+            resources: resourcerByBroker.get(targetBroker),
+            validateOnly: !!validateOnly,
+          })
+        }
+
+        const brokers = Array.from(resourcerByBroker.keys())
+        const responses = await Promise.all(brokers.map(alterConfigsAction))
+        const responseResources = responses.reduce(
+          (result, { resources }) => [...result, ...resources],
+          []
+        )
+
+        return { resources: responseResources }
       } catch (e) {
         if (e.type === 'NOT_CONTROLLER') {
           logger.warn('Could not alter configs', { error: e.message, retryCount, retryTime })
