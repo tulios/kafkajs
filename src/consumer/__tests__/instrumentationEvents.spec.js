@@ -9,21 +9,23 @@ const {
   createModPartitioner,
   newLogger,
   waitFor,
+  waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
 describe('Consumer > Instrumentation Events', () => {
   let topicName, groupId, cluster, producer, consumer, consumer2, message, emitter
 
-  const createTestConsumer = ({ heartbeatInterval = 100, ...otherOps } = {}) =>
+  const createTestConsumer = (opts = {}) =>
     createConsumer({
       cluster,
       groupId,
       logger: newLogger(),
-      heartbeatInterval,
-      maxWaitTimeInMs: 1,
+      heartbeatInterval: 100,
+      maxWaitTimeInMs: 500,
       maxBytesPerPartition: 180,
+      rebalanceTimeout: 1000,
       instrumentationEmitter: emitter,
-      ...otherOps,
+      ...opts,
     })
 
   beforeEach(async () => {
@@ -33,7 +35,7 @@ describe('Consumer > Instrumentation Events', () => {
     await createTopic({ topic: topicName })
 
     emitter = new InstrumentationEventEmitter()
-    cluster = createCluster({ instrumentationEmitter: emitter })
+    cluster = createCluster({ instrumentationEmitter: emitter, metadataMaxAge: 50 })
     producer = createProducer({
       cluster,
       createPartitioner: createModPartitioner,
@@ -465,6 +467,81 @@ describe('Consumer > Instrumentation Events', () => {
         broker: expect.any(String),
         clientId: expect.any(String),
         queueSize: expect.any(Number),
+      },
+    })
+  })
+
+  it('emits received unsubscribed topics events', async () => {
+    const topicNames = [`test-topic-${secureRandom()}`, `test-topic-${secureRandom()}`]
+    const otherTopic = `test-topic-${secureRandom()}`
+    const groupId = `consumer-group-id-${secureRandom()}`
+
+    for (const topicName of [...topicNames, otherTopic]) {
+      await createTopic({ topic: topicName, partitions: 2 })
+    }
+
+    // First consumer subscribes to topicNames
+    consumer = createTestConsumer({
+      groupId,
+      cluster: createCluster({
+        instrumentationEmitter: new InstrumentationEventEmitter(),
+        metadataMaxAge: 50,
+      }),
+    })
+
+    await consumer.connect()
+    await Promise.all(
+      topicNames.map(topicName => consumer.subscribe({ topic: topicName, fromBeginning: true }))
+    )
+
+    consumer.run({ eachMessage: () => {} })
+    await waitForConsumerToJoinGroup(consumer, { label: 'consumer1' })
+
+    // Second consumer re-uses group id but only subscribes to one of the topics
+    consumer2 = createTestConsumer({
+      groupId,
+      cluster: createCluster({
+        instrumentationEmitter: new InstrumentationEventEmitter(),
+        metadataMaxAge: 50,
+      }),
+    })
+
+    const onReceivedUnsubscribedTopics = jest.fn()
+    let receivedUnsubscribedTopics = 0
+    consumer2.on(consumer.events.RECEIVED_UNSUBSCRIBED_TOPICS, async event => {
+      onReceivedUnsubscribedTopics(event)
+      receivedUnsubscribedTopics++
+    })
+
+    await consumer2.connect()
+    await Promise.all(
+      [topicNames[1], otherTopic].map(topicName =>
+        consumer2.subscribe({ topic: topicName, fromBeginning: true })
+      )
+    )
+
+    consumer2.run({ eachMessage: () => {} })
+    await waitForConsumerToJoinGroup(consumer2, { label: 'consumer2' })
+
+    // Wait for rebalance to finish
+    await waitFor(async () => {
+      const { state, members } = await consumer.describeGroup()
+      return state === 'Stable' && members.length === 2
+    })
+
+    await waitFor(() => receivedUnsubscribedTopics > 0)
+
+    expect(onReceivedUnsubscribedTopics).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.received_unsubscribed_topics',
+      payload: {
+        groupId,
+        generationId: expect.any(Number),
+        memberId: expect.any(String),
+        assignedTopics: topicNames,
+        topicsSubscribed: [topicNames[1], otherTopic],
+        topicsNotSubscribed: [topicNames[0]],
       },
     })
   })
