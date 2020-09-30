@@ -9,7 +9,8 @@ const {
   newLogger,
   createTopic,
   retryProtocol,
-  testIfKafka_0_11,
+  testIfKafkaAtMost_0_10,
+  testIfKafkaAtLeast_0_11,
   generateMessages,
 } = require('testHelpers')
 const { Types: Compression } = require('../../protocol/message/compression')
@@ -74,6 +75,7 @@ describe('Broker > Fetch', () => {
     partitionLeaderEpoch: expect.any(Number),
     producerEpoch: 0,
     producerId: '-1',
+    timestampType: 0,
     ...options,
   })
 
@@ -104,8 +106,8 @@ describe('Broker > Fetch', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await broker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    broker && (await broker.disconnect())
   })
 
   test('rejects the Promise if lookupRequest is not defined', async () => {
@@ -114,7 +116,7 @@ describe('Broker > Fetch', () => {
     await expect(broker.fetch({ topics: [] })).rejects.toEqual(new Error('Broker not connected'))
   })
 
-  test('request', async () => {
+  testIfKafkaAtMost_0_10('request', async () => {
     const targetPartition = 0
     const messages = createMessages()
     let topicData = createTopicData(targetPartition, messages)
@@ -188,7 +190,7 @@ describe('Broker > Fetch', () => {
     expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
   })
 
-  test('request with GZIP', async () => {
+  testIfKafkaAtMost_0_10('request with GZIP', async () => {
     const targetPartition = 0
     const messages = createMessages()
     let topicData = createTopicData(targetPartition, messages)
@@ -269,12 +271,11 @@ describe('Broker > Fetch', () => {
       broker = new Broker({
         connection: createConnection(newBrokerData),
         logger: newLogger(),
-        allowExperimentalV011: true,
       })
       await broker.connect()
     })
 
-    testIfKafka_0_11('request', async () => {
+    testIfKafkaAtLeast_0_11('request', async () => {
       const targetPartition = 0
       const messages = createMessages()
       let topicData = createTopicData(targetPartition, messages)
@@ -296,6 +297,7 @@ describe('Broker > Fetch', () => {
       let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse).toEqual({
         throttleTime: 0,
+        clientSideThrottleTime: expect.optional(0),
         errorCode: 0,
         sessionId: 0,
         responses: [
@@ -309,6 +311,7 @@ describe('Broker > Fetch', () => {
                 lastStableOffset: '3',
                 lastStartOffset: '0',
                 partition: 0,
+                preferredReadReplica: expect.optional(-1),
                 messages: [
                   {
                     magicByte: 2,
@@ -356,7 +359,7 @@ describe('Broker > Fetch', () => {
       expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
     })
 
-    testIfKafka_0_11('request with headers', async () => {
+    testIfKafkaAtLeast_0_11('request with headers', async () => {
       const targetPartition = 0
       const messages = createMessages(0, true)
       let topicData = createTopicData(targetPartition, messages)
@@ -378,6 +381,7 @@ describe('Broker > Fetch', () => {
       let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse).toEqual({
         throttleTime: 0,
+        clientSideThrottleTime: expect.optional(0),
         errorCode: 0,
         sessionId: 0,
         responses: [
@@ -391,6 +395,7 @@ describe('Broker > Fetch', () => {
                 lastStableOffset: '3',
                 lastStartOffset: '0',
                 partition: 0,
+                preferredReadReplica: expect.optional(-1),
                 messages: [
                   {
                     magicByte: 2,
@@ -438,7 +443,7 @@ describe('Broker > Fetch', () => {
       expect(fetchResponse.responses[0].partitions[0].highWatermark).toEqual('6')
     })
 
-    testIfKafka_0_11('request with GZIP', async () => {
+    testIfKafkaAtLeast_0_11('request with GZIP', async () => {
       const targetPartition = 0
       const messages = createMessages()
       let topicData = createTopicData(targetPartition, messages)
@@ -460,6 +465,7 @@ describe('Broker > Fetch', () => {
       let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse).toEqual({
         throttleTime: 0,
+        clientSideThrottleTime: expect.optional(0),
         errorCode: 0,
         sessionId: 0,
         responses: [
@@ -473,6 +479,7 @@ describe('Broker > Fetch', () => {
                 lastStableOffset: '3',
                 lastStartOffset: '0',
                 partition: 0,
+                preferredReadReplica: expect.optional(-1),
                 messages: [
                   {
                     magicByte: 2,
@@ -528,7 +535,7 @@ describe('Broker > Fetch', () => {
       transactionalId = `transactional-id-${secureRandom()}`
 
       producer = createProducer({
-        cluster: createCluster({ allowExperimentalV011: true }),
+        cluster: createCluster(),
         logger: newLogger(),
         transactionalId,
         maxInFlightRequests: 1,
@@ -537,14 +544,20 @@ describe('Broker > Fetch', () => {
       broker = new Broker({
         connection: createConnection(newBrokerData),
         logger: newLogger(),
-        allowExperimentalV011: true,
       })
+
       await broker.connect()
+      await producer.connect()
 
       retry = createRetrier({ retries: 5 })
     })
 
-    testIfKafka_0_11(
+    afterEach(async () => {
+      await producer.disconnect()
+      await broker.disconnect()
+    })
+
+    testIfKafkaAtLeast_0_11(
       'returns transactional messages only after transaction has ended for an isolation level of "read_committed" (default)',
       async () => {
         const targetPartition = 0
@@ -575,6 +588,7 @@ describe('Broker > Fetch', () => {
         let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
         expect(fetchResponse).toEqual({
           throttleTime: 0,
+          clientSideThrottleTime: expect.optional(0),
           errorCode: 0,
           sessionId: 0,
           responses: [
@@ -588,6 +602,7 @@ describe('Broker > Fetch', () => {
                   errorCode: 0,
                   highWatermark: '3',
                   partition: 0,
+                  preferredReadReplica: expect.optional(-1),
                   messages: [],
                 },
               ],
@@ -606,6 +621,7 @@ describe('Broker > Fetch', () => {
           fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
           expect(fetchResponse).toEqual({
             throttleTime: 0,
+            clientSideThrottleTime: expect.optional(0),
             errorCode: 0,
             sessionId: 0,
             responses: [
@@ -624,6 +640,7 @@ describe('Broker > Fetch', () => {
                     lastStableOffset: '4',
                     lastStartOffset: '0',
                     partition: 0,
+                    preferredReadReplica: expect.optional(-1),
                     messages: [
                       {
                         magicByte: 2,
@@ -697,7 +714,7 @@ describe('Broker > Fetch', () => {
       }
     )
 
-    testIfKafka_0_11(
+    testIfKafkaAtLeast_0_11(
       'returns transactional messages immediately for an isolation level of "read_uncommitted"',
       async () => {
         const targetPartition = 0
@@ -734,6 +751,7 @@ describe('Broker > Fetch', () => {
         })
         expect(fetchResponse).toEqual({
           throttleTime: 0,
+          clientSideThrottleTime: expect.optional(0),
           errorCode: 0,
           sessionId: 0,
           responses: [
@@ -751,6 +769,7 @@ describe('Broker > Fetch', () => {
                   lastStableOffset: '0',
                   lastStartOffset: '0',
                   partition: 0,
+                  preferredReadReplica: expect.optional(-1),
                   messages: [
                     {
                       magicByte: 2,
@@ -825,6 +844,7 @@ describe('Broker > Fetch', () => {
           })
           expect(fetchResponse).toEqual({
             throttleTime: 0,
+            clientSideThrottleTime: expect.optional(0),
             errorCode: 0,
             sessionId: 0,
             responses: [
@@ -838,6 +858,7 @@ describe('Broker > Fetch', () => {
                     lastStableOffset: '4',
                     lastStartOffset: '0',
                     partition: 0,
+                    preferredReadReplica: expect.optional(-1),
                     messages: [
                       // Control record
                       {

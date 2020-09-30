@@ -1,15 +1,18 @@
 const createRetry = require('../retry')
 const flatten = require('../utils/flatten')
 const waitFor = require('../utils/waitFor')
+const groupBy = require('../utils/groupBy')
 const createConsumer = require('../consumer')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentationEvents')
 const { LEVELS } = require('../loggers')
 const { KafkaJSNonRetriableError, KafkaJSDeleteGroupsError } = require('../errors')
 const RESOURCE_TYPES = require('../protocol/resourceTypes')
+const CONFIG_RESOURCE_TYPES = require('../protocol/configResourceTypes')
 const OPERATION_TYPES = require('../protocol/operationsTypes')
 const PERMISSION_TYPES = require('../protocol/permissionTypes')
 const RESOURCE_PATTERN_TYPES = require('../protocol/resourcePatternTypes')
+const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
 
 const { CONNECT, DISCONNECT } = events
 
@@ -46,7 +49,22 @@ const findTopicPartitions = async (cluster, topic) => {
     .map(({ partitionId }) => partitionId)
     .sort()
 }
+const indexByPartition = array =>
+  array.reduce(
+    (obj, { partition, ...props }) => Object.assign(obj, { [partition]: { ...props } }),
+    {}
+  )
 
+/**
+ *
+ * @param {Object} params
+ * @param {import("../../types").Logger} params.logger
+ * @param {import('../instrumentation/emitter')} [params.instrumentationEmitter]
+ * @param {import('../../types').RetryOptions} params.retry
+ * @param {import("../../types").Cluster} params.cluster
+ *
+ * @returns {import("../../types").Admin}
+ */
 module.exports = ({
   logger: rootLogger,
   instrumentationEmitter: rootInstrumentationEmitter,
@@ -118,6 +136,7 @@ module.exports = ({
           const topicNamesArray = Array.from(topicNames.values())
           await retryOnLeaderNotAvailable(async () => await broker.metadata(topicNamesArray), {
             delay: 100,
+            maxWait: timeout,
             timeoutMessage: 'Timed out while waiting for topic leaders',
           })
         }
@@ -286,11 +305,69 @@ module.exports = ({
   }
 
   /**
+   * @param {string} topic
+   * @param {number} [timestamp]
+   */
+
+  const fetchTopicOffsetsByTimestamp = async (topic, timestamp) => {
+    if (!topic || typeof topic !== 'string') {
+      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.addTargetTopic(topic)
+        await cluster.refreshMetadataIfNecessary()
+
+        const metadata = cluster.findTopicPartitionMetadata(topic)
+        const partitions = metadata.map(p => ({ partition: p.partitionId }))
+
+        const high = await cluster.fetchTopicsOffset([
+          {
+            topic,
+            fromBeginning: false,
+            partitions,
+          },
+        ])
+        const { partitions: highPartitions } = high.pop()
+
+        const offsets = await cluster.fetchTopicsOffset([
+          {
+            topic,
+            fromTimestamp: timestamp,
+            partitions,
+          },
+        ])
+        const { partitions: lowPartitions } = offsets.pop()
+
+        return lowPartitions.map(({ partition, offset }) => ({
+          partition,
+          offset:
+            parseInt(offset, 10) >= 0
+              ? offset
+              : highPartitions.find(({ partition: highPartition }) => highPartition === partition)
+                  .offset,
+        }))
+      } catch (e) {
+        if (e.type === 'UNKNOWN_TOPIC_OR_PARTITION') {
+          await cluster.refreshMetadata()
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
    * @param {string} groupId
    * @param {string} topic
+   * @param {boolean} [resolveOffsets=false]
    * @return {Promise}
    */
-  const fetchOffsets = async ({ groupId, topic }) => {
+  const fetchOffsets = async ({ groupId, topic, resolveOffsets = false }) => {
     if (!groupId) {
       throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
     }
@@ -303,12 +380,35 @@ module.exports = ({
     const coordinator = await cluster.findGroupCoordinator({ groupId })
     const partitionsToFetch = partitions.map(partition => ({ partition }))
 
-    const { responses } = await coordinator.offsetFetch({
+    let { responses: consumerOffsets } = await coordinator.offsetFetch({
       groupId,
       topics: [{ topic, partitions: partitionsToFetch }],
     })
 
-    return responses
+    if (resolveOffsets) {
+      const indexedOffsets = indexByPartition(await fetchTopicOffsets(topic))
+      consumerOffsets = consumerOffsets.map(({ topic, partitions }) => ({
+        topic,
+        partitions: partitions.map(({ offset, partition, ...props }) => {
+          let resolvedOffset = offset
+          if (Number(offset) === EARLIEST_OFFSET) {
+            resolvedOffset = indexedOffsets[partition].low
+          }
+          if (Number(offset) === LATEST_OFFSET) {
+            resolvedOffset = indexedOffsets[partition].high
+          }
+          return {
+            partition,
+            offset: resolvedOffset,
+            ...props,
+          }
+        }),
+      }))
+      const [{ partitions }] = consumerOffsets
+      await setOffsets({ groupId, topic, partitions })
+    }
+
+    return consumerOffsets
       .filter(response => response.topic === topic)
       .map(({ partitions }) =>
         partitions.map(({ partition, offset, metadata }) => ({
@@ -406,13 +506,32 @@ module.exports = ({
     })
   }
 
+  const isBrokerConfig = type =>
+    [CONFIG_RESOURCE_TYPES.BROKER, CONFIG_RESOURCE_TYPES.BROKER_LOGGER].includes(type)
+
+  /**
+   * Broker configs can only be returned by the target broker
+   *
+   * @see
+   * https://github.com/apache/kafka/blob/821c1ac6641845aeca96a43bc2b946ecec5cba4f/clients/src/main/java/org/apache/kafka/clients/admin/KafkaAdminClient.java#L3783
+   * https://github.com/apache/kafka/blob/821c1ac6641845aeca96a43bc2b946ecec5cba4f/clients/src/main/java/org/apache/kafka/clients/admin/KafkaAdminClient.java#L2027
+   *
+   * @param {Broker} defaultBroker. Broker used in case the configuration is not a broker config
+   */
+  const groupResourcesByBroker = ({ resources, defaultBroker }) =>
+    groupBy(resources, async ({ type, name: nodeId }) => {
+      return isBrokerConfig(type)
+        ? await cluster.findBroker({ nodeId: String(nodeId) })
+        : defaultBroker
+    })
+
   /**
    * @param {Array<ResourceConfigQuery>} resources
    * @param {boolean} [includeSynonyms=false]
    * @return {Promise}
    *
    * @typedef {Object} ResourceConfigQuery
-   * @property {ResourceType} type
+   * @property {ConfigResourceType} type
    * @property {string} name
    * @property {Array<String>} [configNames=[]]
    */
@@ -425,7 +544,7 @@ module.exports = ({
       throw new KafkaJSNonRetriableError('Resources array cannot be empty')
     }
 
-    const validResourceTypes = Object.values(RESOURCE_TYPES)
+    const validResourceTypes = Object.values(CONFIG_RESOURCE_TYPES)
     const invalidType = resources.find(r => !validResourceTypes.includes(r.type))
 
     if (invalidType) {
@@ -458,9 +577,28 @@ module.exports = ({
     return retrier(async (bail, retryCount, retryTime) => {
       try {
         await cluster.refreshMetadata()
-        const broker = await cluster.findControllerBroker()
-        const response = await broker.describeConfigs({ resources, includeSynonyms })
-        return response
+        const controller = await cluster.findControllerBroker()
+        const resourcerByBroker = await groupResourcesByBroker({
+          resources,
+          defaultBroker: controller,
+        })
+
+        const describeConfigsAction = async broker => {
+          const targetBroker = broker || controller
+          return targetBroker.describeConfigs({
+            resources: resourcerByBroker.get(targetBroker),
+            includeSynonyms,
+          })
+        }
+
+        const brokers = Array.from(resourcerByBroker.keys())
+        const responses = await Promise.all(brokers.map(describeConfigsAction))
+        const responseResources = responses.reduce(
+          (result, { resources }) => [...result, ...resources],
+          []
+        )
+
+        return { resources: responseResources }
       } catch (e) {
         if (e.type === 'NOT_CONTROLLER') {
           logger.warn('Could not describe configs', { error: e.message, retryCount, retryTime })
@@ -478,7 +616,7 @@ module.exports = ({
    * @return {Promise}
    *
    * @typedef {Object} ResourceConfig
-   * @property {ResourceType} type
+   * @property {ConfigResourceType} type
    * @property {string} name
    * @property {Array<ResourceConfigEntry>} configEntries
    *
@@ -536,9 +674,28 @@ module.exports = ({
     return retrier(async (bail, retryCount, retryTime) => {
       try {
         await cluster.refreshMetadata()
-        const broker = await cluster.findControllerBroker()
-        const response = await broker.alterConfigs({ resources, validateOnly: !!validateOnly })
-        return response
+        const controller = await cluster.findControllerBroker()
+        const resourcerByBroker = await groupResourcesByBroker({
+          resources,
+          defaultBroker: controller,
+        })
+
+        const alterConfigsAction = async broker => {
+          const targetBroker = broker || controller
+          return targetBroker.alterConfigs({
+            resources: resourcerByBroker.get(targetBroker),
+            validateOnly: !!validateOnly,
+          })
+        }
+
+        const brokers = Array.from(resourcerByBroker.keys())
+        const responses = await Promise.all(brokers.map(alterConfigsAction))
+        const responseResources = responses.reduce(
+          (result, { resources }) => [...result, ...resources],
+          []
+        )
+
+        return { resources: responseResources }
       } catch (e) {
         if (e.type === 'NOT_CONTROLLER') {
           logger.warn('Could not alter configs', { error: e.message, retryCount, retryTime })
@@ -605,7 +762,7 @@ module.exports = ({
       topics: await Promise.all(
         targetTopics.map(async topic => ({
           name: topic,
-          partitions: await cluster.findTopicPartitionMetadata(topic),
+          partitions: cluster.findTopicPartitionMetadata(topic),
         }))
       ),
     }
@@ -706,6 +863,55 @@ module.exports = ({
       const response = await broker.listGroups()
       groups = groups.concat(response.groups)
     }
+
+    return { groups }
+  }
+
+  /**
+   * Describe groups by group ids
+   * @param {Array<string>} groupIds
+   *
+   * @typedef {Object} GroupDescriptions
+   * @property {Array<GroupDescription>} groups
+   *
+   * @return {Promise<GroupDescriptions>}
+   */
+  const describeGroups = async groupIds => {
+    const coordinatorsForGroup = await Promise.all(
+      groupIds.map(async groupId => {
+        const coordinator = await cluster.findGroupCoordinator({ groupId })
+        return {
+          coordinator,
+          groupId,
+        }
+      })
+    )
+
+    const groupsByCoordinator = Object.values(
+      coordinatorsForGroup.reduce((coordinators, { coordinator, groupId }) => {
+        const group = coordinators[coordinator.nodeId]
+
+        if (group) {
+          coordinators[coordinator.nodeId] = {
+            ...group,
+            groupIds: [...group.groupIds, groupId],
+          }
+        } else {
+          coordinators[coordinator.nodeId] = { coordinator, groupIds: [groupId] }
+        }
+        return coordinators
+      }, {})
+    )
+
+    const responses = await Promise.all(
+      groupsByCoordinator.map(async ({ coordinator, groupIds }) => {
+        const retrier = createRetry(retry)
+        const { groups } = await retrier(() => coordinator.describeGroups({ groupIds }))
+        return groups
+      })
+    )
+
+    const groups = [].concat.apply([], responses)
 
     return { groups }
   }
@@ -1115,6 +1321,7 @@ module.exports = ({
     events,
     fetchOffsets,
     fetchTopicOffsets,
+    fetchTopicOffsetsByTimestamp,
     setOffsets,
     resetOffsets,
     describeConfigs,
@@ -1122,6 +1329,7 @@ module.exports = ({
     on,
     logger: getLogger,
     listGroups,
+    describeGroups,
     deleteGroups,
     describeAcls,
     deleteAcls,

@@ -29,8 +29,8 @@ describe('Broker > JoinGroup', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await broker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    broker && (await broker.disconnect())
   })
 
   test('request', async () => {
@@ -48,6 +48,7 @@ describe('Broker > JoinGroup', () => {
 
     expect(response).toEqual({
       throttleTime: 0,
+      clientSideThrottleTime: 0,
       errorCode: 0,
       generationId: expect.any(Number),
       groupProtocol: 'AssignerName',
@@ -56,6 +57,7 @@ describe('Broker > JoinGroup', () => {
       members: expect.arrayContaining([
         expect.objectContaining({
           memberId: expect.any(String),
+          groupInstanceId: null,
           memberMetadata: expect.any(Buffer),
         }),
       ]),

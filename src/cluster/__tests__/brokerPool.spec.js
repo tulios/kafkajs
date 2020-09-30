@@ -1,5 +1,6 @@
 const {
   createConnectionBuilder,
+  plainTextBrokers,
   createConnection,
   newLogger,
   secureRandom,
@@ -20,7 +21,7 @@ describe('Cluster > BrokerPool', () => {
   })
 
   afterEach(async () => {
-    await brokerPool.disconnect()
+    brokerPool && (await brokerPool.disconnect())
   })
 
   it('defaults metadataMaxAge to 0', () => {
@@ -28,8 +29,8 @@ describe('Cluster > BrokerPool', () => {
   })
 
   describe('#connect', () => {
-    it('connects to the seed broker when the broker pool is created', async () => {
-      expect(brokerPool.seedBroker.isConnected()).toEqual(false)
+    it('when the broker pool is created seed broker is null', async () => {
+      expect(brokerPool.seedBroker).toEqual(undefined)
       await brokerPool.connect()
       expect(brokerPool.seedBroker.isConnected()).toEqual(true)
     })
@@ -41,6 +42,8 @@ describe('Cluster > BrokerPool', () => {
     })
 
     test('select a different seed broker on ILLEGAL_SASL_STATE error', async () => {
+      await brokerPool.createSeedBroker()
+
       const originalSeedPort = brokerPool.seedBroker.connection.port
       const illegalStateError = new KafkaJSProtocolError({
         message: 'ILLEGAL_SASL_STATE',
@@ -57,6 +60,8 @@ describe('Cluster > BrokerPool', () => {
     })
 
     test('select a different seed broker on connection errors', async () => {
+      await brokerPool.createSeedBroker()
+
       const originalSeedPort = brokerPool.seedBroker.connection.port
       brokerPool.seedBroker.connect = jest.fn(() => {
         throw new KafkaJSConnectionError('Test connection error')
@@ -131,6 +136,48 @@ describe('Cluster > BrokerPool', () => {
       expect(brokerPool.metadata).toEqual(null)
       expect(brokerPool.versions).toEqual(null)
       expect(brokerPool.brokers).toEqual({})
+    })
+  })
+
+  describe('#removeBroker', () => {
+    let host, port
+
+    beforeEach(async () => {
+      await brokerPool.connect()
+      await brokerPool.refreshMetadata([topicName])
+      expect(Object.values(brokerPool.brokers).length).toBeGreaterThan(1)
+
+      const brokerUri = plainTextBrokers().shift()
+      const [hostToRemove, portToRemove] = brokerUri.split(':')
+      host = hostToRemove
+      port = Number(portToRemove)
+    })
+
+    it('removes the broker by host and port', () => {
+      const numberOfBrokers = Object.values(brokerPool.brokers).length
+
+      brokerPool.removeBroker({ host, port })
+
+      const brokers = Object.values(brokerPool.brokers)
+      expect(brokers.length).toEqual(numberOfBrokers - 1)
+      expect(
+        brokers.find(broker => broker.connection.host === host && broker.connection.port === port)
+      ).toEqual(undefined)
+    })
+
+    it('replaces the seed broker if it is the target broker', () => {
+      const seedBrokerHost = brokerPool.seedBroker.connection.host
+      const seedBrokerPort = brokerPool.seedBroker.connection.port
+      brokerPool.removeBroker({ host: seedBrokerHost, port: seedBrokerPort })
+
+      // check only port since the host will be "localhost" on most tests
+      expect(brokerPool.seedBroker.connection.port).not.toEqual(seedBrokerPort)
+    })
+
+    it('erases metadataExpireAt to force a metadata refresh', () => {
+      brokerPool.metadataExpireAt = Date.now() + 25
+      brokerPool.removeBroker({ host, port })
+      expect(brokerPool.metadataExpireAt).toEqual(null)
     })
   })
 

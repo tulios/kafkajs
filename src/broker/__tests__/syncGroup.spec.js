@@ -30,8 +30,8 @@ describe('Broker > SyncGroup', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await groupCoordinator.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    groupCoordinator && (await groupCoordinator.disconnect())
   })
 
   test('request', async () => {
@@ -60,6 +60,11 @@ describe('Broker > SyncGroup', () => {
       groupAssignment,
     })
 
-    expect(response).toEqual({ throttleTime: 0, errorCode: 0, memberAssignment })
+    expect(response).toEqual({
+      throttleTime: 0,
+      clientSideThrottleTime: 0,
+      errorCode: 0,
+      memberAssignment,
+    })
   })
 })

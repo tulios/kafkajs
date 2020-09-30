@@ -3,6 +3,9 @@
 import * as tls from 'tls'
 import * as net from 'net'
 
+type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never }
+type XOR<T, U> = T | U extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U
+
 export class Kafka {
   constructor(config: KafkaConfig)
   producer(config?: ProducerConfig): Producer
@@ -11,8 +14,10 @@ export class Kafka {
   logger(): Logger
 }
 
+export type BrokersFunction = () => string[] | Promise<string[]>
+
 export interface KafkaConfig {
-  brokers: string[]
+  brokers: string[] | BrokersFunction
   ssl?: tls.ConnectionOptions | boolean
   sasl?: SASLOptions
   clientId?: string
@@ -34,12 +39,17 @@ export type ISocketFactory = (
   onConnect: () => void
 ) => net.Socket
 
-export type SASLMechanism = 'plain' | 'scram-sha-256' | 'scram-sha-512' | 'aws'
+export type SASLMechanism = 'plain' | 'scram-sha-256' | 'scram-sha-512' | 'aws' | 'oauthbearer'
+
+export interface OauthbearerProviderResponse {
+  value: string
+}
 
 export interface SASLOptions {
   mechanism: SASLMechanism
-  username: string
-  password: string
+  username?: string
+  password?: string
+  oauthBearerProvider?: () => Promise<OauthbearerProviderResponse>
 }
 
 export interface ProducerConfig {
@@ -82,6 +92,7 @@ export type PartitionMetadata = {
   leader: number
   replicas: number[]
   isr: number[]
+  offlineReplicas?: number[]
 }
 
 export interface IHeaders {
@@ -103,6 +114,7 @@ export interface ConsumerConfig {
   allowAutoTopicCreation?: boolean
   maxInFlightRequests?: number
   readUncommitted?: boolean
+  rackId?: string
 }
 
 export type PartitionAssigner = (config: { cluster: Cluster }) => Assigner
@@ -131,17 +143,18 @@ export type Cluster = {
   findGroupCoordinatorMetadata(group: { groupId: string }): Promise<CoordinatorMetadata>
   defaultOffset(config: { fromBeginning: boolean }): number
   fetchTopicsOffset(
-    topics: Array<{
-      topic: string
-      partitions: Array<{ partition: number }>
-      fromBeginning: boolean
-    }>
+    topics: Array<
+      {
+        topic: string
+        partitions: Array<{ partition: number }>
+      } & XOR<{ fromBeginning: boolean }, { fromTimestamp: number }>
+    >
   ): Promise<{ topic: string; partitions: Array<{ partition: number; offset: string }> }>
 }
 
 export type Assignment = { [topic: string]: number[] }
 
-export type GroupMember = { memberId: string, memberMetadata: Buffer }
+export type GroupMember = { memberId: string; memberMetadata: Buffer }
 
 export type GroupMemberAssignment = { memberId: string; memberAssignment: Buffer }
 
@@ -150,10 +163,7 @@ export type GroupState = { name: string; metadata: Buffer }
 export type Assigner = {
   name: string
   version: number
-  assign(group: {
-    members: GroupMember[]
-    topics: string[]
-  }): Promise<GroupMemberAssignment[]>
+  assign(group: { members: GroupMember[]; topics: string[] }): Promise<GroupMemberAssignment[]>
   protocol(subscription: { topics: string[] }): GroupState
 }
 
@@ -197,9 +207,15 @@ export enum ResourceTypes {
   TRANSACTIONAL_ID = 5,
   DELEGATION_TOKEN = 6,
 }
+export enum ConfigResourceTypes {
+  UNKNOWN = 0,
+  TOPIC = 2,
+  BROKER = 4,
+  BROKER_LOGGER = 8,
+}
 
 export interface ResourceConfigQuery {
-  type: ResourceTypes
+  type: ResourceTypes | ConfigResourceTypes
   name: string
   configNames?: string[]
 }
@@ -225,13 +241,13 @@ export interface DescribeConfigResponse {
     errorCode: number
     errorMessage: string
     resourceName: string
-    resourceType: ResourceTypes
+    resourceType: ResourceTypes | ConfigResourceTypes
   }[]
   throttleTime: number
 }
 
 export interface IResourceConfig {
-  type: ResourceTypes
+  type: ResourceTypes | ConfigResourceTypes
   name: string
   configEntries: { name: string; value: string }[]
 }
@@ -295,6 +311,7 @@ export interface SeekEntry {
 export type Admin = {
   connect(): Promise<void>
   disconnect(): Promise<void>
+  listTopics(): Promise<string[]>
   createTopics(options: {
     validateOnly?: boolean
     waitForLeaders?: boolean
@@ -307,15 +324,19 @@ export type Admin = {
     timeout?: number
     topicPartitions: ITopicPartitionConfig[]
   }): Promise<boolean>
-  fetchTopicMetadata(options: { topics: string[] }): Promise<{ topics: Array<ITopicMetadata> }>
+  fetchTopicMetadata(options?: { topics: string[] }): Promise<{ topics: Array<ITopicMetadata> }>
   fetchOffsets(options: {
     groupId: string
     topic: string
-  }): Promise<Array<{ partition: number; offset: string; metadata: string | null }>>
-  fetchTopicOffsets(
-    topic: string
-  ): Promise<Array<{ partition: number; offset: string; high: string; low: string }>>
-  describeCluster(): Promise<{ brokers: Array<{ nodeId: number; host: string; port: number }>; controller: number | null, clusterId: string }>
+    resolveOffsets?: boolean
+  }): Promise<Array<SeekEntry & { metadata: string | null }>>
+  fetchTopicOffsets(topic: string): Promise<Array<SeekEntry & { high: string; low: string }>>
+  fetchTopicOffsetsByTimestamp(topic: string, timestamp?: number): Promise<Array<SeekEntry>>
+  describeCluster(): Promise<{
+    brokers: Array<{ nodeId: number; host: string; port: number }>
+    controller: number | null
+    clusterId: string
+  }>
   setOffsets(options: { groupId: string; topic: string; partitions: SeekEntry[] }): Promise<void>
   resetOffsets(options: { groupId: string; topic: string; earliest: boolean }): Promise<void>
   describeConfigs(configs: {
@@ -323,6 +344,9 @@ export type Admin = {
     includeSynonyms: boolean
   }): Promise<DescribeConfigResponse>
   alterConfigs(configs: { validateOnly: boolean; resources: IResourceConfig[] }): Promise<any>
+  listGroups(): Promise<{ groups: GroupOverview[] }>
+  deleteGroups(groupIds: string[]): Promise<DeleteGroupsResult[]>
+  describeGroups(groupIds: string[]): Promise<GroupDescriptions>
   logger(): Logger
   on(
     eventName: ValueOf<AdminEvents>,
@@ -393,7 +417,7 @@ export type Broker = {
   metadata(
     topics: string[]
   ): Promise<{
-    brokers: Array<{ nodeId: number; host: string; port: number }>
+    brokers: Array<{ nodeId: number; host: string; port: number; rack?: string }>
     topicMetadata: Array<{
       topicErrorCode: number
       topic: number
@@ -407,11 +431,23 @@ export type Broker = {
     retentionTime?: number
     topics: Array<{ topic: string; partitions: Array<{ partition: number; offset: string }> }>
   }): Promise<any>
+  fetch(request: {
+    replicaId?: number
+    isolationLevel?: number
+    maxWaitTime?: number
+    minBytes?: number
+    maxBytes?: number
+    topics: Array<{
+      topic: string
+      partitions: Array<{ partition: number; fetchOffset: string; maxBytes: number }>
+    }>
+    rackId?: string
+  }): Promise<any>
 }
 
 export type KafkaMessage = {
   key: Buffer
-  value: Buffer
+  value: Buffer | null
   timestamp: string
   size: number
   attributes: number
@@ -431,8 +467,11 @@ export type RecordMetadata = {
   topicName: string
   partition: number
   errorCode: number
-  offset: string
-  timestamp: string
+  offset?: string
+  timestamp?: string
+  baseOffset?: string
+  logAppendTime?: string
+  logStartOffset?: string
 }
 
 export interface TopicMessages {
@@ -517,13 +556,20 @@ export type GroupDescription = {
   state: string
 }
 
+export type GroupDescriptions = {
+  groups: GroupDescription[]
+}
+
 export type TopicPartitions = { topic: string; partitions: number[] }
-export type TopicPartitionOffsetAndMedata = {
+export type TopicPartitionOffsetAndMetadata = {
   topic: string
   partition: number
   offset: string
   metadata?: string | null
 }
+
+// TODO: Remove with 2.x
+export type TopicPartitionOffsetAndMedata = TopicPartitionOffsetAndMetadata
 
 export type Batch = {
   topic: string
@@ -537,10 +583,21 @@ export type Batch = {
   offsetLagLow(): string
 }
 
+export type GroupOverview = {
+  groupId: string
+  protocolType: string
+}
+
+export type DeleteGroupsResult = {
+  groupId: string
+  errorCode?: number
+}
+
 export type ConsumerEvents = {
   HEARTBEAT: 'consumer.heartbeat'
   COMMIT_OFFSETS: 'consumer.commit_offsets'
   GROUP_JOIN: 'consumer.group_join'
+  FETCH_START: 'consumer.fetch_start'
   FETCH: 'consumer.fetch'
   START_BATCH_PROCESS: 'consumer.start_batch_process'
   END_BATCH_PROCESS: 'consumer.end_batch_process'
@@ -548,6 +605,7 @@ export type ConsumerEvents = {
   DISCONNECT: 'consumer.disconnect'
   STOP: 'consumer.stop'
   CRASH: 'consumer.crash'
+  RECEIVED_UNSUBSCRIBED_TOPICS: 'consumer.received_unsubscribed_topics'
   REQUEST: 'consumer.network.request'
   REQUEST_TIMEOUT: 'consumer.network.request_timeout'
   REQUEST_QUEUE_SIZE: 'consumer.network.request_queue_size'
@@ -602,6 +660,15 @@ export type ConsumerEndBatchProcessEvent = InstrumentationEvent<
 export type ConsumerCrashEvent = InstrumentationEvent<{
   error: Error
   groupId: string
+  restart: boolean
+}>
+export type ConsumerReceivedUnsubcribedTopicsEvent = InstrumentationEvent<{
+  groupId: string
+  generationId: number
+  memberId: string
+  assignedTopics: string[]
+  topicsSubscribed: string[]
+  topicsNotSubscribed: string[]
 }>
 
 export interface OffsetsByTopicPartition {
@@ -619,7 +686,7 @@ export interface EachBatchPayload {
   resolveOffset(offset: string): void
   heartbeat(): Promise<void>
   commitOffsetsIfNecessary(offsets?: Offsets): Promise<void>
-  uncommittedOffsets(): Promise<OffsetsByTopicPartition>
+  uncommittedOffsets(): OffsetsByTopicPartition
   isRunning(): boolean
   isStale(): boolean
 }
@@ -654,7 +721,7 @@ export type Consumer = {
   subscribe(topic: ConsumerSubscribeTopic): Promise<void>
   stop(): Promise<void>
   run(config?: ConsumerRunConfig): Promise<void>
-  commitOffsets(topicPartitions: Array<TopicPartitionOffsetAndMedata>): Promise<void>
+  commitOffsets(topicPartitions: Array<TopicPartitionOffsetAndMetadata>): Promise<void>
   seek(topicPartition: { topic: string; partition: number; offset: string }): void
   describeGroup(): Promise<GroupDescription>
   pause(topics: Array<{ topic: string; partitions?: number[] }>): void
@@ -757,6 +824,16 @@ export class KafkaJSLockTimeout extends KafkaJSError {
 
 export class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSError {
   constructor()
+}
+
+export class KafkaJSDeleteGroupsError extends KafkaJSError {
+  constructor(e: Error | string, groups?: KafkaJSDeleteGroupsErrorGroups[])
+}
+
+export interface KafkaJSDeleteGroupsErrorGroups {
+  groupId: string
+  errorCode: number
+  error: KafkaJSError
 }
 
 export interface KafkaJSErrorMetadata {

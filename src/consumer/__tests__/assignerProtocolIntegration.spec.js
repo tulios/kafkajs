@@ -24,8 +24,8 @@ describe('Consumer > assignerProtocol > integration', () => {
   })
 
   afterEach(async () => {
-    await consumer1.disconnect()
-    await consumer2.disconnect()
+    consumer1 && (await consumer1.disconnect())
+    consumer2 && (await consumer2.disconnect())
   })
 
   test('provides member user data', async () => {

@@ -2,11 +2,13 @@ const fs = require('fs')
 const ip = require('ip')
 
 const { Kafka, CompressionTypes, logLevel } = require('../index')
+const PrettyConsoleLogger = require('./prettyConsoleLogger')
 
 const host = process.env.HOST_IP || ip.address()
 
 const kafka = new Kafka({
-  logLevel: logLevel.DEBUG,
+  logLevel: logLevel.INFO,
+  logCreator: PrettyConsoleLogger,
   brokers: [`${host}:9094`, `${host}:9097`, `${host}:9100`],
   clientId: 'example-producer',
   ssl: {
@@ -28,35 +30,52 @@ const getRandomNumber = () => Math.round(Math.random(10) * 1000)
 const createMessage = num => ({
   key: `key-${num}`,
   value: `value-${num}-${new Date().toISOString()}`,
+  headers: {
+    'correlation-id': `${num}-${Date.now()}`,
+  },
 })
 
+let msgNumber = 0
+let requestNumber = 0
 const sendMessage = () => {
+  const messages = Array(getRandomNumber())
+    .fill()
+    .map(_ => createMessage(getRandomNumber()))
+
+  const requestId = requestNumber++
+  msgNumber += messages.length
+  kafka.logger().info(`Sending ${messages.length} messages #${requestId}...`)
   return producer
     .send({
       topic,
       compression: CompressionTypes.GZIP,
-      messages: Array(getRandomNumber())
-        .fill()
-        .map(_ => createMessage(getRandomNumber())),
+      messages,
     })
-    .then(console.log)
-    .catch(e => console.error(`[example/producer] ${e.message}`, e))
+    .then(response => {
+      kafka.logger().info(`Messages sent #${requestId}`, {
+        response,
+        msgNumber,
+      })
+    })
+    .catch(e => kafka.logger().error(`[example/producer] ${e.message}`, { stack: e.stack }))
 }
 
+let intervalId
 const run = async () => {
   await producer.connect()
-  setInterval(sendMessage, 3000)
+  intervalId = setInterval(sendMessage, 3000)
 }
 
-run().catch(e => console.error(`[example/producer] ${e.message}`, e))
+run().catch(e => kafka.logger().error(`[example/producer] ${e.message}`, { stack: e.stack }))
 
 const errorTypes = ['unhandledRejection', 'uncaughtException']
 const signalTraps = ['SIGTERM', 'SIGINT', 'SIGUSR2']
 
 errorTypes.map(type => {
-  process.on(type, async () => {
+  process.on(type, async e => {
     try {
-      console.log(`process.on ${type}`)
+      kafka.logger().info(`process.on ${type}`)
+      kafka.logger().error(e.message, { stack: e.stack })
       await producer.disconnect()
       process.exit(0)
     } catch (_) {
@@ -67,10 +86,9 @@ errorTypes.map(type => {
 
 signalTraps.map(type => {
   process.once(type, async () => {
-    try {
-      await producer.disconnect()
-    } finally {
-      process.kill(process.pid, type)
-    }
+    console.log('')
+    kafka.logger().info('[example/producer] disconnecting')
+    clearInterval(intervalId)
+    await producer.disconnect()
   })
 })

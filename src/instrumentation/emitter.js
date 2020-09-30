@@ -2,9 +2,6 @@ const EventEmitter = require('events')
 const InstrumentationEvent = require('./event')
 const { KafkaJSError } = require('../errors')
 
-/**
- * @typedef InstrumentationEventEmitter
- */
 module.exports = class InstrumentationEventEmitter {
   constructor() {
     this.emitter = new EventEmitter()

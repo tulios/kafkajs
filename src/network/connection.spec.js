@@ -2,8 +2,10 @@ const { connectionOpts, sslConnectionOpts } = require('../../testHelpers')
 const sleep = require('../utils/sleep')
 const { requests } = require('../protocol/requests')
 const Decoder = require('../protocol/decoder')
+const Encoder = require('../protocol/encoder')
 const { KafkaJSRequestTimeoutError } = require('../errors')
 const Connection = require('./connection')
+const { CONNECTION_STATUS } = require('./connectionStatus')
 
 describe('Network > Connection', () => {
   // According to RFC 5737:
@@ -74,14 +76,26 @@ describe('Network > Connection', () => {
       await expect(connection.disconnect()).resolves.toEqual(true)
       expect(connection.connected).toEqual(false)
     })
+
+    test('trigger "end" and "unref" function on not active connection', async () => {
+      expect(connection.connected).toEqual(false)
+      connection.socket = {
+        end: jest.fn(),
+        unref: jest.fn(),
+      }
+      await expect(connection.disconnect()).resolves.toEqual(true)
+      expect(connection.socket.end).toHaveBeenCalled()
+      expect(connection.socket.unref).toHaveBeenCalled()
+    })
   })
 
   describe('#send', () => {
-    let apiVersions
+    let apiVersions, metadata
 
     beforeEach(() => {
       connection = new Connection(connectionOpts())
       apiVersions = requests.ApiVersions.protocol({ version: 0 })
+      metadata = requests.Metadata.protocol({ version: 0 })
     })
 
     test('resolves the Promise with the response', async () => {
@@ -157,6 +171,43 @@ describe('Network > Connection', () => {
       await expect(connection.send(protocol)).rejects.toThrowError(KafkaJSRequestTimeoutError)
     })
 
+    test('throttles the request queue', async () => {
+      const clientSideThrottleTime = 500
+      // Create a fictitious request with a response that indicates client-side throttling is needed
+      const protocol = {
+        request: {
+          apiKey: -1,
+          apiVersion: 0,
+          expectResponse: () => true,
+          encode: () => new Encoder(),
+        },
+        response: {
+          decode: () => ({ clientSideThrottleTime }),
+          parse: () => ({}),
+        },
+      }
+
+      // Setup the socket connection to accept the request
+      const correlationId = 383
+      connection.nextCorrelationId = () => correlationId
+      connection.connectionStatus = CONNECTION_STATUS.CONNECTED
+      connection.socket = {
+        write() {
+          // Simulate a happy response
+          setImmediate(() => {
+            connection.requestQueue.fulfillRequest({ correlationId, size: 0, payload: null })
+          })
+        },
+        end() {},
+        unref() {},
+      }
+      const before = Date.now()
+      await connection.send(protocol)
+      expect(connection.requestQueue.throttledUntil).toBeGreaterThanOrEqual(
+        before + clientSideThrottleTime
+      )
+    })
+
     describe('Debug logging', () => {
       let initialValue, connection
 
@@ -169,9 +220,7 @@ describe('Network > Connection', () => {
       })
 
       afterEach(async () => {
-        if (connection) {
-          await connection.disconnect()
-        }
+        connection && (await connection.disconnect())
       })
 
       test('logs the full payload in case of non-retriable error when "KAFKAJS_DEBUG_PROTOCOL_BUFFERS" runtime flag is set', async () => {
@@ -207,6 +256,48 @@ describe('Network > Connection', () => {
           type: 'Buffer',
           data: '[filtered]',
         })
+      })
+    })
+
+    describe('Error logging', () => {
+      let connection, errorStub
+
+      beforeEach(() => {
+        connection = new Connection(connectionOpts())
+        errorStub = jest.fn()
+        connection.logger.error = errorStub
+      })
+
+      afterEach(async () => {
+        connection && (await connection.disconnect())
+      })
+
+      it('logs error responses by default', async () => {
+        const protocol = metadata({ topics: [] })
+        protocol.response.parse = () => {
+          throw new Error('non-retriable')
+        }
+
+        expect(protocol.logResponseError).not.toBe(false)
+
+        await connection.connect()
+
+        await expect(connection.send(protocol)).rejects.toBeTruthy()
+
+        expect(errorStub).toHaveBeenCalled()
+      })
+
+      it('does not log errors when protocol.logResponseError=false', async () => {
+        const protocol = metadata({ topics: [] })
+        protocol.response.parse = () => {
+          throw new Error('non-retriable')
+        }
+        protocol.logResponseError = false
+        await connection.connect()
+
+        await expect(connection.send(protocol)).rejects.toBeTruthy()
+
+        expect(errorStub).not.toHaveBeenCalled()
       })
     })
   })

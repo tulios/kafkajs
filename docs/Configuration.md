@@ -15,6 +15,39 @@ const kafka = new Kafka({
 })
 ```
 
+## Broker discovery
+
+Normally KafkaJS will notice and react to broker cluster topology changes automatically, but in some circumstances you may want to be able to dynamically
+fetch the seed brokers instead of using a statically configured list. In that case, `brokers` can be set to an async function that resolves to
+a broker array:
+
+```javascript
+const kafka = new Kafka({
+  clientId: 'my-app',
+  brokers: async () => {
+    // Example getting brokers from Confluent REST Proxy
+    const clusterResponse = await fetch('https://kafka-rest:8082/v3/clusters', {
+      headers: 'application/vnd.api+json',
+    }).then(response => response.json())
+    const clusterUrl = clusterResponse.data[0].links.self
+
+    const brokersResponse = await fetch(`${clusterUrl}/brokers`, {
+      headers: 'application/vnd.api+json',
+    }).then(response => response.json())
+
+    const brokers = brokersResponse.data.map(broker => {
+      const { host, port } = broker.attributes
+      return `${host}:${port}`
+    })
+
+    return brokers
+  }
+})
+```
+
+Note that this discovery mechanism is only used to get the initial set of brokers (i.e. the seed brokers). After successfully connecting to
+a broker in this list, Kafka has its own mechanism for discovering the rest of the cluster.
+
 ## SSL
 
 The `ssl` option can be used to configure the TLS sockets. The options are passed directly to [`tls.connect`](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback) and used to create the TLS Secure Context, all options are accepted.
@@ -65,6 +98,41 @@ new Kafka({
   },
 })
 ```
+
+### OAUTHBEARER Example
+
+```javascript
+new Kafka({
+  clientId: 'my-app',
+  brokers: ['kafka1:9092', 'kafka2:9092'],
+  // authenticationTimeout: 1000,
+  // reauthenticationThreshold: 10000,
+  ssl: true,
+  sasl: {
+    mechanism: 'oauthbearer',
+    oauthBearerProvider: async () => {
+      // Use an unsecured token...
+      const token = jwt.sign({ sub: 'test' }, 'abc', { algorithm: 'none' })
+
+      // ...or, more realistically, grab the token from some OAuth endpoint
+
+      return {
+        value: token
+      }
+    }
+  },
+})
+```
+
+The `sasl` object must include a property named `oauthBearerProvider`, an
+async function that is used to return the OAuth bearer token.
+
+The OAuth bearer token must be an object with properties value and
+(optionally) extensions, that will be sent during the SASL/OAUTHBEARER
+request.
+
+The implementation of the oauthBearerProvider must take care that tokens are
+reused and refreshed when appropriate.
 
 ### AWS IAM Example
 
@@ -150,7 +218,7 @@ __Available options:__
 | factor              | Randomization factor                                                                                                    | `0.2`               |
 | multiplier          | Exponential factor                                                                                                      | `2`                 |
 | retries             | Max number of retries per call                                                                                          | `5`                 |
-| maxInFlightRequests | Max number of requests that may be in progress at any time. If falsey then no limit.                                    | `null` _(no limit)_ |
+| restartOnFailure    | Only used in consumer. See [`restartOnFailure`](#restart-on-failure)                                                    | `async () => true`  |
 
 Example:
 
@@ -164,6 +232,19 @@ new Kafka({
   }
 })
 ```
+
+### <a name="restart-on-failure"></a> `restartOnFailure`
+
+An async function that will be invoked after the consumer exhausts all retries, to decide whether or not to restart the consumer (essentially resetting `consumer.run`). This can be used to, for example, cleanly shut down resources before crashing, if that is preferred. The function will be passed the error, which allows it to decide based on the type of error whether or not to exit the application or allow it to restart.
+
+The function has the following signature: `(error: Error) => Promise<boolean>`
+
+* If the promise resolves to `true`: the consumer will restart
+* If the promise resolves to `false`: the consumer will **not** restart
+* If the promise rejects: the consumer will restart
+* If there is no `restartOnFailure` provided: the consumer will restart
+
+Note that the function will only ever be invoked for what KafkaJS considers retriable errors. On non-retriable errors, the consumer will not be restarted and the `restartOnFailure` function will not be invoked. [See this list](https://kafka.apache.org/protocol#protocol_error_codes) for retriable errors in the Kafka protocol, but note that some additional errors will still be considered retriable in KafkaJS, such as for example network connection errors.
 
 ## Logging
 

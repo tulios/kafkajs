@@ -7,7 +7,13 @@
  * Enum for ACL Resource Types
  * @readonly
  * @enum {ACLResourceTypes}
+ *
+ * @deprecated
+ * @see https://github.com/tulios/kafkajs/issues/649
+ *
+ * Use ConfigResourceTypes instead
  */
+
 module.exports = {
   /**
    * Represents any ResourceType which this client cannot understand,

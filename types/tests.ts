@@ -7,6 +7,7 @@ import {
   CompressionTypes,
   CompressionCodecs,
   ResourceTypes,
+  ConfigResourceTypes,
   LogEntry,
   KafkaJSError,
   KafkaJSOffsetOutOfRange,
@@ -38,7 +39,7 @@ const kafka = new Kafka({
     username: 'test',
     password: 'testtest',
   },
-  logCreator: (logLevel: logLevel) => (entry: LogEntry) => { },
+  logCreator: (logLevel: logLevel) => (entry: LogEntry) => {},
 })
 
 kafka.logger().error('Instantiated KafkaJS')
@@ -163,8 +164,8 @@ const runAdmin = async () => {
     brokers: brokers.map(({ nodeId, host, port }) => ({
       nodeId,
       host,
-      port
-    }))
+      port,
+    })),
   })
 
   await admin.fetchTopicMetadata({ topics: ['string'] }).then(metadata => {
@@ -173,12 +174,15 @@ const runAdmin = async () => {
     })
   })
 
+  await admin.listTopics()
+
   await admin.createTopics({
     topics: [{ topic, numPartitions: 10, replicationFactor: 1 }],
     timeout: 30000,
     waitForLeaders: true,
   })
 
+  // @deprecated
   await admin.describeConfigs({
     includeSynonyms: false,
     resources: [
@@ -188,6 +192,21 @@ const runAdmin = async () => {
       },
     ],
   })
+
+  await admin.describeConfigs({
+    includeSynonyms: false,
+    resources: [
+      {
+        type: ConfigResourceTypes.TOPIC,
+        name: topic,
+      },
+    ],
+  })
+
+  const { groups } = await admin.listGroups()
+  const groupIds = groups.map(({ groupId }) => groupId)
+  const groupDescription = await admin.describeGroups(groupIds)
+  await admin.deleteGroups(groupDescription.groups.map(({ groupId }) => groupId))
 
   await admin.disconnect()
 }
@@ -214,19 +233,19 @@ kafka.consumer({
 })
 
 // ERROR
-new KafkaJSError('Invalid partition metadata', { retriable: true });
-new KafkaJSError('The group is rebalancing');
-new KafkaJSError(new Error('💣'), { retriable: true });
+new KafkaJSError('Invalid partition metadata', { retriable: true })
+new KafkaJSError('The group is rebalancing')
+new KafkaJSError(new Error('💣'), { retriable: true })
 
-new KafkaJSOffsetOutOfRange(new Error(), { topic: topic, partition: 0 });
+new KafkaJSOffsetOutOfRange(new Error(), { topic: topic, partition: 0 })
 
-new KafkaJSNumberOfRetriesExceeded(new Error(), { retryCount: 0, retryTime: 0 });
+new KafkaJSNumberOfRetriesExceeded(new Error(), { retryCount: 0, retryTime: 0 })
 
 new KafkaJSConnectionError('Connection error: ECONNREFUSED', {
   broker: `${host}:9094`,
-  code: 'ECONNREFUSED'
-});
-new KafkaJSConnectionError('Connection error: ECONNREFUSED', { code: 'ECONNREFUSED' });
+  code: 'ECONNREFUSED',
+})
+new KafkaJSConnectionError('Connection error: ECONNREFUSED', { code: 'ECONNREFUSED' })
 
 new KafkaJSRequestTimeoutError('Request requestInfo timed out', {
   broker: `${host}:9094`,
@@ -234,10 +253,10 @@ new KafkaJSRequestTimeoutError('Request requestInfo timed out', {
   correlationId: 0,
   createdAt: 0,
   sentAt: 0,
-  pendingDuration: 0
-});
+  pendingDuration: 0,
+})
 
-new KafkaJSTopicMetadataNotLoaded('Topic metadata not loaded', { topic: topic });
+new KafkaJSTopicMetadataNotLoaded('Topic metadata not loaded', { topic: topic })
 
 const partitionMetadata: PartitionMetadata = {
   partitionErrorCode: 0,
@@ -248,10 +267,13 @@ const partitionMetadata: PartitionMetadata = {
 }
 new KafkaJSStaleTopicMetadataAssignment('Topic has been updated', {
   topic: topic,
-  unknownPartitions: [partitionMetadata]
-});
+  unknownPartitions: [partitionMetadata],
+})
 
-new KafkaJSServerDoesNotSupportApiKey('The Kafka server does not support the requested API version', {
-  apiKey: 0,
-  apiName: 'Produce'
-});
+new KafkaJSServerDoesNotSupportApiKey(
+  'The Kafka server does not support the requested API version',
+  {
+    apiKey: 0,
+    apiName: 'Produce',
+  }
+)

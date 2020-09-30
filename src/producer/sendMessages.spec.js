@@ -54,7 +54,7 @@ describe('Producer > sendMessages', () => {
       },
     ]
     cluster = {
-      addTargetTopic: jest.fn(),
+      addMultipleTargetTopics: jest.fn(),
       refreshMetadata: jest.fn(),
       refreshMetadataIfNecessary: jest.fn(),
       findTopicPartitionMetadata: jest.fn(() => topicPartitionMetadata),
@@ -197,8 +197,8 @@ describe('Producer > sendMessages', () => {
     })
 
     cluster.findTopicPartitionMetadata
-      .mockImplementationOnce(() => ({}))
-      .mockImplementationOnce(() => partitionsPerLeader)
+      .mockImplementationOnce(() => [])
+      .mockImplementationOnce(() => topicPartitionMetadata)
 
     await sendMessages({ topicMessages: [{ topic, messages }] })
 
@@ -216,8 +216,8 @@ describe('Producer > sendMessages', () => {
     eosManager.getSequence.mockReturnValue(5)
 
     cluster.findTopicPartitionMetadata
-      .mockImplementationOnce(() => ({}))
-      .mockImplementationOnce(() => partitionsPerLeader)
+      .mockImplementationOnce(() => [])
+      .mockImplementationOnce(() => topicPartitionMetadata)
 
     await sendMessages({
       topicMessages: [{ topic, messages }],
@@ -262,8 +262,8 @@ describe('Producer > sendMessages', () => {
     })
 
     cluster.findTopicPartitionMetadata
-      .mockImplementationOnce(() => ({}))
-      .mockImplementationOnce(() => partitionsPerLeader)
+      .mockImplementationOnce(() => [])
+      .mockImplementationOnce(() => topicPartitionMetadata)
 
     eosManager.isTransactional.mockReturnValue(true)
 
@@ -302,8 +302,8 @@ describe('Producer > sendMessages', () => {
     })
 
     cluster.findTopicPartitionMetadata
-      .mockImplementationOnce(() => ({}))
-      .mockImplementationOnce(() => partitionsPerLeader)
+      .mockImplementationOnce(() => [])
+      .mockImplementationOnce(() => topicPartitionMetadata)
 
     eosManager.isTransactional.mockReturnValue(true)
 
@@ -347,8 +347,8 @@ describe('Producer > sendMessages', () => {
     })
 
     cluster.findTopicPartitionMetadata
-      .mockImplementationOnce(() => ({}))
-      .mockImplementationOnce(() => partitionsPerLeader)
+      .mockImplementationOnce(() => [])
+      .mockImplementationOnce(() => topicPartitionMetadata)
 
     eosManager.isTransactional.mockReturnValue(false)
 

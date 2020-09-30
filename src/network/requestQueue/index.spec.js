@@ -1,3 +1,5 @@
+jest.setTimeout(3000)
+
 const sleep = require('../../utils/sleep')
 const { newLogger } = require('testHelpers')
 const InstrumentationEventEmitter = require('../../instrumentation/emitter')
@@ -28,6 +30,50 @@ describe('Network > RequestQueue', () => {
     requestQueue = createRequestQueue()
   })
 
+  describe('#waitForPendingRequests', () => {
+    let request, send, size, payload
+
+    beforeEach(() => {
+      send = jest.fn()
+      payload = { ok: true }
+      size = 32
+      request = {
+        sendRequest: send,
+        entry: createEntry(),
+        expectResponse: true,
+      }
+    })
+
+    it('blocks until all pending requests are fulfilled', async () => {
+      const emitter = new InstrumentationEventEmitter()
+      requestQueue = createRequestQueue({
+        instrumentationEmitter: emitter,
+      })
+
+      const removeListener = emitter.addListener(events.NETWORK_REQUEST_QUEUE_SIZE, event => {
+        if (event.payload.queueSize === 0) {
+          requestQueue.fulfillRequest({
+            correlationId: request.entry.correlationId,
+            payload,
+            size,
+          })
+        }
+      })
+
+      requestQueue.maybeThrottle(50)
+      requestQueue.push(request)
+
+      expect(requestQueue.pending.length).toEqual(1)
+      expect(requestQueue.inflight.size).toEqual(0)
+
+      await requestQueue.waitForPendingRequests()
+
+      removeListener()
+      expect(requestQueue.pending.length).toEqual(0)
+      expect(requestQueue.inflight.size).toEqual(0)
+    })
+  })
+
   describe('#push', () => {
     let request, send
 
@@ -40,23 +86,25 @@ describe('Network > RequestQueue', () => {
       }
     })
 
-    it('calls send on the request', () => {
-      requestQueue.push(request)
-      expect(send).toHaveBeenCalledTimes(1)
-    })
-
-    describe('when the request does not require a response', () => {
-      beforeEach(() => {
-        request.expectResponse = false
+    describe('when there are no inflight requests', () => {
+      it('calls send on the request', () => {
+        requestQueue.push(request)
+        expect(send).toHaveBeenCalledTimes(1)
       })
 
-      it('deletes the inflight request and complete the request', () => {
-        requestQueue.push(request)
-        expect(request.entry.resolve).toHaveBeenCalledWith(
-          expect.objectContaining({ size: 0, payload: null })
-        )
+      describe('when the request does not require a response', () => {
+        beforeEach(() => {
+          request.expectResponse = false
+        })
 
-        expect(requestQueue.inflight.size).toEqual(0)
+        it('deletes the inflight request and complete the request', () => {
+          requestQueue.push(request)
+          expect(request.entry.resolve).toHaveBeenCalledWith(
+            expect.objectContaining({ size: 0, payload: null })
+          )
+
+          expect(requestQueue.inflight.size).toEqual(0)
+        })
       })
     })
 
@@ -80,6 +128,28 @@ describe('Network > RequestQueue', () => {
         expect(requestQueue.pending.length).toEqual(1)
       })
 
+      describe('when the request does not require a response', () => {
+        beforeEach(() => {
+          request.expectResponse = false
+        })
+
+        it('deletes the inflight request and complete the request when it is processed', () => {
+          requestQueue.push(request)
+
+          // Process the queue except the entry for the request, which should get handled automatically
+          for (const correlationId of requestQueue.inflight.keys()) {
+            if (correlationId !== request.entry.correlationId) {
+              requestQueue.fulfillRequest({ correlationId, size: 1, payload: Buffer.from('a') })
+            }
+          }
+          expect(request.entry.resolve).toHaveBeenCalledWith(
+            expect.objectContaining({ size: 0, payload: null })
+          )
+
+          expect(requestQueue.inflight.size).toEqual(0)
+        })
+      })
+
       describe('when maxInFlightRequests is null', () => {
         let maxInFlightRequests
 
@@ -95,6 +165,28 @@ describe('Network > RequestQueue', () => {
         })
       })
     })
+
+    it('respects the client-side throttling', async () => {
+      const sendDone = new Promise(resolve => {
+        request.sendRequest = () => {
+          resolve(Date.now())
+        }
+      })
+
+      expect(requestQueue.canSendSocketRequestImmediately())
+
+      const before = Date.now()
+      const throttledUntilBefore = requestQueue.throttledUntil
+      expect(throttledUntilBefore).toBeLessThan(before)
+
+      const clientSideThrottleTime = 500
+      requestQueue.maybeThrottle(clientSideThrottleTime)
+      expect(requestQueue.throttledUntil).toBeGreaterThanOrEqual(before + clientSideThrottleTime)
+      requestQueue.push(request)
+
+      const sentAt = await sendDone
+      expect(sentAt).toBeGreaterThanOrEqual(before + clientSideThrottleTime)
+    })
   })
 
   describe('#fulfillRequest', () => {
@@ -109,11 +201,10 @@ describe('Network > RequestQueue', () => {
         entry: createEntry(),
         expectResponse: true,
       }
-
-      requestQueue.push(request)
     })
 
     it('deletes the inflight request and calls completed on the request', () => {
+      requestQueue.push(request)
       expect(requestQueue.inflight.size).toEqual(1)
 
       requestQueue.fulfillRequest({
@@ -139,21 +230,23 @@ describe('Network > RequestQueue', () => {
         }
       })
 
-      it('calls send on the latest pending request', () => {
+      it('calls send on the earliest pending request', () => {
         requestQueue.push(request)
         expect(requestQueue.pending.length).toEqual(1)
 
         const currentInflightSize = requestQueue.inflight.size
 
+        // Pick one of the inflight requests to fulfill
+        const correlationId = requestQueue.inflight.keys().next().value
         requestQueue.fulfillRequest({
-          correlationId: request.entry.correlationId,
+          correlationId: correlationId,
           payload,
           size,
         })
 
         expect(send).toHaveBeenCalled()
         expect(requestQueue.pending.length).toEqual(0)
-        expect(requestQueue.inflight.size).toEqual(currentInflightSize - 1)
+        expect(requestQueue.inflight.size).toEqual(currentInflightSize)
       })
     })
   })
@@ -269,8 +362,11 @@ describe('Network > RequestQueue', () => {
       }
 
       requestQueue.push(request)
+
+      // Pick one of the inflight requests to fulfill
+      const correlationId = requestQueue.inflight.keys().next().value
       requestQueue.fulfillRequest({
-        correlationId: request.entry.correlationId,
+        correlationId,
         payload,
         size,
       })
@@ -310,7 +406,7 @@ describe('Network > RequestQueue', () => {
       requestQueue.scheduleRequestTimeoutCheck()
       requestQueue.push(request)
 
-      await sleep(requestTimeout + 1)
+      await sleep(requestTimeout + 10)
 
       expect(eventCalled).toHaveBeenCalledWith({
         id: expect.any(Number),

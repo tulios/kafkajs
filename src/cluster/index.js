@@ -28,11 +28,11 @@ const mergeTopics = (obj, { topic, partitions }) => ({
  * @param {number} connectionTimeout - in milliseconds
  * @param {number} authenticationTimeout - in milliseconds
  * @param {number} reauthenticationThreshold - in milliseconds
- * @param {number} requestTimeout - in milliseconds
+ * @param {number} [requestTimeout=30000] - in milliseconds
  * @param {number} metadataMaxAge - in milliseconds
  * @param {boolean} allowAutoTopicCreation
  * @param {number} maxInFlightRequests
- * @param {IsolationLevel} isolationLevel
+ * @param {number} isolationLevel
  * @param {Object} retry
  * @param {Logger} logger
  * @param {Map} offsets
@@ -49,11 +49,10 @@ module.exports = class Cluster {
     connectionTimeout,
     authenticationTimeout,
     reauthenticationThreshold,
-    requestTimeout,
+    requestTimeout = 30000,
     enforceRequestTimeout,
     metadataMaxAge,
     retry,
-    allowExperimentalV011,
     allowAutoTopicCreation,
     maxInFlightRequests,
     isolationLevel,
@@ -62,7 +61,8 @@ module.exports = class Cluster {
   }) {
     this.rootLogger = rootLogger
     this.logger = rootLogger.namespace('Cluster')
-    this.retrier = createRetry({ ...retry })
+    this.retry = { ...retry }
+    this.retrier = createRetry(this.retry)
     this.connectionBuilder = connectionBuilder({
       logger: rootLogger,
       instrumentationEmitter,
@@ -88,7 +88,6 @@ module.exports = class Cluster {
       connectionBuilder: this.connectionBuilder,
       logger: this.rootLogger,
       retry,
-      allowExperimentalV011,
       allowAutoTopicCreation,
       authenticationTimeout,
       reauthenticationThreshold,
@@ -115,6 +114,15 @@ module.exports = class Cluster {
    */
   async disconnect() {
     await this.brokerPool.disconnect()
+  }
+
+  /**
+   * @public
+   * @param {String} host
+   * @param {Number} port
+   */
+  removeBroker({ host, port }) {
+    this.brokerPool.removeBroker({ host, port })
   }
 
   /**
@@ -241,7 +249,7 @@ module.exports = class Cluster {
   /**
    * @public
    * @param {string} topic
-   * @returns {Object} Example:
+   * @returns {import("../../types").PartitionMetadata[]} Example:
    *                   [{
    *                     isr: [2],
    *                     leader: 2,
@@ -409,19 +417,21 @@ module.exports = class Cluster {
     const topicConfigurations = {}
 
     const addDefaultOffset = topic => partition => {
-      const { fromBeginning } = topicConfigurations[topic]
-      return { ...partition, timestamp: this.defaultOffset({ fromBeginning }) }
+      const { timestamp } = topicConfigurations[topic]
+      return { ...partition, timestamp }
     }
 
     // Index all topics and partitions per leader (nodeId)
     for (const topicData of topics) {
-      const { topic, partitions, fromBeginning } = topicData
+      const { topic, partitions, fromBeginning, fromTimestamp } = topicData
       const partitionsPerLeader = this.findLeaderForPartitions(
         topic,
         partitions.map(p => p.partition)
       )
+      const timestamp =
+        fromTimestamp != null ? fromTimestamp : this.defaultOffset({ fromBeginning })
 
-      topicConfigurations[topic] = { fromBeginning }
+      topicConfigurations[topic] = { timestamp }
 
       keys(partitionsPerLeader).map(nodeId => {
         partitionsPerBroker[nodeId] = partitionsPerBroker[nodeId] || {}

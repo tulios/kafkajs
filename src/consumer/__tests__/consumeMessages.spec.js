@@ -1,5 +1,6 @@
 jest.setTimeout(30000)
 
+const createAdmin = require('../../admin')
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
 const { Types } = require('../../protocol/message/compression')
@@ -15,13 +16,13 @@ const {
   waitFor,
   waitForMessages,
   waitForNextEvent,
-  testIfKafka_0_11,
+  testIfKafkaAtLeast_0_11,
   waitForConsumerToJoinGroup,
   generateMessages,
 } = require('testHelpers')
 
 describe('Consumer', () => {
-  let topicName, groupId, cluster, producer, consumer
+  let topicName, groupId, cluster, producer, consumer, admin
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
@@ -30,6 +31,11 @@ describe('Consumer', () => {
     await createTopic({ topic: topicName })
 
     cluster = createCluster()
+    admin = createAdmin({
+      cluster,
+      logger: newLogger(),
+    })
+
     producer = createProducer({
       cluster,
       createPartitioner: createModPartitioner,
@@ -45,8 +51,9 @@ describe('Consumer', () => {
   })
 
   afterEach(async () => {
-    await consumer.disconnect()
-    await producer.disconnect()
+    admin && (await admin.disconnect())
+    consumer && (await consumer.disconnect())
+    producer && (await producer.disconnect())
   })
 
   it('consume messages', async () => {
@@ -242,11 +249,65 @@ describe('Consumer', () => {
     ])
   })
 
-  testIfKafka_0_11('consume messages with 0.11 format', async () => {
+  it('commits the last offsets processed before stopping', async () => {
+    jest.spyOn(cluster, 'refreshMetadataIfNecessary')
+
+    await Promise.all([admin.connect(), consumer.connect(), producer.connect()])
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    const messagesConsumed = []
+    consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+    await waitForConsumerToJoinGroup(consumer)
+
+    // stop the consumer right after processing the batch, the offsets should be
+    // committed in the end
+    consumer.on(consumer.events.END_BATCH_PROCESS, async () => {
+      await consumer.stop()
+    })
+
+    const messages = Array(100)
+      .fill()
+      .map(() => {
+        const value = secureRandom()
+        return { key: `key-${value}`, value: `value-${value}` }
+      })
+
+    await producer.send({ acks: 1, topic: topicName, messages })
+    await waitForMessages(messagesConsumed, { number: messages.length })
+
+    expect(cluster.refreshMetadataIfNecessary).toHaveBeenCalled()
+
+    expect(messagesConsumed[0]).toEqual({
+      topic: topicName,
+      partition: 0,
+      message: expect.objectContaining({
+        key: Buffer.from(messages[0].key),
+        value: Buffer.from(messages[0].value),
+        offset: '0',
+      }),
+    })
+
+    expect(messagesConsumed[messagesConsumed.length - 1]).toEqual({
+      topic: topicName,
+      partition: 0,
+      message: expect.objectContaining({
+        key: Buffer.from(messages[messages.length - 1].key),
+        value: Buffer.from(messages[messages.length - 1].value),
+        offset: '99',
+      }),
+    })
+
+    // check if all offsets are present
+    expect(messagesConsumed.map(m => m.message.offset)).toEqual(messages.map((_, i) => `${i}`))
+    const [partition] = await admin.fetchOffsets({ groupId, topic: topicName })
+    expect(partition.offset).toEqual('100') // check if offsets were committed
+  })
+
+  testIfKafkaAtLeast_0_11('consume messages with 0.11 format', async () => {
     const topicName2 = `test-topic2-${secureRandom()}`
     await createTopic({ topic: topicName2 })
 
-    cluster = createCluster({ allowExperimentalV011: true })
+    cluster = createCluster()
     producer = createProducer({
       cluster,
       createPartitioner: createModPartitioner,
@@ -370,8 +431,8 @@ describe('Consumer', () => {
     expect(messagesFromTopic2.map(m => m.message.offset)).toEqual(messages2.map((_, i) => `${i}`))
   })
 
-  testIfKafka_0_11('consume GZIP messages with 0.11 format', async () => {
-    cluster = createCluster({ allowExperimentalV011: true })
+  testIfKafkaAtLeast_0_11('consume GZIP messages with 0.11 format', async () => {
+    cluster = createCluster()
     producer = createProducer({
       cluster,
       createPartitioner: createModPartitioner,
@@ -658,8 +719,8 @@ describe('Consumer', () => {
   })
 
   describe('transactions', () => {
-    testIfKafka_0_11('accepts messages from an idempotent producer', async () => {
-      cluster = createCluster({ allowExperimentalV011: true })
+    testIfKafkaAtLeast_0_11('accepts messages from an idempotent producer', async () => {
+      cluster = createCluster()
       producer = createProducer({
         cluster,
         createPartitioner: createModPartitioner,
@@ -704,8 +765,8 @@ describe('Consumer', () => {
       expect(messagesConsumed[99].message.value.toString()).toMatch(/value-idempotent-99/)
     })
 
-    testIfKafka_0_11('accepts messages from committed transactions', async () => {
-      cluster = createCluster({ allowExperimentalV011: true })
+    testIfKafkaAtLeast_0_11('accepts messages from committed transactions', async () => {
+      cluster = createCluster()
       producer = createProducer({
         cluster,
         createPartitioner: createModPartitioner,
@@ -780,8 +841,8 @@ describe('Consumer', () => {
       expect(messagesConsumed[number - 2].message.value.toString()).toMatch(/value-txn2-99/)
     })
 
-    testIfKafka_0_11('does not receive aborted messages', async () => {
-      cluster = createCluster({ allowExperimentalV011: true })
+    testIfKafkaAtLeast_0_11('does not receive aborted messages', async () => {
+      cluster = createCluster()
       producer = createProducer({
         cluster,
         createPartitioner: createModPartitioner,
@@ -848,12 +909,12 @@ describe('Consumer', () => {
       expect(messagesConsumed[10].message.value.toString()).toMatch(/value-committed-txn-9/)
     })
 
-    testIfKafka_0_11(
+    testIfKafkaAtLeast_0_11(
       'receives aborted messages for an isolation level of READ_UNCOMMITTED',
       async () => {
         const isolationLevel = ISOLATION_LEVEL.READ_UNCOMMITTED
 
-        cluster = createCluster({ allowExperimentalV011: true, isolationLevel })
+        cluster = createCluster({ isolationLevel })
         producer = createProducer({
           cluster,
           createPartitioner: createModPartitioner,
@@ -904,10 +965,10 @@ describe('Consumer', () => {
       }
     )
 
-    testIfKafka_0_11(
+    testIfKafkaAtLeast_0_11(
       'respects offsets sent by a committed transaction ("consume-transform-produce" flow)',
       async () => {
-        cluster = createCluster({ allowExperimentalV011: true })
+        cluster = createCluster()
         producer = createProducer({
           cluster,
           logger: newLogger(),
@@ -1019,11 +1080,10 @@ describe('Consumer', () => {
       }
     )
 
-    testIfKafka_0_11(
+    testIfKafkaAtLeast_0_11(
       'does not respect offsets sent by an aborted transaction ("consume-transform-produce" flow)',
       async () => {
         cluster = createCluster({
-          allowExperimentalV011: true,
           isolationLevel: ISOLATION_LEVEL.READ_COMMITTED,
         })
         producer = createProducer({

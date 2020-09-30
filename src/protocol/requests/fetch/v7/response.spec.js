@@ -1,6 +1,6 @@
 const { decode, parse } = require('./response')
 
-describe('Protocol > Requests > Fetch > v5', () => {
+describe('Protocol > Requests > Fetch > v7', () => {
   const batchContext = {
     firstOffset: expect.any(String),
     firstSequence: expect.any(Number),
@@ -13,6 +13,7 @@ describe('Protocol > Requests > Fetch > v5', () => {
     partitionLeaderEpoch: expect.any(Number),
     producerEpoch: expect.any(Number),
     producerId: expect.any(String),
+    timestampType: expect.any(Number),
   }
 
   test('response', async () => {

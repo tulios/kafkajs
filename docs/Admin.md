@@ -37,11 +37,11 @@ await admin.createTopics({
     validateOnly: <boolean>,
     waitForLeaders: <boolean>
     timeout: <Number>,
-    topics: <Topic[]>,
+    topics: <ITopicConfig[]>,
 })
 ```
 
-`Topic` structure:
+`ITopicConfig` structure:
 
 ```javascript
 {
@@ -166,12 +166,46 @@ await admin.fetchTopicOffsets(topic)
 // ]
 ```
 
+## <a name="fetch-topic-offsets-by-timestamp"></a> Fetch topic offsets by timestamp
+
+Specify a `timestamp` to get the earliest offset on each partition where the message's timestamp is greater than or equal to the given timestamp.
+
+```javascript
+await admin.fetchTopicOffsetsByTimestamp(topic, timestamp)
+// [
+//   { partition: 0, offset: '3244' },
+//   { partition: 1, offset: '3113' },
+// ]
+```
+
 ## <a name="fetch-offsets"></a> Fetch consumer group offsets
 
 `fetchOffsets` returns the consumer group offset for a topic.
 
 ```javascript
-await admin.fetchOffsets({ groupId, topic })
+await admin.fetchOffsets({ groupId, topic, })
+// [
+//   { partition: 0, offset: '31004' },
+//   { partition: 1, offset: '54312' },
+//   { partition: 2, offset: '32103' },
+//   { partition: 3, offset: '28' },
+// ]
+```
+
+Include the optional `resolveOffsets` flag to resolve the offsets without having to start a consumer, useful when fetching directly after calling [resetOffets](#a-name-reset-offsets-a-reset-consumer-group-offsets):
+
+```javascript
+await admin.resetOffsets({ groupId, topic })
+await admin.fetchOffsets({ groupId, topic, resolveOffsets: false })
+// [
+//   { partition: 0, offset: '-1' },
+//   { partition: 1, offset: '-1' },
+//   { partition: 2, offset: '-1' },
+//   { partition: 3, offset: '-1' },
+// ]
+
+await admin.resetOffsets({ groupId, topic })
+await admin.fetchOffsets({ groupId, topic, resolveOffsets: true })
 // [
 //   { partition: 0, offset: '31004' },
 //   { partition: 1, offset: '54312' },
@@ -224,6 +258,15 @@ await admin.setOffsets({
 })
 ```
 
+## <a name="reset-offsets-by-timestamp"></a> Reset consumer group offsets by timestamp
+
+Combining `fetchTopicOffsetsByTimestamp` and `setOffsets` can reset a consumer group's offsets on each partition to the earliest offset whose timestamp is greater than or equal to the given timestamp.
+The consumer group must have no running instances when performing the reset. Otherwise, the command will be rejected.
+
+```javascript
+await admin.setOffsets({ groupId, topic, partitions: await admin.fetchTopicOffsetsByTimestamp(topic, timestamp) })
+```
+
 ## <a name="describe-cluster"></a> Describe cluster
 
 Allows you to get information about the broker cluster. This is mostly useful
@@ -255,7 +298,7 @@ await admin.describeConfigs({
 
 ```javascript
 {
-    type: <ResourceType>,
+    type: <ConfigResourceType>,
     name: <String>,
     configNames: <String[]>
 }
@@ -264,13 +307,13 @@ await admin.describeConfigs({
 Returning all configs for a given resource:
 
 ```javascript
-const { ResourceTypes } = require('kafkajs')
+const { ConfigResourceTypes } = require('kafkajs')
 
 await admin.describeConfigs({
   includeSynonyms: false,
   resources: [
     {
-      type: ResourceTypes.TOPIC,
+      type: ConfigResourceTypes.TOPIC,
       name: 'topic-name'
     }
   ]
@@ -280,13 +323,13 @@ await admin.describeConfigs({
 Returning specific configs for a given resource:
 
 ```javascript
-const { ResourceTypes } = require('kafkajs')
+const { ConfigResourceTypes } = require('kafkajs')
 
 await admin.describeConfigs({
   includeSynonyms: false,
   resources: [
     {
-      type: ResourceTypes.TOPIC,
+      type: ConfigResourceTypes.TOPIC,
       name: 'topic-name',
       configNames: ['cleanup.policy']
     }
@@ -294,7 +337,7 @@ await admin.describeConfigs({
 })
 ```
 
-Take a look at [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) for a complete list of resources.
+Take a look at [configResourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/configResourceTypes.js) for a complete list of resources.
 
 Example response:
 
@@ -319,6 +362,8 @@ Example response:
 }
 ```
 
+*NOTE:* [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) is deprecated as it mistakenly  has the ACL resource types instead of the config resource types.
+
 ## <a name="alter-configs"></a> Alter configs
 
 Update the configuration for the specified resources.
@@ -334,7 +379,7 @@ await admin.alterConfigs({
 
 ```javascript
 {
-    type: <ResourceType>,
+    type: <ConfigResourceType>,
     name: <String>,
     configEntries: <ResourceConfigEntry[]>
 }
@@ -352,18 +397,18 @@ await admin.alterConfigs({
 Example:
 
 ```javascript
-const { ResourceTypes } = require('kafkajs')
+const { ConfigResourceTypes } = require('kafkajs')
 
 await admin.alterConfigs({
     resources: [{
-        type: ResourceTypes.TOPIC,
+        type: ConfigResourceTypes.TOPIC,
         name: 'topic-name',
         configEntries: [{ name: 'cleanup.policy', value: 'compact' }]
     }]
 })
 ```
 
-Take a look at [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) for a complete list of resources.
+Take a look at [configResourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/configResourceTypes.js) for a complete list of resources.
 
 Example response:
 
@@ -379,19 +424,13 @@ Example response:
 }
 ```
 
+*NOTE:* [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) is deprecated as it mistakenly  has the ACL resource types instead of the config resource types.
+
 ## <a name="list-groups"></a> List groups
 
 List groups available on the broker.
 
 ```javascript
-await admin.listGroups()
-```
-
-Example:
-
-```javascript
-const { ResourceTypes } = require('kafkajs')
-
 await admin.listGroups()
 ```
 
@@ -403,6 +442,33 @@ Example response:
         {groupId: 'testgroup', protocolType: 'consumer'}
     ]
 }
+```
+
+## <a name="describe-groups"></a> Describe groups
+
+Describe consumer groups by `groupId`s. This is similar to [consumer.describeGroup()](Consuming.md#describe-group), except
+it allows you to describe multiple groups and does not require you to have a consumer be part of any of those groups.
+
+```js
+await admin.describeGroups([ 'testgroup' ])
+// {
+//   groups: [{
+//     errorCode: 0,
+//     groupId: 'testgroup',
+//     members: [
+//       {
+//         clientHost: '/172.19.0.1',
+//         clientId: 'test-3e93246fe1f4efa7380a',
+//         memberAssignment: Buffer,
+//         memberId: 'test-3e93246fe1f4efa7380a-ff87d06d-5c87-49b8-a1f1-c4f8e3ffe7eb',
+//         memberMetadata: Buffer,
+//       },
+//     ],
+//     protocol: 'RoundRobinAssigner',
+//     protocolType: 'consumer',
+//     state: 'Stable',
+//   }]
+// }
 ```
 
 ## <a name="delete-groups"></a> Delete groups
@@ -418,8 +484,6 @@ await admin.deleteGroups([groupId])
 Example:
 
 ```javascript
-const { ResourceTypes } = require('kafkajs')
-
 await admin.deleteGroups(['group-test'])
 ```
 

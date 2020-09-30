@@ -51,8 +51,8 @@ describe('Broker > AddPartitionsToTxn', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await broker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    broker && (await broker.disconnect())
   })
 
   test('request', async () => {
@@ -86,7 +86,7 @@ describe('Broker > AddPartitionsToTxn', () => {
     await expect(
       broker.addPartitionsToTxn({
         transactionalId,
-        producerId: 'foo',
+        producerId: '123456789',
         producerEpoch,
         topics: [
           {

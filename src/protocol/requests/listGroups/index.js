@@ -14,11 +14,6 @@ const versions = {
     const response = require('./v2/response')
     return { request: request(), response }
   },
-  3: () => {
-    const request = require('./v3/request')
-    const response = require('./v3/response')
-    return { request: request(), response }
-  },
 }
 
 module.exports = {

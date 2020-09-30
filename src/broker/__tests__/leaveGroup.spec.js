@@ -30,8 +30,8 @@ describe('Broker > LeaveGroup', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await groupCoordinator.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    groupCoordinator && (await groupCoordinator.disconnect())
   })
 
   test('request', async () => {
@@ -61,6 +61,11 @@ describe('Broker > LeaveGroup', () => {
     })
 
     const response = await groupCoordinator.leaveGroup({ groupId, memberId })
-    expect(response).toEqual({ throttleTime: 0, errorCode: 0 })
+    expect(response).toEqual({
+      throttleTime: 0,
+      clientSideThrottleTime: 0,
+      errorCode: 0,
+      members: [{ errorCode: 0, memberId, groupInstanceId: null }],
+    })
   })
 })

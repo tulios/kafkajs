@@ -1,4 +1,5 @@
-const Long = require('long')
+const EventEmitter = require('events')
+const Long = require('../utils/long')
 const createRetry = require('../retry')
 const limitConcurrency = require('../utils/concurrency')
 const { KafkaJSError } = require('../errors')
@@ -8,15 +9,29 @@ const {
   events: { GROUP_JOIN, FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS },
 } = require('./instrumentationEvents')
 
-const isTestMode = process.env.NODE_ENV === 'test'
-
 const isRebalancing = e =>
   e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
 
 const isKafkaJSError = e => e instanceof KafkaJSError
 const isSameOffset = (offsetA, offsetB) => Long.fromValue(offsetA).equals(Long.fromValue(offsetB))
+const CONSUMING_START = 'consuming-start'
+const CONSUMING_STOP = 'consuming-stop'
 
-module.exports = class Runner {
+module.exports = class Runner extends EventEmitter {
+  /**
+   * @param {object} options
+   * @param {import("../../types").Logger} options.logger
+   * @param {import("./consumerGroup")} options.consumerGroup
+   * @param {import("../instrumentation/emitter")} options.instrumentationEmitter
+   * @param {boolean} [options.eachBatchAutoResolve=true]
+   * @param {number} [options.partitionsConsumedConcurrently]
+   * @param {(payload: import("../../types").EachBatchPayload) => Promise<void>} options.eachBatch
+   * @param {(payload: import("../../types").EachMessagePayload) => Promise<void>} options.eachMessage
+   * @param {number} [options.heartbeatInterval]
+   * @param {(reason: Error) => void} options.onCrash
+   * @param {import("../../types").RetryOptions} [options.retry]
+   * @param {boolean} [options.autoCommit=true]
+   */
   constructor({
     logger,
     consumerGroup,
@@ -30,6 +45,7 @@ module.exports = class Runner {
     retry,
     autoCommit = true,
   }) {
+    super()
     this.logger = logger.namespace('Runner')
     this.consumerGroup = consumerGroup
     this.instrumentationEmitter = instrumentationEmitter
@@ -44,6 +60,17 @@ module.exports = class Runner {
 
     this.running = false
     this.consuming = false
+  }
+
+  get consuming() {
+    return this._consuming
+  }
+
+  set consuming(value) {
+    if (this._consuming !== value) {
+      this._consuming = value
+      this.emit(value ? CONSUMING_START : CONSUMING_STOP)
+    }
   }
 
   async join() {
@@ -126,29 +153,23 @@ module.exports = class Runner {
     this.running = false
 
     try {
-      if (!isTestMode) {
-        await this.waitForConsumer()
-      }
+      await this.waitForConsumer()
       await this.consumerGroup.leave()
     } catch (e) {}
   }
 
   waitForConsumer() {
     return new Promise(resolve => {
-      const scheduleWait = () => {
-        this.logger.debug('waiting for consumer to finish...', {
-          groupId: this.consumerGroup.groupId,
-          memberId: this.consumerGroup.memberId,
-        })
-
-        setTimeout(() => (!this.consuming ? resolve() : scheduleWait()), 1000)
-      }
-
       if (!this.consuming) {
         return resolve()
       }
 
-      scheduleWait()
+      this.logger.debug('waiting for consumer to finish...', {
+        groupId: this.consumerGroup.groupId,
+        memberId: this.consumerGroup.memberId,
+      })
+
+      this.once(CONSUMING_STOP, () => resolve())
     })
   }
 
@@ -169,11 +190,12 @@ module.exports = class Runner {
             partition,
             offset: message.offset,
             stack: e.stack,
+            error: e,
           })
         }
 
-        // In case of errors, commit the previously consumed offsets
-        await this.consumerGroup.commitOffsets()
+        // In case of errors, commit the previously consumed offsets unless autoCommit is disabled
+        await this.autoCommitOffsets()
         throw e
       }
 
@@ -236,6 +258,7 @@ module.exports = class Runner {
           partition,
           offset: batch.firstOffset(),
           stack: e.stack,
+          error: e,
         })
       }
 
@@ -306,28 +329,33 @@ module.exports = class Runner {
       })
     }
 
+    const { lock, unlock, unlockWithError } = barrier()
     const concurrently = limitConcurrency({ limit: this.partitionsConsumedConcurrently })
 
-    if (!this.running) {
-      return
-    }
-
-    const enqueuedTasks = []
-    let expectedNumberOfExecutions = 0
+    let requestsCompleted = false
     let numberOfExecutions = 0
-    const { lock, unlock, unlockWithError } = barrier()
+    let expectedNumberOfExecutions = 0
+    const enqueuedTasks = []
 
     while (true) {
       const result = iterator.next()
+
       if (result.done) {
         break
       }
 
-      enqueuedTasks.push(async () => {
-        if (!this.running) {
-          return
-        }
+      if (!this.running) {
+        result.value.catch(error => {
+          this.logger.debug('Ignoring error in fetch request while stopping runner', {
+            error: error.message || error,
+            stack: error.stack,
+          })
+        })
 
+        continue
+      }
+
+      enqueuedTasks.push(async () => {
         const batches = await result.value
         expectedNumberOfExecutions += batches.length
 
@@ -348,7 +376,7 @@ module.exports = class Runner {
               unlockWithError(e)
             } finally {
               numberOfExecutions++
-              if (numberOfExecutions === expectedNumberOfExecutions) {
+              if (requestsCompleted && numberOfExecutions === expectedNumberOfExecutions) {
                 unlock()
               }
             }
@@ -357,14 +385,18 @@ module.exports = class Runner {
       })
     }
 
-    if (!this.running) {
-      return
+    await Promise.all(enqueuedTasks.map(fn => fn()))
+    requestsCompleted = true
+
+    if (expectedNumberOfExecutions === numberOfExecutions) {
+      unlock()
     }
 
-    await Promise.all(enqueuedTasks.map(fn => fn()))
-    if (expectedNumberOfExecutions > 0) {
-      await lock
+    const error = await lock
+    if (error) {
+      throw error
     }
+
     await this.autoCommitOffsets()
     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
   }
@@ -375,6 +407,7 @@ module.exports = class Runner {
         groupId: this.consumerGroup.groupId,
         memberId: this.consumerGroup.memberId,
       })
+
       return
     }
 
@@ -383,7 +416,10 @@ module.exports = class Runner {
         this.consuming = true
         await this.fetch()
         this.consuming = false
-        setImmediate(() => this.scheduleFetch())
+
+        if (this.running) {
+          setImmediate(() => this.scheduleFetch())
+        }
       } catch (e) {
         if (!this.running) {
           this.logger.debug('consumer not running, exiting', {
@@ -404,7 +440,7 @@ module.exports = class Runner {
           })
 
           await this.join()
-          this.scheduleFetch()
+          setImmediate(() => this.scheduleFetch())
           return
         }
 
@@ -419,12 +455,12 @@ module.exports = class Runner {
 
           this.consumerGroup.memberId = null
           await this.join()
-          this.scheduleFetch()
+          setImmediate(() => this.scheduleFetch())
           return
         }
 
         if (e.name === 'KafkaJSOffsetOutOfRange') {
-          this.scheduleFetch()
+          setImmediate(() => this.scheduleFetch())
           return
         }
 

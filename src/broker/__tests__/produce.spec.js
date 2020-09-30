@@ -7,7 +7,7 @@ const {
   createConnection,
   newLogger,
   createTopic,
-  testIfKafka_0_11,
+  testIfKafkaAtLeast_0_11,
   retryProtocol,
 } = require('testHelpers')
 
@@ -62,7 +62,7 @@ describe('Broker > Produce', () => {
   })
 
   afterEach(async () => {
-    await broker.disconnect()
+    broker && (await broker.disconnect())
     broker2 && (await broker2.disconnect())
   })
 
@@ -100,17 +100,41 @@ describe('Broker > Produce', () => {
     )
     expect(response1).toEqual({
       topics: [
-        { topicName, partitions: [{ errorCode: 0, offset: '0', partition: 0, timestamp: '-1' }] },
+        {
+          topicName,
+          partitions: [
+            {
+              errorCode: 0,
+              baseOffset: '0',
+              partition: 0,
+              logAppendTime: '-1',
+              logStartOffset: '0',
+            },
+          ],
+        },
       ],
       throttleTime: 0,
+      clientSideThrottleTime: 0,
     })
 
     const response2 = await broker2.produce({ topicData: createTopicData() })
     expect(response2).toEqual({
       topics: [
-        { topicName, partitions: [{ errorCode: 0, offset: '3', partition: 0, timestamp: '-1' }] },
+        {
+          topicName,
+          partitions: [
+            {
+              errorCode: 0,
+              baseOffset: '3',
+              partition: 0,
+              logAppendTime: '-1',
+              logStartOffset: '0',
+            },
+          ],
+        },
       ],
       throttleTime: 0,
+      clientSideThrottleTime: 0,
     })
   })
 
@@ -142,9 +166,21 @@ describe('Broker > Produce', () => {
 
     expect(response1).toEqual({
       topics: [
-        { topicName, partitions: [{ errorCode: 0, offset: '0', partition: 0, timestamp: '-1' }] },
+        {
+          topicName,
+          partitions: [
+            {
+              errorCode: 0,
+              baseOffset: '0',
+              partition: 0,
+              logAppendTime: '-1',
+              logStartOffset: '0',
+            },
+          ],
+        },
       ],
       throttleTime: 0,
+      clientSideThrottleTime: 0,
     })
 
     const response2 = await broker2.produce({
@@ -154,14 +190,26 @@ describe('Broker > Produce', () => {
 
     expect(response2).toEqual({
       topics: [
-        { topicName, partitions: [{ errorCode: 0, offset: '3', partition: 0, timestamp: '-1' }] },
+        {
+          topicName,
+          partitions: [
+            {
+              errorCode: 0,
+              baseOffset: '3',
+              partition: 0,
+              logAppendTime: '-1',
+              logStartOffset: '0',
+            },
+          ],
+        },
       ],
       throttleTime: 0,
+      clientSideThrottleTime: 0,
     })
   })
 
   describe('Record batch', () => {
-    testIfKafka_0_11('request', async () => {
+    testIfKafkaAtLeast_0_11('request', async () => {
       const metadata = await retryProtocol(
         'LEADER_NOT_AVAILABLE',
         async () => await broker.metadata([topicName])
@@ -175,7 +223,6 @@ describe('Broker > Produce', () => {
       broker2 = new Broker({
         connection: createConnection(newBrokerData),
         logger: newLogger(),
-        allowExperimentalV011: true,
       })
       await broker2.connect()
 
@@ -200,6 +247,7 @@ describe('Broker > Produce', () => {
           },
         ],
         throttleTime: 0,
+        clientSideThrottleTime: 0,
       })
 
       const response2 = await broker2.produce({ topicData: createTopicData() })
@@ -219,10 +267,11 @@ describe('Broker > Produce', () => {
           },
         ],
         throttleTime: 0,
+        clientSideThrottleTime: 0,
       })
     })
 
-    testIfKafka_0_11('request with idempotent producer', async () => {
+    testIfKafkaAtLeast_0_11('request with idempotent producer', async () => {
       // Get producer id & epoch
       const {
         coordinator: { host, port },
@@ -261,7 +310,6 @@ describe('Broker > Produce', () => {
       broker2 = new Broker({
         connection: createConnection(newBrokerData),
         logger: newLogger(),
-        allowExperimentalV011: true,
       })
       await broker2.connect()
 
@@ -291,6 +339,7 @@ describe('Broker > Produce', () => {
           },
         ],
         throttleTime: 0,
+        clientSideThrottleTime: 0,
       })
 
       // We have to syncronise the sequence number between the producer and the broker
@@ -321,7 +370,7 @@ describe('Broker > Produce', () => {
       })
     })
 
-    testIfKafka_0_11('request with headers', async () => {
+    testIfKafkaAtLeast_0_11('request with headers', async () => {
       const metadata = await retryProtocol(
         'LEADER_NOT_AVAILABLE',
         async () => await broker.metadata([topicName])
@@ -335,7 +384,6 @@ describe('Broker > Produce', () => {
       broker2 = new Broker({
         connection: createConnection(newBrokerData),
         logger: newLogger(),
-        allowExperimentalV011: true,
       })
       await broker2.connect()
 
@@ -360,6 +408,7 @@ describe('Broker > Produce', () => {
           },
         ],
         throttleTime: 0,
+        clientSideThrottleTime: 0,
       })
 
       const response2 = await broker2.produce({ topicData: createTopicData() })
@@ -379,10 +428,11 @@ describe('Broker > Produce', () => {
           },
         ],
         throttleTime: 0,
+        clientSideThrottleTime: 0,
       })
     })
 
-    testIfKafka_0_11('request with GZIP', async () => {
+    testIfKafkaAtLeast_0_11('request with GZIP', async () => {
       const metadata = await retryProtocol(
         'LEADER_NOT_AVAILABLE',
         async () => await broker.metadata([topicName])
@@ -396,7 +446,6 @@ describe('Broker > Produce', () => {
       broker2 = new Broker({
         connection: createConnection(newBrokerData),
         logger: newLogger(),
-        allowExperimentalV011: true,
       })
       await broker2.connect()
 
@@ -425,6 +474,7 @@ describe('Broker > Produce', () => {
           },
         ],
         throttleTime: 0,
+        clientSideThrottleTime: 0,
       })
 
       const response2 = await broker2.produce({
@@ -448,71 +498,75 @@ describe('Broker > Produce', () => {
           },
         ],
         throttleTime: 0,
+        clientSideThrottleTime: 0,
       })
     })
 
-    testIfKafka_0_11('request to a topic with max timestamp difference configured', async () => {
-      topicName = `test-max-timestamp-difference-${secureRandom()}`
+    testIfKafkaAtLeast_0_11(
+      'request to a topic with max timestamp difference configured',
+      async () => {
+        topicName = `test-max-timestamp-difference-${secureRandom()}`
 
-      await createTopic({
-        topic: topicName,
-        config: [
-          {
-            name: 'message.timestamp.difference.max.ms',
-            value: '604800000', // 7 days
-          },
-        ],
-      })
+        await createTopic({
+          topic: topicName,
+          config: [
+            {
+              name: 'message.timestamp.difference.max.ms',
+              value: '604800000', // 7 days
+            },
+          ],
+        })
 
-      const metadata = await retryProtocol(
-        'LEADER_NOT_AVAILABLE',
-        async () => await broker.metadata([topicName])
-      )
+        const metadata = await retryProtocol(
+          'LEADER_NOT_AVAILABLE',
+          async () => await broker.metadata([topicName])
+        )
 
-      // Find leader of partition
-      const partitionBroker = metadata.topicMetadata[0].partitionMetadata[0].leader
-      const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
+        // Find leader of partition
+        const partitionBroker = metadata.topicMetadata[0].partitionMetadata[0].leader
+        const newBrokerData = metadata.brokers.find(b => b.nodeId === partitionBroker)
 
-      // Connect to the correct broker to produce message
-      broker2 = new Broker({
-        connection: createConnection(newBrokerData),
-        logger: newLogger(),
-        allowExperimentalV011: true,
-      })
-      await broker2.connect()
+        // Connect to the correct broker to produce message
+        broker2 = new Broker({
+          connection: createConnection(newBrokerData),
+          logger: newLogger(),
+        })
+        await broker2.connect()
 
-      const partitionData = {
-        topic: topicName,
-        partitions: [
-          {
-            partition: 0,
-            messages: [{ key: `key-${secureRandom()}`, value: `some-value-${secureRandom()}` }],
-          },
-        ],
+        const partitionData = {
+          topic: topicName,
+          partitions: [
+            {
+              partition: 0,
+              messages: [{ key: `key-${secureRandom()}`, value: `some-value-${secureRandom()}` }],
+            },
+          ],
+        }
+
+        const response1 = await retryProtocol(
+          'LEADER_NOT_AVAILABLE',
+          async () => await broker2.produce({ topicData: [partitionData] })
+        )
+
+        expect(response1).toEqual({
+          topics: [
+            {
+              topicName,
+              partitions: [
+                {
+                  baseOffset: '0',
+                  errorCode: 0,
+                  logAppendTime: '-1',
+                  logStartOffset: '0',
+                  partition: 0,
+                },
+              ],
+            },
+          ],
+          throttleTime: 0,
+          clientSideThrottleTime: 0,
+        })
       }
-
-      const response1 = await retryProtocol(
-        'LEADER_NOT_AVAILABLE',
-        async () => await broker2.produce({ topicData: [partitionData] })
-      )
-
-      expect(response1).toEqual({
-        topics: [
-          {
-            topicName,
-            partitions: [
-              {
-                baseOffset: '0',
-                errorCode: 0,
-                logAppendTime: '-1',
-                logStartOffset: '0',
-                partition: 0,
-              },
-            ],
-          },
-        ],
-        throttleTime: 0,
-      })
-    })
+    )
   })
 })

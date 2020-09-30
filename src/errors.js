@@ -34,6 +34,14 @@ class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
   }
 }
 
+class KafkaJSMemberIdRequired extends KafkaJSProtocolError {
+  constructor(e, { memberId }) {
+    super(e)
+    this.memberId = memberId
+    this.name = 'KafkaJSMemberIdRequired'
+  }
+}
+
 class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
   constructor(e, { retryCount, retryTime }) {
     super(e)
@@ -51,6 +59,15 @@ class KafkaJSConnectionError extends KafkaJSError {
     this.broker = broker
     this.code = code
     this.name = 'KafkaJSConnectionError'
+  }
+}
+
+class KafkaJSConnectionClosedError extends KafkaJSConnectionError {
+  constructor(e, { host, port } = {}) {
+    super(e, { broker: `${host}:${port}` })
+    this.host = host
+    this.port = port
+    this.name = 'KafkaJSConnectionClosedError'
   }
 }
 
@@ -168,10 +185,12 @@ module.exports = {
   KafkaJSBrokerNotFound,
   KafkaJSProtocolError,
   KafkaJSConnectionError,
+  KafkaJSConnectionClosedError,
   KafkaJSRequestTimeoutError,
   KafkaJSSASLAuthenticationError,
   KafkaJSNumberOfRetriesExceeded,
   KafkaJSOffsetOutOfRange,
+  KafkaJSMemberIdRequired,
   KafkaJSGroupCoordinatorNotFound,
   KafkaJSNotImplemented,
   KafkaJSMetadataNotLoaded,

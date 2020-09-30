@@ -17,9 +17,9 @@ pr:
 variables:
   - group: website_secrets
   - name: KAFKA_VERSION
-    value: 2.3
+    value: 2.4
   - name: COMPOSE_FILE
-    value: docker-compose.2_3.yml
+    value: docker-compose.2_4.yml
 
 ####### Linter
 jobs:
@@ -148,6 +148,8 @@ jobs:
         displayName: docker-compose pull
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:consumer:ci
         displayName: test
+        env:
+          NODE_OPTIONS: --max-old-space-size=6655 # 6.5 GB (agents run on Standard_DS2_v2 - https://docs.microsoft.com/en-us/azure/virtual-machines/dv2-dsv2-series#dsv2-series)
       - task: PublishTestResults@2
         condition: succeededOrFailed()
         inputs:
@@ -177,7 +179,35 @@ jobs:
         condition: succeededOrFailed()
         inputs:
           testRunner: JUnit
-          testResultsFiles: '**/test-report.xml'
+          testResultsFiles: "**/test-report.xml"
+
+  - job: test_oauthbearer
+    displayName: 'OauthBearer'
+    dependsOn: lint
+    variables:
+      - name: test_retries
+        value: 2
+      - name: COMPOSE_FILE
+        value: docker-compose.2_4_oauthbearer.yml
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '10.x'
+      - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
+        displayName: should skip tests
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
+        displayName: yarn install
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
+        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:oauthbearer:ci
+        displayName: test
+      - task: PublishTestResults@2
+        condition: succeededOrFailed()
+        inputs:
+          testRunner: JUnit
+          testResultsFiles: "**/test-report.xml"
 
 ####### Deploy
   - job: npm_release
@@ -205,6 +235,40 @@ jobs:
         env:
           GH_TOKEN: $(GH_TOKEN)
 
+  - job: version_website
+    displayName: 'Version website'
+    condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'))
+    dependsOn:
+      - npm_release
+    pool:
+      vmImage: 'Ubuntu 16.04'
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '10.x'
+      - bash: |
+          git config user.name "Website Build Bot"
+          git config user.email "<>"
+        displayName: git config
+      - bash: |
+          cd website
+          yarn install
+          DOC_VERSION=$(echo "$VERSION" | sed -e "s/^refs\/tags\/v//")
+          yarn run version "$DOC_VERSION"
+        displayName: generate version
+        env:
+          VERSION: $(Build.SourceBranch)
+          GH_TOKEN: $(GH_TOKEN)
+      - bash: |
+          git add .
+          DOC_VERSION=$(echo "$VERSION" | sed -e "s/^refs\/tags\/v//")
+          git commit -m "Versioned docs for $DOC_VERSION"
+          git push origin master
+        displayName: commit
+        env:
+          VERSION: $(Build.SourceBranch)
+
+####### Pre-release
   - job: beta_release_check
     displayName: 'Beta release check'
     condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/heads/master'))
@@ -265,6 +329,10 @@ jobs:
         displayName: 'Comment on PR'
         env:
           GH_TOKEN: $(GH_TOKEN)
+      - bash: ./scripts/pipeline/triggerCanaryAppPipeline.sh
+        displayName: Trigger canary app pipeline
+        env:
+          GH_TOKEN: $(GH_TOKEN)
       # - bash: echo "##vso[task.setvariable variable=RELEASE_TAG;isOutput=true]v$PRE_RELEASE_VERSION"
       #   displayName: Set tag name
       # - task: GithubRelease@0
@@ -275,6 +343,7 @@ jobs:
       #     tagSource: manual
       #     tag: '$(RELEASE_TAG)'
 
+####### Website
   - job: website_deploy
     displayName: 'Website'
     condition: and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/heads/master'))
