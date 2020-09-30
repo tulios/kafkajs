@@ -7,7 +7,6 @@ const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentationEvents')
 const { LEVELS } = require('../loggers')
 const { KafkaJSNonRetriableError, KafkaJSDeleteGroupsError } = require('../errors')
-const RESOURCE_TYPES = require('../protocol/resourceTypes')
 const CONFIG_RESOURCE_TYPES = require('../protocol/configResourceTypes')
 const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
 
@@ -630,7 +629,7 @@ module.exports = ({
       throw new KafkaJSNonRetriableError('Resources array cannot be empty')
     }
 
-    const validResourceTypes = Object.values(RESOURCE_TYPES)
+    const validResourceTypes = Object.values(CONFIG_RESOURCE_TYPES)
     const invalidType = resources.find(r => !validResourceTypes.includes(r.type))
 
     if (invalidType) {
