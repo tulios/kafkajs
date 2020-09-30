@@ -8,14 +8,14 @@ const {
   saslBrokers,
 } = require('testHelpers')
 
-const RESOURCE_TYPES = require('../../protocol/resourceTypes')
-const OPERATION_TYPES = require('../../protocol/operationsTypes')
-const PERMISSION_TYPES = require('../../protocol/permissionTypes')
+const ACL_RESOURCE_TYPES = require('../../protocol/aclResourceTypes')
+const ACL_OPERATION_TYPES = require('../../protocol/aclOperationTypes')
+const ACL_PERMISSION_TYPES = require('../../protocol/aclPermissionTypes')
 const RESOURCE_PATTERN_TYPES = require('../../protocol/resourcePatternTypes')
 
 const createSASLAdminClientForUser = ({ username, password }) => {
-  const saslConnectionOpts = () =>
-    Object.assign(sslConnectionOpts(), {
+  const saslConnectionOpts = () => {
+    return Object.assign(sslConnectionOpts(), {
       port: 9094,
       sasl: {
         mechanism: 'plain',
@@ -23,10 +23,19 @@ const createSASLAdminClientForUser = ({ username, password }) => {
         password,
       },
     })
+  }
+
   const admin = createAdmin({
-    cluster: createCluster(saslConnectionOpts(), saslBrokers()),
     logger: newLogger(),
+    cluster: createCluster(
+      {
+        ...saslConnectionOpts(),
+        metadataMaxAge: 50,
+      },
+      saslBrokers()
+    ),
   })
+
   return admin
 }
 
@@ -34,7 +43,7 @@ describe('Admin', () => {
   let admin
 
   afterEach(async () => {
-    await admin.disconnect()
+    admin && (await admin.disconnect())
   })
 
   describe('createAcls', () => {
@@ -53,13 +62,13 @@ describe('Admin', () => {
       await admin.connect()
 
       const ACLEntry = {
-        resourceType: RESOURCE_TYPES.TOPIC,
+        resourceType: ACL_RESOURCE_TYPES.TOPIC,
         resourceName: 123,
         resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
         principal: 'User:foo',
         host: '*',
-        operation: OPERATION_TYPES.ALL,
-        permissionType: PERMISSION_TYPES.DENY,
+        operation: ACL_OPERATION_TYPES.ALL,
+        permissionType: ACL_PERMISSION_TYPES.DENY,
       }
 
       await expect(admin.createAcls({ acl: [ACLEntry] })).rejects.toHaveProperty(
@@ -73,13 +82,13 @@ describe('Admin', () => {
       await admin.connect()
 
       const ACLEntry = {
-        resourceType: RESOURCE_TYPES.TOPIC,
+        resourceType: ACL_RESOURCE_TYPES.TOPIC,
         resourceName: 'foo',
         resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
         principal: 123,
         host: '*',
-        operation: OPERATION_TYPES.ALL,
-        permissionType: PERMISSION_TYPES.DENY,
+        operation: ACL_OPERATION_TYPES.ALL,
+        permissionType: ACL_PERMISSION_TYPES.DENY,
       }
 
       await expect(admin.createAcls({ acl: [ACLEntry] })).rejects.toHaveProperty(
@@ -93,13 +102,13 @@ describe('Admin', () => {
       await admin.connect()
 
       const ACLEntry = {
-        resourceType: RESOURCE_TYPES.TOPIC,
+        resourceType: ACL_RESOURCE_TYPES.TOPIC,
         resourceName: 'foo',
         resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
         principal: 'User:foo',
         host: 123,
-        operation: OPERATION_TYPES.ALL,
-        permissionType: PERMISSION_TYPES.DENY,
+        operation: ACL_OPERATION_TYPES.ALL,
+        permissionType: ACL_PERMISSION_TYPES.DENY,
       }
 
       await expect(admin.createAcls({ acl: [ACLEntry] })).rejects.toHaveProperty(
@@ -118,8 +127,8 @@ describe('Admin', () => {
         resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
         principal: 'User:foo',
         host: '*',
-        operation: OPERATION_TYPES.ALL,
-        permissionType: PERMISSION_TYPES.DENY,
+        operation: ACL_OPERATION_TYPES.ALL,
+        permissionType: ACL_PERMISSION_TYPES.DENY,
       }
 
       await expect(admin.createAcls({ acl: [ACLEntry] })).rejects.toHaveProperty(
@@ -133,13 +142,13 @@ describe('Admin', () => {
       await admin.connect()
 
       const ACLEntry = {
-        resourceType: RESOURCE_TYPES.TOPIC,
+        resourceType: ACL_RESOURCE_TYPES.TOPIC,
         resourceName: 'foo',
         resourcePatternType: 123,
         principal: 'User:foo',
         host: '*',
-        operation: OPERATION_TYPES.ALL,
-        permissionType: PERMISSION_TYPES.DENY,
+        operation: ACL_OPERATION_TYPES.ALL,
+        permissionType: ACL_PERMISSION_TYPES.DENY,
       }
 
       await expect(admin.createAcls({ acl: [ACLEntry] })).rejects.toHaveProperty(
@@ -153,12 +162,12 @@ describe('Admin', () => {
       await admin.connect()
 
       const ACLEntry = {
-        resourceType: RESOURCE_TYPES.TOPIC,
+        resourceType: ACL_RESOURCE_TYPES.TOPIC,
         resourceName: 'foo',
         resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
         principal: 'User:foo',
         host: '*',
-        operation: OPERATION_TYPES.ALL,
+        operation: ACL_OPERATION_TYPES.ALL,
         permissionType: 123,
       }
 
@@ -173,13 +182,13 @@ describe('Admin', () => {
       await admin.connect()
 
       const ACLEntry = {
-        resourceType: RESOURCE_TYPES.TOPIC,
+        resourceType: ACL_RESOURCE_TYPES.TOPIC,
         resourceName: 'foo',
         resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
         principal: 'User:foo',
         host: '*',
         operation: 123,
-        permissionType: PERMISSION_TYPES.DENY,
+        permissionType: ACL_PERMISSION_TYPES.DENY,
       }
 
       await expect(admin.createAcls({ acl: [ACLEntry] })).rejects.toHaveProperty(
@@ -192,40 +201,39 @@ describe('Admin', () => {
       const topicName = `test-topic-${secureRandom()}`
 
       admin = createSASLAdminClientForUser({ username: 'test', password: 'testtest' })
-      await admin.connect()
 
-      await expect(
-        admin.createTopics({
-          waitForLeaders: true,
-          topics: [{ topic: topicName, numPartitions: 1, replicationFactor: 2 }],
-        })
-      ).resolves.toEqual(true)
+      await admin.connect()
+      await admin.createTopics({
+        waitForLeaders: true,
+        topics: [{ topic: topicName, numPartitions: 1, replicationFactor: 2 }],
+      })
 
       await expect(
         admin.createAcls({
           acl: [
             {
-              resourceType: RESOURCE_TYPES.TOPIC,
+              resourceType: ACL_RESOURCE_TYPES.TOPIC,
               resourceName: topicName,
               resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
               principal: 'User:bob',
               host: '*',
-              operation: OPERATION_TYPES.ALL,
-              permissionType: PERMISSION_TYPES.DENY,
+              operation: ACL_OPERATION_TYPES.ALL,
+              permissionType: ACL_PERMISSION_TYPES.DENY,
             },
             {
-              resourceType: RESOURCE_TYPES.TOPIC,
+              resourceType: ACL_RESOURCE_TYPES.TOPIC,
               resourceName: topicName,
               resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
               principal: 'User:alice',
               host: '*',
-              operation: OPERATION_TYPES.ALL,
-              permissionType: PERMISSION_TYPES.ALLOW,
+              operation: ACL_OPERATION_TYPES.ALL,
+              permissionType: ACL_PERMISSION_TYPES.ALLOW,
             },
           ],
         })
       ).resolves.toEqual(true)
 
+      await admin.disconnect()
       admin = createSASLAdminClientForUser({ username: 'bob', password: 'bobbob' })
       await admin.connect()
 
@@ -233,6 +241,7 @@ describe('Admin', () => {
         'Not authorized to access topics: [Topic authorization failed]'
       )
 
+      await admin.disconnect()
       admin = createSASLAdminClientForUser({ username: 'alice', password: 'alicealice' })
       await admin.connect()
 
