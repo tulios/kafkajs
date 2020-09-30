@@ -13,7 +13,7 @@ const {
 } = require('testHelpers')
 
 describe('Admin', () => {
-  let admin, topicName, groupIds, cluster, consumers, producer
+  let admin, topicName, groupIds, consumers, producer
 
   beforeAll(async () => {
     topicName = `test-topic-${secureRandom()}`
@@ -23,30 +23,36 @@ describe('Admin', () => {
       `consumer-group-id-${secureRandom()}`,
     ]
 
-    cluster = createCluster()
-    admin = createAdmin({ cluster: cluster, logger: newLogger() })
+    admin = createAdmin({
+      cluster: createCluster({ metadataMaxAge: 50 }),
+      logger: newLogger(),
+    })
+
     consumers = groupIds.map(groupId =>
       createConsumer({
-        cluster,
+        cluster: createCluster({ metadataMaxAge: 50 }),
         groupId,
-        maxWaitTimeInMs: 100,
+        heartbeatInterval: 100,
+        maxWaitTimeInMs: 500,
+        maxBytesPerPartition: 180,
+        rebalanceTimeout: 1000,
         logger: newLogger(),
       })
     )
 
     producer = createProducer({
-      cluster,
+      cluster: createCluster({ metadataMaxAge: 50 }),
       createPartitioner: createModPartitioner,
       logger: newLogger(),
     })
 
+    await createTopic({ topic: topicName })
+
     await Promise.all([
       admin.connect(),
       producer.connect(),
-      ...[consumers.map(consumer => consumer.connect())],
+      ...consumers.map(consumer => consumer.connect()),
     ])
-
-    await createTopic({ topic: topicName })
 
     const messagesConsumed = []
     await Promise.all(
