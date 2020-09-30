@@ -1,6 +1,13 @@
 // From:
 // https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/common/resource/ResourceType.java#L31
 
+/**
+ * @deprecated
+ * @see https://github.com/tulios/kafkajs/issues/649
+ *
+ * Use ConfigResourceTypes instead
+ */
+
 module.exports = {
   /**
    * Represents any ResourceType which this client cannot understand,
