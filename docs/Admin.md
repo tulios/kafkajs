@@ -508,3 +508,136 @@ try {
   // }]
 }
 ```
+
+## <a name="create-acl"></a> Create ACL
+
+```javascript
+const {
+  AclResourceTypes,
+  AclOperationTypes,
+  AclPermissionTypes,
+  ResourcePatternTypes,
+} = require('kafkajs')
+
+const acl = [
+  {
+    resourceType: AclResourceTypes.TOPIC,
+    resourceName: 'topic-name',
+    resourcePatternType: ResourcePatternTypes.LITERAL,
+    principal: 'User:bob',
+    host: '*',
+    operation: AclOperationTypes.ALL,
+    permissionType: AclPermissionTypes.DENY,
+  },
+  {
+    resourceType: AclResourceTypes.TOPIC,
+    resourceName: 'topic-name',
+    resourcePatternType: ResourcePatternTypes.LITERAL,
+    principal: 'User:alice',
+    host: '*',
+    operation: AclOperationTypes.ALL,
+    permissionType: AclPermissionTypes.ALLOW,
+  },
+]
+
+await admin.createAcls({ acl })
+```
+
+Be aware that the security features might be disabled in your cluster. In that case, the operation will throw an error:
+
+```sh
+KafkaJSProtocolError: Security features are disabled
+```
+
+## <a name="delete-acl"></a> Delete ACL
+
+```javascript
+const {
+  AclResourceTypes,
+  AclOperationTypes,
+  AclPermissionTypes,
+  ResourcePatternTypes,
+} = require('kafkajs')
+
+const acl = {
+  resourceName: 'topic-name,
+  resourceType: AclResourceTypes.TOPIC,
+  host: '*',
+  permissionType: AclPermissionTypes.ALLOW,
+  operation: AclOperationTypes.ANY,
+  resourcePatternType: ResourcePatternTypes.LITERAL,
+}
+
+await admin.deleteAcls({ filters: [acl] })
+// {
+//   filterResponses: [
+//     {
+//     errorCode: 0,
+//     errorMessage: null,
+//     matchingAcls: [
+//         {
+//         errorCode: 0,
+//         errorMessage: null,
+//         resourceType: AclResourceTypes.TOPIC,
+//         resourceName: 'topic-name',
+//         resourcePatternType: ResourcePatternTypes.LITERAL,
+//         principal: 'User:alice',
+//         host: '*',
+//         operation: AclOperationTypes.ALL,
+//         permissionType: AclPermissionTypes.ALLOW,
+//         },
+//     ],
+//     },
+//   ],
+// }
+```
+
+Be aware that the security features might be disabled in your cluster. In that case, the operation will throw an error:
+
+```sh
+KafkaJSProtocolError: Security features are disabled
+```
+
+## <a name="describe-acl"></a> Describe ACL
+
+```javascript
+const {
+  AclResourceTypes,
+  AclOperationTypes,
+  AclPermissionTypes,
+  ResourcePatternTypes,
+} = require('kafkajs')
+
+await admin.describeAcls({
+  resourceName: 'topic-name,
+  resourceType: AclResourceTypes.TOPIC,
+  host: '*',
+  permissionType: AclPermissionTypes.ALLOW,
+  operation: AclOperationTypes.ANY,
+  resourcePatternTypeFilter: ResourcePatternTypes.LITERAL,
+})
+// {
+//   resources: [
+//     {
+//       resourceType: AclResourceTypes.TOPIC,
+//       resourceName: 'topic-name,
+//       resourcePatternType: ResourcePatternTypes.LITERAL,
+//       acls: [
+//         {
+//           principal: 'User:alice',
+//           host: '*',
+//           operation: AclOperationTypes.ALL,
+//           permissionType: AclPermissionTypes.ALLOW,
+//         },
+//       ],
+//     },
+//   ],
+// }
+```
+
+Be aware that the security features might be disabled in your cluster. In that case, the operation will throw an error:
+
+```sh
+KafkaJSProtocolError: Security features are disabled
+```
+
