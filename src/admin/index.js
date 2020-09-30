@@ -9,6 +9,7 @@ const { LEVELS } = require('../loggers')
 const { KafkaJSNonRetriableError, KafkaJSDeleteGroupsError } = require('../errors')
 const RESOURCE_TYPES = require('../protocol/resourceTypes')
 const CONFIG_RESOURCE_TYPES = require('../protocol/configResourceTypes')
+const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
 
 const { CONNECT, DISCONNECT } = events
 
@@ -45,6 +46,11 @@ const findTopicPartitions = async (cluster, topic) => {
     .map(({ partitionId }) => partitionId)
     .sort()
 }
+const indexByPartition = array =>
+  array.reduce(
+    (obj, { partition, ...props }) => Object.assign(obj, { [partition]: { ...props } }),
+    {}
+  )
 
 /**
  *
@@ -355,9 +361,10 @@ module.exports = ({
   /**
    * @param {string} groupId
    * @param {string} topic
+   * @param {boolean} [resolveOffsets=false]
    * @return {Promise}
    */
-  const fetchOffsets = async ({ groupId, topic }) => {
+  const fetchOffsets = async ({ groupId, topic, resolveOffsets = false }) => {
     if (!groupId) {
       throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
     }
@@ -370,12 +377,35 @@ module.exports = ({
     const coordinator = await cluster.findGroupCoordinator({ groupId })
     const partitionsToFetch = partitions.map(partition => ({ partition }))
 
-    const { responses } = await coordinator.offsetFetch({
+    let { responses: consumerOffsets } = await coordinator.offsetFetch({
       groupId,
       topics: [{ topic, partitions: partitionsToFetch }],
     })
 
-    return responses
+    if (resolveOffsets) {
+      const indexedOffsets = indexByPartition(await fetchTopicOffsets(topic))
+      consumerOffsets = consumerOffsets.map(({ topic, partitions }) => ({
+        topic,
+        partitions: partitions.map(({ offset, partition, ...props }) => {
+          let resolvedOffset = offset
+          if (Number(offset) === EARLIEST_OFFSET) {
+            resolvedOffset = indexedOffsets[partition].low
+          }
+          if (Number(offset) === LATEST_OFFSET) {
+            resolvedOffset = indexedOffsets[partition].high
+          }
+          return {
+            partition,
+            offset: resolvedOffset,
+            ...props,
+          }
+        }),
+      }))
+      const [{ partitions }] = consumerOffsets
+      await setOffsets({ groupId, topic, partitions })
+    }
+
+    return consumerOffsets
       .filter(response => response.topic === topic)
       .map(({ partitions }) =>
         partitions.map(({ partition, offset, metadata }) => ({

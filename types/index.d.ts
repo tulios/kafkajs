@@ -328,6 +328,7 @@ export type Admin = {
   fetchOffsets(options: {
     groupId: string
     topic: string
+    resolveOffsets?: boolean
   }): Promise<Array<SeekEntry & { metadata: string | null }>>
   fetchTopicOffsets(topic: string): Promise<Array<SeekEntry & { high: string; low: string }>>
   fetchTopicOffsetsByTimestamp(topic: string, timestamp?: number): Promise<Array<SeekEntry>>
