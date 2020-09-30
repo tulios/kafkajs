@@ -29,6 +29,7 @@ const parse = async data => {
   const creationResponsesWithError = data.creationResponses.filter(({ errorCode }) =>
     failure(errorCode)
   )
+
   if (creationResponsesWithError.length > 0) {
     throw createErrorFromCode(creationResponsesWithError[0].errorCode)
   }
@@ -37,7 +38,6 @@ const parse = async data => {
 }
 
 module.exports = {
-  decodeCreationResponse,
   decode,
   parse,
 }

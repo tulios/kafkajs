@@ -1,4 +1,4 @@
-const responseV0 = require('../v0/response')
+const { parse: parseV0 } = require('../v0/response')
 const Decoder = require('../../../decoder')
 
 /**
@@ -16,12 +16,18 @@ const Decoder = require('../../../decoder')
  *       operation => INT8
  *       permission_type => INT8
  */
+const decodeAcls = decoder => ({
+  principal: decoder.readString(),
+  host: decoder.readString(),
+  operation: decoder.readInt8(),
+  permissionType: decoder.readInt8(),
+})
 
 const decodeResources = decoder => ({
   resourceType: decoder.readInt8(),
   resourceName: decoder.readString(),
   resourcePatternType: decoder.readInt8(),
-  acls: decoder.readArray(responseV0.decodeAcls),
+  acls: decoder.readArray(decodeAcls),
 })
 
 const decode = async rawData => {
@@ -41,5 +47,5 @@ const decode = async rawData => {
 
 module.exports = {
   decode,
-  parse: responseV0.parse,
+  parse: parseV0,
 }

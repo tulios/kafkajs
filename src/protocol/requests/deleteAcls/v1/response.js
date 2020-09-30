@@ -1,5 +1,5 @@
-const responseV0 = require('../v0/response')
 const Decoder = require('../../../decoder')
+const { parse: parseV0 } = require('../v0/response')
 
 /**
  * DeleteAcls Response (Version: 1) => throttle_time_ms [filter_responses]
@@ -50,5 +50,5 @@ const decode = async rawData => {
 
 module.exports = {
   decode,
-  parse: responseV0.parse,
+  parse: parseV0,
 }

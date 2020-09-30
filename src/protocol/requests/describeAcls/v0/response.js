@@ -53,8 +53,6 @@ const parse = async data => {
 }
 
 module.exports = {
-  decodeAcls,
-  decodeResources,
   decode,
   parse,
 }
