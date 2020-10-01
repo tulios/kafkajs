@@ -38,7 +38,7 @@ const decode = async rawData => {
   const resources = decoder.readArray(decodeResources)
 
   return {
-    throttleTime,
+    clientSideThrottleTime: throttleTime,
     errorCode,
     errorMessage,
     resources,
