@@ -1,4 +1,5 @@
-const { decode, parse } = require('../v0/response')
+const Decoder = require('../../../decoder')
+const { parse: parseV0 } = require('../v0/response')
 
 /**
  * CreateAcls Response (Version: 1) => throttle_time_ms [creation_responses]
@@ -8,7 +9,23 @@ const { decode, parse } = require('../v0/response')
  *     error_message => NULLABLE_STRING
  */
 
+const decodeCreationResponse = decoder => ({
+  errorCode: decoder.readInt16(),
+  errorMessage: decoder.readString(),
+})
+
+const decode = async rawData => {
+  const decoder = new Decoder(rawData)
+  const throttleTime = decoder.readInt32()
+  const creationResponses = decoder.readArray(decodeCreationResponse)
+
+  return {
+    clientSideThrottleTime: throttleTime,
+    creationResponses,
+  }
+}
+
 module.exports = {
   decode,
-  parse,
+  parse: parseV0,
 }

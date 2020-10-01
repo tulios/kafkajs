@@ -763,13 +763,13 @@ module.exports = class Broker {
    * @param {Array} ACL e.g:
    *                 [
    *                   {
-   *                     resourceType: ,
-   *                     resourceName: 'resource-name',
-   *                     resourcePatternType: ,
-   *                     principal: 'principal-name',
-   *                     host: 'hostname',
-   *                     operation: ,
-   *                     permissionType:
+   *                     resourceType: AclResourceTypes.TOPIC,
+   *                     resourceName: 'topic-name',
+   *                     resourcePatternType: ResourcePatternTypes.LITERAL,
+   *                     principal: 'User:bob',
+   *                     host: '*',
+   *                     operation: AclOperationTypes.ALL,
+   *                     permissionType: AclPermissionTypes.DENY,
    *                   }
    *                 ]
    * @returns {Promise<void>}

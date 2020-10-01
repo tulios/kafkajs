@@ -12,15 +12,6 @@ const { CreateAcls: apiKey } = require('../../apiKeys')
  *     permission_type => INT8
  */
 
-module.exports = ({ creations }) => ({
-  apiKey,
-  apiVersion: 0,
-  apiName: 'CreateAcls',
-  encode: async () => {
-    return new Encoder().writeArray(creations.map(encodeCreations))
-  },
-})
-
 const encodeCreations = ({
   resourceType,
   resourceName,
@@ -37,3 +28,12 @@ const encodeCreations = ({
     .writeInt8(operation)
     .writeInt8(permissionType)
 }
+
+module.exports = ({ creations }) => ({
+  apiKey,
+  apiVersion: 0,
+  apiName: 'CreateAcls',
+  encode: async () => {
+    return new Encoder().writeArray(creations.map(encodeCreations))
+  },
+})
