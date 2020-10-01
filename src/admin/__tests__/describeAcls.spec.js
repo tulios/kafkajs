@@ -40,7 +40,7 @@ describe('Admin', () => {
       const args = {
         resourceType: ACL_RESOURCE_TYPES.TOPIC,
         resourceName: 123,
-        resourcePatternTypeFilter: RESOURCE_PATTERN_TYPES.LITERAL,
+        resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
         principal: 'User:foo',
         host: '*',
         operation: ACL_OPERATION_TYPES.ALL,
@@ -57,7 +57,7 @@ describe('Admin', () => {
       const args = {
         resourceType: ACL_RESOURCE_TYPES.TOPIC,
         resourceName: 'foo',
-        resourcePatternTypeFilter: RESOURCE_PATTERN_TYPES.LITERAL,
+        resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
         principal: 123,
         host: '*',
         operation: ACL_OPERATION_TYPES.ALL,
@@ -74,7 +74,7 @@ describe('Admin', () => {
       const args = {
         resourceType: ACL_RESOURCE_TYPES.TOPIC,
         resourceName: 'foo',
-        resourcePatternTypeFilter: RESOURCE_PATTERN_TYPES.LITERAL,
+        resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
         principal: 'User:foo',
         host: 123,
         operation: ACL_OPERATION_TYPES.ALL,
@@ -91,7 +91,7 @@ describe('Admin', () => {
       const args = {
         resourceType: 123,
         resourceName: 'foo',
-        resourcePatternTypeFilter: RESOURCE_PATTERN_TYPES.LITERAL,
+        resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
         principal: 'User:foo',
         host: '*',
         operation: ACL_OPERATION_TYPES.ALL,
@@ -108,7 +108,7 @@ describe('Admin', () => {
       const args = {
         resourceType: ACL_RESOURCE_TYPES.TOPIC,
         resourceName: 'foo',
-        resourcePatternTypeFilter: 123,
+        resourcePatternType: 123,
         principal: 'User:foo',
         host: '*',
         operation: ACL_OPERATION_TYPES.ALL,
@@ -117,7 +117,7 @@ describe('Admin', () => {
 
       await expect(admin.describeAcls(args)).rejects.toHaveProperty(
         'message',
-        `Invalid resource pattern filter type ${args.resourcePatternTypeFilter}`
+        `Invalid resource pattern filter type ${args.resourcePatternType}`
       )
     })
 
@@ -125,7 +125,7 @@ describe('Admin', () => {
       const args = {
         resourceType: ACL_RESOURCE_TYPES.TOPIC,
         resourceName: 'foo',
-        resourcePatternTypeFilter: RESOURCE_PATTERN_TYPES.LITERAL,
+        resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
         principal: 'User:foo',
         host: '*',
         operation: ACL_OPERATION_TYPES.ALL,
@@ -142,7 +142,7 @@ describe('Admin', () => {
       const args = {
         resourceType: ACL_RESOURCE_TYPES.TOPIC,
         resourceName: 'foo',
-        resourcePatternTypeFilter: RESOURCE_PATTERN_TYPES.LITERAL,
+        resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
         principal: 'User:foo',
         host: '*',
         operation: 123,
@@ -195,7 +195,7 @@ describe('Admin', () => {
           host: '*',
           permissionType: ACL_PERMISSION_TYPES.ALLOW,
           operation: ACL_OPERATION_TYPES.ANY,
-          resourcePatternTypeFilter: RESOURCE_PATTERN_TYPES.LITERAL,
+          resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
         })
       ).resolves.toMatchObject({
         resources: [

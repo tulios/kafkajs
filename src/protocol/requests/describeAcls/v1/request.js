@@ -15,7 +15,7 @@ const { DescribeAcls: apiKey } = require('../../apiKeys')
 module.exports = ({
   resourceType,
   resourceName,
-  resourcePatternTypeFilter,
+  resourcePatternType,
   principal,
   host,
   operation,
@@ -28,7 +28,7 @@ module.exports = ({
     return new Encoder()
       .writeInt8(resourceType)
       .writeString(resourceName)
-      .writeInt8(resourcePatternTypeFilter)
+      .writeInt8(resourcePatternType)
       .writeString(principal)
       .writeString(host)
       .writeInt8(operation)

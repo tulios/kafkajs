@@ -783,7 +783,7 @@ module.exports = class Broker {
    * @public
    * @param {number} resourceType The type of resource
    * @param {string} resourceName The name of the resource
-   * @param {number} resourcePatternTypeFilter The resource pattern type filter
+   * @param {number} resourcePatternType The resource pattern type filter
    * @param {string} principal The principal name
    * @param {string} host The hostname
    * @param {number} operation The type of operation
@@ -793,7 +793,7 @@ module.exports = class Broker {
   async describeAcls({
     resourceType,
     resourceName,
-    resourcePatternTypeFilter,
+    resourcePatternType,
     principal,
     host,
     operation,
@@ -804,7 +804,7 @@ module.exports = class Broker {
       describeAcls({
         resourceType,
         resourceName,
-        resourcePatternTypeFilter,
+        resourcePatternType,
         principal,
         host,
         operation,
@@ -817,7 +817,7 @@ module.exports = class Broker {
    * @public
    * @param {number} resourceType The type of resource
    * @param {string} resourceName The name of the resource
-   * @param {number} resourcePatternTypeFilter The resource pattern type filter
+   * @param {number} resourcePatternType The resource pattern type filter
    * @param {string} principal The principal name
    * @param {string} host The hostname
    * @param {number} operation The type of operation

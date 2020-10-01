@@ -1089,7 +1089,7 @@ module.exports = ({
   /**
    * @param {ACLResourceTypes} resourceType The type of resource
    * @param {string} resourceName The name of the resource
-   * @param {ACLResourcePatternTypes} resourcePatternTypeFilter The resource pattern type filter
+   * @param {ACLResourcePatternTypes} resourcePatternType The resource pattern type filter
    * @param {string} principal The principal name
    * @param {string} host The hostname
    * @param {ACLOperationTypes} operation The type of operation
@@ -1104,7 +1104,7 @@ module.exports = ({
   const describeAcls = async ({
     resourceType,
     resourceName,
-    resourcePatternTypeFilter,
+    resourcePatternType,
     principal,
     host,
     operation,
@@ -1135,11 +1135,11 @@ module.exports = ({
       throw new KafkaJSNonRetriableError(`Invalid operation type ${operation}`)
     }
 
-    // Validate resourcePatternTypeFilter
+    // Validate resourcePatternType
     const validResourcePatternTypes = Object.values(RESOURCE_PATTERN_TYPES)
-    if (!validResourcePatternTypes.includes(resourcePatternTypeFilter)) {
+    if (!validResourcePatternTypes.includes(resourcePatternType)) {
       throw new KafkaJSNonRetriableError(
-        `Invalid resource pattern filter type ${resourcePatternTypeFilter}`
+        `Invalid resource pattern filter type ${resourcePatternType}`
       )
     }
 
@@ -1164,7 +1164,7 @@ module.exports = ({
         const { resources } = await broker.describeAcls({
           resourceType,
           resourceName,
-          resourcePatternTypeFilter,
+          resourcePatternType,
           principal,
           host,
           operation,

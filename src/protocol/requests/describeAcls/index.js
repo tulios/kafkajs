@@ -10,7 +10,7 @@ const versions = {
   1: ({
     resourceType,
     resourceName,
-    resourcePatternTypeFilter,
+    resourcePatternType,
     principal,
     host,
     operation,
@@ -22,7 +22,7 @@ const versions = {
       request: request({
         resourceType,
         resourceName,
-        resourcePatternTypeFilter,
+        resourcePatternType,
         principal,
         host,
         operation,

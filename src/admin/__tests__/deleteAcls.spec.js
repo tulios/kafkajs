@@ -237,7 +237,7 @@ describe('Admin', () => {
           host: '*',
           permissionType: ACL_PERMISSION_TYPES.ALLOW,
           operation: ACL_OPERATION_TYPES.ANY,
-          resourcePatternTypeFilter: RESOURCE_PATTERN_TYPES.LITERAL,
+          resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
         })
       ).resolves.toMatchObject({ resources: [] })
     })
