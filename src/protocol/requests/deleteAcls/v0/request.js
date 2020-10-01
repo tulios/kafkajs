@@ -12,15 +12,6 @@ const { DeleteAcls: apiKey } = require('../../apiKeys')
  *     permission_type => INT8
  */
 
-module.exports = ({ filters }) => ({
-  apiKey,
-  apiVersion: 0,
-  apiName: 'DeleteAcls',
-  encode: async () => {
-    return new Encoder().writeArray(filters.map(encodeFilters))
-  },
-})
-
 const encodeFilters = ({
   resourceType,
   resourceName,
@@ -37,3 +28,12 @@ const encodeFilters = ({
     .writeInt8(operation)
     .writeInt8(permissionType)
 }
+
+module.exports = ({ filters }) => ({
+  apiKey,
+  apiVersion: 0,
+  apiName: 'DeleteAcls',
+  encode: async () => {
+    return new Encoder().writeArray(filters.map(encodeFilters))
+  },
+})

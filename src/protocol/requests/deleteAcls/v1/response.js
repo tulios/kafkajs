@@ -43,7 +43,7 @@ const decode = async rawData => {
   const filterResponses = decoder.readArray(decodeFilterResponse)
 
   return {
-    throttleTime,
+    clientSideThrottleTime: throttleTime,
     filterResponses,
   }
 }
