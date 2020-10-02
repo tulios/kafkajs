@@ -5,6 +5,10 @@ const Partitioners = require('./src/producer/partitioners')
 const Compression = require('./src/protocol/message/compression')
 const ResourceTypes = require('./src/protocol/resourceTypes')
 const ConfigResourceTypes = require('./src/protocol/configResourceTypes')
+const AclResourceTypes = require('./src/protocol/aclResourceTypes')
+const AclOperationTypes = require('./src/protocol/aclOperationTypes')
+const AclPermissionTypes = require('./src/protocol/aclPermissionTypes')
+const ResourcePatternTypes = require('./src/protocol/resourcePatternTypes')
 const { LEVELS } = require('./src/loggers')
 
 module.exports = {
@@ -19,8 +23,12 @@ module.exports = {
    * @deprecated
    * @see https://github.com/tulios/kafkajs/issues/649
    *
-   * Use ConfigResourceTypes instead
+   * Use ConfigResourceTypes or AclResourceTypes instead.
    */
   ResourceTypes,
   ConfigResourceTypes,
+  AclResourceTypes,
+  AclOperationTypes,
+  AclPermissionTypes,
+  ResourcePatternTypes,
 }

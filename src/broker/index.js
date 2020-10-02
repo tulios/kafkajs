@@ -759,6 +759,77 @@ module.exports = class Broker {
   }
 
   /**
+   * @public
+   * @param {Array} ACL e.g:
+   *                 [
+   *                   {
+   *                     resourceType: AclResourceTypes.TOPIC,
+   *                     resourceName: 'topic-name',
+   *                     resourcePatternType: ResourcePatternTypes.LITERAL,
+   *                     principal: 'User:bob',
+   *                     host: '*',
+   *                     operation: AclOperationTypes.ALL,
+   *                     permissionType: AclPermissionTypes.DENY,
+   *                   }
+   *                 ]
+   * @returns {Promise<void>}
+   */
+  async createAcls({ acl }) {
+    const createAcls = this.lookupRequest(apiKeys.CreateAcls, requests.CreateAcls)
+    return await this[PRIVATE.SEND_REQUEST](createAcls({ creations: acl }))
+  }
+
+  /**
+   * @public
+   * @param {number} resourceType The type of resource
+   * @param {string} resourceName The name of the resource
+   * @param {number} resourcePatternType The resource pattern type filter
+   * @param {string} principal The principal name
+   * @param {string} host The hostname
+   * @param {number} operation The type of operation
+   * @param {number} permissionType The type of permission
+   * @returns {Promise<void>}
+   */
+  async describeAcls({
+    resourceType,
+    resourceName,
+    resourcePatternType,
+    principal,
+    host,
+    operation,
+    permissionType,
+  }) {
+    const describeAcls = this.lookupRequest(apiKeys.DescribeAcls, requests.DescribeAcls)
+    return await this[PRIVATE.SEND_REQUEST](
+      describeAcls({
+        resourceType,
+        resourceName,
+        resourcePatternType,
+        principal,
+        host,
+        operation,
+        permissionType,
+      })
+    )
+  }
+
+  /**
+   * @public
+   * @param {number} resourceType The type of resource
+   * @param {string} resourceName The name of the resource
+   * @param {number} resourcePatternType The resource pattern type filter
+   * @param {string} principal The principal name
+   * @param {string} host The hostname
+   * @param {number} operation The type of operation
+   * @param {number} permissionType The type of permission
+   * @returns {Promise<void>}
+   */
+  async deleteAcls({ filters }) {
+    const deleteAcls = this.lookupRequest(apiKeys.DeleteAcls, requests.DeleteAcls)
+    return await this[PRIVATE.SEND_REQUEST](deleteAcls({ filters }))
+  }
+
+  /***
    * @private
    */
   [PRIVATE.SHOULD_REAUTHENTICATE]() {

@@ -198,6 +198,10 @@ export interface ITopicMetadata {
   partitions: PartitionMetadata[]
 }
 
+/**
+ * @deprecated
+ * Use ConfigResourceTypes or AclResourceTypes
+ */
 export enum ResourceTypes {
   UNKNOWN = 0,
   ANY = 1,
@@ -207,11 +211,53 @@ export enum ResourceTypes {
   TRANSACTIONAL_ID = 5,
   DELEGATION_TOKEN = 6,
 }
+
+export enum AclResourceTypes {
+  UNKNOWN = 0,
+  ANY = 1,
+  TOPIC = 2,
+  GROUP = 3,
+  CLUSTER = 4,
+  TRANSACTIONAL_ID = 5,
+  DELEGATION_TOKEN = 6,
+}
+
 export enum ConfigResourceTypes {
   UNKNOWN = 0,
   TOPIC = 2,
   BROKER = 4,
   BROKER_LOGGER = 8,
+}
+
+export enum AclPermissionTypes {
+  UNKNOWN = 0,
+  ANY = 1,
+  DENY = 2,
+  ALLOW = 3,
+}
+
+export enum AclOperationTypes {
+  UNKNOWN = 0,
+  ANY = 1,
+  ALL = 2,
+  READ = 3,
+  WRITE = 4,
+  CREATE = 5,
+  DELETE = 6,
+  ALTER = 7,
+  DESCRIBE = 8,
+  CLUSTER_ACTION = 9,
+  DESCRIBE_CONFIGS = 10,
+  ALTER_CONFIGS = 11,
+  IDEMPOTENT_WRITE = 12,
+}
+
+export enum ResourcePatternTypes {
+  UNKNOWN = 0,
+  ANY = 1,
+  MATCH = 2,
+  LITERAL = 3,
+  PREFIXED = 4,
 }
 
 export interface ResourceConfigQuery {
@@ -308,6 +354,65 @@ export interface SeekEntry {
   offset: string
 }
 
+export interface Acl {
+  principal: string
+  host: string
+  operation: AclOperationTypes
+  permissionType: AclPermissionTypes
+}
+
+export interface AclResource {
+  resourceType: AclResourceTypes
+  resourceName: string
+  resourcePatternType: ResourcePatternTypes
+}
+
+export type AclEntry = Acl & AclResource
+
+export type DescribeAclResource = AclResource & {
+  acls: Acl[]
+}
+
+export interface DescribeAclResponse {
+  throttleTime: number
+  errorCode: number
+  errorMessage?: string
+  resources: DescribeAclResource[]
+}
+
+export interface AclFilter {
+  resourceType: AclResourceTypes
+  resourceName?: string
+  resourcePatternType: ResourcePatternTypes
+  principal?: string
+  host?: string
+  operation: AclOperationTypes
+  permissionType: AclPermissionTypes
+}
+
+export interface MatchingAcl {
+  errorCode: number
+  errorMessage?: string
+  resourceType: AclResourceTypes
+  resourceName: string
+  resourcePatternType: ResourcePatternTypes
+  principal: string
+  host: string
+  operation: AclOperationTypes
+  permissionType: AclPermissionTypes
+}
+
+export interface DeleteAclFilterResponses {
+  errorCode: number
+  errorMessage?: string
+  matchingAcls: MatchingAcl[]
+}
+
+export interface DeleteAclResponse {
+  throttleTime: number
+  filterResponses: DeleteAclFilterResponses[]
+}
+
 export type Admin = {
   connect(): Promise<void>
   disconnect(): Promise<void>
@@ -347,6 +452,9 @@ export type Admin = {
   listGroups(): Promise<{ groups: GroupOverview[] }>
   deleteGroups(groupIds: string[]): Promise<DeleteGroupsResult[]>
   describeGroups(groupIds: string[]): Promise<GroupDescriptions>
+  describeAcls(options: AclFilter): Promise<DescribeAclResponse>
+  deleteAcls(options: { filters: AclFilter[] }): Promise<DeleteAclResponse>
+  createAcls(options: { acls: AclEntry[] }): Promise<boolean>
   logger(): Logger
   on(
     eventName: ValueOf<AdminEvents>,
