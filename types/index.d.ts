@@ -699,6 +699,7 @@ export type GroupOverview = {
 export type DeleteGroupsResult = {
   groupId: string
   errorCode?: number
+  error?: KafkaJSProtocolError
 }
 
 export type ConsumerEvents = {
@@ -862,7 +863,7 @@ export class KafkaJSError extends Error {
   readonly message: Error["message"];
   readonly name: string;
   readonly retriable: boolean;
-  readonly helpUrl: string;
+  readonly helpUrl?: string;
 
   constructor(e: Error | string, metadata?: KafkaJSErrorMetadata)
 }
@@ -959,7 +960,7 @@ export class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSError {
 }
 
 export class KafkaJSDeleteGroupsError extends KafkaJSError {
-  readonly groups: any[];
+  readonly groups: DeleteGroupsResult[];
   constructor(e: Error | string, groups?: KafkaJSDeleteGroupsErrorGroups[])
 }
 
