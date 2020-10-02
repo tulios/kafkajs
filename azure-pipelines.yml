@@ -259,6 +259,7 @@ jobs:
         env:
           VERSION: $(Build.SourceBranch)
           GH_TOKEN: $(GH_TOKEN)
+          CONTACT_FORM_URL: $(CONTACT_FORM_URL)
       - bash: |
           git add .
           DOC_VERSION=$(echo "$VERSION" | sed -e "s/^refs\/tags\/v//")
@@ -379,3 +380,4 @@ jobs:
         displayName: publish to gh-pages
         env:
           GH_NAME: $(GH_NAME)
+          CONTACT_FORM_URL: $(CONTACT_FORM_URL)
