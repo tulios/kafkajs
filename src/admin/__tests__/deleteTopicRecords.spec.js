@@ -19,7 +19,7 @@ const { assign } = Object
 const logger = assign(newLogger(), { namespace: () => logger })
 jest.spyOn(logger, 'warn')
 
-describe('Broker > deleteTopicRecords', () => {
+describe('Admin > deleteTopicRecords', () => {
   let topicName, cluster, admin, producer, recordsToDelete, consumer, groupId
 
   beforeEach(async () => {
@@ -126,7 +126,7 @@ describe('Broker > deleteTopicRecords', () => {
     ])
   })
 
-  test('leaves remaining messages to be consumed', async () => {
+  test('non-deleted messages are successfully consumed', async () => {
     recordsToDelete = [{ partition: 0, offset: '7' }]
     const messagesPartition0 = []
     const messagesPartition1 = []
@@ -141,7 +141,7 @@ describe('Broker > deleteTopicRecords', () => {
     await waitForNextEvent(consumer, consumer.events.END_BATCH_PROCESS)
     await waitForNextEvent(consumer, consumer.events.END_BATCH_PROCESS)
 
-    expect(messagesPartition0.length).toBe(6) // 13 minus 7
+    expect(messagesPartition0.length).toBe(6) // 13 original minus 7 deleted
     expect(messagesPartition1.length).toBe(7) // original number of messages
   })
 
@@ -166,7 +166,7 @@ describe('Broker > deleteTopicRecords', () => {
     ])
   })
 
-  test('in case of retriable error, tries again from the last successful partition', async () => {
+  test('in case of retriable error, tries again from the last successful partition (does not re-process successful partition twice)', async () => {
     // tries to delete from partition 0 AND partition 1 -> tries to call broker.deleteRecords twice
     recordsToDelete = [
       { partition: 0, offset: '7' },
@@ -178,7 +178,7 @@ describe('Broker > deleteTopicRecords', () => {
 
     await admin.deleteTopicRecords({ topic: topicName, partitions: recordsToDelete })
 
-    // call #1 succeeds, call #2 fails, call #3 should be the last one (skips #1, and only retries #2)
+    // broker call #1 succeeds, broker call #2 fails, call #3 should be the last one (skips broker #1, and only retries #2)
     expect(brokerSpy).toHaveBeenCalledTimes(3)
     expect(brokerSpy.mock.calls[1]).not.toEqual(brokerSpy.mock.calls[0])
     expect(brokerSpy.mock.calls[2]).toEqual(brokerSpy.mock.calls[1])
@@ -237,7 +237,7 @@ describe('Broker > deleteTopicRecords', () => {
     ])
   })
 
-  test('in case partition does not exist/has no lead broker, skip with a warning', async () => {
+  test('in case partition does not exist/has no lead broker, skip the partition with a warning', async () => {
     // try to add to the delete request a partition that doesn't exist
     recordsToDelete = [
       { partition: 0, offset: '7' },

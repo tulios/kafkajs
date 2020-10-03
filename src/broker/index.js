@@ -759,22 +759,6 @@ module.exports = class Broker {
   }
 
   /**
-   * @public
-   * @param {number} resourceType The type of resource
-   * @param {string} resourceName The name of the resource
-   * @param {number} resourcePatternType The resource pattern type filter
-   * @param {string} principal The principal name
-   * @param {string} host The hostname
-   * @param {number} operation The type of operation
-   * @param {number} permissionType The type of permission
-   * @returns {Promise<void>}
-   */
-  async deleteAcls({ filters }) {
-    const deleteAcls = this.lookupRequest(apiKeys.DeleteAcls, requests.DeleteAcls)
-    return await this[PRIVATE.SEND_REQUEST](deleteAcls({ filters }))
-  }
-
-  /***
    * Send request to delete records
    * @public
    * @param {Array<Object>} topics
@@ -862,6 +846,22 @@ module.exports = class Broker {
   }
 
   /**
+   * @public
+   * @param {number} resourceType The type of resource
+   * @param {string} resourceName The name of the resource
+   * @param {number} resourcePatternType The resource pattern type filter
+   * @param {string} principal The principal name
+   * @param {string} host The hostname
+   * @param {number} operation The type of operation
+   * @param {number} permissionType The type of permission
+   * @returns {Promise<void>}
+   */
+  async deleteAcls({ filters }) {
+    const deleteAcls = this.lookupRequest(apiKeys.DeleteAcls, requests.DeleteAcls)
+    return await this[PRIVATE.SEND_REQUEST](deleteAcls({ filters }))
+  }
+
+  /***
    * @private
    */
   [PRIVATE.SHOULD_REAUTHENTICATE]() {

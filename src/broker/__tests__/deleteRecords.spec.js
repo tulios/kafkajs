@@ -25,7 +25,6 @@ describe('Broker > deleteRecords', () => {
       connection: createConnection(),
       logger: newLogger(),
     })
-    // NOT_LEADER_FOR_PARTITION
 
     producer = createProducer({
       cluster,
