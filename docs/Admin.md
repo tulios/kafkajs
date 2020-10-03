@@ -93,7 +93,7 @@ await admin.createPartitions({
 {
     topic: <String>,
     count: <Number>,     // partition count
-    assignments: <Array<Array<Number>>> // Example: [[0,1],[1,2],[2,0]] 
+    assignments: <Array<Array<Number>>> // Example: [[0,1],[1,2],[2,0]]
 }
 ```
 
@@ -509,6 +509,31 @@ try {
 }
 ```
 
+## <a name="delete-topic-records"></a> Delete Topic Records
+
+Delete records for a selected topic. This will delete all records from the earliest up to the provided target offset for the given partition(s). To delete all records in a partition, use a target offset of `-1`.
+
+Note that you cannot delete records in an arbitrary range (it will always be from the earliest available offset)
+
+```javascript
+await admin.deleteTopicRecords({
+    topic: <String>,
+    partitions: <SeekEntry[]>,
+})
+```
+
+Example:
+
+```javascript
+await admin.deleteTopicRecords({
+    topic: 'custom-topic',
+    partitions: [
+        { partition: 0, offset: '30' }, // delete up to offset 30
+        { partition: 3, offset: '-1' }, // delete all available records on this partition
+    ]
+})
+```
+
 ## <a name="create-acl"></a> Create ACL
 
 ```javascript
@@ -640,4 +665,3 @@ Be aware that the security features might be disabled in your cluster. In that c
 ```sh
 KafkaJSProtocolError: Security features are disabled
 ```
-

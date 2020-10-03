@@ -455,6 +455,7 @@ export type Admin = {
   describeAcls(options: AclFilter): Promise<DescribeAclResponse>
   deleteAcls(options: { filters: AclFilter[] }): Promise<DeleteAclResponse>
   createAcls(options: { acls: AclEntry[] }): Promise<boolean>
+  deleteTopicRecords(options: { topic: string; partitions: SeekEntry[] }): Promise<void>
   logger(): Logger
   on(
     eventName: ValueOf<AdminEvents>,

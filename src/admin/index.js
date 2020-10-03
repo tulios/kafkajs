@@ -6,7 +6,11 @@ const createConsumer = require('../consumer')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentationEvents')
 const { LEVELS } = require('../loggers')
-const { KafkaJSNonRetriableError, KafkaJSDeleteGroupsError } = require('../errors')
+const {
+  KafkaJSNonRetriableError,
+  KafkaJSDeleteGroupsError,
+  KafkaJSOffsetOutOfRange,
+} = require('../errors')
 const CONFIG_RESOURCE_TYPES = require('../protocol/configResourceTypes')
 const ACL_RESOURCE_TYPES = require('../protocol/aclResourceTypes')
 const ACL_OPERATION_TYPES = require('../protocol/aclOperationTypes')
@@ -18,7 +22,7 @@ const { CONNECT, DISCONNECT } = events
 
 const NO_CONTROLLER_ID = -1
 
-const { values, keys } = Object
+const { values, keys, entries } = Object
 const eventNames = values(events)
 const eventKeys = keys(events)
   .map(key => `admin.events.${key}`)
@@ -991,6 +995,86 @@ module.exports = ({
   }
 
   /**
+   * Delete topic records up to the selected partition offsets
+   *
+   * @param {string} topic
+   * @param {Array<SeekEntry>} partitions
+   * @return {Promise}
+   *
+   * @typedef {Object} SeekEntry
+   * @property {number} partition
+   * @property {string} offset
+   */
+  const deleteTopicRecords = async ({ topic, partitions }) => {
+    if (!topic || typeof topic !== 'string') {
+      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    }
+
+    if (!partitions || partitions.length === 0) {
+      throw new KafkaJSNonRetriableError(`Invalid partitions`)
+    }
+
+    const partitionsByBroker = cluster.findLeaderForPartitions(
+      topic,
+      partitions.map(p => p.partition)
+    )
+
+    const partitionsFound = flatten(values(partitionsByBroker))
+    const topicOffsets = await fetchTopicOffsets(topic)
+
+    partitions.forEach(({ partition, offset }) => {
+      // warn if no broker/leader found for partition
+      if (!partitionsFound.includes(partition)) {
+        logger.warn('Could not find broker/leader for the partition', {
+          topic,
+          partition,
+        })
+        return
+      }
+      const { high, low } = topicOffsets.find(p => p.partition === partition)
+      // throw in case of offset out-of-range (otherwise could fail mid-process)
+      if (parseInt(offset) > parseInt(high) || parseInt(offset) < -1) {
+        throw new KafkaJSOffsetOutOfRange(
+          'The requested offset is not within the range of offsets maintained by the server',
+          { topic, partition }
+        )
+      }
+      // warn in case of offset below low watermark
+      if (parseInt(offset) < parseInt(low)) {
+        logger.warn(
+          'The requested offset is before the earliest offset maintained on the partition - no records will be deleted from this partition',
+          {
+            topic,
+            partition,
+            offset,
+          }
+        )
+      }
+    })
+
+    const seekEntriesByBroker = entries(partitionsByBroker).reduce(
+      (obj, [nodeId, nodePartitions]) => {
+        obj[nodeId] = {
+          topic,
+          partitions: partitions.filter(p => nodePartitions.includes(p.partition)),
+        }
+        return obj
+      },
+      {}
+    )
+
+    const retrier = createRetry(retry)
+    return retrier(async () => {
+      for (const [nodeId, { topic, partitions }] of entries(seekEntriesByBroker)) {
+        const broker = await cluster.findBroker({ nodeId })
+        await broker.deleteRecords({ topics: [{ topic, partitions }] })
+        // remove successful entry so it's ignored on retry
+        delete seekEntriesByBroker[nodeId]
+      }
+    })
+  }
+
+  /**
    * @param {Array<ACLEntry>} acl
    * @return {Promise<void>}
    *
@@ -1341,5 +1425,6 @@ module.exports = ({
     describeAcls,
     deleteAcls,
     createAcls,
+    deleteTopicRecords,
   }
 }
