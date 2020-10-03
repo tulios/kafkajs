@@ -11,8 +11,6 @@ const {
   generateMessages,
   testIfKafkaAtLeast_0_11,
 } = require('testHelpers')
-const Encoder = require('../../protocol/encoder')
-const Decoder = require('../../protocol/decoder')
 
 describe('Admin', () => {
   let admin, cluster, groupId, logger, topicName
@@ -191,17 +189,12 @@ describe('Admin', () => {
           // simulate earliest offset = 7, by deleting first 7 messages from the topic
           const messagesToDelete = [
             {
-              topic: topicName,
-              partitions: [
-                {
-                  partition: 0,
-                  offset: '7',
-                },
-              ],
+              partition: 0,
+              offset: '7',
             },
           ]
 
-          await deleteRecords({ cluster, topicName, topicDetails: messagesToDelete })
+          await admin.deleteTopicRecords({ topic: topicName, partitions: messagesToDelete })
           await admin.resetOffsets({ groupId, topic: topicName, earliest: true })
 
           const offsetsBeforeResolving = await admin.fetchOffsets({
@@ -226,67 +219,3 @@ describe('Admin', () => {
     })
   })
 })
-
-/**
- * Manually delete records up to the selected offset
- * http://kafka.apache.org/protocol.html#The_Messages_DeleteRecords
- * Only available from Kafka 0.11 upwards
- */
-const deleteRecords = async ({ cluster, topicName, topicDetails }) => {
-  const partitionLeader = await cluster.findLeaderForPartitions(topicName, [0])
-  const [nodeId] = Object.keys(partitionLeader)
-
-  const connection = (await cluster.findBroker({ nodeId })).connection
-  const requestTimeout = 5000
-  const request = {
-    apiKey: 21,
-    apiVersion: 0,
-    encode: async () => {
-      return new Encoder()
-        .writeArray(
-          topicDetails.map(({ topic, partitions }) => {
-            return new Encoder().writeString(topic).writeArray(
-              partitions.map(({ partition, offset }) => {
-                return new Encoder().writeInt32(partition).writeInt64(offset)
-              })
-            )
-          })
-        )
-        .writeInt32(requestTimeout)
-    },
-    expectResponse: () => true,
-  }
-
-  const response = {
-    decode: async rawData => {
-      const decoder = new Decoder(rawData)
-      return {
-        throttleTime: decoder.readInt32(),
-        topics: decoder
-          .readArray(decoder => ({
-            topic: decoder.readString(),
-            partitions: decoder.readArray(decoder => ({
-              partitionIndex: decoder.readInt32(),
-              lowWatermark: decoder.readInt64(),
-              errorCode: decoder.readInt16(),
-            })),
-          }))
-          .sort((a, b) => a.topic.localeCompare(b.topic)),
-      }
-    },
-    parse: data => {
-      let responseCode
-      if (
-        data.topics.some(({ partitions }) =>
-          partitions.some(({ errorCode }) => {
-            responseCode = errorCode
-            return errorCode !== 0
-          })
-        )
-      )
-        throw new Error(`Unable to delete Kafka record. Returned code ${responseCode}`)
-    },
-  }
-
-  await connection.send({ request, response })
-}
