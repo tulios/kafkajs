@@ -23,7 +23,7 @@ const requests = {
   ApiVersions: require('./apiVersions'),
   CreateTopics: require('./createTopics'),
   DeleteTopics: require('./deleteTopics'),
-  DeleteRecords: {},
+  DeleteRecords: require('./deleteRecords'),
   InitProducerId: require('./initProducerId'),
   OffsetForLeaderEpoch: {},
   AddPartitionsToTxn: require('./addPartitionsToTxn'),
