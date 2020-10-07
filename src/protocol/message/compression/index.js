@@ -1,6 +1,7 @@
 const { KafkaJSNotImplemented } = require('../../../errors')
 
-const COMPRESSION_CODEC_MASK = 0x07
+const MESSAGE_CODEC_MASK = 0x3
+const RECORD_BATCH_CODEC_MASK = 0x07
 
 const Types = {
   None: 0,
@@ -25,11 +26,11 @@ const Codecs = {
 
 const lookupCodec = type => (Codecs[type] ? Codecs[type]() : null)
 const lookupCodecByAttributes = attributes => {
-  const codec = Codecs[attributes & COMPRESSION_CODEC_MASK]
+  const codec = Codecs[attributes & MESSAGE_CODEC_MASK]
   return codec ? codec() : null
 }
 const lookupCodecByRecordBatchAttributes = attributes => {
-  const codec = Codecs[attributes & COMPRESSION_CODEC_MASK]
+  const codec = Codecs[attributes & RECORD_BATCH_CODEC_MASK]
   return codec ? codec() : null
 }
 
@@ -39,5 +40,6 @@ module.exports = {
   lookupCodec,
   lookupCodecByAttributes,
   lookupCodecByRecordBatchAttributes,
-  COMPRESSION_CODEC_MASK,
+  MESSAGE_CODEC_MASK,
+  RECORD_BATCH_CODEC_MASK,
 }
