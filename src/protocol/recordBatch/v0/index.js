@@ -1,10 +1,13 @@
 const Long = require('../../../utils/long')
 const Encoder = require('../../encoder')
 const crc32C = require('../crc32C')
-const { Types: Compression, lookupCodec } = require('../../message/compression')
+const {
+  Types: Compression,
+  lookupCodec,
+  RECORD_BATCH_CODEC_MASK,
+} = require('../../message/compression')
 
 const MAGIC_BYTE = 2
-const COMPRESSION_MASK = 3 // The lowest 3 bits
 const TIMESTAMP_MASK = 0 // The fourth lowest bit, always set this bit to 0 (since 0.10.0)
 const TRANSACTIONAL_MASK = 16 // The fifth lowest bit
 
@@ -39,7 +42,7 @@ const RecordBatch = async ({
   firstSequence = 0, // for idempotent messages
   records = [],
 }) => {
-  const COMPRESSION_CODEC = compression & COMPRESSION_MASK
+  const COMPRESSION_CODEC = compression & RECORD_BATCH_CODEC_MASK
   const IN_TRANSACTION = transactional ? TRANSACTIONAL_MASK : 0
   const attributes = COMPRESSION_CODEC | TIMESTAMP_MASK | IN_TRANSACTION
 

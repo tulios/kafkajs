@@ -40,4 +40,6 @@ module.exports = {
   lookupCodec,
   lookupCodecByAttributes,
   lookupCodecByRecordBatchAttributes,
+  MESSAGE_CODEC_MASK,
+  RECORD_BATCH_CODEC_MASK,
 }

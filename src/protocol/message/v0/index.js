@@ -1,6 +1,6 @@
 const Encoder = require('../../encoder')
 const crc32 = require('../../crc32')
-const { Types: Compression } = require('../compression')
+const { Types: Compression, MESSAGE_CODEC_MASK } = require('../compression')
 
 /**
  * v0
@@ -15,7 +15,7 @@ const { Types: Compression } = require('../compression')
 module.exports = ({ compression = Compression.None, key, value }) => {
   const content = new Encoder()
     .writeInt8(0) // magicByte
-    .writeInt8(compression & 0x3)
+    .writeInt8(compression & MESSAGE_CODEC_MASK)
     .writeBytes(key)
     .writeBytes(value)
 
