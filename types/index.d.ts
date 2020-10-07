@@ -699,6 +699,7 @@ export type GroupOverview = {
 export type DeleteGroupsResult = {
   groupId: string
   errorCode?: number
+  error?: KafkaJSProtocolError
 }
 
 export type ConsumerEvents = {
@@ -859,6 +860,11 @@ export var CompressionCodecs: {
 }
 
 export class KafkaJSError extends Error {
+  readonly message: Error["message"];
+  readonly name: string;
+  readonly retriable: boolean;
+  readonly helpUrl?: string;
+
   constructor(e: Error | string, metadata?: KafkaJSErrorMetadata)
 }
 
@@ -867,22 +873,36 @@ export class KafkaJSNonRetriableError extends KafkaJSError {
 }
 
 export class KafkaJSProtocolError extends KafkaJSError {
+  readonly code: number;
+  readonly type: string;
   constructor(e: Error | string)
 }
 
 export class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
+  readonly topic: string;
+  readonly partition: number;
   constructor(e: Error | string, metadata?: KafkaJSOffsetOutOfRangeMetadata)
 }
 
 export class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
+  readonly stack: string;
+  readonly originalError: Error;
+  readonly retryCount: number;
+  readonly retryTime: number;
   constructor(e: Error | string, metadata?: KafkaJSNumberOfRetriesExceededMetadata)
 }
 
 export class KafkaJSConnectionError extends KafkaJSError {
+  readonly broker: string;
   constructor(e: Error | string, metadata?: KafkaJSConnectionErrorMetadata)
 }
 
 export class KafkaJSRequestTimeoutError extends KafkaJSError {
+  readonly broker: string;
+  readonly correlationId: number;
+  readonly createdAt: number;
+  readonly sentAt: number;
+  readonly pendingDuration: number;
   constructor(e: Error | string, metadata?: KafkaJSRequestTimeoutErrorMetadata)
 }
 
@@ -891,14 +911,19 @@ export class KafkaJSMetadataNotLoaded extends KafkaJSError {
 }
 
 export class KafkaJSTopicMetadataNotLoaded extends KafkaJSMetadataNotLoaded {
+  readonly topic: string;
   constructor(e: Error | string, metadata?: KafkaJSTopicMetadataNotLoadedMetadata)
 }
 
 export class KafkaJSStaleTopicMetadataAssignment extends KafkaJSError {
+  readonly topic: string;
+  readonly unknownPartitions: number;
   constructor(e: Error | string, metadata?: KafkaJSStaleTopicMetadataAssignmentMetadata)
 }
 
 export class KafkaJSServerDoesNotSupportApiKey extends KafkaJSNonRetriableError {
+  readonly apiKey: number;
+  readonly apiName: string
   constructor(e: Error | string, metadata?: KafkaJSServerDoesNotSupportApiKeyMetadata)
 }
 
@@ -935,6 +960,7 @@ export class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSError {
 }
 
 export class KafkaJSDeleteGroupsError extends KafkaJSError {
+  readonly groups: DeleteGroupsResult[];
   constructor(e: Error | string, groups?: KafkaJSDeleteGroupsErrorGroups[])
 }
 
