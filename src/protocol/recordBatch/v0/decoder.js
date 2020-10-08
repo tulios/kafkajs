@@ -1,6 +1,6 @@
 const Decoder = require('../../decoder')
 const { KafkaJSPartialMessageError } = require('../../../errors')
-const { lookupCodecByRecordBatchAttributes } = require('../../message/compression')
+const { lookupCodecByAttributes } = require('../../message/compression')
 const RecordDecoder = require('../record/v0/decoder')
 const TimestampTypes = require('../../timestampTypes')
 
@@ -65,7 +65,7 @@ module.exports = async fetchDecoder => {
       ? TimestampTypes.LOG_APPEND_TIME
       : TimestampTypes.CREATE_TIME
 
-  const codec = lookupCodecByRecordBatchAttributes(attributes)
+  const codec = lookupCodecByAttributes(attributes)
 
   const recordContext = {
     firstOffset,

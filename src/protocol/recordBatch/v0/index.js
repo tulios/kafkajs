@@ -4,7 +4,7 @@ const crc32C = require('../crc32C')
 const {
   Types: Compression,
   lookupCodec,
-  RECORD_BATCH_CODEC_MASK,
+  COMPRESSION_CODEC_MASK,
 } = require('../../message/compression')
 
 const MAGIC_BYTE = 2
@@ -42,7 +42,7 @@ const RecordBatch = async ({
   firstSequence = 0, // for idempotent messages
   records = [],
 }) => {
-  const COMPRESSION_CODEC = compression & RECORD_BATCH_CODEC_MASK
+  const COMPRESSION_CODEC = compression & COMPRESSION_CODEC_MASK
   const IN_TRANSACTION = transactional ? TRANSACTIONAL_MASK : 0
   const attributes = COMPRESSION_CODEC | TIMESTAMP_MASK | IN_TRANSACTION
 
