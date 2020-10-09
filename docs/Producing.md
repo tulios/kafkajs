@@ -267,7 +267,7 @@ const ZstdCodec = require('@kafkajs/zstd')
 CompressionCodecs[CompressionTypes.ZSTD] = ZstdCodec()
 ```
 
-Configuration options can be passed to the factory function to control compression & decompression levels and other features. See [the official readme](https://github.com/@kafkajs/zstd) for more information.
+Configuration options can be passed to the factory function to control compression & decompression levels and other features. See [the official readme](https://github.com/kafkajs/zstd) for more information.
 
 ### <a name="compression-other"></a> Other
 
