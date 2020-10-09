@@ -234,7 +234,7 @@ module.exports = ({
     disconnect: async () => {
       connectionStatus = CONNECTION_STATUS.DISCONNECTING
       await cluster.disconnect()
-      connectionStatus = CONNECTION_STATUS.DISCONNECT
+      connectionStatus = CONNECTION_STATUS.DISCONNECTED
       instrumentationEmitter.emit(DISCONNECT)
     },
     isIdempotent: () => {
