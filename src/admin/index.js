@@ -9,7 +9,6 @@ const { LEVELS } = require('../loggers')
 const {
   KafkaJSNonRetriableError,
   KafkaJSDeleteGroupsError,
-  KafkaJSOffsetOutOfRange,
   KafkaJSBrokerNotFound,
   KafkaJSDeleteTopicRecordsError,
 } = require('../errors')
