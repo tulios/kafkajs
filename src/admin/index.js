@@ -10,7 +10,10 @@ const {
   KafkaJSNonRetriableError,
   KafkaJSDeleteGroupsError,
   KafkaJSOffsetOutOfRange,
+  KafkaJSBrokerNotFound,
+  KafkaJSDeleteTopicRecordsError,
 } = require('../errors')
+const { staleMetadata } = require('../protocol/error')
 const CONFIG_RESOURCE_TYPES = require('../protocol/configResourceTypes')
 const ACL_RESOURCE_TYPES = require('../protocol/aclResourceTypes')
 const ACL_OPERATION_TYPES = require('../protocol/aclOperationTypes')
@@ -1007,7 +1010,7 @@ module.exports = ({
    */
   const deleteTopicRecords = async ({ topic, partitions }) => {
     if (!topic || typeof topic !== 'string') {
-      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+      throw new KafkaJSNonRetriableError(`Invalid topic "${topic}"`)
     }
 
     if (!partitions || partitions.length === 0) {
@@ -1022,22 +1025,24 @@ module.exports = ({
     const partitionsFound = flatten(values(partitionsByBroker))
     const topicOffsets = await fetchTopicOffsets(topic)
 
+    const leaderNotFoundErrors = []
     partitions.forEach(({ partition, offset }) => {
-      // warn if no broker/leader found for partition
+      // throw if no leader found for partition
       if (!partitionsFound.includes(partition)) {
-        logger.warn('Could not find broker/leader for the partition', {
-          topic,
-          partition,
+        leaderNotFoundErrors.push({
+          partitions: [
+            {
+              partition,
+              offset,
+            },
+          ],
+          error: new KafkaJSBrokerNotFound('Could not find the leader for the partition'),
         })
         return
       }
-      const { high, low } = topicOffsets.find(p => p.partition === partition)
-      // throw in case of offset out-of-range (otherwise could fail mid-process)
-      if (parseInt(offset) > parseInt(high) || parseInt(offset) < -1) {
-        throw new KafkaJSOffsetOutOfRange(
-          'The requested offset is not within the range of offsets maintained by the server',
-          { topic, partition }
-        )
+      const { low } = topicOffsets.find(p => p.partition === partition) || {
+        high: undefined,
+        low: undefined,
       }
       // warn in case of offset below low watermark
       if (parseInt(offset) < parseInt(low)) {
@@ -1052,6 +1057,10 @@ module.exports = ({
       }
     })
 
+    if (leaderNotFoundErrors.length > 0) {
+      throw new KafkaJSDeleteTopicRecordsError({ topic, brokers: leaderNotFoundErrors })
+    }
+
     const seekEntriesByBroker = entries(partitionsByBroker).reduce(
       (obj, [nodeId, nodePartitions]) => {
         obj[nodeId] = {
@@ -1065,11 +1074,41 @@ module.exports = ({
 
     const retrier = createRetry(retry)
     return retrier(async () => {
-      for (const [nodeId, { topic, partitions }] of entries(seekEntriesByBroker)) {
-        const broker = await cluster.findBroker({ nodeId })
-        await broker.deleteRecords({ topics: [{ topic, partitions }] })
-        // remove successful entry so it's ignored on retry
-        delete seekEntriesByBroker[nodeId]
+      try {
+        const brokerErrors = []
+        const brokerRequests = entries(seekEntriesByBroker).map(
+          ([nodeId, { topic, partitions }]) => async () => {
+            try {
+              const broker = await cluster.findBroker({ nodeId })
+              await broker.deleteRecords({ topics: [{ topic, partitions }] })
+              // remove successful entry so it's ignored on retry
+              delete seekEntriesByBroker[nodeId]
+            } catch (error) {
+              brokerErrors.push({
+                partitions,
+                error,
+              })
+            }
+          }
+        )
+
+        await Promise.all(brokerRequests.map(request => request()))
+        if (brokerErrors.length > 0) {
+          throw new KafkaJSDeleteTopicRecordsError({
+            topic,
+            brokers: brokerErrors,
+          })
+        }
+      } catch (e) {
+        if (
+          e.retriable &&
+          e.brokers.some(
+            ({ error }) => staleMetadata(error) || error.name === 'KafkaJSMetadataNotLoaded'
+          )
+        ) {
+          await cluster.refreshMetadata()
+        }
+        throw e
       }
     })
   }

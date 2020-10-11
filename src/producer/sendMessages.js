@@ -1,16 +1,13 @@
 const createRetry = require('../retry')
 const flatten = require('../utils/flatten')
 const { KafkaJSMetadataNotLoaded } = require('../errors')
+const { staleMetadata } = require('../protocol/error')
 const groupMessagesPerPartition = require('./groupMessagesPerPartition')
 const createTopicData = require('./createTopicData')
 const responseSerializer = require('./responseSerializer')
 
 const { keys } = Object
 const TOTAL_INDIVIDUAL_ATTEMPTS = 5
-const staleMetadata = e =>
-  ['UNKNOWN_TOPIC_OR_PARTITION', 'LEADER_NOT_AVAILABLE', 'NOT_LEADER_FOR_PARTITION'].includes(
-    e.type
-  )
 
 module.exports = ({ logger, cluster, partitioner, eosManager }) => {
   const retrier = createRetry({ retries: TOTAL_INDIVIDUAL_ATTEMPTS })

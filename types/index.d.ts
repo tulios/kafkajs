@@ -939,9 +939,24 @@ export class KafkaJSDeleteGroupsError extends KafkaJSError {
   constructor(e: Error | string, groups?: KafkaJSDeleteGroupsErrorGroups[])
 }
 
+export class KafkaJSDeleteTopicRecordsError extends KafkaJSError {
+  constructor(metadata: KafkaJSDeleteTopicRecordsErrorTopic)
+}
+
 export interface KafkaJSDeleteGroupsErrorGroups {
   groupId: string
   errorCode: number
+  error: KafkaJSError
+}
+
+
+export interface KafkaJSDeleteTopicRecordsErrorTopic {
+  topic: string,
+  brokers: KafkaJSDeleteTopicRecordsErrorBroker[]
+}
+
+export interface KafkaJSDeleteTopicRecordsErrorBroker {
+  partitions: { partition: number; offset: string[]}[]
   error: KafkaJSError
 }
 

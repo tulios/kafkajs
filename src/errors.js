@@ -178,6 +178,21 @@ class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSNonRetriableError {
   }
 }
 
+class KafkaJSDeleteTopicRecordsError extends KafkaJSError {
+  constructor({ brokers }) {
+    /*
+     * This error is retriable if all the errors were retriable
+     */
+    const retriable = brokers
+      .filter(({ error }) => error != null)
+      .every(({ error }) => error.retriable === true)
+
+    super('Error while deleting records', { retriable })
+    this.name = 'KafkaJSDeleteRecordsError'
+    this.brokers = brokers
+  }
+}
+
 module.exports = {
   KafkaJSError,
   KafkaJSNonRetriableError,
@@ -201,4 +216,5 @@ module.exports = {
   KafkaJSLockTimeout,
   KafkaJSServerDoesNotSupportApiKey,
   KafkaJSUnsupportedMagicByteInMessageSet,
+  KafkaJSDeleteTopicRecordsError,
 }

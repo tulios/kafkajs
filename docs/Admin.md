@@ -511,7 +511,7 @@ try {
 
 ## <a name="delete-topic-records"></a> Delete Topic Records
 
-Delete records for a selected topic. This will delete all records from the earliest up to the provided target offset for the given partition(s). To delete all records in a partition, use a target offset of `-1`.
+Delete records for a selected topic. This will delete all records from the earliest offset up to - but not including - the provided target offset for the given partition(s). To delete all records in a partition, use a target offset of `-1`.
 
 Note that you cannot delete records in an arbitrary range (it will always be from the earliest available offset)
 
@@ -528,7 +528,7 @@ Example:
 await admin.deleteTopicRecords({
     topic: 'custom-topic',
     partitions: [
-        { partition: 0, offset: '30' }, // delete up to offset 30
+        { partition: 0, offset: '30' }, // delete up to and including offset 29
         { partition: 3, offset: '-1' }, // delete all available records on this partition
     ]
 })
