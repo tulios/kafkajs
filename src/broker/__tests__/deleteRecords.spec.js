@@ -114,6 +114,7 @@ describe('Broker > deleteRecords', () => {
     const response = await broker.deleteRecords({ topics: recordsToDelete })
 
     expect(response).toEqual({
+      clientSideThrottleTime: 0,
       throttleTime: 0,
       topics: [
         {
