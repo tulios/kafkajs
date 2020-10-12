@@ -1,6 +1,5 @@
 const { decode, parse } = require('./response')
 
-// FIXME - update with correct sample response
 describe('Protocol > Requests > DeleteRecords > v0', () => {
   test('response - success', async () => {
     const data = await decode(Buffer.from(require('../fixtures/v0_response.json')))
