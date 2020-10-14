@@ -1,5 +1,6 @@
 const fs = require('fs')
 const ip = require('ip')
+const toxiproxyClient = require('toxiproxy-node-client')
 
 const { Kafka, CompressionTypes, logLevel } = require('../index')
 const PrettyConsoleLogger = require('./prettyConsoleLogger')
@@ -9,7 +10,7 @@ const host = process.env.HOST_IP || ip.address()
 const kafka = new Kafka({
   logLevel: logLevel.INFO,
   logCreator: PrettyConsoleLogger,
-  brokers: [`${host}:9094`, `${host}:9097`, `${host}:9100`],
+  brokers: [`${host}:39094`],
   clientId: 'example-producer',
   ssl: {
     servername: 'localhost',
@@ -22,6 +23,8 @@ const kafka = new Kafka({
     password: 'testtest',
   },
 })
+
+const toxiproxy = new toxiproxyClient.Toxiproxy(`http://${host}:8474`)
 
 const topic = 'topic-test'
 const producer = kafka.producer()
@@ -62,8 +65,48 @@ const sendMessage = () => {
 
 let intervalId
 const run = async () => {
+  await toxiproxy.reset()
+
+  let proxy
+
+  try {
+    proxy = await toxiproxy.createProxy({
+      listen: `0.0.0.0:39094`,
+      name: 'kafka-proxy',
+      upstream: `kafka:29094`,
+    })
+  } catch (e) {
+    if (e.message === 'Proxy kafka-proxy already exists') {
+      proxy = await toxiproxy.get('kafka-proxy')
+    } else {
+      throw e
+    }
+  }
+
+  producer.logger().info('Initialized proxy', {
+    proxy,
+  })
+
   await producer.connect()
-  intervalId = setInterval(sendMessage, 3000)
+
+  await sendMessage()
+
+  producer.logger().info('Creating network timeout', {
+    toxic: (
+      await proxy.addToxic(
+        new toxiproxyClient.Toxic(proxy, {
+          type: 'timeout',
+          attributes: {
+            timeout: 0,
+          },
+        })
+      )
+    ).toJson(),
+  })
+
+  await sendMessage()
+
+  quit('SIGTERM')
 }
 
 run().catch(e => kafka.logger().error(`[example/producer] ${e.message}`, { stack: e.stack }))
@@ -72,23 +115,23 @@ const errorTypes = ['unhandledRejection', 'uncaughtException']
 const signalTraps = ['SIGTERM', 'SIGINT', 'SIGUSR2']
 
 errorTypes.map(type => {
-  process.on(type, async e => {
-    try {
-      kafka.logger().info(`process.on ${type}`)
-      kafka.logger().error(e.message, { stack: e.stack })
-      await producer.disconnect()
-      process.exit(0)
-    } catch (_) {
-      process.exit(1)
-    }
-  })
+  process.on(type, async e => quit(type, e))
 })
 
 signalTraps.map(type => {
-  process.once(type, async () => {
-    console.log('')
-    kafka.logger().info('[example/producer] disconnecting')
-    clearInterval(intervalId)
-    await producer.disconnect()
-  })
+  process.once(type, async () => quit(type))
 })
+
+const quit = async (type, e) => {
+  try {
+    kafka.logger().info(`process.on ${type}`)
+    if (e) {
+      kafka.logger().error(e.message, { stack: e.stack })
+    }
+
+    await producer.disconnect()
+    process.exit(0)
+  } catch (_) {
+    process.exit(1)
+  }
+}

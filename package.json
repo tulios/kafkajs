@@ -69,6 +69,7 @@
     "mockdate": "^2.0.5",
     "prettier": "^1.18.2",
     "semver": "^6.2.0",
+    "toxiproxy-node-client": "^2.0.6",
     "typescript": "^3.8.3",
     "uuid": "^3.3.2"
   },

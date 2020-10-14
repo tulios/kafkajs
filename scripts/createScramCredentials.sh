@@ -12,7 +12,7 @@ find_container_id() {
   echo $(docker ps \
     --filter "status=running" \
     --filter "label=custom.project=kafkajs" \
-    --filter "label=custom.service=kafka1" \
+    --filter "label=custom.service=kafka" \
     --no-trunc \
     -q)
 }
