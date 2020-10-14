@@ -15,6 +15,8 @@ If you are seeing the warning `[ConsumerGroup] Consumer group received unsubscri
 
 Ensure that your `groupId` is not used by any other application. A simple way to verify this is to [describe the consumer group](Consuming.md#describe-group) and verify that there are no unexpected members.
 
+Note: If you are switching from node-rdkafka, than this behavior is not the same. You may want to listen to [RECEIVED_UNSUBSCRIBED_TOPICS](InstrumentationEvents.md#a-name-list-list-of-available-events) event and act accordingly.
+
 ## What does it mean to get `REBALANCE_IN_PROGRESS` errors?
 
 This is a normal occurrence during, for example, deployments, and should resolve itself. However, if this continues to happen frequently when the group should be stable, it may indicate that your session timeout is too low, or that processing each message is taking too long.
