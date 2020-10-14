@@ -179,17 +179,17 @@ class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSNonRetriableError {
 }
 
 class KafkaJSDeleteTopicRecordsError extends KafkaJSError {
-  constructor({ brokers }) {
+  constructor({ partitions }) {
     /*
      * This error is retriable if all the errors were retriable
      */
-    const retriable = brokers
+    const retriable = partitions
       .filter(({ error }) => error != null)
       .every(({ error }) => error.retriable === true)
 
     super('Error while deleting records', { retriable })
-    this.name = 'KafkaJSDeleteRecordsError'
-    this.brokers = brokers
+    this.name = 'KafkaJSDeleteTopicRecordsError'
+    this.partitions = partitions
   }
 }
 

@@ -140,7 +140,16 @@ describe('Broker > deleteRecords', () => {
     })
     await broker.connect()
 
-    await expect(broker.deleteRecords({ topics: recordsToDelete })).rejects.toThrow(
+    let error
+    try {
+      await broker.deleteRecords({ topics: recordsToDelete })
+    } catch (e) {
+      error = e
+    }
+
+    expect(error).toBeDefined()
+    expect(error.name).toBe('KafkaJSDeleteTopicRecordsError')
+    expect(error.partitions[0].error).toStrictEqual(
       new KafkaJSProtocolError(
         'The requested offset is not within the range of offsets maintained by the server'
       )
@@ -155,8 +164,109 @@ describe('Broker > deleteRecords', () => {
     })
     await broker.connect()
 
-    await expect(broker.deleteRecords({ topics: recordsToDelete })).rejects.toThrow(
+    let error
+    try {
+      await broker.deleteRecords({ topics: recordsToDelete })
+    } catch (e) {
+      error = e
+    }
+
+    expect(error).toBeDefined()
+    expect(error.name).toBe('KafkaJSDeleteTopicRecordsError')
+    expect(error.partitions[0].error).toStrictEqual(
       new KafkaJSProtocolError('This server is not the leader for that topic-partition')
     )
+  })
+
+  describe('when the broker has multiple partitions', () => {
+    let secondTopicName, testPartitions
+
+    beforeEach(async () => {
+      partitionLeader = 0
+      secondTopicName = `test-topic-${secureRandom()}`
+
+      // 3 partitions per broker
+      await createTopic({ topic: secondTopicName, partitions: 9 })
+
+      metadata = await retryProtocol(
+        'LEADER_NOT_AVAILABLE',
+        async () => await seedBroker.metadata([secondTopicName])
+      )
+      testPartitions = metadata.topicMetadata[0].partitionMetadata
+        .filter(({ leader }) => leader === partitionLeader)
+        .map(({ partitionId }) => partitionId)
+
+      const messages = Array(30)
+        .fill()
+        .map(() => {
+          const value = secureRandom()
+          return { key: `key-${value}`, value: `value-${value}` }
+        })
+      producer = createProducer({
+        cluster,
+        // send all messages to 1 partition, which will be the only successful one
+        createPartitioner: () => () => testPartitions[0],
+        logger: newLogger(),
+      })
+      await producer.connect()
+      await producer.send({ acks: 1, topic: secondTopicName, messages })
+
+      recordsToDelete = [
+        {
+          topic: secondTopicName,
+          partitions: [
+            {
+              partition: testPartitions[0],
+              offset: '7',
+            },
+            {
+              partition: testPartitions[1],
+              offset: '98',
+            },
+            {
+              partition: testPartitions[2],
+              offset: '99',
+            },
+          ],
+        },
+      ]
+    })
+
+    test('rejects the promise with all partition errors', async () => {
+      const brokerData = metadata.brokers.find(b => b.nodeId === partitionLeader)
+      broker = new Broker({
+        connection: createConnection(brokerData),
+        logger: newLogger(),
+      })
+      await broker.connect()
+
+      let error
+      try {
+        await broker.deleteRecords({ topics: recordsToDelete })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error.name).toEqual('KafkaJSDeleteTopicRecordsError')
+      expect(error.partitions).toEqual(
+        expect.arrayContaining([
+          {
+            partition: testPartitions[1],
+            offset: '98',
+            error: new KafkaJSProtocolError(
+              'The requested offset is not within the range of offsets maintained by the server'
+            ),
+          },
+          {
+            partition: testPartitions[2],
+            offset: '99',
+            error: new KafkaJSProtocolError(
+              'The requested offset is not within the range of offsets maintained by the server'
+            ),
+          },
+        ])
+      )
+    })
   })
 })

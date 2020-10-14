@@ -1029,13 +1029,11 @@ module.exports = ({
       // throw if no leader found for partition
       if (!partitionsFound.includes(partition)) {
         leaderNotFoundErrors.push({
-          partitions: [
-            {
-              partition,
-              offset,
-            },
-          ],
-          error: new KafkaJSBrokerNotFound('Could not find the leader for the partition'),
+          partition,
+          offset,
+          error: new KafkaJSBrokerNotFound('Could not find the leader for the partition', {
+            retriable: false,
+          }),
         })
         return
       }
@@ -1057,7 +1055,7 @@ module.exports = ({
     })
 
     if (leaderNotFoundErrors.length > 0) {
-      throw new KafkaJSDeleteTopicRecordsError({ topic, brokers: leaderNotFoundErrors })
+      throw new KafkaJSDeleteTopicRecordsError({ topic, partitions: leaderNotFoundErrors })
     }
 
     const seekEntriesByBroker = entries(partitionsByBroker).reduce(
@@ -1072,42 +1070,55 @@ module.exports = ({
     )
 
     const retrier = createRetry(retry)
-    return retrier(async () => {
+    return retrier(async bail => {
       try {
-        const brokerErrors = []
+        const partitionErrors = []
+
         const brokerRequests = entries(seekEntriesByBroker).map(
           ([nodeId, { topic, partitions }]) => async () => {
-            try {
-              const broker = await cluster.findBroker({ nodeId })
-              await broker.deleteRecords({ topics: [{ topic, partitions }] })
-              // remove successful entry so it's ignored on retry
-              delete seekEntriesByBroker[nodeId]
-            } catch (error) {
-              brokerErrors.push({
-                partitions,
-                error,
-              })
-            }
+            const broker = await cluster.findBroker({ nodeId })
+            await broker.deleteRecords({ topics: [{ topic, partitions }] })
+            // remove successful entry so it's ignored on retry
+            delete seekEntriesByBroker[nodeId]
           }
         )
 
-        await Promise.all(brokerRequests.map(request => request()))
-        if (brokerErrors.length > 0) {
+        await Promise.all(
+          brokerRequests.map(request =>
+            request().catch(e => {
+              if (e.name === 'KafkaJSDeleteTopicRecordsError') {
+                e.partitions.forEach(({ partition, offset, error }) => {
+                  partitionErrors.push({
+                    partition,
+                    offset,
+                    error,
+                  })
+                })
+              } else {
+                // then it's an unknown error, not from the broker response
+                throw e
+              }
+            })
+          )
+        )
+
+        if (partitionErrors.length > 0) {
           throw new KafkaJSDeleteTopicRecordsError({
             topic,
-            brokers: brokerErrors,
+            partitions: partitionErrors,
           })
         }
       } catch (e) {
         if (
           e.retriable &&
-          e.brokers.some(
+          e.partitions.some(
             ({ error }) => staleMetadata(error) || error.name === 'KafkaJSMetadataNotLoaded'
           )
         ) {
           await cluster.refreshMetadata()
         }
-        throw e
+        if (e.retriable) throw e
+        bail(e)
       }
     })
   }

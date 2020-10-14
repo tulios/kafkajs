@@ -17,16 +17,18 @@ const {
   KafkaJSOffsetOutOfRange,
   KafkaJSDeleteTopicRecordsError,
   KafkaJSBrokerNotFound,
-  KafkaJSError,
+  KafkaJSNonRetriableError,
+  KafkaJSMetadataNotLoaded,
 } = require('../../errors')
+const { createErrorFromCode, errorCodes } = require('../../protocol/error')
 
 const { assign } = Object
 
 const STALE_METADATA_ERRORS = [
-  { type: 'UNKNOWN_TOPIC_OR_PARTITION' },
-  { type: 'LEADER_NOT_AVAILABLE' },
-  { type: 'NOT_LEADER_FOR_PARTITION' },
-  { name: 'KafkaJSMetadataNotLoaded' },
+  createErrorFromCode(errorCodes.find(({ type }) => type === 'UNKNOWN_TOPIC_OR_PARTITION').code),
+  createErrorFromCode(errorCodes.find(({ type }) => type === 'LEADER_NOT_AVAILABLE').code),
+  createErrorFromCode(errorCodes.find(({ type }) => type === 'NOT_LEADER_FOR_PARTITION').code),
+  new KafkaJSMetadataNotLoaded('test'),
 ]
 
 const logger = assign(newLogger(), { namespace: () => logger })
@@ -216,7 +218,17 @@ describe('Admin > deleteTopicRecords', () => {
       { partition: 1, offset: '5' },
     ]
     brokerSpy.mockResolvedValueOnce() // succeed once
-    brokerSpy.mockRejectedValueOnce(new KafkaJSProtocolError('retriable error')) // fail once
+    brokerSpy.mockRejectedValueOnce(
+      new KafkaJSDeleteTopicRecordsError({
+        partitions: [
+          {
+            partition: 1,
+            offset: '5',
+            error: new KafkaJSProtocolError('retriable', { retriable: true }),
+          },
+        ],
+      })
+    ) // fail once
 
     await admin.deleteTopicRecords({ topic: topicName, partitions: recordsToDelete })
 
@@ -228,15 +240,17 @@ describe('Admin > deleteTopicRecords', () => {
 
   for (const error of STALE_METADATA_ERRORS) {
     test(`${error.type || error.name} refresh stale metadata and tries again`, async () => {
-      class FakeError extends Error {
-        constructor() {
-          super('Fake Error')
-          this.name = error.name
-          this.type = error.type
-          this.retriable = true
-        }
-      }
-      brokerSpy.mockRejectedValueOnce(new FakeError())
+      brokerSpy.mockRejectedValueOnce(
+        new KafkaJSDeleteTopicRecordsError({
+          partitions: [
+            {
+              partition: 1,
+              offset: '5',
+              error,
+            },
+          ],
+        })
+      )
 
       const recordsToDelete = [{ partition: 1, offset: '5' }]
       await admin.deleteTopicRecords({ topic: topicName, partitions: recordsToDelete })
@@ -252,24 +266,24 @@ describe('Admin > deleteTopicRecords', () => {
       { partition: 0, offset: '7' },
       { partition: 2, offset: '5' },
     ]
-    const expectedError = new KafkaJSDeleteTopicRecordsError({
-      topic: topicName,
-      brokers: [
-        {
-          partitions: [
-            {
-              partition: 2,
-              offset: '5',
-            },
-          ],
-          error: new KafkaJSBrokerNotFound('Could not find leader for the partition'),
-        },
-      ],
-    })
 
-    await expect(
-      admin.deleteTopicRecords({ topic: topicName, partitions: recordsToDelete })
-    ).rejects.toThrow(expectedError)
+    let error
+    try {
+      await admin.deleteTopicRecords({ topic: topicName, partitions: recordsToDelete })
+    } catch (e) {
+      error = e
+    }
+
+    expect(error).toBeDefined()
+    expect(error.name).toBe('KafkaJSDeleteTopicRecordsError')
+    expect(error.retriable).toBe(false)
+    expect(error.partitions).toEqual([
+      {
+        partition: 2,
+        offset: '5',
+        error: new KafkaJSBrokerNotFound('Could not find the leader for the partition'),
+      },
+    ])
     expect(brokerSpy).not.toHaveBeenCalled()
   })
 
@@ -310,26 +324,32 @@ describe('Admin > deleteTopicRecords', () => {
     ])
   })
 
-  test('if 1 of the broker requests throws a non-retriable, an error is thrown for the unsuccessful request', async () => {
+  test('if 1 of the broker request offsets is out-of-range (non-retriable), the request in its entirety throws an error', async () => {
     const recordsToDelete = [
       { partition: 0, offset: '7' },
       { partition: 1, offset: '99' },
     ]
-    const expectedError = new KafkaJSDeleteTopicRecordsError({
-      topic: topicName,
-      brokers: [
-        {
-          partitions: { partition: 1, offset: '99' },
-          error: new KafkaJSOffsetOutOfRange(
-            'The requested offset is not within the range of offsets maintained by the server',
-            { topic: topicName, partition: 0 }
-          ),
-        },
-      ],
-    })
-    await expect(
-      admin.deleteTopicRecords({ topic: topicName, partitions: recordsToDelete })
-    ).rejects.toThrow(expectedError)
+
+    let error
+    try {
+      await admin.deleteTopicRecords({ topic: topicName, partitions: recordsToDelete })
+    } catch (e) {
+      error = e
+    }
+
+    expect(error).toBeDefined()
+    expect(error.name).toBe('KafkaJSDeleteTopicRecordsError')
+    expect(error.retriable).toBe(false)
+    expect(error.partitions).toEqual([
+      {
+        partition: 1,
+        offset: '99',
+        error: new KafkaJSOffsetOutOfRange(
+          'The requested offset is not within the range of offsets maintained by the server',
+          { topic: topicName, partition: 0 }
+        ),
+      },
+    ])
     expect(
       await cluster.fetchTopicsOffset([
         {
@@ -354,37 +374,50 @@ describe('Admin > deleteTopicRecords', () => {
       { partition: 0, offset: '7' },
       { partition: 1, offset: '5' },
     ]
-    brokerSpy.mockRejectedValueOnce(new KafkaJSError('Fake Error', { retriable: true }))
-    brokerSpy.mockRejectedValueOnce(new KafkaJSError('Fake Error', { retriable: false }))
+    brokerSpy.mockRejectedValueOnce(
+      new KafkaJSDeleteTopicRecordsError({
+        partitions: [
+          {
+            partition: 0,
+            offset: '7',
+            error: new KafkaJSProtocolError('retriable', { retriable: true }),
+          },
+        ],
+      })
+    )
+    brokerSpy.mockRejectedValueOnce(
+      new KafkaJSDeleteTopicRecordsError({
+        partitions: [
+          { partition: 1, offset: '5', error: new KafkaJSNonRetriableError('nonretriable') },
+        ],
+      })
+    )
 
-    const expectedError = new KafkaJSDeleteTopicRecordsError({
-      topic: topicName,
-      brokers: [
+    let error
+    try {
+      await admin.deleteTopicRecords({ topic: topicName, partitions: recordsToDelete })
+    } catch (e) {
+      error = e
+    }
+
+    expect(error).toBeDefined()
+    expect(error.name).toBe('KafkaJSDeleteTopicRecordsError')
+    expect(error.retriable).toBe(false)
+    expect(error.partitions).toEqual(
+      expect.arrayContaining([
         {
-          partitions: expect.toBeEither(
-            [{ partition: 0, offset: '7' }],
-            [{ partition: 1, offset: '5' }]
-          ),
-          error: new KafkaJSOffsetOutOfRange(
-            'The requested offset is not within the range of offsets maintained by the server',
-            { topic: topicName, partition: 0 }
-          ),
+          partition: 0,
+          offset: '7',
+          error: new KafkaJSProtocolError('retriable'),
         },
         {
-          partitions: expect.toBeEither(
-            [{ partition: 0, offset: '7' }],
-            [{ partition: 1, offset: '5' }]
-          ),
-          error: new KafkaJSOffsetOutOfRange(
-            'The requested offset is not within the range of offsets maintained by the server',
-            { topic: topicName, partition: 0 }
-          ),
+          partition: 1,
+          offset: '5',
+          error: new KafkaJSNonRetriableError('nonretriable'),
         },
-      ],
-    })
-    await expect(
-      admin.deleteTopicRecords({ topic: topicName, partitions: recordsToDelete })
-    ).rejects.toThrow(expectedError)
+      ])
+    )
+    expect(brokerSpy).toHaveBeenCalledTimes(2)
     expect(
       await cluster.fetchTopicsOffset([
         {
@@ -409,10 +442,31 @@ describe('Admin > deleteTopicRecords', () => {
       { partition: 0, offset: '7' },
       { partition: 1, offset: '5' },
     ]
-    brokerSpy.mockRejectedValueOnce(new KafkaJSError('Fake Error', { retriable: true }))
-    brokerSpy.mockRejectedValueOnce(new KafkaJSError('Fake Error', { retriable: true }))
+    brokerSpy.mockRejectedValueOnce(
+      new KafkaJSDeleteTopicRecordsError({
+        partitions: [
+          {
+            partition: 0,
+            offset: '7',
+            error: new KafkaJSProtocolError('retriable', { retriable: true }),
+          },
+        ],
+      })
+    )
+    brokerSpy.mockRejectedValueOnce(
+      new KafkaJSDeleteTopicRecordsError({
+        partitions: [
+          {
+            partition: 1,
+            offset: '5',
+            error: new KafkaJSProtocolError('retriable', { retriable: true }),
+          },
+        ],
+      })
+    )
 
     await admin.deleteTopicRecords({ topic: topicName, partitions: recordsToDelete })
+    expect(brokerSpy).toHaveBeenCalledTimes(4)
     expect(
       await cluster.fetchTopicsOffset([
         {

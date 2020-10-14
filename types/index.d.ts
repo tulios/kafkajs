@@ -952,11 +952,12 @@ export interface KafkaJSDeleteGroupsErrorGroups {
 
 export interface KafkaJSDeleteTopicRecordsErrorTopic {
   topic: string,
-  brokers: KafkaJSDeleteTopicRecordsErrorBroker[]
+  partitions: KafkaJSDeleteTopicRecordsErrorPartition[]
 }
 
-export interface KafkaJSDeleteTopicRecordsErrorBroker {
-  partitions: { partition: number; offset: string[]}[]
+export interface KafkaJSDeleteTopicRecordsErrorPartition {
+  partition: number;
+  offset: string;
   error: KafkaJSError
 }
 
