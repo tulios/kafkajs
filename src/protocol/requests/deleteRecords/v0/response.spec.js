@@ -1,7 +1,8 @@
-const { decode, parse } = require('./response')
+const response = require('./response')
 
 describe('Protocol > Requests > DeleteRecords > v0', () => {
   test('response - success', async () => {
+    const { decode, parse } = response({})
     const data = await decode(Buffer.from(require('../fixtures/v0_response.json')))
     expect(data).toEqual({
       throttleTime: 0,
