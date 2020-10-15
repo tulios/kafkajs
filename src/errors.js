@@ -178,6 +178,14 @@ class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSNonRetriableError {
   }
 }
 
+class KafkaJSCorrelationIdAlreadyExists extends KafkaJSNonRetriableError {
+  constructor(correlationId) {
+    super(...arguments)
+    this.name = 'KafkaJSCorrelationIdAlreadyExists'
+    this.message = `Correlation id ${correlationId} already exists`
+  }
+}
+
 module.exports = {
   KafkaJSError,
   KafkaJSNonRetriableError,
@@ -201,4 +209,5 @@ module.exports = {
   KafkaJSLockTimeout,
   KafkaJSServerDoesNotSupportApiKey,
   KafkaJSUnsupportedMagicByteInMessageSet,
+  KafkaJSCorrelationIdAlreadyExists,
 }
