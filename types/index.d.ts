@@ -96,7 +96,7 @@ export type PartitionMetadata = {
 }
 
 export interface IHeaders {
-  [key: string]: Buffer | string
+  [key: string]: Buffer | string | undefined
 }
 
 export interface ConsumerConfig {
