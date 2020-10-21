@@ -26,7 +26,7 @@ const kafka = new Kafka({
 const topic = 'topic-test'
 const producer = kafka.producer()
 
-const getRandomNumber = () => Math.round(Math.random(10) * 1000)
+const getRandomNumber = () => Math.round(Math.random() * 1000)
 const createMessage = num => ({
   key: `key-${num}`,
   value: `value-${num}-${new Date().toISOString()}`,
