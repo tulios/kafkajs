@@ -117,7 +117,7 @@
 <tbody>
 <tr><td>topic</td><td>topic name</td><td><code>null</code></td></tr>
 <tr><td>messages</td><td>An array of objects with &quot;key&quot; (optional), &quot;value&quot; (required), &quot;partition&quot; (optional), &quot;timestamp&quot; (optional), &quot;headers&quot; (optional), example: <br> <code>[{ key: 'my-key', value: 'my-value'}]</code></td><td><code>null</code></td></tr>
-<tr><td>acks</td><td>Control the number of required acks. <br> <strong>-1</strong> = all replicas must acknowledge <em>(default)</em> <br> <strong>0</strong> = no acknowledgments <br> <strong>1</strong> = only waits for the leader to acknowledge</td><td><code>-1</code> all replicas must acknowledge</td></tr>
+<tr><td>acks</td><td>Control the number of required acks. <br> <strong>-1</strong> = all insync replicas must acknowledge <em>(default)</em> <br> <strong>0</strong> = no acknowledgments <br> <strong>1</strong> = only waits for the leader to acknowledge</td><td><code>-1</code> all insync replicas must acknowledge</td></tr>
 <tr><td>timeout</td><td>The time to await a response in ms</td><td><code>30000</code></td></tr>
 <tr><td>compression</td><td>Compression codec</td><td><code>CompressionTypes.None</code></td></tr>
 </tbody>
