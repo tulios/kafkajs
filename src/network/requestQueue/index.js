@@ -1,6 +1,7 @@
 const EventEmitter = require('events')
 const SocketRequest = require('./socketRequest')
 const events = require('../instrumentationEvents')
+const { KafkaJSInvariantViolation } = require('../../errors')
 
 const PRIVATE = {
   EMIT_QUEUE_SIZE_EVENT: Symbol('private:RequestQueue:emitQueueSizeEvent'),
@@ -131,6 +132,9 @@ module.exports = class RequestQueue extends EventEmitter {
       instrumentationEmitter: this.instrumentationEmitter,
       requestTimeout,
       send: () => {
+        if (this.inflight.has(correlationId)) {
+          throw new KafkaJSInvariantViolation('Correlation id already exists')
+        }
         this.inflight.set(correlationId, socketRequest)
         pushedRequest.sendRequest()
       },
