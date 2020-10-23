@@ -1117,8 +1117,7 @@ module.exports = ({
         ) {
           await cluster.refreshMetadata()
         }
-        if (e.retriable) throw e
-        bail(e)
+        throw e
       }
     })
   }
