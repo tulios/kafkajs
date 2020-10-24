@@ -759,6 +759,38 @@ module.exports = class Broker {
   }
 
   /**
+   * Send request to delete records
+   * @public
+   * @param {Array<Object>} topics
+   *                          [
+   *                            {
+   *                              topic: 'my-topic-name',
+   *                              partitions: [
+   *                                { partition: 0, offset 2 },
+   *                                { partition: 1, offset 4 },
+   *                              ],
+   *                            }
+   *                          ]
+   * @returns {Promise<Array>} example:
+   *                          {
+   *                            throttleTime: 0
+   *                           [
+   *                              {
+   *                                topic: 'my-topic-name',
+   *                                partitions: [
+   *                                 { partition: 0, lowWatermark: '2n', errorCode: 0 },
+   *                                 { partition: 1, lowWatermark: '4n', errorCode: 0 },
+   *                               ],
+   *                             },
+   *                           ]
+   *                          }
+   */
+  async deleteRecords({ topics }) {
+    const deleteRecords = this.lookupRequest(apiKeys.DeleteRecords, requests.DeleteRecords)
+    return await this[PRIVATE.SEND_REQUEST](deleteRecords({ topics }))
+  }
+
+  /**
    * @public
    * @param {Array} ACL e.g:
    *                 [

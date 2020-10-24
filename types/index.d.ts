@@ -455,6 +455,7 @@ export type Admin = {
   describeAcls(options: AclFilter): Promise<DescribeAclResponse>
   deleteAcls(options: { filters: AclFilter[] }): Promise<DeleteAclResponse>
   createAcls(options: { acls: AclEntry[] }): Promise<boolean>
+  deleteTopicRecords(options: { topic: string; partitions: SeekEntry[] }): Promise<void>
   logger(): Logger
   on(
     eventName: ValueOf<AdminEvents>,
@@ -964,9 +965,25 @@ export class KafkaJSDeleteGroupsError extends KafkaJSError {
   constructor(e: Error | string, groups?: KafkaJSDeleteGroupsErrorGroups[])
 }
 
+export class KafkaJSDeleteTopicRecordsError extends KafkaJSError {
+  constructor(metadata: KafkaJSDeleteTopicRecordsErrorTopic)
+}
+
 export interface KafkaJSDeleteGroupsErrorGroups {
   groupId: string
   errorCode: number
+  error: KafkaJSError
+}
+
+
+export interface KafkaJSDeleteTopicRecordsErrorTopic {
+  topic: string,
+  partitions: KafkaJSDeleteTopicRecordsErrorPartition[]
+}
+
+export interface KafkaJSDeleteTopicRecordsErrorPartition {
+  partition: number;
+  offset: string;
   error: KafkaJSError
 }
 
