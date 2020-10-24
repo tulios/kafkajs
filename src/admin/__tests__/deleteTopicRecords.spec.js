@@ -338,9 +338,10 @@ describe('Admin > deleteTopicRecords', () => {
     }
 
     expect(error).toBeDefined()
-    expect(error.name).toBe('KafkaJSDeleteTopicRecordsError')
-    expect(error.retriable).toBe(false)
-    expect(error.partitions).toEqual([
+    expect(error.name).toBe('KafkaJSNumberOfRetriesExceeded')
+    expect(error.originalError.name).toBe('KafkaJSDeleteTopicRecordsError')
+    expect(error.originalError.retriable).toBe(false)
+    expect(error.originalError.partitions).toEqual([
       {
         partition: 1,
         offset: '99',
@@ -401,9 +402,10 @@ describe('Admin > deleteTopicRecords', () => {
     }
 
     expect(error).toBeDefined()
-    expect(error.name).toBe('KafkaJSDeleteTopicRecordsError')
-    expect(error.retriable).toBe(false)
-    expect(error.partitions).toEqual(
+    expect(error.name).toBe('KafkaJSNumberOfRetriesExceeded')
+    expect(error.originalError.name).toBe('KafkaJSDeleteTopicRecordsError')
+    expect(error.originalError.retriable).toBe(false)
+    expect(error.originalError.partitions).toEqual(
       expect.arrayContaining([
         {
           partition: 0,
