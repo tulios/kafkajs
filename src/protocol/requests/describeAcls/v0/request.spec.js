@@ -1,4 +1,3 @@
-const apiKeys = require('../../apiKeys')
 const RequestV0Protocol = require('./request')
 
 describe('Protocol > Requests > DescribeAcls > v0', () => {
@@ -12,13 +11,6 @@ describe('Protocol > Requests > DescribeAcls > v0', () => {
       operation: 2,
       permissionType: 3,
     }
-  })
-
-  test('metadata about the API', () => {
-    const request = RequestV0Protocol(args)
-    expect(request.apiKey).toEqual(apiKeys.DescribeAcls)
-    expect(request.apiVersion).toEqual(0)
-    expect(request.apiName).toEqual('DescribeAcls')
   })
 
   test('request', async () => {

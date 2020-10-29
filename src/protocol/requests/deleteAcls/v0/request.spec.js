@@ -1,4 +1,3 @@
-const apiKeys = require('../../apiKeys')
 const RequestV0Protocol = require('./request')
 
 describe('Protocol > Requests > DeleteAcls > v0', () => {
@@ -19,13 +18,6 @@ describe('Protocol > Requests > DeleteAcls > v0', () => {
         },
       ],
     }
-  })
-
-  test('metadata about the API', () => {
-    const request = RequestV0Protocol(args)
-    expect(request.apiKey).toEqual(apiKeys.DeleteAcls)
-    expect(request.apiVersion).toEqual(0)
-    expect(request.apiName).toEqual('DeleteAcls')
   })
 
   test('request', async () => {
