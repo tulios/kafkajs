@@ -41,6 +41,7 @@ describe('Broker > deleteTopics', () => {
     })
 
     expect(response).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       topicErrors: [
         { topic: topicName1, errorCode: 0 },

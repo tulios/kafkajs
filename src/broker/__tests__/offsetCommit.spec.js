@@ -112,8 +112,8 @@ describe('Broker > OffsetCommit', () => {
     })
 
     expect(response).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
-      clientSideThrottleTime: 0,
       responses: [{ partitions: [{ errorCode: 0, partition: 0 }], topic: topicName }],
     })
   })
@@ -171,8 +171,8 @@ describe('Broker > OffsetCommit', () => {
     })
 
     expect(response).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
-      clientSideThrottleTime: 0,
       responses: [{ partitions: [{ errorCode: 0, partition: 0 }], topic: topicName }],
     })
   })

@@ -113,8 +113,8 @@ describe('Broker > Produce', () => {
           ],
         },
       ],
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
-      clientSideThrottleTime: 0,
     })
 
     const response2 = await broker2.produce({ topicData: createTopicData() })
@@ -133,8 +133,8 @@ describe('Broker > Produce', () => {
           ],
         },
       ],
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
-      clientSideThrottleTime: 0,
     })
   })
 
@@ -179,8 +179,8 @@ describe('Broker > Produce', () => {
           ],
         },
       ],
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
-      clientSideThrottleTime: 0,
     })
 
     const response2 = await broker2.produce({
@@ -203,8 +203,8 @@ describe('Broker > Produce', () => {
           ],
         },
       ],
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
-      clientSideThrottleTime: 0,
     })
   })
 
@@ -246,8 +246,8 @@ describe('Broker > Produce', () => {
             ],
           },
         ],
+        clientSideThrottleTime: expect.optional(0),
         throttleTime: 0,
-        clientSideThrottleTime: 0,
       })
 
       const response2 = await broker2.produce({ topicData: createTopicData() })
@@ -266,8 +266,8 @@ describe('Broker > Produce', () => {
             ],
           },
         ],
+        clientSideThrottleTime: expect.optional(0),
         throttleTime: 0,
-        clientSideThrottleTime: 0,
       })
     })
 
@@ -338,8 +338,8 @@ describe('Broker > Produce', () => {
             ],
           },
         ],
+        clientSideThrottleTime: expect.optional(0),
         throttleTime: 0,
-        clientSideThrottleTime: 0,
       })
 
       // We have to syncronise the sequence number between the producer and the broker
@@ -407,8 +407,8 @@ describe('Broker > Produce', () => {
             ],
           },
         ],
+        clientSideThrottleTime: expect.optional(0),
         throttleTime: 0,
-        clientSideThrottleTime: 0,
       })
 
       const response2 = await broker2.produce({ topicData: createTopicData() })
@@ -427,8 +427,8 @@ describe('Broker > Produce', () => {
             ],
           },
         ],
+        clientSideThrottleTime: expect.optional(0),
         throttleTime: 0,
-        clientSideThrottleTime: 0,
       })
     })
 
@@ -473,8 +473,8 @@ describe('Broker > Produce', () => {
             ],
           },
         ],
+        clientSideThrottleTime: expect.optional(0),
         throttleTime: 0,
-        clientSideThrottleTime: 0,
       })
 
       const response2 = await broker2.produce({
@@ -497,8 +497,8 @@ describe('Broker > Produce', () => {
             ],
           },
         ],
+        clientSideThrottleTime: expect.optional(0),
         throttleTime: 0,
-        clientSideThrottleTime: 0,
       })
     })
 
@@ -563,8 +563,8 @@ describe('Broker > Produce', () => {
               ],
             },
           ],
+          clientSideThrottleTime: expect.optional(0),
           throttleTime: 0,
-          clientSideThrottleTime: 0,
         })
       }
     )

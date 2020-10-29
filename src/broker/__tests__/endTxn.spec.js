@@ -76,6 +76,7 @@ describe('Broker > EndTxn', () => {
     })
 
     expect(result).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       errorCode: 0,
     })
@@ -92,6 +93,7 @@ describe('Broker > EndTxn', () => {
     })
 
     expect(result).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       errorCode: 0,
     })

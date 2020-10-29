@@ -57,7 +57,8 @@ describe('Broker > describeAcls', () => {
     })
 
     expect(response).toEqual({
-      clientSideThrottleTime: 0,
+      clientSideThrottleTime: expect.optional(0),
+      throttleTime: 0,
       errorCode: 0,
       errorMessage: null,
       resources: [

@@ -5,6 +5,7 @@ describe('Protocol > Requests > DeleteAcls > v1', () => {
     const data = await decode(Buffer.from(require('../fixtures/v1_response.json')))
     expect(data).toEqual({
       clientSideThrottleTime: 0,
+      throttleTime: 0,
       filterResponses: [
         {
           errorCode: 0,

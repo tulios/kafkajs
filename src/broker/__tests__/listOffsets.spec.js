@@ -82,6 +82,7 @@ describe('Broker > ListOffsets', () => {
           ]),
         },
       ],
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
     })
   })
@@ -127,6 +128,7 @@ describe('Broker > ListOffsets', () => {
           ]),
         },
       ],
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
     })
 
@@ -152,6 +154,7 @@ describe('Broker > ListOffsets', () => {
           ]),
         },
       ],
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
     })
   })

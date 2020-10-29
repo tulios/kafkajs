@@ -109,6 +109,7 @@ describe('Broker > OffsetFetch', () => {
     })
 
     expect(response).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       errorCode: 0,
       responses: [

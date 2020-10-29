@@ -61,7 +61,8 @@ describe('Broker > deleteAcls', () => {
     })
 
     expect(response).toEqual({
-      clientSideThrottleTime: 0,
+      clientSideThrottleTime: expect.optional(0),
+      throttleTime: 0,
       filterResponses: [
         {
           errorCode: 0,

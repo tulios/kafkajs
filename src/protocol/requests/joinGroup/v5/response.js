@@ -46,7 +46,7 @@ const decode = async rawData => {
   failIfVersionNotSupported(errorCode)
 
   return {
-    throttleTime,
+    throttleTime: 0,
     clientSideThrottleTime: throttleTime,
     errorCode,
     generationId: decoder.readInt32(),
