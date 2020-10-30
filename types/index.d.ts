@@ -49,6 +49,10 @@ export interface SASLOptions {
   mechanism: SASLMechanism
   username?: string
   password?: string
+  authorizationIdentity?: string
+  accessKeyId?: string
+  secretAccessKey?: string
+  sessionToken?: string
   oauthBearerProvider?: () => Promise<OauthbearerProviderResponse>
 }
 
