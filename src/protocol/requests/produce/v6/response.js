@@ -1,5 +1,4 @@
-const Decoder = require('../../../decoder')
-const { parse: parseV5 } = require('../v5/response')
+const { parse, decode: decodeV5 } = require('../v5/response')
 
 /**
  * The version number is bumped to indicate that on quota violation brokers send out responses before throttling.
@@ -17,35 +16,17 @@ const { parse: parseV5 } = require('../v5/response')
  *   throttle_time_ms => INT32
  */
 
-const partition = decoder => ({
-  partition: decoder.readInt32(),
-  errorCode: decoder.readInt16(),
-  baseOffset: decoder.readInt64().toString(),
-  logAppendTime: decoder.readInt64().toString(),
-  logStartOffset: decoder.readInt64().toString(),
-})
-
 const decode = async rawData => {
-  const decoder = new Decoder(rawData)
-  const topics = decoder.readArray(decoder => ({
-    topicName: decoder.readString(),
-    partitions: decoder.readArray(partition),
-  }))
-
-  const throttleTime = decoder.readInt32()
-
-  // Report a `throttleTime` of 0: The broker will not have throttled
-  // this request, but if the `clientSideThrottleTime` is >0 then it
-  // expects us to do that -- and it will ignore requests.
+  const decoded = await decodeV5(rawData)
 
   return {
-    topics,
+    ...decoded,
     throttleTime: 0,
-    clientSideThrottleTime: throttleTime,
+    clientSideThrottleTime: decoded.throttleTime,
   }
 }
 
 module.exports = {
   decode,
-  parse: parseV5,
+  parse,
 }

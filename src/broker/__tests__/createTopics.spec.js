@@ -36,6 +36,7 @@ describe('Broker > createTopics', () => {
     })
 
     expect(response).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       topicErrors: [
         {
@@ -61,6 +62,7 @@ describe('Broker > createTopics', () => {
     })
 
     expect(response).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       topicErrors: [
         {

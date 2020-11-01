@@ -19,6 +19,11 @@ const versions = {
     const response = require('./v2/response')
     return { request: request({ replicaId, isolationLevel, topics }), response }
   },
+  3: ({ replicaId = REPLICA_ID, isolationLevel = ISOLATION_LEVEL.READ_COMMITTED, topics }) => {
+    const request = require('./v3/request')
+    const response = require('./v3/response')
+    return { request: request({ replicaId, isolationLevel, topics }), response }
+  },
 }
 
 module.exports = {

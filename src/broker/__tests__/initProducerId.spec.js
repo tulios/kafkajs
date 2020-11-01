@@ -44,8 +44,9 @@ describe('Broker > InitProducerId', () => {
     })
 
     expect(response).toEqual({
-      errorCode: 0,
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
+      errorCode: 0,
       producerId: expect.stringMatching(/\d+/),
       producerEpoch: expect.any(Number),
     })
@@ -55,8 +56,9 @@ describe('Broker > InitProducerId', () => {
     const response = await broker.initProducerId({ transactionTimeout: 30000 })
 
     expect(response).toEqual({
-      errorCode: 0,
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
+      errorCode: 0,
       producerId: expect.stringMatching(/\d+/),
       producerEpoch: expect.any(Number),
     })

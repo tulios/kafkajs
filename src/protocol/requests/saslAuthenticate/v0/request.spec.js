@@ -1,15 +1,7 @@
-const apiKeys = require('../../apiKeys')
 const RequestV0Protocol = require('./request')
 
 describe('Protocol > Requests > SaslAuthenticate > v0', () => {
   describe('request', () => {
-    test('metadata about the API', () => {
-      const request = RequestV0Protocol({ authBytes: Buffer.alloc(0) })
-      expect(request.apiKey).toEqual(apiKeys.SaslAuthenticate)
-      expect(request.apiVersion).toEqual(0)
-      expect(request.apiName).toEqual('SaslAuthenticate')
-    })
-
     describe('PLAIN', () => {
       test('encode', async () => {
         const { buffer } = await RequestV0Protocol({

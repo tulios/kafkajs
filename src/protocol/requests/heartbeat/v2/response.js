@@ -13,6 +13,7 @@ const decode = async rawData => {
 
   return {
     ...decoded,
+    throttleTime: 0,
     clientSideThrottleTime: decoded.throttleTime,
   }
 }

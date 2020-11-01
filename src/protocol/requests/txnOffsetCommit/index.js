@@ -7,6 +7,14 @@ const versions = {
       response,
     }
   },
+  1: ({ transactionalId, groupId, producerId, producerEpoch, topics }) => {
+    const request = require('./v1/request')
+    const response = require('./v1/response')
+    return {
+      request: request({ transactionalId, groupId, producerId, producerEpoch, topics }),
+      response,
+    }
+  },
 }
 
 module.exports = {

@@ -2,6 +2,11 @@ const Decoder = require('../../../decoder')
 const { parse: parseV0 } = require('../v0/response')
 
 /**
+ * Starting in version 1, on quota violation, brokers send out responses before throttling.
+ * @see https://cwiki.apache.org/confluence/display/KAFKA/KIP-219+-+Improve+quota+communication
+ * Version 1 also introduces a new resource pattern type field.
+ * @see https://cwiki.apache.org/confluence/display/KAFKA/KIP-290%3A+Support+for+Prefixed+ACLs
+ *
  * DeleteAcls Response (Version: 1) => throttle_time_ms [filter_responses]
  *   throttle_time_ms => INT32
  *   filter_responses => error_code error_message [matching_acls]
@@ -43,6 +48,7 @@ const decode = async rawData => {
   const filterResponses = decoder.readArray(decodeFilterResponse)
 
   return {
+    throttleTime: 0,
     clientSideThrottleTime: throttleTime,
     filterResponses,
   }

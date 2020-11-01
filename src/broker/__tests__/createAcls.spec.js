@@ -48,7 +48,8 @@ describe('Broker > createAcls', () => {
     const response = await broker.createAcls({ acl: [acl] })
 
     expect(response).toEqual({
-      clientSideThrottleTime: 0,
+      clientSideThrottleTime: expect.optional(0),
+      throttleTime: 0,
       creationResponses: [{ errorCode: 0, errorMessage: null }],
     })
   })

@@ -1,4 +1,3 @@
-const apiKeys = require('../../apiKeys')
 const RequestV1Protocol = require('./request')
 
 describe('Protocol > Requests > CreateAcls > v0', () => {
@@ -18,13 +17,6 @@ describe('Protocol > Requests > CreateAcls > v0', () => {
         },
       ],
     }
-  })
-
-  test('metadata about the API', () => {
-    const request = RequestV1Protocol(args)
-    expect(request.apiKey).toEqual(apiKeys.CreateAcls)
-    expect(request.apiVersion).toEqual(0)
-    expect(request.apiName).toEqual('CreateAcls')
   })
 
   test('request', async () => {
