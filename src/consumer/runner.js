@@ -6,7 +6,7 @@ const { KafkaJSError } = require('../errors')
 const barrier = require('./barrier')
 
 const {
-  events: { GROUP_JOIN, FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS },
+  events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS },
 } = require('./instrumentationEvents')
 
 const isRebalancing = e =>
@@ -74,42 +74,8 @@ module.exports = class Runner extends EventEmitter {
   }
 
   async join() {
-    const startJoin = Date.now()
-    return this.retrier(async (bail, retryCount, retryTime) => {
-      try {
-        await this.consumerGroup.join()
-        await this.consumerGroup.sync()
-
-        this.running = true
-
-        const memberAssignment = this.consumerGroup
-          .assigned()
-          .reduce((result, { topic, partitions }) => ({ ...result, [topic]: partitions }), {})
-
-        const payload = {
-          groupId: this.consumerGroup.groupId,
-          memberId: this.consumerGroup.memberId,
-          leaderId: this.consumerGroup.leaderId,
-          isLeader: this.consumerGroup.isLeader(),
-          memberAssignment,
-          groupProtocol: this.consumerGroup.groupProtocol,
-          duration: Date.now() - startJoin,
-        }
-
-        this.instrumentationEmitter.emit(GROUP_JOIN, payload)
-        this.logger.info('Consumer has joined the group', payload)
-      } catch (e) {
-        if (isRebalancing(e)) {
-          // Rebalance in progress isn't a retriable error since the consumer
-          // has to go through find coordinator and join again before it can
-          // actually retry. Throwing a retriable error to allow the retrier
-          // to keep going
-          throw new KafkaJSError('The group is rebalancing')
-        }
-
-        bail(e)
-      }
-    })
+    await this.consumerGroup.joinAndSync()
+    this.running = true
   }
 
   async scheduleJoin() {
