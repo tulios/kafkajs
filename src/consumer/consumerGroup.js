@@ -309,11 +309,11 @@ module.exports = class ConsumerGroup {
         this.logger.info('Consumer has joined the group', payload)
       } catch (e) {
         if (isRebalancing(e)) {
-          // Rebalance in progress isn't a retriable error since the consumer
+          // Rebalance in progress isn't a retriable protocol error since the consumer
           // has to go through find coordinator and join again before it can
-          // actually retry. Throwing a retriable error to allow the retrier
-          // to keep going
-          throw new KafkaJSError('The group is rebalancing')
+          // actually retry the operation. We wrap the original error in a retriable error
+          // here instead in order to restart the join + sync sequence using the retrier.
+          throw new KafkaJSError(e)
         }
 
         bail(e)
