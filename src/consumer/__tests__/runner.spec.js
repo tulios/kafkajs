@@ -263,11 +263,12 @@ describe('Consumer > Runner', () => {
     })
 
     it('should throw when group is rebalancing, while triggering another join', async () => {
+      const error = rebalancingError()
       consumerGroup.commitOffsets.mockImplementationOnce(() => {
-        throw rebalancingError()
+        throw error
       })
 
-      expect(runner.commitOffsets(offsets)).rejects.toThrow('The group is rebalancing')
+      expect(runner.commitOffsets(offsets)).rejects.toThrow(error.message)
       expect(consumerGroup.joinAndSync).toHaveBeenCalledTimes(0)
 
       await sleep(100)
@@ -342,7 +343,7 @@ describe('Consumer > Runner', () => {
         throw rebalancingError()
       })
 
-      expect(runner.commitOffsets(offsets)).rejects.toThrow('The group is rebalancing')
+      expect(runner.commitOffsets(offsets)).rejects.toThrow(rebalancingError().message)
 
       await sleep(100)
 

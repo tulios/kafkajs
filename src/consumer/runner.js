@@ -497,7 +497,7 @@ module.exports = class Runner extends EventEmitter {
 
           setImmediate(() => this.scheduleJoin())
 
-          bail(new KafkaJSError('The group is rebalancing'))
+          bail(new KafkaJSError(e))
         }
 
         if (e.type === 'UNKNOWN_MEMBER_ID') {
@@ -512,7 +512,7 @@ module.exports = class Runner extends EventEmitter {
           this.consumerGroup.memberId = null
           setImmediate(() => this.scheduleJoin())
 
-          bail(new KafkaJSError('The group is rebalancing'))
+          bail(new KafkaJSError(e))
         }
 
         if (e.name === 'KafkaJSNotImplemented') {
