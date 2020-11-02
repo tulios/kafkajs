@@ -87,6 +87,7 @@ module.exports = ({
       logger: rootLogger,
       topics: keys(topics),
       topicConfigurations: topics,
+      retry,
       cluster,
       groupId,
       assigners,
