@@ -34,6 +34,11 @@ const STALE_METADATA_ERRORS = [
 const isRebalancing = e =>
   e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
 
+const PRIVATE = {
+  JOIN: Symbol('private:ConsumerGroup:join'),
+  SYNC: Symbol('private:ConsumerGroup:sync'),
+}
+
 module.exports = class ConsumerGroup {
   constructor({
     retry,
@@ -112,7 +117,7 @@ module.exports = class ConsumerGroup {
     await this.cluster.refreshMetadataIfNecessary()
   }
 
-  async join() {
+  async [PRIVATE.JOIN]() {
     const { groupId, sessionTimeout, rebalanceTimeout } = this
 
     this.coordinator = await this.cluster.findGroupCoordinator({ groupId })
@@ -144,7 +149,7 @@ module.exports = class ConsumerGroup {
     }
   }
 
-  async sync() {
+  async [PRIVATE.SYNC]() {
     let assignment = []
     const {
       groupId,
@@ -282,8 +287,8 @@ module.exports = class ConsumerGroup {
     const startJoin = Date.now()
     return this.retrier(async bail => {
       try {
-        await this.join()
-        await this.sync()
+        await this[PRIVATE.JOIN]()
+        await this[PRIVATE.SYNC]()
 
         const memberAssignment = this.assigned().reduce(
           (result, { topic, partitions }) => ({ ...result, [topic]: partitions }),
