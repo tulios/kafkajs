@@ -98,7 +98,7 @@ module.exports = class ConsumerGroup {
      * Each of the partitions tracks the preferred read replica (`nodeId`) and a timestamp
      * until when that preference is valid.
      *
-     * @type {{[topicName: string]: {[partition: number]: {nodeId: number, expireAt: number}}}
+     * @type {{[topicName: string]: {[partition: number]: {nodeId: number, expireAt: number}}}}
      */
     this.preferredReadReplicasPerTopicPartition = {}
     this.offsetManager = null
