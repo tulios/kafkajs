@@ -220,12 +220,12 @@ const runAdmin = async () => {
       resourceType: r.resourceType,
       resourceName: r.resourceName,
       resourcePatternType: r.resourcePatternType,
-      acls: r.acls,
+      acls: r.acl,
     })),
   })
 
   const createAcls = await admin.createAcls({
-    acls: [
+    acl: [
       {
         resourceType: AclResourceTypes.TOPIC,
         resourceName: 'topic-name',
