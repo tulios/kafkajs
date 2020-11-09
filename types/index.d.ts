@@ -50,7 +50,7 @@ export interface SASLOptions {
   username?: string
   password?: string
   oauthBearerProvider?: () => Promise<OauthbearerProviderResponse>
-  refresh?: () => Promise<SASLOptions>
+  refresh?: () => Promise<Partial<SASLOptions>>
 }
 
 export interface ProducerConfig {
