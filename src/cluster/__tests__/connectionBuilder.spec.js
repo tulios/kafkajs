@@ -166,23 +166,4 @@ describe('Cluster > ConnectionBuilder', () => {
     expect(connection.host).toBe('host.test')
     expect(connection.port).toBe(7777)
   })
-
-  it('sasl can be async function that returns sasl parameters', async () => {
-    const builder = connectionBuilder({
-      socketFactory,
-      brokers,
-      sasl: async () => ({
-        username: 'user',
-      }),
-      ssl,
-      clientId,
-      connectionTimeout,
-      retry,
-      logger,
-    })
-
-    const connection = await builder.build()
-    expect(connection).toBeInstanceOf(Connection)
-    expect(connection.sasl).toEqual({ username: 'user' })
-  })
 })

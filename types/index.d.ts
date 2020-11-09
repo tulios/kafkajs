@@ -15,12 +15,11 @@ export class Kafka {
 }
 
 export type BrokersFunction = () => string[] | Promise<string[]>;
-export type SaslFunction = () => SASLOptions | Promise<SASLOptions>;
 
 export interface KafkaConfig {
   brokers: string[] | BrokersFunction
   ssl?: tls.ConnectionOptions | boolean
-  sasl?: SASLOptions | SaslFunction
+  sasl?: SASLOptions
   clientId?: string
   connectionTimeout?: number
   authenticationTimeout?: number
@@ -51,6 +50,7 @@ export interface SASLOptions {
   username?: string
   password?: string
   oauthBearerProvider?: () => Promise<OauthbearerProviderResponse>
+  refresh?: () => Promise<SASLOptions>
 }
 
 export interface ProducerConfig {

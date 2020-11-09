@@ -65,7 +65,7 @@ module.exports = ({
         host,
         port,
         rack,
-        sasl: typeof sasl === 'function' ? await sasl() : sasl,
+        sasl,
         ssl,
         clientId,
         socketFactory,

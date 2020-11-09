@@ -32,7 +32,13 @@ module.exports = class SASLAuthenticator {
   }
 
   async authenticate() {
-    const mechanism = this.connection.sasl.mechanism.toUpperCase()
+    const { sasl } = this.connection
+
+    if (typeof sasl.refresh === 'function') {
+      await this.refresh()
+    }
+
+    const mechanism = sasl.mechanism.toUpperCase()
     if (!SUPPORTED_MECHANISMS.includes(mechanism)) {
       throw new KafkaJSSASLAuthenticationError(
         `SASL ${mechanism} mechanism is not supported by the client`
@@ -71,5 +77,14 @@ module.exports = class SASLAuthenticator {
 
     const Authenticator = AUTHENTICATORS[mechanism]
     await new Authenticator(this.connection, this.logger, saslAuthenticate).authenticate()
+  }
+
+  // update SASL options from user provided refresh function
+  async refresh() {
+    try {
+      Object.assign(this.connection.sasl, await this.connection.sasl.refresh())
+    } catch (e) {
+      throw new KafkaJSSASLAuthenticationError('sasl.refresh() method has crashed')
+    }
   }
 }
