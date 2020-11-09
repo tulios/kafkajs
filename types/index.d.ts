@@ -14,7 +14,7 @@ export class Kafka {
   logger(): Logger
 }
 
-export type BrokersFunction = () => string[] | Promise<string[]>;
+export type BrokersFunction = () => string[] | Promise<string[]>
 
 export interface KafkaConfig {
   brokers: string[] | BrokersFunction
