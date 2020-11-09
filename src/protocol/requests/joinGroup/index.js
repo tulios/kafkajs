@@ -100,6 +100,33 @@ const versions = {
       logResponseError: logResponseError(memberId),
     }
   },
+  5: ({
+    groupId,
+    sessionTimeout,
+    rebalanceTimeout,
+    memberId,
+    groupInstanceId,
+    protocolType,
+    groupProtocols,
+  }) => {
+    const request = require('./v5/request')
+    const response = require('./v5/response')
+
+    return {
+      request: request({
+        groupId,
+        sessionTimeout,
+        rebalanceTimeout,
+        memberId,
+        groupInstanceId,
+        protocolType,
+        groupProtocols,
+      }),
+      response,
+      requestTimeout: requestTimeout({ rebalanceTimeout, sessionTimeout }),
+      logResponseError: logResponseError(memberId),
+    }
+  },
 }
 
 module.exports = {

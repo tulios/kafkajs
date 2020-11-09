@@ -1,5 +1,4 @@
 const os = require('os')
-const apiKeys = require('../../apiKeys')
 const RequestV2Protocol = require('./request')
 const { Types } = require('../../../message/compression')
 
@@ -31,14 +30,6 @@ describe('Protocol > Requests > Produce > v2', () => {
         },
       ],
     }
-  })
-
-  test('metadata about the API', () => {
-    const request = RequestV2Protocol(args)
-    expect(request.apiKey).toEqual(apiKeys.Produce)
-    expect(request.apiVersion).toEqual(2)
-    expect(request.apiName).toEqual('Produce')
-    expect(request.expectResponse()).toEqual(true)
   })
 
   describe('when acks=0', () => {

@@ -4,6 +4,7 @@ const { createErrorFromCode } = require('../../protocol/error')
 
 const { secureRandom, createCluster, newLogger, createTopic } = require('testHelpers')
 const RESOURCE_TYPES = require('../../protocol/resourceTypes')
+const CONFIG_RESOURCE_TYPES = require('../../protocol/configResourceTypes')
 const NOT_CONTROLLER = 41
 
 describe('Admin', () => {
@@ -194,7 +195,8 @@ describe('Admin', () => {
 
     test('retries if the controller has moved', async () => {
       const cluster = createCluster()
-      const broker = { alterConfigs: jest.fn(() => true) }
+      const brokerResponse = { resources: [true] }
+      const broker = { alterConfigs: jest.fn(() => brokerResponse) }
 
       cluster.refreshMetadata = jest.fn()
       cluster.findControllerBroker = jest
@@ -215,11 +217,39 @@ describe('Admin', () => {
             },
           ],
         })
-      ).resolves.toEqual(true)
+      ).resolves.toEqual(brokerResponse)
 
       expect(cluster.refreshMetadata).toHaveBeenCalledTimes(2)
       expect(cluster.findControllerBroker).toHaveBeenCalledTimes(2)
       expect(broker.alterConfigs).toHaveBeenCalledTimes(1)
     })
+  })
+
+  test('alter broker configs', async () => {
+    await createTopic({ topic: topicName })
+
+    const cluster = createCluster()
+    admin = createAdmin({ cluster, logger: newLogger() })
+    await admin.connect()
+
+    const metadata = await cluster.brokerPool.seedBroker.metadata()
+    const brokers = metadata.brokers
+    const brokerToAlterConfig = brokers[1].nodeId.toString()
+
+    const resources = [
+      {
+        type: CONFIG_RESOURCE_TYPES.TOPIC,
+        name: topicName,
+        configEntries: [{ name: 'cleanup.policy', value: 'compact' }],
+      },
+      {
+        type: CONFIG_RESOURCE_TYPES.BROKER,
+        name: brokerToAlterConfig,
+        configEntries: [{ name: 'cleanup.policy', value: 'delete' }],
+      },
+    ]
+
+    const response = await admin.alterConfigs({ resources })
+    expect(response.resources.length).toEqual(2)
   })
 })

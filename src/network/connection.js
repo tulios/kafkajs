@@ -155,8 +155,8 @@ module.exports = class Connection {
         })
 
         this.logError(error.message, { stack: e.stack })
-        await this.disconnect()
         this.rejectRequests(error)
+        await this.disconnect()
 
         reject(error)
       }

@@ -41,6 +41,7 @@ describe('Broker > Metadata', () => {
     // setting separately.
     const rackValues = response.brokers.some(({ rack }) => Boolean(rack))
     expect(response).toMatchObject({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       brokers: expect.arrayContaining([
         {

@@ -1,3 +1,5 @@
+const pkgJson = require('../package.json')
+
 class KafkaJSError extends Error {
   constructor(e, { retriable = true } = {}) {
     super(e)
@@ -178,6 +180,34 @@ class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSNonRetriableError {
   }
 }
 
+class KafkaJSDeleteTopicRecordsError extends KafkaJSError {
+  constructor({ partitions }) {
+    /*
+     * This error is retriable if all the errors were retriable
+     */
+    const retriable = partitions
+      .filter(({ error }) => error != null)
+      .every(({ error }) => error.retriable === true)
+
+    super('Error while deleting records', { retriable })
+    this.name = 'KafkaJSDeleteTopicRecordsError'
+    this.partitions = partitions
+  }
+}
+
+const issueUrl = pkgJson.bugs.url
+
+class KafkaJSInvariantViolation extends KafkaJSNonRetriableError {
+  constructor(e) {
+    const message = e.message || e
+    super(`Invariant violated: ${message}. This is likely a bug and should be reported.`)
+    this.name = 'KafkaJSInvariantViolation'
+
+    const issueTitle = encodeURIComponent(`Invariant violation: ${message}`)
+    this.helpUrl = `${issueUrl}/new?assignees=&labels=bug&template=bug_report.md&title=${issueTitle}`
+  }
+}
+
 module.exports = {
   KafkaJSError,
   KafkaJSNonRetriableError,
@@ -201,4 +231,6 @@ module.exports = {
   KafkaJSLockTimeout,
   KafkaJSServerDoesNotSupportApiKey,
   KafkaJSUnsupportedMagicByteInMessageSet,
+  KafkaJSDeleteTopicRecordsError,
+  KafkaJSInvariantViolation,
 }

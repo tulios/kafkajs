@@ -47,6 +47,7 @@ describe('Broker > JoinGroup', () => {
     })
 
     expect(response).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       errorCode: 0,
       generationId: expect.any(Number),
@@ -56,6 +57,7 @@ describe('Broker > JoinGroup', () => {
       members: expect.arrayContaining([
         expect.objectContaining({
           memberId: expect.any(String),
+          groupInstanceId: null,
           memberMetadata: expect.any(Buffer),
         }),
       ]),

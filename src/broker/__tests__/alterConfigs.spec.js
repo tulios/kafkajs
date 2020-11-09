@@ -80,6 +80,7 @@ describe('Broker > alterConfigs', () => {
           resourceType: RESOURCE_TYPES.TOPIC,
         },
       ],
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
     })
 

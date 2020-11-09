@@ -81,6 +81,7 @@ describe('Broker > describeConfigs', () => {
           resourceType: RESOURCE_TYPES.TOPIC,
         },
       ],
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
     })
   })
@@ -327,6 +328,7 @@ describe('Broker > describeConfigs', () => {
               resourceType: RESOURCE_TYPES.TOPIC,
             }),
           ],
+          clientSideThrottleTime: expect.optional(0),
           throttleTime: 0,
         })
       )

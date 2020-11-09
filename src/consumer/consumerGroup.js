@@ -3,13 +3,14 @@ const sleep = require('../utils/sleep')
 const BufferedAsyncIterator = require('../utils/bufferedAsyncIterator')
 const websiteUrl = require('../utils/websiteUrl')
 const arrayDiff = require('../utils/arrayDiff')
+const createRetry = require('../retry')
 
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
 const SubscriptionState = require('./subscriptionState')
 const {
-  events: { HEARTBEAT, CONNECT },
+  events: { GROUP_JOIN, HEARTBEAT, CONNECT, RECEIVED_UNSUBSCRIBED_TOPICS },
 } = require('./instrumentationEvents')
 const { MemberAssignment } = require('./assignerProtocol')
 const {
@@ -30,8 +31,17 @@ const STALE_METADATA_ERRORS = [
   'UNKNOWN_TOPIC_OR_PARTITION',
 ]
 
+const isRebalancing = e =>
+  e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
+
+const PRIVATE = {
+  JOIN: Symbol('private:ConsumerGroup:join'),
+  SYNC: Symbol('private:ConsumerGroup:sync'),
+}
+
 module.exports = class ConsumerGroup {
   constructor({
+    retry,
     cluster,
     groupId,
     topics,
@@ -59,6 +69,7 @@ module.exports = class ConsumerGroup {
     this.topicConfigurations = topicConfigurations
     this.logger = logger.namespace('ConsumerGroup')
     this.instrumentationEmitter = instrumentationEmitter
+    this.retrier = createRetry(Object.assign({}, retry))
     this.assigners = assigners
     this.sessionTimeout = sessionTimeout
     this.rebalanceTimeout = rebalanceTimeout
@@ -87,7 +98,7 @@ module.exports = class ConsumerGroup {
      * Each of the partitions tracks the preferred read replica (`nodeId`) and a timestamp
      * until when that preference is valid.
      *
-     * @type {{[topicName: string]: {[partition: number]: {nodeId: number, expireAt: number}}}
+     * @type {{[topicName: string]: {[partition: number]: {nodeId: number, expireAt: number}}}}
      */
     this.preferredReadReplicasPerTopicPartition = {}
     this.offsetManager = null
@@ -106,7 +117,7 @@ module.exports = class ConsumerGroup {
     await this.cluster.refreshMetadataIfNecessary()
   }
 
-  async join() {
+  async [PRIVATE.JOIN]() {
     const { groupId, sessionTimeout, rebalanceTimeout } = this
 
     this.coordinator = await this.cluster.findGroupCoordinator({ groupId })
@@ -138,7 +149,7 @@ module.exports = class ConsumerGroup {
     }
   }
 
-  async sync() {
+  async [PRIVATE.SYNC]() {
     let assignment = []
     const {
       groupId,
@@ -185,6 +196,7 @@ module.exports = class ConsumerGroup {
     const decodedMemberAssignment = MemberAssignment.decode(memberAssignment)
     const decodedAssignment =
       decodedMemberAssignment != null ? decodedMemberAssignment.assignment : {}
+
     this.logger.debug('Received assignment', {
       groupId,
       generationId,
@@ -196,13 +208,18 @@ module.exports = class ConsumerGroup {
     const topicsNotSubscribed = arrayDiff(assignedTopics, topicsSubscribed)
 
     if (topicsNotSubscribed.length > 0) {
-      this.logger.warn('Consumer group received unsubscribed topics', {
+      const payload = {
         groupId,
         generationId,
         memberId,
         assignedTopics,
         topicsSubscribed,
         topicsNotSubscribed,
+      }
+
+      this.instrumentationEmitter.emit(RECEIVED_UNSUBSCRIBED_TOPICS, payload)
+      this.logger.warn('Consumer group received unsubscribed topics', {
+        ...payload,
         helpUrl: websiteUrl(
           'docs/faq',
           'why-am-i-receiving-messages-for-topics-i-m-not-subscribed-to'
@@ -263,6 +280,44 @@ module.exports = class ConsumerGroup {
       groupId,
       generationId,
       memberId,
+    })
+  }
+
+  joinAndSync() {
+    const startJoin = Date.now()
+    return this.retrier(async bail => {
+      try {
+        await this[PRIVATE.JOIN]()
+        await this[PRIVATE.SYNC]()
+
+        const memberAssignment = this.assigned().reduce(
+          (result, { topic, partitions }) => ({ ...result, [topic]: partitions }),
+          {}
+        )
+
+        const payload = {
+          groupId: this.groupId,
+          memberId: this.memberId,
+          leaderId: this.leaderId,
+          isLeader: this.isLeader(),
+          memberAssignment,
+          groupProtocol: this.groupProtocol,
+          duration: Date.now() - startJoin,
+        }
+
+        this.instrumentationEmitter.emit(GROUP_JOIN, payload)
+        this.logger.info('Consumer has joined the group', payload)
+      } catch (e) {
+        if (isRebalancing(e)) {
+          // Rebalance in progress isn't a retriable protocol error since the consumer
+          // has to go through find coordinator and join again before it can
+          // actually retry the operation. We wrap the original error in a retriable error
+          // here instead in order to restart the join + sync sequence using the retrier.
+          throw new KafkaJSError(e)
+        }
+
+        bail(e)
+      }
     })
   }
 
@@ -522,8 +577,7 @@ module.exports = class ConsumerGroup {
       })
 
       await this.cluster.refreshMetadata()
-      await this.join()
-      await this.sync()
+      await this.joinAndSync()
       throw new KafkaJSError(e.message)
     }
 
@@ -535,8 +589,7 @@ module.exports = class ConsumerGroup {
         unknownPartitions: e.unknownPartitions,
       })
 
-      await this.join()
-      await this.sync()
+      await this.joinAndSync()
     }
 
     if (e.name === 'KafkaJSOffsetOutOfRange') {

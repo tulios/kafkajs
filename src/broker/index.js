@@ -759,6 +759,109 @@ module.exports = class Broker {
   }
 
   /**
+   * Send request to delete records
+   * @public
+   * @param {Array<Object>} topics
+   *                          [
+   *                            {
+   *                              topic: 'my-topic-name',
+   *                              partitions: [
+   *                                { partition: 0, offset 2 },
+   *                                { partition: 1, offset 4 },
+   *                              ],
+   *                            }
+   *                          ]
+   * @returns {Promise<Array>} example:
+   *                          {
+   *                            throttleTime: 0
+   *                           [
+   *                              {
+   *                                topic: 'my-topic-name',
+   *                                partitions: [
+   *                                 { partition: 0, lowWatermark: '2n', errorCode: 0 },
+   *                                 { partition: 1, lowWatermark: '4n', errorCode: 0 },
+   *                               ],
+   *                             },
+   *                           ]
+   *                          }
+   */
+  async deleteRecords({ topics }) {
+    const deleteRecords = this.lookupRequest(apiKeys.DeleteRecords, requests.DeleteRecords)
+    return await this[PRIVATE.SEND_REQUEST](deleteRecords({ topics }))
+  }
+
+  /**
+   * @public
+   * @param {Array} ACL e.g:
+   *                 [
+   *                   {
+   *                     resourceType: AclResourceTypes.TOPIC,
+   *                     resourceName: 'topic-name',
+   *                     resourcePatternType: ResourcePatternTypes.LITERAL,
+   *                     principal: 'User:bob',
+   *                     host: '*',
+   *                     operation: AclOperationTypes.ALL,
+   *                     permissionType: AclPermissionTypes.DENY,
+   *                   }
+   *                 ]
+   * @returns {Promise<void>}
+   */
+  async createAcls({ acl }) {
+    const createAcls = this.lookupRequest(apiKeys.CreateAcls, requests.CreateAcls)
+    return await this[PRIVATE.SEND_REQUEST](createAcls({ creations: acl }))
+  }
+
+  /**
+   * @public
+   * @param {number} resourceType The type of resource
+   * @param {string} resourceName The name of the resource
+   * @param {number} resourcePatternType The resource pattern type filter
+   * @param {string} principal The principal name
+   * @param {string} host The hostname
+   * @param {number} operation The type of operation
+   * @param {number} permissionType The type of permission
+   * @returns {Promise<void>}
+   */
+  async describeAcls({
+    resourceType,
+    resourceName,
+    resourcePatternType,
+    principal,
+    host,
+    operation,
+    permissionType,
+  }) {
+    const describeAcls = this.lookupRequest(apiKeys.DescribeAcls, requests.DescribeAcls)
+    return await this[PRIVATE.SEND_REQUEST](
+      describeAcls({
+        resourceType,
+        resourceName,
+        resourcePatternType,
+        principal,
+        host,
+        operation,
+        permissionType,
+      })
+    )
+  }
+
+  /**
+   * @public
+   * @param {number} resourceType The type of resource
+   * @param {string} resourceName The name of the resource
+   * @param {number} resourcePatternType The resource pattern type filter
+   * @param {string} principal The principal name
+   * @param {string} host The hostname
+   * @param {number} operation The type of operation
+   * @param {number} permissionType The type of permission
+   * @returns {Promise<void>}
+   */
+  async deleteAcls({ filters }) {
+    const deleteAcls = this.lookupRequest(apiKeys.DeleteAcls, requests.DeleteAcls)
+    return await this[PRIVATE.SEND_REQUEST](deleteAcls({ filters }))
+  }
+
+  /***
    * @private
    */
   [PRIVATE.SHOULD_REAUTHENTICATE]() {

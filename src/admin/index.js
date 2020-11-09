@@ -1,18 +1,30 @@
 const createRetry = require('../retry')
 const flatten = require('../utils/flatten')
 const waitFor = require('../utils/waitFor')
+const groupBy = require('../utils/groupBy')
 const createConsumer = require('../consumer')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentationEvents')
 const { LEVELS } = require('../loggers')
-const { KafkaJSNonRetriableError, KafkaJSDeleteGroupsError } = require('../errors')
-const RESOURCE_TYPES = require('../protocol/resourceTypes')
+const {
+  KafkaJSNonRetriableError,
+  KafkaJSDeleteGroupsError,
+  KafkaJSBrokerNotFound,
+  KafkaJSDeleteTopicRecordsError,
+} = require('../errors')
+const { staleMetadata } = require('../protocol/error')
+const CONFIG_RESOURCE_TYPES = require('../protocol/configResourceTypes')
+const ACL_RESOURCE_TYPES = require('../protocol/aclResourceTypes')
+const ACL_OPERATION_TYPES = require('../protocol/aclOperationTypes')
+const ACL_PERMISSION_TYPES = require('../protocol/aclPermissionTypes')
+const RESOURCE_PATTERN_TYPES = require('../protocol/resourcePatternTypes')
+const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
 
 const { CONNECT, DISCONNECT } = events
 
 const NO_CONTROLLER_ID = -1
 
-const { values, keys } = Object
+const { values, keys, entries } = Object
 const eventNames = values(events)
 const eventKeys = keys(events)
   .map(key => `admin.events.${key}`)
@@ -43,6 +55,11 @@ const findTopicPartitions = async (cluster, topic) => {
     .map(({ partitionId }) => partitionId)
     .sort()
 }
+const indexByPartition = array =>
+  array.reduce(
+    (obj, { partition, ...props }) => Object.assign(obj, { [partition]: { ...props } }),
+    {}
+  )
 
 /**
  *
@@ -353,9 +370,10 @@ module.exports = ({
   /**
    * @param {string} groupId
    * @param {string} topic
+   * @param {boolean} [resolveOffsets=false]
    * @return {Promise}
    */
-  const fetchOffsets = async ({ groupId, topic }) => {
+  const fetchOffsets = async ({ groupId, topic, resolveOffsets = false }) => {
     if (!groupId) {
       throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
     }
@@ -368,12 +386,35 @@ module.exports = ({
     const coordinator = await cluster.findGroupCoordinator({ groupId })
     const partitionsToFetch = partitions.map(partition => ({ partition }))
 
-    const { responses } = await coordinator.offsetFetch({
+    let { responses: consumerOffsets } = await coordinator.offsetFetch({
       groupId,
       topics: [{ topic, partitions: partitionsToFetch }],
     })
 
-    return responses
+    if (resolveOffsets) {
+      const indexedOffsets = indexByPartition(await fetchTopicOffsets(topic))
+      consumerOffsets = consumerOffsets.map(({ topic, partitions }) => ({
+        topic,
+        partitions: partitions.map(({ offset, partition, ...props }) => {
+          let resolvedOffset = offset
+          if (Number(offset) === EARLIEST_OFFSET) {
+            resolvedOffset = indexedOffsets[partition].low
+          }
+          if (Number(offset) === LATEST_OFFSET) {
+            resolvedOffset = indexedOffsets[partition].high
+          }
+          return {
+            partition,
+            offset: resolvedOffset,
+            ...props,
+          }
+        }),
+      }))
+      const [{ partitions }] = consumerOffsets
+      await setOffsets({ groupId, topic, partitions })
+    }
+
+    return consumerOffsets
       .filter(response => response.topic === topic)
       .map(({ partitions }) =>
         partitions.map(({ partition, offset, metadata }) => ({
@@ -471,13 +512,32 @@ module.exports = ({
     })
   }
 
+  const isBrokerConfig = type =>
+    [CONFIG_RESOURCE_TYPES.BROKER, CONFIG_RESOURCE_TYPES.BROKER_LOGGER].includes(type)
+
+  /**
+   * Broker configs can only be returned by the target broker
+   *
+   * @see
+   * https://github.com/apache/kafka/blob/821c1ac6641845aeca96a43bc2b946ecec5cba4f/clients/src/main/java/org/apache/kafka/clients/admin/KafkaAdminClient.java#L3783
+   * https://github.com/apache/kafka/blob/821c1ac6641845aeca96a43bc2b946ecec5cba4f/clients/src/main/java/org/apache/kafka/clients/admin/KafkaAdminClient.java#L2027
+   *
+   * @param {Broker} defaultBroker. Broker used in case the configuration is not a broker config
+   */
+  const groupResourcesByBroker = ({ resources, defaultBroker }) =>
+    groupBy(resources, async ({ type, name: nodeId }) => {
+      return isBrokerConfig(type)
+        ? await cluster.findBroker({ nodeId: String(nodeId) })
+        : defaultBroker
+    })
+
   /**
    * @param {Array<ResourceConfigQuery>} resources
    * @param {boolean} [includeSynonyms=false]
    * @return {Promise}
    *
    * @typedef {Object} ResourceConfigQuery
-   * @property {ResourceType} type
+   * @property {ConfigResourceType} type
    * @property {string} name
    * @property {Array<String>} [configNames=[]]
    */
@@ -490,7 +550,7 @@ module.exports = ({
       throw new KafkaJSNonRetriableError('Resources array cannot be empty')
     }
 
-    const validResourceTypes = Object.values(RESOURCE_TYPES)
+    const validResourceTypes = Object.values(CONFIG_RESOURCE_TYPES)
     const invalidType = resources.find(r => !validResourceTypes.includes(r.type))
 
     if (invalidType) {
@@ -523,9 +583,28 @@ module.exports = ({
     return retrier(async (bail, retryCount, retryTime) => {
       try {
         await cluster.refreshMetadata()
-        const broker = await cluster.findControllerBroker()
-        const response = await broker.describeConfigs({ resources, includeSynonyms })
-        return response
+        const controller = await cluster.findControllerBroker()
+        const resourcerByBroker = await groupResourcesByBroker({
+          resources,
+          defaultBroker: controller,
+        })
+
+        const describeConfigsAction = async broker => {
+          const targetBroker = broker || controller
+          return targetBroker.describeConfigs({
+            resources: resourcerByBroker.get(targetBroker),
+            includeSynonyms,
+          })
+        }
+
+        const brokers = Array.from(resourcerByBroker.keys())
+        const responses = await Promise.all(brokers.map(describeConfigsAction))
+        const responseResources = responses.reduce(
+          (result, { resources }) => [...result, ...resources],
+          []
+        )
+
+        return { resources: responseResources }
       } catch (e) {
         if (e.type === 'NOT_CONTROLLER') {
           logger.warn('Could not describe configs', { error: e.message, retryCount, retryTime })
@@ -543,7 +622,7 @@ module.exports = ({
    * @return {Promise}
    *
    * @typedef {Object} ResourceConfig
-   * @property {ResourceType} type
+   * @property {ConfigResourceType} type
    * @property {string} name
    * @property {Array<ResourceConfigEntry>} configEntries
    *
@@ -560,7 +639,7 @@ module.exports = ({
       throw new KafkaJSNonRetriableError('Resources array cannot be empty')
     }
 
-    const validResourceTypes = Object.values(RESOURCE_TYPES)
+    const validResourceTypes = Object.values(CONFIG_RESOURCE_TYPES)
     const invalidType = resources.find(r => !validResourceTypes.includes(r.type))
 
     if (invalidType) {
@@ -601,9 +680,28 @@ module.exports = ({
     return retrier(async (bail, retryCount, retryTime) => {
       try {
         await cluster.refreshMetadata()
-        const broker = await cluster.findControllerBroker()
-        const response = await broker.alterConfigs({ resources, validateOnly: !!validateOnly })
-        return response
+        const controller = await cluster.findControllerBroker()
+        const resourcerByBroker = await groupResourcesByBroker({
+          resources,
+          defaultBroker: controller,
+        })
+
+        const alterConfigsAction = async broker => {
+          const targetBroker = broker || controller
+          return targetBroker.alterConfigs({
+            resources: resourcerByBroker.get(targetBroker),
+            validateOnly: !!validateOnly,
+          })
+        }
+
+        const brokers = Array.from(resourcerByBroker.keys())
+        const responses = await Promise.all(brokers.map(alterConfigsAction))
+        const responseResources = responses.reduce(
+          (result, { resources }) => [...result, ...resources],
+          []
+        )
+
+        return { resources: responseResources }
       } catch (e) {
         if (e.type === 'NOT_CONTROLLER') {
           logger.warn('Could not alter configs', { error: e.message, retryCount, retryTime })
@@ -899,6 +997,431 @@ module.exports = ({
   }
 
   /**
+   * Delete topic records up to the selected partition offsets
+   *
+   * @param {string} topic
+   * @param {Array<SeekEntry>} partitions
+   * @return {Promise}
+   *
+   * @typedef {Object} SeekEntry
+   * @property {number} partition
+   * @property {string} offset
+   */
+  const deleteTopicRecords = async ({ topic, partitions }) => {
+    if (!topic || typeof topic !== 'string') {
+      throw new KafkaJSNonRetriableError(`Invalid topic "${topic}"`)
+    }
+
+    if (!partitions || partitions.length === 0) {
+      throw new KafkaJSNonRetriableError(`Invalid partitions`)
+    }
+
+    const partitionsByBroker = cluster.findLeaderForPartitions(
+      topic,
+      partitions.map(p => p.partition)
+    )
+
+    const partitionsFound = flatten(values(partitionsByBroker))
+    const topicOffsets = await fetchTopicOffsets(topic)
+
+    const leaderNotFoundErrors = []
+    partitions.forEach(({ partition, offset }) => {
+      // throw if no leader found for partition
+      if (!partitionsFound.includes(partition)) {
+        leaderNotFoundErrors.push({
+          partition,
+          offset,
+          error: new KafkaJSBrokerNotFound('Could not find the leader for the partition', {
+            retriable: false,
+          }),
+        })
+        return
+      }
+      const { low } = topicOffsets.find(p => p.partition === partition) || {
+        high: undefined,
+        low: undefined,
+      }
+      // warn in case of offset below low watermark
+      if (parseInt(offset) < parseInt(low)) {
+        logger.warn(
+          'The requested offset is before the earliest offset maintained on the partition - no records will be deleted from this partition',
+          {
+            topic,
+            partition,
+            offset,
+          }
+        )
+      }
+    })
+
+    if (leaderNotFoundErrors.length > 0) {
+      throw new KafkaJSDeleteTopicRecordsError({ topic, partitions: leaderNotFoundErrors })
+    }
+
+    const seekEntriesByBroker = entries(partitionsByBroker).reduce(
+      (obj, [nodeId, nodePartitions]) => {
+        obj[nodeId] = {
+          topic,
+          partitions: partitions.filter(p => nodePartitions.includes(p.partition)),
+        }
+        return obj
+      },
+      {}
+    )
+
+    const retrier = createRetry(retry)
+    return retrier(async bail => {
+      try {
+        const partitionErrors = []
+
+        const brokerRequests = entries(seekEntriesByBroker).map(
+          ([nodeId, { topic, partitions }]) => async () => {
+            const broker = await cluster.findBroker({ nodeId })
+            await broker.deleteRecords({ topics: [{ topic, partitions }] })
+            // remove successful entry so it's ignored on retry
+            delete seekEntriesByBroker[nodeId]
+          }
+        )
+
+        await Promise.all(
+          brokerRequests.map(request =>
+            request().catch(e => {
+              if (e.name === 'KafkaJSDeleteTopicRecordsError') {
+                e.partitions.forEach(({ partition, offset, error }) => {
+                  partitionErrors.push({
+                    partition,
+                    offset,
+                    error,
+                  })
+                })
+              } else {
+                // then it's an unknown error, not from the broker response
+                throw e
+              }
+            })
+          )
+        )
+
+        if (partitionErrors.length > 0) {
+          throw new KafkaJSDeleteTopicRecordsError({
+            topic,
+            partitions: partitionErrors,
+          })
+        }
+      } catch (e) {
+        if (
+          e.retriable &&
+          e.partitions.some(
+            ({ error }) => staleMetadata(error) || error.name === 'KafkaJSMetadataNotLoaded'
+          )
+        ) {
+          await cluster.refreshMetadata()
+        }
+        throw e
+      }
+    })
+  }
+
+  /**
+   * @param {Array<ACLEntry>} acl
+   * @return {Promise<void>}
+   *
+   * @typedef {Object} ACLEntry
+   */
+  const createAcls = async ({ acl }) => {
+    if (!acl || !Array.isArray(acl)) {
+      throw new KafkaJSNonRetriableError(`Invalid ACL array ${acl}`)
+    }
+    if (acl.length === 0) {
+      throw new KafkaJSNonRetriableError('Empty ACL array')
+    }
+
+    // Validate principal
+    if (acl.some(({ principal }) => typeof principal !== 'string')) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL array, the principals have to be a valid string'
+      )
+    }
+
+    // Validate host
+    if (acl.some(({ host }) => typeof host !== 'string')) {
+      throw new KafkaJSNonRetriableError('Invalid ACL array, the hosts have to be a valid string')
+    }
+
+    // Validate resourceName
+    if (acl.some(({ resourceName }) => typeof resourceName !== 'string')) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL array, the resourceNames have to be a valid string'
+      )
+    }
+
+    let invalidType
+    // Validate operation
+    const validOperationTypes = Object.values(ACL_OPERATION_TYPES)
+    invalidType = acl.find(i => !validOperationTypes.includes(i.operation))
+
+    if (invalidType) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid operation type ${invalidType.operation}: ${JSON.stringify(invalidType)}`
+      )
+    }
+
+    // Validate resourcePatternTypes
+    const validResourcePatternTypes = Object.values(RESOURCE_PATTERN_TYPES)
+    invalidType = acl.find(i => !validResourcePatternTypes.includes(i.resourcePatternType))
+
+    if (invalidType) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource pattern type ${invalidType.resourcePatternType}: ${JSON.stringify(
+          invalidType
+        )}`
+      )
+    }
+
+    // Validate permissionTypes
+    const validPermissionTypes = Object.values(ACL_PERMISSION_TYPES)
+    invalidType = acl.find(i => !validPermissionTypes.includes(i.permissionType))
+
+    if (invalidType) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid permission type ${invalidType.permissionType}: ${JSON.stringify(invalidType)}`
+      )
+    }
+
+    // Validate resourceTypes
+    const validResourceTypes = Object.values(ACL_RESOURCE_TYPES)
+    invalidType = acl.find(i => !validResourceTypes.includes(i.resourceType))
+
+    if (invalidType) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource type ${invalidType.resourceType}: ${JSON.stringify(invalidType)}`
+      )
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        await broker.createAcls({ acl })
+
+        return true
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not create ACL', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
+   * @param {ACLResourceTypes} resourceType The type of resource
+   * @param {string} resourceName The name of the resource
+   * @param {ACLResourcePatternTypes} resourcePatternType The resource pattern type filter
+   * @param {string} principal The principal name
+   * @param {string} host The hostname
+   * @param {ACLOperationTypes} operation The type of operation
+   * @param {ACLPermissionTypes} permissionType The type of permission
+   * @return {Promise<void>}
+   *
+   * @typedef {number} ACLResourceTypes
+   * @typedef {number} ACLResourcePatternTypes
+   * @typedef {number} ACLOperationTypes
+   * @typedef {number} ACLPermissionTypes
+   */
+  const describeAcls = async ({
+    resourceType,
+    resourceName,
+    resourcePatternType,
+    principal,
+    host,
+    operation,
+    permissionType,
+  }) => {
+    // Validate principal
+    if (typeof principal !== 'string' && typeof principal !== 'undefined') {
+      throw new KafkaJSNonRetriableError(
+        'Invalid principal, the principal have to be a valid string'
+      )
+    }
+
+    // Validate host
+    if (typeof host !== 'string' && typeof host !== 'undefined') {
+      throw new KafkaJSNonRetriableError('Invalid host, the host have to be a valid string')
+    }
+
+    // Validate resourceName
+    if (typeof resourceName !== 'string' && typeof resourceName !== 'undefined') {
+      throw new KafkaJSNonRetriableError(
+        'Invalid resourceName, the resourceName have to be a valid string'
+      )
+    }
+
+    // Validate operation
+    const validOperationTypes = Object.values(ACL_OPERATION_TYPES)
+    if (!validOperationTypes.includes(operation)) {
+      throw new KafkaJSNonRetriableError(`Invalid operation type ${operation}`)
+    }
+
+    // Validate resourcePatternType
+    const validResourcePatternTypes = Object.values(RESOURCE_PATTERN_TYPES)
+    if (!validResourcePatternTypes.includes(resourcePatternType)) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource pattern filter type ${resourcePatternType}`
+      )
+    }
+
+    // Validate permissionType
+    const validPermissionTypes = Object.values(ACL_PERMISSION_TYPES)
+    if (!validPermissionTypes.includes(permissionType)) {
+      throw new KafkaJSNonRetriableError(`Invalid permission type ${permissionType}`)
+    }
+
+    // Validate resourceType
+    const validResourceTypes = Object.values(ACL_RESOURCE_TYPES)
+    if (!validResourceTypes.includes(resourceType)) {
+      throw new KafkaJSNonRetriableError(`Invalid resource type ${resourceType}`)
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        const { resources } = await broker.describeAcls({
+          resourceType,
+          resourceName,
+          resourcePatternType,
+          principal,
+          host,
+          operation,
+          permissionType,
+        })
+        return { resources }
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not describe ACL', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
+   * @param {Array<ACLFilter>} filters
+   * @return {Promise<void>}
+   *
+   * @typedef {Object} ACLFilter
+   */
+  const deleteAcls = async ({ filters }) => {
+    if (!filters || !Array.isArray(filters)) {
+      throw new KafkaJSNonRetriableError(`Invalid ACL Filter array ${filters}`)
+    }
+
+    if (filters.length === 0) {
+      throw new KafkaJSNonRetriableError('Empty ACL Filter array')
+    }
+
+    // Validate principal
+    if (
+      filters.some(
+        ({ principal }) => typeof principal !== 'string' && typeof principal !== 'undefined'
+      )
+    ) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL Filter array, the principals have to be a valid string'
+      )
+    }
+
+    // Validate host
+    if (filters.some(({ host }) => typeof host !== 'string' && typeof host !== 'undefined')) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL Filter array, the hosts have to be a valid string'
+      )
+    }
+
+    // Validate resourceName
+    if (
+      filters.some(
+        ({ resourceName }) =>
+          typeof resourceName !== 'string' && typeof resourceName !== 'undefined'
+      )
+    ) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid ACL Filter array, the resourceNames have to be a valid string'
+      )
+    }
+
+    let invalidType
+    // Validate operation
+    const validOperationTypes = Object.values(ACL_OPERATION_TYPES)
+    invalidType = filters.find(i => !validOperationTypes.includes(i.operation))
+
+    if (invalidType) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid operation type ${invalidType.operation}: ${JSON.stringify(invalidType)}`
+      )
+    }
+
+    // Validate resourcePatternTypes
+    const validResourcePatternTypes = Object.values(RESOURCE_PATTERN_TYPES)
+    invalidType = filters.find(i => !validResourcePatternTypes.includes(i.resourcePatternType))
+
+    if (invalidType) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource pattern type ${invalidType.resourcePatternType}: ${JSON.stringify(
+          invalidType
+        )}`
+      )
+    }
+
+    // Validate permissionTypes
+    const validPermissionTypes = Object.values(ACL_PERMISSION_TYPES)
+    invalidType = filters.find(i => !validPermissionTypes.includes(i.permissionType))
+
+    if (invalidType) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid permission type ${invalidType.permissionType}: ${JSON.stringify(invalidType)}`
+      )
+    }
+
+    // Validate resourceTypes
+    const validResourceTypes = Object.values(ACL_RESOURCE_TYPES)
+    invalidType = filters.find(i => !validResourceTypes.includes(i.resourceType))
+
+    if (invalidType) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource type ${invalidType.resourceType}: ${JSON.stringify(invalidType)}`
+      )
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        const { filterResponses } = await broker.deleteAcls({ filters })
+        return { filterResponses }
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not delete ACL', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
    * @param {string} eventName
    * @param {Function} listener
    * @return {Function}
@@ -947,5 +1470,9 @@ module.exports = ({
     listGroups,
     describeGroups,
     deleteGroups,
+    describeAcls,
+    deleteAcls,
+    createAcls,
+    deleteTopicRecords,
   }
 }

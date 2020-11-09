@@ -15,6 +15,39 @@ const kafka = new Kafka({
 })
 ```
 
+## Broker discovery
+
+Normally KafkaJS will notice and react to broker cluster topology changes automatically, but in some circumstances you may want to be able to dynamically
+fetch the seed brokers instead of using a statically configured list. In that case, `brokers` can be set to an async function that resolves to
+a broker array:
+
+```javascript
+const kafka = new Kafka({
+  clientId: 'my-app',
+  brokers: async () => {
+    // Example getting brokers from Confluent REST Proxy
+    const clusterResponse = await fetch('https://kafka-rest:8082/v3/clusters', {
+      headers: 'application/vnd.api+json',
+    }).then(response => response.json())
+    const clusterUrl = clusterResponse.data[0].links.self
+
+    const brokersResponse = await fetch(`${clusterUrl}/brokers`, {
+      headers: 'application/vnd.api+json',
+    }).then(response => response.json())
+
+    const brokers = brokersResponse.data.map(broker => {
+      const { host, port } = broker.attributes
+      return `${host}:${port}`
+    })
+
+    return brokers
+  }
+})
+```
+
+Note that this discovery mechanism is only used to get the initial set of brokers (i.e. the seed brokers). After successfully connecting to
+a broker in this list, Kafka has its own mechanism for discovering the rest of the cluster.
+
 ## SSL
 
 The `ssl` option can be used to configure the TLS sockets. The options are passed directly to [`tls.connect`](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback) and used to create the TLS Secure Context, all options are accepted.

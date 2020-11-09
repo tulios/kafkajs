@@ -137,6 +137,7 @@ describe('Broker > Fetch', () => {
 
     let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
     expect(fetchResponse).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       responses: [
         {
@@ -211,6 +212,7 @@ describe('Broker > Fetch', () => {
 
     let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
     expect(fetchResponse).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       responses: [
         {
@@ -296,8 +298,8 @@ describe('Broker > Fetch', () => {
 
       let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse).toEqual({
-        throttleTime: 0,
         clientSideThrottleTime: expect.optional(0),
+        throttleTime: 0,
         errorCode: 0,
         sessionId: 0,
         responses: [
@@ -380,8 +382,8 @@ describe('Broker > Fetch', () => {
 
       let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse).toEqual({
-        throttleTime: 0,
         clientSideThrottleTime: expect.optional(0),
+        throttleTime: 0,
         errorCode: 0,
         sessionId: 0,
         responses: [
@@ -464,8 +466,8 @@ describe('Broker > Fetch', () => {
 
       let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
       expect(fetchResponse).toEqual({
-        throttleTime: 0,
         clientSideThrottleTime: expect.optional(0),
+        throttleTime: 0,
         errorCode: 0,
         sessionId: 0,
         responses: [
@@ -587,8 +589,8 @@ describe('Broker > Fetch', () => {
 
         let fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
         expect(fetchResponse).toEqual({
-          throttleTime: 0,
           clientSideThrottleTime: expect.optional(0),
+          throttleTime: 0,
           errorCode: 0,
           sessionId: 0,
           responses: [
@@ -620,8 +622,8 @@ describe('Broker > Fetch', () => {
         await retry(async () => {
           fetchResponse = await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
           expect(fetchResponse).toEqual({
-            throttleTime: 0,
             clientSideThrottleTime: expect.optional(0),
+            throttleTime: 0,
             errorCode: 0,
             sessionId: 0,
             responses: [
@@ -750,8 +752,8 @@ describe('Broker > Fetch', () => {
           isolationLevel: ISOLATION_LEVEL.READ_UNCOMMITTED,
         })
         expect(fetchResponse).toEqual({
-          throttleTime: 0,
           clientSideThrottleTime: expect.optional(0),
+          throttleTime: 0,
           errorCode: 0,
           sessionId: 0,
           responses: [
@@ -843,8 +845,8 @@ describe('Broker > Fetch', () => {
             isolationLevel: ISOLATION_LEVEL.READ_UNCOMMITTED,
           })
           expect(fetchResponse).toEqual({
-            throttleTime: 0,
             clientSideThrottleTime: expect.optional(0),
+            throttleTime: 0,
             errorCode: 0,
             sessionId: 0,
             responses: [

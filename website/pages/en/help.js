@@ -29,6 +29,10 @@ function Help(props) {
       title: 'Join the community',
     },
     {
+      content: `Commercial support is [available directly from the KafkaJS developers](${baseUrl}#support).`,
+      title: 'Get dedicated support',
+    },
+    {
       content: `Believe you have found a bug? Please [open an issue](https://github.com/tulios/kafkajs/issues) describing the issue as clearly as you can.`,
       title: 'Open an issue',
     },
@@ -51,7 +55,7 @@ function Help(props) {
             If you're still unable to find a solution to your problem, feel free to check out the
             links below.
           </p>
-          <GridBlock contents={supportLinks} layout="threeColumn" />
+          <GridBlock contents={supportLinks} layout="fourColumn" />
         </div>
       </Container>
     </div>

@@ -108,7 +108,7 @@ describe('Cluster > ConnectionBuilder', () => {
         logger,
       }).build()
     ).rejects.toEqual(
-      new KafkaJSConnectionError('Failed to connect: brokers function returned nothing')
+      new KafkaJSConnectionError('Failed to connect: "config.brokers" returned void or empty array')
     )
   })
 
@@ -127,7 +127,7 @@ describe('Cluster > ConnectionBuilder', () => {
         logger,
       }).build()
     ).rejects.toEqual(
-      new KafkaJSConnectionError('Failed to connect: brokers function returned exception')
+      new KafkaJSConnectionError('Failed to connect: "config.brokers" threw: oh a crash!')
     )
   })
 

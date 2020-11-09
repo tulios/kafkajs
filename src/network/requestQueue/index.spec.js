@@ -5,6 +5,7 @@ const { newLogger } = require('testHelpers')
 const InstrumentationEventEmitter = require('../../instrumentation/emitter')
 const events = require('../instrumentationEvents')
 const RequestQueue = require('./index')
+const { KafkaJSInvariantViolation } = require('../../errors')
 
 describe('Network > RequestQueue', () => {
   let requestQueue
@@ -186,6 +187,13 @@ describe('Network > RequestQueue', () => {
 
       const sentAt = await sendDone
       expect(sentAt).toBeGreaterThanOrEqual(before + clientSideThrottleTime)
+    })
+
+    it('does not allow for a inflight correlation ids collision', async () => {
+      requestQueue.inflight.set(request.entry.correlationId, 'already existing inflight')
+      expect(() => {
+        requestQueue.push(request)
+      }).toThrowError(new KafkaJSInvariantViolation('Correlation id already exists'))
     })
   })
 

@@ -587,9 +587,15 @@ const failIfVersionNotSupported = code => {
   }
 }
 
+const staleMetadata = e =>
+  ['UNKNOWN_TOPIC_OR_PARTITION', 'LEADER_NOT_AVAILABLE', 'NOT_LEADER_FOR_PARTITION'].includes(
+    e.type
+  )
+
 module.exports = {
   failure,
   errorCodes,
   createErrorFromCode,
   failIfVersionNotSupported,
+  staleMetadata,
 }

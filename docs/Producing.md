@@ -66,7 +66,7 @@ await producer.send({
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
 | topic              | topic name                                                                                                                                                                                                                                                                                                                                 | `null`                             |
 | messages           | An array of objects with "key" (optional), "value" (required), "partition" (optional), "timestamp" (optional), "headers" (optional), example: <br> `[{ key: 'my-key', value: 'my-value'}]`                                                                                                                                                                                                                                          | `null`                             |
-| acks               | Control the number of required acks. <br> __-1__ = all replicas must acknowledge _(default)_ <br> __0__ = no acknowledgments <br> __1__ = only waits for the leader to acknowledge                                                                                                                                                         | `-1` all replicas must acknowledge |
+| acks               | Control the number of required acks. <br> __-1__ = all insync replicas must acknowledge _(default)_ <br> __0__ = no acknowledgments <br> __1__ = only waits for the leader to acknowledge                                                                                                                                                         | `-1` all insync replicas must acknowledge |
 | timeout            | The time to await a response in ms                                                                                                                                                                                                                                                                                                         | `30000`                            |
 | compression        | Compression codec                                                                                                                                                                                                                                                                                                                          | `CompressionTypes.None`            |
 
@@ -220,7 +220,7 @@ The consumers know how to decompress GZIP, so no further work is necessary.
 Snappy support is provided by the package `kafkajs-snappy`
 
 ```sh
-npm install kafkajs-snappy
+npm install --save kafkajs-snappy
 # yarn add kafkajs-snappy
 ```
 
@@ -238,7 +238,7 @@ Take a look at the official [readme](https://github.com/tulios/kafkajs-snappy) f
 LZ4 support is provided by the package `kafkajs-lz4`
 
 ```sh
-npm install kafkajs-lz4
+npm install --save kafkajs-lz4
 # yarn add kafkajs-lz4
 ```
 
@@ -250,6 +250,24 @@ CompressionCodecs[CompressionTypes.LZ4] = new LZ4().codec
 ```
 
 The package also accepts options to granularly control LZ4 compression & decompression. Take a look at the official [readme](https://github.com/indix/kafkajs-lz4) for more information.
+
+### <a name="compression-zstd"></a> ZSTD
+
+Zstandard support is provided by [`@kafkajs/zstd`](https://github.com/kafkajs/zstd)
+
+```sh
+npm install --save @kafkajs/zstd
+# yarn add @kafkajs/zstd
+```
+
+```javascript
+const { CompressionTypes, CompressionCodecs } = require('kafkajs')
+const ZstdCodec = require('@kafkajs/zstd')
+
+CompressionCodecs[CompressionTypes.ZSTD] = ZstdCodec()
+```
+
+Configuration options can be passed to the factory function to control compression & decompression levels and other features. See [the official readme](https://github.com/kafkajs/zstd) for more information.
 
 ### <a name="compression-other"></a> Other
 
