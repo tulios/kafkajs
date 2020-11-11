@@ -122,7 +122,11 @@ module.exports = ({ logger, cluster, partitioner, eosManager }) => {
         const responses = Array.from(responsePerBroker.values())
         return flatten(responses)
       } catch (e) {
-        if (staleMetadata(e) || e.name === 'KafkaJSMetadataNotLoaded') {
+        if (
+          staleMetadata(e) ||
+          e.name === 'KafkaJSMetadataNotLoaded' ||
+          e.name === 'KafkaJSConnectionError'
+        ) {
           await cluster.refreshMetadata()
         }
 

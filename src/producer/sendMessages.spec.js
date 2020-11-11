@@ -205,6 +205,44 @@ describe('Producer > sendMessages', () => {
     expect(cluster.refreshMetadata).toHaveBeenCalled()
   })
 
+  test('refreshes metadata if there is a connection error to the broker', async () => {
+    const sendMessages = createSendMessages({
+      logger: newLogger(),
+      cluster,
+      partitioner,
+      eosManager,
+    })
+
+    brokers[1].produce.mockImplementation(() => {
+      const error = new Error('Some error broker 1')
+      error.name = 'KafkaJSConnectionError'
+      throw error
+    })
+
+    cluster.refreshMetadata.mockImplementationOnce(() => {
+      cluster.findTopicPartitionMetadata.mockImplementationOnce(() => [
+        {
+          isr: [2],
+          leader: 4,
+          partitionErrorCode: 0,
+          partitionId: 0,
+          replicas: [2],
+        },
+      ])
+      cluster.findLeaderForPartitions.mockImplementationOnce(() => ({
+        4: [0], // 4 replaces 1 as leader for partition 0
+        2: [1],
+        3: [2],
+      }))
+    })
+
+    await sendMessages({ topicMessages: [{ topic, messages }] })
+
+    expect(brokers[1].produce).toHaveBeenCalledTimes(1)
+    expect(cluster.refreshMetadata).toHaveBeenCalledTimes(1)
+    expect(brokers[4].produce).toHaveBeenCalledTimes(1)
+  })
+
   test('retrieves sequence information from the transaction manager and updates', async () => {
     const sendMessages = createSendMessages({
       logger: newLogger(),
