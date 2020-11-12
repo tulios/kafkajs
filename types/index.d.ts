@@ -658,12 +658,15 @@ export type MemberDescription = {
   memberMetadata: Buffer
 }
 
+// See https://github.com/apache/kafka/blob/2.4.0/clients/src/main/java/org/apache/kafka/common/ConsumerGroupState.java#L25
+export type ConsumerGroupState = 'Unknown' | 'PreparingRebalance' | 'CompletingRebalance' | 'Stable' | 'Dead' | 'Empty';
+
 export type GroupDescription = {
   groupId: string
   members: MemberDescription[]
   protocol: string
   protocolType: string
-  state: string
+  state: ConsumerGroupState
 }
 
 export type GroupDescriptions = {
