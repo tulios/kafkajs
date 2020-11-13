@@ -314,7 +314,7 @@ module.exports = class BrokerPool {
 
           // Connection refused means this node is down, or the cluster is restarting,
           // which requires metadata refresh to discover the new nodes
-          if (e.code === 'ECONNREFUSED') {
+          if (e.name === 'KafkaJSConnectionError') {
             return bail(e)
           }
 

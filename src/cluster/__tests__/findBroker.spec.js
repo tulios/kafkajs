@@ -97,4 +97,27 @@ describe('Cluster > findBroker', () => {
 
     expect(cluster.refreshMetadata).toHaveBeenCalled()
   })
+
+  test('refresh metadata on KafkaJSConnectionError Connection Timeout', async () => {
+    const nodeId = 0
+    const mockBroker = new Broker({
+      connection: createConnection(),
+      logger: newLogger(),
+    })
+
+    jest.spyOn(mockBroker, 'connect').mockImplementationOnce(() => {
+      throw new KafkaJSConnectionError('Connection timeout', { broker: mockBroker })
+    })
+
+    jest.spyOn(cluster, 'refreshMetadata')
+    cluster.brokerPool.brokers[nodeId] = mockBroker
+
+    await expect(cluster.findBroker({ nodeId })).rejects.toHaveProperty(
+      'name',
+      'KafkaJSConnectionError'
+    )
+
+    await expect(cluster.findBroker({ nodeId })).resolves.toBeInstanceOf(Broker)
+    expect(cluster.refreshMetadata).toHaveBeenCalled()
+  })
 })
