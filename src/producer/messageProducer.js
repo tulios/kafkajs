@@ -105,7 +105,10 @@ module.exports = ({
         }
 
         if (!cluster.isConnected()) {
-          logger.debug(`Cluster has disconnected, reconnecting: ${error.message}`, {
+          logger.error(`Cluster has disconnected, reconnecting: ${error.message}`, {
+            error,
+            stack: error.stack,
+            originalError: error.originalError,
             retryCount,
             retryTime,
           })
@@ -127,7 +130,13 @@ module.exports = ({
         }
 
         // Skip retries for errors not related to the Kafka protocol
-        logger.error(`${error.message}`, { retryCount, retryTime })
+        logger.error(`Unhandled error when sending messages: ${error.message}`, {
+          retryCount,
+          retryTime,
+          error,
+          stack: error.stack,
+          originalError: error.originalError,
+        })
         bail(error)
       }
     })
