@@ -167,8 +167,8 @@ module.exports = class Connection {
         })
 
         this.logError(error.message)
-        await this.disconnect()
         this.rejectRequests(error)
+        await this.disconnect()
         reject(error)
       }
 
