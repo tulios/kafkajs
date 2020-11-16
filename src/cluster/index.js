@@ -20,25 +20,26 @@ const mergeTopics = (obj, { topic, partitions }) => ({
   [topic]: [...(obj[topic] || []), ...partitions],
 })
 
-/**
- * @param {Array<string>} brokers example: ['127.0.0.1:9092', '127.0.0.1:9094']
- * @param {Object} ssl
- * @param {Object} sasl
- * @param {string} clientId
- * @param {number} connectionTimeout - in milliseconds
- * @param {number} authenticationTimeout - in milliseconds
- * @param {number} reauthenticationThreshold - in milliseconds
- * @param {number} [requestTimeout=30000] - in milliseconds
- * @param {number} metadataMaxAge - in milliseconds
- * @param {boolean} allowAutoTopicCreation
- * @param {number} maxInFlightRequests
- * @param {number} isolationLevel
- * @param {Object} retry
- * @param {Logger} logger
- * @param {Map} offsets
- * @param {InstrumentationEventEmitter} [instrumentationEmitter=null]
- */
 module.exports = class Cluster {
+  /**
+   * @param {Object} options
+   * @param {Array<string>} options.brokers example: ['127.0.0.1:9092', '127.0.0.1:9094']
+   * @param {Object} options.ssl
+   * @param {Object} options.sasl
+   * @param {string} options.clientId
+   * @param {number} options.connectionTimeout - in milliseconds
+   * @param {number} options.authenticationTimeout - in milliseconds
+   * @param {number} options.reauthenticationThreshold - in milliseconds
+   * @param {number} [options.requestTimeout=30000] - in milliseconds
+   * @param {number} options.metadataMaxAge - in milliseconds
+   * @param {boolean} options.allowAutoTopicCreation
+   * @param {number} options.maxInFlightRequests
+   * @param {number} options.isolationLevel
+   * @param {Object} options.retry
+   * @param {import("../../types").Logger} options.logger
+   * @param {Map} options.offsets
+   * @param {import("../instrumentation/emitter")} [options.instrumentationEmitter=null]
+   */
   constructor({
     logger: rootLogger,
     socketFactory,
