@@ -32,12 +32,14 @@ export interface KafkaConfig {
   logCreator?: logCreator
 }
 
-export type ISocketFactory = (
+export interface ISocketFactoryArgs {
   host: string,
   port: number,
   ssl: tls.ConnectionOptions,
   onConnect: () => void
-) => net.Socket
+}
+
+export type ISocketFactory = (args: ISocketFactoryArgs) => net.Socket
 
 export type SASLMechanism = 'plain' | 'scram-sha-256' | 'scram-sha-512' | 'aws' | 'oauthbearer'
 
