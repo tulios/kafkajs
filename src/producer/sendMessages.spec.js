@@ -1,5 +1,6 @@
 jest.mock('./groupMessagesPerPartition')
 const { newLogger } = require('testHelpers')
+const { errorCodes, createErrorFromCode } = require('../protocol/error')
 const retry = require('../retry')
 const createSendMessages = require('./sendMessages')
 
@@ -102,16 +103,16 @@ describe('Producer > sendMessages', () => {
 
     brokers[1].produce
       .mockImplementationOnce(() => {
-        throw new Error('Some error broker 1')
+        throw createErrorFromCode(5)
       })
       .mockImplementationOnce(() => createProducerResponse(topic, 0))
 
     brokers[3].produce
       .mockImplementationOnce(() => {
-        throw new Error('Some error broker 3 one')
+        throw createErrorFromCode(5)
       })
       .mockImplementationOnce(() => {
-        throw new Error('Some error broker 3 two')
+        throw createErrorFromCode(5)
       })
       .mockImplementationOnce(() => createProducerResponse(topic, 2))
 
@@ -138,13 +139,6 @@ describe('Producer > sendMessages', () => {
 
   for (const errorType of PRODUCE_ERRORS) {
     test(`refresh stale metadata on ${errorType}`, async () => {
-      class FakeError extends Error {
-        constructor() {
-          super('Fake Error')
-          this.type = errorType
-        }
-      }
-
       const sendMessages = createSendMessages({
         retrier,
         logger: newLogger(),
@@ -154,7 +148,7 @@ describe('Producer > sendMessages', () => {
       })
       brokers[1].produce
         .mockImplementationOnce(() => {
-          throw new FakeError()
+          throw createErrorFromCode(errorCodes.find(({ type }) => type === errorType).code)
         })
         .mockImplementationOnce(() => createProducerResponse(topic, 0))
 
@@ -175,9 +169,9 @@ describe('Producer > sendMessages', () => {
 
     brokers[2].produce
       .mockImplementationOnce(() => {
-        const e = new Error('Some error broker 1')
-        e.type = 'NOT_LEADER_FOR_PARTITION'
-        throw e
+        throw createErrorFromCode(
+          errorCodes.find(({ type }) => type === 'NOT_LEADER_FOR_PARTITION').code
+        )
       })
       .mockImplementationOnce(() => createProducerResponse(topic, 0))
     cluster.findLeaderForPartitions
