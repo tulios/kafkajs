@@ -14,6 +14,7 @@ module.exports = ({
   const sendMessages = createSendMessages({
     logger,
     cluster,
+    retrier,
     partitioner,
     eosManager,
   })
@@ -91,45 +92,11 @@ module.exports = ({
       return merged
     }, [])
 
-    return retrier(async (bail, retryCount, retryTime) => {
-      try {
-        return await sendMessages({
-          acks,
-          timeout,
-          compression,
-          topicMessages: mergedTopicMessages,
-        })
-      } catch (error) {
-        if (error.name === 'KafkaJSConnectionClosedError') {
-          cluster.removeBroker({ host: error.host, port: error.port })
-        }
-
-        if (!cluster.isConnected()) {
-          logger.debug(`Cluster has disconnected, reconnecting: ${error.message}`, {
-            retryCount,
-            retryTime,
-          })
-          await cluster.connect()
-          await cluster.refreshMetadata()
-          throw error
-        }
-
-        // This is necessary in case the metadata is stale and the number of partitions
-        // for this topic has increased in the meantime
-        if (
-          error.name === 'KafkaJSConnectionError' ||
-          error.name === 'KafkaJSConnectionClosedError' ||
-          (error.name === 'KafkaJSProtocolError' && error.retriable)
-        ) {
-          logger.error(`Failed to send messages: ${error.message}`, { retryCount, retryTime })
-          await cluster.refreshMetadata()
-          throw error
-        }
-
-        // Skip retries for errors not related to the Kafka protocol
-        logger.error(`${error.message}`, { retryCount, retryTime })
-        bail(error)
-      }
+    return await sendMessages({
+      acks,
+      timeout,
+      compression,
+      topicMessages: mergedTopicMessages,
     })
   }
 
