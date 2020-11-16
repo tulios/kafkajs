@@ -2,7 +2,7 @@ const Broker = require('../broker')
 const createRetry = require('../retry')
 const shuffle = require('../utils/shuffle')
 const arrayDiff = require('../utils/arrayDiff')
-const { KafkaJSBrokerNotFound } = require('../errors')
+const { KafkaJSBrokerNotFound, KafkaJSProtocolError } = require('../errors')
 
 const { keys, assign, values } = Object
 const hasBrokerBeenReplaced = (broker, { host, port, rack }) =>
@@ -311,13 +311,15 @@ module.exports = class BrokerPool {
       } catch (e) {
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
           await broker.disconnect()
+        }
 
-          // Connection refused means this node is down, or the cluster is restarting,
-          // which requires metadata refresh to discover the new nodes
-          if (e.name === 'KafkaJSConnectionError') {
-            return bail(e)
-          }
+        // To avoid reconnecting to an unavailable host, we bail on connection errors
+        // and refresh metadata on a higher level before reconnecting
+        if (e.name === 'KafkaJSConnectionError') {
+          return bail(e)
+        }
 
+        if (e.type === 'ILLEGAL_SASL_STATE') {
           // Rebuild the connection since it can't recover from illegal SASL state
           broker.connection = await this.connectionBuilder.build({
             host: broker.connection.host,
@@ -326,6 +328,7 @@ module.exports = class BrokerPool {
           })
 
           this.logger.error(`Failed to connect to broker, reconnecting`, { retryCount, retryTime })
+          throw new KafkaJSProtocolError(e, { retriable: true })
         }
 
         if (e.retriable) throw e
