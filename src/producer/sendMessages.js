@@ -118,10 +118,6 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
         const responses = Array.from(responsePerBroker.values())
         return flatten(responses)
       } catch (e) {
-        if (e.name === 'KafkaJSNotImplemented') {
-          return bail(e)
-        }
-
         if (e.name === 'KafkaJSConnectionClosedError') {
           cluster.removeBroker({ host: e.host, port: e.port })
         }
@@ -151,7 +147,8 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
         }
 
         logger.error(`${e.message}`, { retryCount, retryTime })
-        throw e
+        if (e.retriable) throw e
+        bail(e)
       }
     })
   }
