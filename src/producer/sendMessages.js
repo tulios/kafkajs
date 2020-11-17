@@ -123,9 +123,11 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
         }
 
         if (!cluster.isConnected()) {
-          logger.debug(`Cluster has disconnected, reconnecting: ${e.message}`, {
+          logger.error(`Cluster has disconnected, reconnecting: ${e.message}`, {
             retryCount,
             retryTime,
+            error: e,
+            stack: e.stack,
           })
           await cluster.connect()
           await cluster.refreshMetadata()
@@ -141,12 +143,22 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
           e.name === 'KafkaJSConnectionClosedError' ||
           (e.name === 'KafkaJSProtocolError' && e.retriable)
         ) {
-          logger.error(`Failed to send messages: ${e.message}`, { retryCount, retryTime })
+          logger.error(`Failed to send messages: ${e.message}`, {
+            retryCount,
+            retryTime,
+            error: e,
+            stack: e.stack,
+          })
           await cluster.refreshMetadata()
           throw e
         }
 
-        logger.error(`${e.message}`, { retryCount, retryTime })
+        logger.error(`Unhandled error when sending messages: ${e.message}`, {
+          retryCount,
+          retryTime,
+          error: e,
+          stack: e.stack,
+        })
         if (e.retriable) throw e
         bail(e)
       }
