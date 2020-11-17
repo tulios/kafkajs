@@ -21,11 +21,6 @@
   </p>
 </p>
 
-<hr />
-<p align="center">
-<b>Commercial support available!</b><br /><a href="https://kafka.js.org/#support">Resolve issues faster by getting help directly from a <b>KafkaJS developer</b></a>
-</p>
-
 ## Table of Contents
 
 - [About the project](#about)
