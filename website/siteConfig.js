@@ -10,7 +10,6 @@
 
 const repoUrl = 'https://github.com/tulios/kafkajs'
 const slackUrl = 'https://kafkajs-slackin.herokuapp.com/'
-const contactFormUrl = 'https://formcarry.com/s/ifZUgcBlj'
 
 const siteConfig = {
   title: 'KafkaJS',
@@ -79,7 +78,6 @@ const siteConfig = {
   repoUrl,
   slackUrl,
   siteConfigUrl: repoUrl + '/edit/master/website/siteConfig.js',
-  contactFormUrl,
 }
 
 module.exports = siteConfig
