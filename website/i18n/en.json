@@ -270,9 +270,6 @@
       },
       "version-1.13.0/version-1.13.0-producing": {
         "title": "Producing Messages"
-      },
-      "version-1.14.0/version-1.14.0-configuration": {
-        "title": "Client Configuration"
       }
     },
     "links": {
