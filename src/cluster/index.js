@@ -216,7 +216,7 @@ module.exports = class Cluster {
       if (
         e.name === 'KafkaJSBrokerNotFound' ||
         e.name === 'KafkaJSLockTimeout' ||
-        e.code === 'ECONNREFUSED'
+        e.name === 'KafkaJSConnectionError'
       ) {
         await this.refreshMetadata()
       }

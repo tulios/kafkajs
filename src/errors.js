@@ -19,8 +19,8 @@ class KafkaJSNonRetriableError extends KafkaJSError {
 }
 
 class KafkaJSProtocolError extends KafkaJSError {
-  constructor(e) {
-    super(e, { retriable: e.retriable })
+  constructor(e, { retriable = e.retriable } = {}) {
+    super(e, { retriable })
     this.type = e.type
     this.code = e.code
     this.name = 'KafkaJSProtocolError'

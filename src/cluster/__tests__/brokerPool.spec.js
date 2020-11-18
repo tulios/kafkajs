@@ -6,6 +6,7 @@ const {
   secureRandom,
 } = require('testHelpers')
 const { KafkaJSProtocolError, KafkaJSConnectionError } = require('../../errors')
+const { createErrorFromCode, errorCodes } = require('../../protocol/error')
 const BrokerPool = require('../brokerPool')
 const Broker = require('../../broker')
 
@@ -393,14 +394,14 @@ describe('Cluster > BrokerPool', () => {
       expect(broker.isConnected()).toEqual(true)
     })
 
-    it('recreates the connection on connection errors', async () => {
+    it('recreates the connection on ILLEGAL_SASL_STATE error', async () => {
       const nodeId = 'fakebroker'
       const mockBroker = new Broker({
         connection: createConnection(),
         logger: newLogger(),
       })
       jest.spyOn(mockBroker, 'connect').mockImplementationOnce(() => {
-        throw new KafkaJSConnectionError('Connection lost')
+        throw createErrorFromCode(errorCodes.find(({ type }) => type === 'ILLEGAL_SASL_STATE').code)
       })
       brokerPool.brokers[nodeId] = mockBroker
 
