@@ -1,9 +1,9 @@
-<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Admin Client · KafkaJS</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="The admin client hosts all the cluster operations, such as: `createTopics`, `createPartitions`, etc."/><meta name="docsearch:version" content="1.14.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Admin Client · KafkaJS"/><meta property="og:type" content="website"/><meta property="og:url" content="https://kafka.js.org/"/><meta property="og:description" content="The admin client hosts all the cluster operations, such as: `createTopics`, `createPartitions`, etc."/><meta property="og:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"/><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-133751873-1"></script><script>
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Admin Client · KafkaJS</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="The admin client hosts all the cluster operations, such as: `createTopics`, `createPartitions`, etc."/><meta name="docsearch:version" content="1.15.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Admin Client · KafkaJS"/><meta property="og:type" content="website"/><meta property="og:url" content="https://kafka.js.org/"/><meta property="og:description" content="The admin client hosts all the cluster operations, such as: `createTopics`, `createPartitions`, etc."/><meta property="og:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"/><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-133751873-1"></script><script>
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments); }
               gtag('js', new Date());
               gtag('config', 'UA-133751873-1');
-            </script><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/kafkajs-logoV2.svg" alt="KafkaJS"/><h2 class="headerTitleWithLogo">KafkaJS</h2></a><a href="/versions"><h3>1.14.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/getting-started" target="_self">Docs</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class=""><a href="https://github.com/tulios/kafkajs" target="_self">GitHub</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Usage</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Usage</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/introduction">Intro to Kafka</a></li><li class="navListItem"><a class="navItem" href="/docs/getting-started">Getting Started</a></li><li class="navListItem"><a class="navItem" href="/docs/configuration">Client Configuration</a></li><li class="navListItem"><a class="navItem" href="/docs/producing">Producing Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/transactions">Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/consuming">Consuming Messages</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/admin">Admin Client</a></li><li class="navListItem"><a class="navItem" href="/docs/instrumentation-events">Instrumentation Events</a></li><li class="navListItem"><a class="navItem" href="/docs/custom-logger">Custom Logger</a></li><li class="navListItem"><a class="navItem" href="/docs/retry-detailed">Retry Mechanism Explained</a></li><li class="navListItem"><a class="navItem" href="/docs/faq">FAQ</a></li><li class="navListItem"><a class="navItem" href="/docs/pre-releases">Pre-releases</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Examples</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/running-kafka-in-development">Running Kafka in Development</a></li><li class="navListItem"><a class="navItem" href="/docs/producer-example">Producer</a></li><li class="navListItem"><a class="navItem" href="/docs/consumer-example">Consumer</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Developing KafkaJS</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/contribution-guide">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/development-environment">Development Environment</a></li><li class="navListItem"><a class="navItem" href="/docs/testing">Testing</a></li><li class="navListItem"><a class="navItem" href="/docs/development-resources">Resources</a></li></ul></div></div></section></div><script>
+            </script><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/kafkajs-logoV2.svg" alt="KafkaJS"/><h2 class="headerTitleWithLogo">KafkaJS</h2></a><a href="/versions"><h3>1.15.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/getting-started" target="_self">Docs</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class=""><a href="https://github.com/tulios/kafkajs" target="_self">GitHub</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Usage</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Usage</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/introduction">Intro to Kafka</a></li><li class="navListItem"><a class="navItem" href="/docs/getting-started">Getting Started</a></li><li class="navListItem"><a class="navItem" href="/docs/configuration">Client Configuration</a></li><li class="navListItem"><a class="navItem" href="/docs/producing">Producing Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/transactions">Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/consuming">Consuming Messages</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/admin">Admin Client</a></li><li class="navListItem"><a class="navItem" href="/docs/instrumentation-events">Instrumentation Events</a></li><li class="navListItem"><a class="navItem" href="/docs/custom-logger">Custom Logger</a></li><li class="navListItem"><a class="navItem" href="/docs/retry-detailed">Retry Mechanism Explained</a></li><li class="navListItem"><a class="navItem" href="/docs/faq">FAQ</a></li><li class="navListItem"><a class="navItem" href="/docs/pre-releases">Pre-releases</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Examples</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/running-kafka-in-development">Running Kafka in Development</a></li><li class="navListItem"><a class="navItem" href="/docs/producer-example">Producer</a></li><li class="navListItem"><a class="navItem" href="/docs/consumer-example">Consumer</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Developing KafkaJS</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/contribution-guide">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/development-environment">Development Environment</a></li><li class="navListItem"><a class="navItem" href="/docs/testing">Testing</a></li><li class="navListItem"><a class="navItem" href="/docs/development-resources">Resources</a></li></ul></div></div></section></div><script>
             var coll = document.getElementsByClassName('collapsible');
             var checkActiveCategory = true;
             for (var i = 0; i < coll.length; i++) {
@@ -125,7 +125,7 @@ The method will throw exceptions in case of errors.</p>
 <pre><code class="hljs css language-javascript">{
     <span class="hljs-attr">topic</span>: &lt;String&gt;,
     count: &lt;Number&gt;,     // partition count
-    assignments: &lt;Array&lt;Array&lt;Number&gt;&gt;&gt; // Example: [[0,1],[1,2],[2,0]] 
+    assignments: &lt;Array&lt;Array&lt;Number&gt;&gt;&gt; // Example: [[0,1],[1,2],[2,0]]
 }
 </code></pre>
 <table>
@@ -189,7 +189,26 @@ The method will throw exceptions in case of errors.</p>
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="a-name-fetch-offsets-a-fetch-consumer-group-offsets"></a><a href="#a-name-fetch-offsets-a-fetch-consumer-group-offsets" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="fetch-offsets"></a> Fetch consumer group offsets</h2>
 <p><code>fetchOffsets</code> returns the consumer group offset for a topic.</p>
-<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.fetchOffsets({ groupId, topic })
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.fetchOffsets({ groupId, topic, })
+<span class="hljs-comment">// [</span>
+<span class="hljs-comment">//   { partition: 0, offset: '31004' },</span>
+<span class="hljs-comment">//   { partition: 1, offset: '54312' },</span>
+<span class="hljs-comment">//   { partition: 2, offset: '32103' },</span>
+<span class="hljs-comment">//   { partition: 3, offset: '28' },</span>
+<span class="hljs-comment">// ]</span>
+</code></pre>
+<p>Include the optional <code>resolveOffsets</code> flag to resolve the offsets without having to start a consumer, useful when fetching directly after calling <a href="#a-name-reset-offsets-a-reset-consumer-group-offsets">resetOffets</a>:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.resetOffsets({ groupId, topic })
+<span class="hljs-keyword">await</span> admin.fetchOffsets({ groupId, topic, <span class="hljs-attr">resolveOffsets</span>: <span class="hljs-literal">false</span> })
+<span class="hljs-comment">// [</span>
+<span class="hljs-comment">//   { partition: 0, offset: '-1' },</span>
+<span class="hljs-comment">//   { partition: 1, offset: '-1' },</span>
+<span class="hljs-comment">//   { partition: 2, offset: '-1' },</span>
+<span class="hljs-comment">//   { partition: 3, offset: '-1' },</span>
+<span class="hljs-comment">// ]</span>
+
+<span class="hljs-keyword">await</span> admin.resetOffsets({ groupId, topic })
+<span class="hljs-keyword">await</span> admin.fetchOffsets({ groupId, topic, <span class="hljs-attr">resolveOffsets</span>: <span class="hljs-literal">true</span> })
 <span class="hljs-comment">// [</span>
 <span class="hljs-comment">//   { partition: 0, offset: '31004' },</span>
 <span class="hljs-comment">//   { partition: 1, offset: '54312' },</span>
@@ -253,39 +272,39 @@ for monitoring or operations, and is usually not relevant for typical event proc
 </code></pre>
 <p><code>ResourceConfigQuery</code> structure:</p>
 <pre><code class="hljs css language-javascript">{
-    <span class="hljs-attr">type</span>: &lt;ResourceType&gt;,
+    <span class="hljs-attr">type</span>: &lt;ConfigResourceType&gt;,
     name: &lt;String&gt;,
     configNames: &lt;String[]&gt;
 }
 </code></pre>
 <p>Returning all configs for a given resource:</p>
-<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { ResourceTypes } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { ConfigResourceTypes } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
 
 <span class="hljs-keyword">await</span> admin.describeConfigs({
   <span class="hljs-attr">includeSynonyms</span>: <span class="hljs-literal">false</span>,
   <span class="hljs-attr">resources</span>: [
     {
-      <span class="hljs-attr">type</span>: ResourceTypes.TOPIC,
+      <span class="hljs-attr">type</span>: ConfigResourceTypes.TOPIC,
       <span class="hljs-attr">name</span>: <span class="hljs-string">'topic-name'</span>
     }
   ]
 })
 </code></pre>
 <p>Returning specific configs for a given resource:</p>
-<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { ResourceTypes } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { ConfigResourceTypes } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
 
 <span class="hljs-keyword">await</span> admin.describeConfigs({
   <span class="hljs-attr">includeSynonyms</span>: <span class="hljs-literal">false</span>,
   <span class="hljs-attr">resources</span>: [
     {
-      <span class="hljs-attr">type</span>: ResourceTypes.TOPIC,
+      <span class="hljs-attr">type</span>: ConfigResourceTypes.TOPIC,
       <span class="hljs-attr">name</span>: <span class="hljs-string">'topic-name'</span>,
       <span class="hljs-attr">configNames</span>: [<span class="hljs-string">'cleanup.policy'</span>]
     }
   ]
 })
 </code></pre>
-<p>Take a look at <a href="https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js">resourceTypes</a> for a complete list of resources.</p>
+<p>Take a look at <a href="https://github.com/tulios/kafkajs/blob/master/src/protocol/configResourceTypes.js">configResourceTypes</a> for a complete list of resources.</p>
 <p>Example response:</p>
 <pre><code class="hljs css language-javascript">{
     <span class="hljs-attr">resources</span>: [
@@ -306,6 +325,7 @@ for monitoring or operations, and is usually not relevant for typical event proc
     <span class="hljs-attr">throttleTime</span>: <span class="hljs-number">0</span>
 }
 </code></pre>
+<p><em>NOTE:</em> <a href="https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js">resourceTypes</a> is deprecated as it mistakenly  has the ACL resource types instead of the config resource types.</p>
 <h2><a class="anchor" aria-hidden="true" id="a-name-alter-configs-a-alter-configs"></a><a href="#a-name-alter-configs-a-alter-configs" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="alter-configs"></a> Alter configs</h2>
 <p>Update the configuration for the specified resources.</p>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.alterConfigs({
@@ -315,7 +335,7 @@ for monitoring or operations, and is usually not relevant for typical event proc
 </span></code></pre>
 <p><code>ResourceConfig</code> structure:</p>
 <pre><code class="hljs css language-javascript">{
-    <span class="hljs-attr">type</span>: &lt;ResourceType&gt;,
+    <span class="hljs-attr">type</span>: &lt;ConfigResourceType&gt;,
     name: &lt;String&gt;,
     configEntries: &lt;ResourceConfigEntry[]&gt;
 }
@@ -327,17 +347,17 @@ for monitoring or operations, and is usually not relevant for typical event proc
 }
 </code></pre>
 <p>Example:</p>
-<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { ResourceTypes } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { ConfigResourceTypes } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
 
 <span class="hljs-keyword">await</span> admin.alterConfigs({
     <span class="hljs-attr">resources</span>: [{
-        <span class="hljs-attr">type</span>: ResourceTypes.TOPIC,
+        <span class="hljs-attr">type</span>: ConfigResourceTypes.TOPIC,
         <span class="hljs-attr">name</span>: <span class="hljs-string">'topic-name'</span>,
         <span class="hljs-attr">configEntries</span>: [{ <span class="hljs-attr">name</span>: <span class="hljs-string">'cleanup.policy'</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">'compact'</span> }]
     }]
 })
 </code></pre>
-<p>Take a look at <a href="https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js">resourceTypes</a> for a complete list of resources.</p>
+<p>Take a look at <a href="https://github.com/tulios/kafkajs/blob/master/src/protocol/configResourceTypes.js">configResourceTypes</a> for a complete list of resources.</p>
 <p>Example response:</p>
 <pre><code class="hljs css language-javascript">{
     <span class="hljs-attr">resources</span>: [{
@@ -349,6 +369,7 @@ for monitoring or operations, and is usually not relevant for typical event proc
     <span class="hljs-attr">throttleTime</span>: <span class="hljs-number">0</span>,
 }
 </code></pre>
+<p><em>NOTE:</em> <a href="https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js">resourceTypes</a> is deprecated as it mistakenly  has the ACL resource types instead of the config resource types.</p>
 <h2><a class="anchor" aria-hidden="true" id="a-name-list-groups-a-list-groups"></a><a href="#a-name-list-groups-a-list-groups" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="list-groups"></a> List groups</h2>
 <p>List groups available on the broker.</p>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.listGroups()
@@ -407,7 +428,138 @@ it allows you to describe multiple groups and does not require you to have a con
   <span class="hljs-comment">// }]</span>
 }
 </code></pre>
-</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/consuming"><span class="arrow-prev">← </span><span>Consuming Messages</span></a><a class="docs-next button" href="/docs/instrumentation-events"><span>Instrumentation Events</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#list-topics">List topics</a></li><li><a href="#create-topics">Create topics</a></li><li><a href="#delete-topics">Delete topics</a></li><li><a href="#create-partitions">Create partitions</a></li><li><a href="#get-topic-metadata">Get topic metadata</a></li><li><a href="#fetch-topic-metadata">Fetch topic metadata</a></li><li><a href="#fetch-topic-offsets">Fetch topic offsets</a></li><li><a href="#fetch-topic-offsets-by-timestamp">Fetch topic offsets by timestamp</a></li><li><a href="#fetch-consumer-group-offsets">Fetch consumer group offsets</a></li><li><a href="#reset-consumer-group-offsets">Reset consumer group offsets</a></li><li><a href="#set-consumer-group-offsets">Set consumer group offsets</a></li><li><a href="#reset-consumer-group-offsets-by-timestamp">Reset consumer group offsets by timestamp</a></li><li><a href="#describe-cluster">Describe cluster</a></li><li><a href="#describe-configs">Describe configs</a></li><li><a href="#alter-configs">Alter configs</a></li><li><a href="#list-groups">List groups</a></li><li><a href="#describe-groups">Describe groups</a></li><li><a href="#delete-groups">Delete groups</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/kafkajs-logoV2.svg" alt="KafkaJS" width="52" height="84"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Usage</a></div><div><h5>Community</h5><a href="https://kafkajs-slackin.herokuapp.com">Slack</a></div><div><h5>More</h5><a href="https://github.com/tulios/kafkajs">GitHub</a><a class="github-button" href="https://github.com/tulios/kafkajs" data-icon="octicon-star" data-count-href="/tulios/kafkajs/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><a href="https://badge.fury.io/js/kafkajs"><img src="https://badge.fury.io/js/kafkajs.svg" alt="npm version" height="18"/></a></div></section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+<h2><a class="anchor" aria-hidden="true" id="a-name-delete-topic-records-a-delete-topic-records"></a><a href="#a-name-delete-topic-records-a-delete-topic-records" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="delete-topic-records"></a> Delete Topic Records</h2>
+<p>Delete records for a selected topic. This will delete all records from the earliest offset up to - but not including - the provided target offset for the given partition(s). To delete all records in a partition, use a target offset of <code>-1</code>.</p>
+<p>Note that you cannot delete records in an arbitrary range (it will always be from the earliest available offset)</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.deleteTopicRecords({
+    <span class="hljs-attr">topic</span>: &lt;String&gt;,
+    partitions: &lt;SeekEntry[]&gt;,
+})
+</code></pre>
+<p>Example:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.deleteTopicRecords({
+    <span class="hljs-attr">topic</span>: <span class="hljs-string">'custom-topic'</span>,
+    <span class="hljs-attr">partitions</span>: [
+        { <span class="hljs-attr">partition</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">offset</span>: <span class="hljs-string">'30'</span> }, <span class="hljs-comment">// delete up to and including offset 29</span>
+        { <span class="hljs-attr">partition</span>: <span class="hljs-number">3</span>, <span class="hljs-attr">offset</span>: <span class="hljs-string">'-1'</span> }, <span class="hljs-comment">// delete all available records on this partition</span>
+    ]
+})
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-create-acl-a-create-acl"></a><a href="#a-name-create-acl-a-create-acl" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="create-acl"></a> Create ACL</h2>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> {
+  AclResourceTypes,
+  AclOperationTypes,
+  AclPermissionTypes,
+  ResourcePatternTypes,
+} = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+
+<span class="hljs-keyword">const</span> acl = [
+  {
+    <span class="hljs-attr">resourceType</span>: AclResourceTypes.TOPIC,
+    <span class="hljs-attr">resourceName</span>: <span class="hljs-string">'topic-name'</span>,
+    <span class="hljs-attr">resourcePatternType</span>: ResourcePatternTypes.LITERAL,
+    <span class="hljs-attr">principal</span>: <span class="hljs-string">'User:bob'</span>,
+    <span class="hljs-attr">host</span>: <span class="hljs-string">'*'</span>,
+    <span class="hljs-attr">operation</span>: AclOperationTypes.ALL,
+    <span class="hljs-attr">permissionType</span>: AclPermissionTypes.DENY,
+  },
+  {
+    <span class="hljs-attr">resourceType</span>: AclResourceTypes.TOPIC,
+    <span class="hljs-attr">resourceName</span>: <span class="hljs-string">'topic-name'</span>,
+    <span class="hljs-attr">resourcePatternType</span>: ResourcePatternTypes.LITERAL,
+    <span class="hljs-attr">principal</span>: <span class="hljs-string">'User:alice'</span>,
+    <span class="hljs-attr">host</span>: <span class="hljs-string">'*'</span>,
+    <span class="hljs-attr">operation</span>: AclOperationTypes.ALL,
+    <span class="hljs-attr">permissionType</span>: AclPermissionTypes.ALLOW,
+  },
+]
+
+<span class="hljs-keyword">await</span> admin.createAcls({ acl })
+</code></pre>
+<p>Be aware that the security features might be disabled in your cluster. In that case, the operation will throw an error:</p>
+<pre><code class="hljs css language-sh">KafkaJSProtocolError: Security features are disabled
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-delete-acl-a-delete-acl"></a><a href="#a-name-delete-acl-a-delete-acl" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="delete-acl"></a> Delete ACL</h2>
+<pre><code class="hljs css language-javascript">const {
+  AclResourceTypes,
+  AclOperationTypes,
+  AclPermissionTypes,
+  ResourcePatternTypes,
+} = require('kafkajs')
+
+const acl = {
+  resourceName: 'topic-name,
+  resourceType: AclResourceTypes.TOPIC,
+  host: '*',
+  permissionType: AclPermissionTypes.ALLOW,
+  operation: AclOperationTypes.ANY,
+  resourcePatternType: ResourcePatternTypes.LITERAL,
+}
+
+await admin.deleteAcls({ filters: [acl] })
+// {
+//   filterResponses: [
+//     {
+//     errorCode: 0,
+//     errorMessage: null,
+//     matchingAcls: [
+//         {
+//         errorCode: 0,
+//         errorMessage: null,
+//         resourceType: AclResourceTypes.TOPIC,
+//         resourceName: 'topic-name',
+//         resourcePatternType: ResourcePatternTypes.LITERAL,
+//         principal: 'User:alice',
+//         host: '*',
+//         operation: AclOperationTypes.ALL,
+//         permissionType: AclPermissionTypes.ALLOW,
+//         },
+//     ],
+//     },
+//   ],
+// }
+</code></pre>
+<p>Be aware that the security features might be disabled in your cluster. In that case, the operation will throw an error:</p>
+<pre><code class="hljs css language-sh">KafkaJSProtocolError: Security features are disabled
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-describe-acl-a-describe-acl"></a><a href="#a-name-describe-acl-a-describe-acl" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="describe-acl"></a> Describe ACL</h2>
+<pre><code class="hljs css language-javascript">const {
+  AclResourceTypes,
+  AclOperationTypes,
+  AclPermissionTypes,
+  ResourcePatternTypes,
+} = require('kafkajs')
+
+await admin.describeAcls({
+  resourceName: 'topic-name,
+  resourceType: AclResourceTypes.TOPIC,
+  host: '*',
+  permissionType: AclPermissionTypes.ALLOW,
+  operation: AclOperationTypes.ANY,
+  resourcePatternTypeFilter: ResourcePatternTypes.LITERAL,
+})
+// {
+//   resources: [
+//     {
+//       resourceType: AclResourceTypes.TOPIC,
+//       resourceName: 'topic-name,
+//       resourcePatternType: ResourcePatternTypes.LITERAL,
+//       acls: [
+//         {
+//           principal: 'User:alice',
+//           host: '*',
+//           operation: AclOperationTypes.ALL,
+//           permissionType: AclPermissionTypes.ALLOW,
+//         },
+//       ],
+//     },
+//   ],
+// }
+</code></pre>
+<p>Be aware that the security features might be disabled in your cluster. In that case, the operation will throw an error:</p>
+<pre><code class="hljs css language-sh">KafkaJSProtocolError: Security features are disabled
+</code></pre>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/consuming"><span class="arrow-prev">← </span><span>Consuming Messages</span></a><a class="docs-next button" href="/docs/instrumentation-events"><span>Instrumentation Events</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#list-topics">List topics</a></li><li><a href="#create-topics">Create topics</a></li><li><a href="#delete-topics">Delete topics</a></li><li><a href="#create-partitions">Create partitions</a></li><li><a href="#get-topic-metadata">Get topic metadata</a></li><li><a href="#fetch-topic-metadata">Fetch topic metadata</a></li><li><a href="#fetch-topic-offsets">Fetch topic offsets</a></li><li><a href="#fetch-topic-offsets-by-timestamp">Fetch topic offsets by timestamp</a></li><li><a href="#fetch-consumer-group-offsets">Fetch consumer group offsets</a></li><li><a href="#reset-consumer-group-offsets">Reset consumer group offsets</a></li><li><a href="#set-consumer-group-offsets">Set consumer group offsets</a></li><li><a href="#reset-consumer-group-offsets-by-timestamp">Reset consumer group offsets by timestamp</a></li><li><a href="#describe-cluster">Describe cluster</a></li><li><a href="#describe-configs">Describe configs</a></li><li><a href="#alter-configs">Alter configs</a></li><li><a href="#list-groups">List groups</a></li><li><a href="#describe-groups">Describe groups</a></li><li><a href="#delete-groups">Delete groups</a></li><li><a href="#delete-topic-records">Delete Topic Records</a></li><li><a href="#create-acl">Create ACL</a></li><li><a href="#delete-acl">Delete ACL</a></li><li><a href="#describe-acl">Describe ACL</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/kafkajs-logoV2.svg" alt="KafkaJS" width="52" height="84"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Usage</a></div><div><h5>Community</h5><a href="https://kafkajs-slackin.herokuapp.com">Slack</a></div><div><h5>More</h5><a href="https://github.com/tulios/kafkajs">GitHub</a><a class="github-button" href="https://github.com/tulios/kafkajs" data-icon="octicon-star" data-count-href="/tulios/kafkajs/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><a href="https://badge.fury.io/js/kafkajs"><img src="https://badge.fury.io/js/kafkajs.svg" alt="npm version" height="18"/></a></div></section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
                   if (e.target !== document.body) {
                     return;
