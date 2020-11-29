@@ -106,10 +106,11 @@ module.exports = ({
   }
 
   /**
-   * @param {array} topics
-   * @param {boolean} [validateOnly=false]
-   * @param {number} [timeout=5000]
-   * @param {boolean} [waitForLeaders=true]
+   * @param {Object} request
+   * @param {array} request.topics
+   * @param {boolean} [request.validateOnly=false]
+   * @param {number} [request.timeout=5000]
+   * @param {boolean} [request.waitForLeaders=true]
    * @return {Promise}
    */
   const createTopics = async ({ topics, validateOnly, timeout, waitForLeaders = true }) => {

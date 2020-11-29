@@ -12,12 +12,14 @@ const hasBrokerBeenReplaced = (broker, { host, port, rack }) =>
 
 module.exports = class BrokerPool {
   /**
-   * @param {ConnectionBuilder} connectionBuilder
-   * @param {Logger} logger
-   * @param {Object} retry
-   * @param {number} authenticationTimeout
-   * @param {number} reauthenticationThreshold
-   * @param {number} metadataMaxAge
+   * @param {object} options
+   * @param {import("./connectionBuilder").ConnectionBuilder} options.connectionBuilder
+   * @param {import("../../types").Logger} options.logger
+   * @param {import("../../types").RetryOptions} [options.retry]
+   * @param {boolean} [options.allowAutoTopicCreation]
+   * @param {number} [options.authenticationTimeout]
+   * @param {number} [options.reauthenticationThreshold]
+   * @param {number} [options.metadataMaxAge]
    */
   constructor({
     connectionBuilder,
@@ -43,6 +45,9 @@ module.exports = class BrokerPool {
       })
 
     this.brokers = {}
+    /** @type {Broker | undefined} */
+    this.seedBroker = undefined
+    /** @type {import("../../types").BrokerMetadata | null} */
     this.metadata = null
     this.metadataExpireAt = null
     this.versions = null
@@ -123,8 +128,9 @@ module.exports = class BrokerPool {
 
   /**
    * @public
-   * @param {String} host
-   * @param {Number} port
+   * @param {Object} destination
+   * @param {string} destination.host
+   * @param {number} destination.port
    */
   removeBroker({ host, port }) {
     const removedBroker = values(this.brokers).find(
@@ -214,7 +220,7 @@ module.exports = class BrokerPool {
   }
 
   /**
-   * Only refreshes metadata if the data is stale according to the `metadataMaxAge` param
+   * Only refreshes metadata if the data is stale according to the `metadataMaxAge` param or does not contain information about the provided topics
    *
    * @public
    * @param {Array<String>} topics
@@ -236,7 +242,8 @@ module.exports = class BrokerPool {
 
   /**
    * @public
-   * @param {string} nodeId
+   * @param {object} options
+   * @param {string} options.nodeId
    * @returns {Promise<Broker>}
    */
   async findBroker({ nodeId }) {
@@ -252,8 +259,9 @@ module.exports = class BrokerPool {
 
   /**
    * @public
-   * @param {Promise<{ nodeId<String>, broker<Broker> }>} callback
-   * @returns {Promise<null>}
+   * @param {(params: { nodeId: string, broker: Broker }) => Promise<T>} callback
+   * @returns {Promise<T>}
+   * @template T
    */
   async withBroker(callback) {
     const brokers = shuffle(keys(this.brokers))
