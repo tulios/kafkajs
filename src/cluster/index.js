@@ -62,8 +62,7 @@ module.exports = class Cluster {
   }) {
     this.rootLogger = rootLogger
     this.logger = rootLogger.namespace('Cluster')
-    this.retry = { ...retry }
-    this.retrier = createRetry(this.retry)
+    this.retrier = createRetry(retry)
     this.connectionBuilder = connectionBuilder({
       logger: rootLogger,
       instrumentationEmitter,
