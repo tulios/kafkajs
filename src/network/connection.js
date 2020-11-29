@@ -10,26 +10,29 @@ const { CONNECTION_STATUS, CONNECTED_STATUS } = require('./connectionStatus')
 const requestInfo = ({ apiName, apiKey, apiVersion }) =>
   `${apiName}(key: ${apiKey}, version: ${apiVersion})`
 
-/**
- * @param {string} host
- * @param {number} port
- * @param {Object} logger
- * @param {string} clientId='kafkajs'
- * @param {number} requestTimeout The maximum amount of time the client will wait for the response of a request,
- *                                in milliseconds
- * @param {string} [rack=null]
- * @param {Object} [ssl=null] Options for the TLS Secure Context. It accepts all options,
- *                            usually "cert", "key" and "ca". More information at
- *                            https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options
- * @param {Object} [sasl=null] Attributes used for SASL authentication. Options based on the
- *                             key "mechanism". Connection is not actively using the SASL attributes
- *                             but acting as a data object for this information
- * @param {number} [connectionTimeout=1000] The connection timeout, in milliseconds
- * @param {number} [maxInFlightRequests=null] The maximum number of unacknowledged requests on a connection before
- *                                            enqueuing
- * @param {InstrumentationEventEmitter} [instrumentationEmitter=null]
- */
 module.exports = class Connection {
+  /**
+   * @param {Object} options
+   * @param {string} options.host
+   * @param {number} options.port
+   * @param {import("../../types").Logger} options.logger
+   * @param {import("../../types").ISocketFactory} options.socketFactory
+   * @param {string} [options.clientId='kafkajs']
+   * @param {number} options.requestTimeout The maximum amount of time the client will wait for the response of a request,
+   *                                in milliseconds
+   * @param {string} [options.rack=null]
+   * @param {Object} [options.ssl=null] Options for the TLS Secure Context. It accepts all options,
+   *                            usually "cert", "key" and "ca". More information at
+   *                            https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options
+   * @param {Object} [options.sasl=null] Attributes used for SASL authentication. Options based on the
+   *                             key "mechanism". Connection is not actively using the SASL attributes
+   *                             but acting as a data object for this information
+   * @param {number} [options.connectionTimeout=1000] The connection timeout, in milliseconds
+   * @param {boolean} [options.enforceRequestTimeout]
+   * @param {number} [options.maxInFlightRequests=null] The maximum number of unacknowledged requests on a connection before
+   *                                            enqueuing
+   * @param {import("../instrumentation/emitter")} [options.instrumentationEmitter=null]
+   */
   constructor({
     host,
     port,

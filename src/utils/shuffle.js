@@ -1,3 +1,8 @@
+/**
+ * @param {T[]} array
+ * @returns T[]
+ * @template T
+ */
 module.exports = array => {
   if (!Array.isArray(array)) {
     throw new TypeError("'array' is not an array")
