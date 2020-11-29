@@ -1,7 +1,5 @@
-const BrokerPool = require('./brokerPool')
 const Lock = require('../utils/lock')
 const createRetry = require('../retry')
-const connectionBuilder = require('./connectionBuilder')
 const flatten = require('../utils/flatten')
 const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
 const {
@@ -23,61 +21,24 @@ const mergeTopics = (obj, { topic, partitions }) => ({
 module.exports = class Cluster {
   /**
    * @param {Object} options
-   * @param {Array<string>} options.brokers example: ['127.0.0.1:9092', '127.0.0.1:9094']
-   * @param {Object} options.ssl
-   * @param {Object} options.sasl
-   * @param {string} options.clientId
-   * @param {number} options.connectionTimeout - in milliseconds
-   * @param {number} options.authenticationTimeout - in milliseconds
-   * @param {number} options.reauthenticationThreshold - in milliseconds
-   * @param {number} [options.requestTimeout=30000] - in milliseconds
-   * @param {boolean} [options.enforceRequestTimeout]
-   * @param {number} options.metadataMaxAge - in milliseconds
-   * @param {boolean} options.allowAutoTopicCreation
-   * @param {number} options.maxInFlightRequests
    * @param {number} options.isolationLevel
+   * @param {number} [options.requestTimeout=30000] - in milliseconds
    * @param {import("../../types").RetryOptions} options.retry
    * @param {import("../../types").Logger} options.logger
-   * @param {import("../../types").ISocketFactory} options.socketFactory
    * @param {Map} [options.offsets]
-   * @param {import("../instrumentation/emitter")} [options.instrumentationEmitter=null]
+   * @param {import("./brokerPool")} options.brokerPool
    */
   constructor({
     logger: rootLogger,
-    socketFactory,
-    brokers,
-    ssl,
-    sasl,
-    clientId,
-    connectionTimeout,
-    authenticationTimeout,
-    reauthenticationThreshold,
     requestTimeout = 30000,
-    enforceRequestTimeout,
-    metadataMaxAge,
     retry,
-    allowAutoTopicCreation,
-    maxInFlightRequests,
     isolationLevel,
-    instrumentationEmitter = null,
     offsets = new Map(),
+    brokerPool,
   }) {
     this.rootLogger = rootLogger
     this.logger = rootLogger.namespace('Cluster')
     this.retrier = createRetry(retry)
-    this.connectionBuilder = connectionBuilder({
-      logger: rootLogger,
-      instrumentationEmitter,
-      socketFactory,
-      brokers,
-      ssl,
-      sasl,
-      clientId,
-      connectionTimeout,
-      requestTimeout,
-      enforceRequestTimeout,
-      maxInFlightRequests,
-    })
 
     this.targetTopics = new Set()
     this.mutatingTargetTopics = new Lock({
@@ -85,15 +46,7 @@ module.exports = class Cluster {
       timeout: requestTimeout,
     })
     this.isolationLevel = isolationLevel
-    this.brokerPool = new BrokerPool({
-      connectionBuilder: this.connectionBuilder,
-      logger: this.rootLogger,
-      retry,
-      allowAutoTopicCreation,
-      authenticationTimeout,
-      reauthenticationThreshold,
-      metadataMaxAge,
-    })
+    this.brokerPool = brokerPool
     this.committedOffsetsByGroup = offsets
   }
 

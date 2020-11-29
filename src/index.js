@@ -3,9 +3,13 @@ const {
   LEVELS: { INFO },
 } = require('./loggers')
 
+const { KafkaJSNonRetriableError } = require('./errors')
+
 const InstrumentationEventEmitter = require('./instrumentation/emitter')
 const LoggerConsole = require('./loggers/console')
 const Cluster = require('./cluster')
+const BrokerPool = require('./cluster/brokerPool')
+const createConnectionBuilder = require('./cluster/connectionBuilder')
 const createProducer = require('./producer')
 const createConsumer = require('./consumer')
 const createAdmin = require('./admin')
@@ -13,6 +17,8 @@ const ISOLATION_LEVEL = require('./protocol/isolationLevel')
 const defaultSocketFactory = require('./network/socketFactory')
 
 const PRIVATE = {
+  ACQUIRE_BROKERPOOL: Symbol('private:Kafka:acquireBrokerPool'),
+  CREATE_BROKERPOOL: Symbol('private:Kafka:createBrokerPool'),
   CREATE_CLUSTER: Symbol('private:Kafka:createCluster'),
   CLUSTER_RETRY: Symbol('private:Kafka:clusterRetry'),
   LOGGER: Symbol('private:Kafka:logger'),
@@ -54,33 +60,85 @@ module.exports = class Client {
     this[PRIVATE.OFFSETS] = new Map()
     this[PRIVATE.LOGGER] = createLogger({ level: logLevel, logCreator })
     this[PRIVATE.CLUSTER_RETRY] = retry
-    this[PRIVATE.CREATE_CLUSTER] = ({
-      metadataMaxAge,
+    this[PRIVATE.CREATE_BROKERPOOL] = ({
+      metadataMaxAge = DEFAULT_METADATA_MAX_AGE,
       allowAutoTopicCreation = true,
       maxInFlightRequests = null,
       instrumentationEmitter = null,
-      isolationLevel,
-    }) =>
-      new Cluster({
+    }) => {
+      const connectionBuilder = createConnectionBuilder({
         logger: this[PRIVATE.LOGGER],
         retry: this[PRIVATE.CLUSTER_RETRY],
-        offsets: this[PRIVATE.OFFSETS],
+        instrumentationEmitter,
         socketFactory,
         brokers,
         ssl,
         sasl,
         clientId,
         connectionTimeout,
-        authenticationTimeout,
-        reauthenticationThreshold,
         requestTimeout,
         enforceRequestTimeout,
-        metadataMaxAge,
-        instrumentationEmitter,
-        allowAutoTopicCreation,
         maxInFlightRequests,
-        isolationLevel,
       })
+      return new BrokerPool({
+        logger: this[PRIVATE.LOGGER],
+        retry: this[PRIVATE.CLUSTER_RETRY],
+        connectionBuilder,
+        allowAutoTopicCreation,
+        authenticationTimeout,
+        reauthenticationThreshold,
+        metadataMaxAge,
+      })
+    }
+    this[PRIVATE.ACQUIRE_BROKERPOOL] = ({
+      connectionPool,
+      instrumentationEmitter,
+      ...connectionPoolOptions
+    }) => {
+      if (
+        connectionPool &&
+        Object.values(connectionPoolOptions).some(value => typeof value !== 'undefined')
+      ) {
+        // XXX: We could compare against the actual options of the provided pool ...
+        throw new KafkaJSNonRetriableError(
+          'Cannot provide both connectionPool and connection pool creation options'
+        )
+      }
+
+      /** @type {BrokerPool} */
+      let brokerPool
+      if (connectionPool) {
+        brokerPool = connectionPool
+        if (instrumentationEmitter) {
+          brokerPool.forwardInstrumentationEvents(instrumentationEmitter)
+        }
+      } else {
+        brokerPool = this[PRIVATE.CREATE_BROKERPOOL]({
+          ...connectionPoolOptions,
+          instrumentationEmitter,
+        })
+      }
+      return brokerPool
+    }
+    this[PRIVATE.CREATE_CLUSTER] = ({
+      isolationLevel,
+      connectionPool,
+      instrumentationEmitter,
+      ...connectionPoolOptions
+    }) => {
+      const brokerPool = this[PRIVATE.ACQUIRE_BROKERPOOL]({
+        connectionPool,
+        instrumentationEmitter,
+        ...connectionPoolOptions,
+      })
+      return new Cluster({
+        logger: this[PRIVATE.LOGGER],
+        retry: this[PRIVATE.CLUSTER_RETRY],
+        offsets: this[PRIVATE.OFFSETS],
+        isolationLevel,
+        brokerPool,
+      })
+    }
   }
 
   /**
@@ -89,12 +147,13 @@ module.exports = class Client {
   producer({
     createPartitioner,
     retry,
-    metadataMaxAge = DEFAULT_METADATA_MAX_AGE,
+    metadataMaxAge,
     allowAutoTopicCreation,
     idempotent,
     transactionalId,
     transactionTimeout,
     maxInFlightRequests,
+    connectionPool,
   } = {}) {
     const instrumentationEmitter = new InstrumentationEventEmitter()
     const cluster = this[PRIVATE.CREATE_CLUSTER]({
@@ -102,6 +161,7 @@ module.exports = class Client {
       allowAutoTopicCreation,
       maxInFlightRequests,
       instrumentationEmitter,
+      connectionPool,
     })
 
     return createProducer({
@@ -122,7 +182,7 @@ module.exports = class Client {
   consumer({
     groupId,
     partitionAssigners,
-    metadataMaxAge = DEFAULT_METADATA_MAX_AGE,
+    metadataMaxAge,
     sessionTimeout,
     rebalanceTimeout,
     heartbeatInterval,
@@ -135,6 +195,7 @@ module.exports = class Client {
     maxInFlightRequests,
     readUncommitted = false,
     rackId = '',
+    connectionPool,
   } = {}) {
     const isolationLevel = readUncommitted
       ? ISOLATION_LEVEL.READ_UNCOMMITTED
@@ -147,6 +208,7 @@ module.exports = class Client {
       maxInFlightRequests,
       isolationLevel,
       instrumentationEmitter,
+      connectionPool,
     })
 
     return createConsumer({
@@ -192,5 +254,19 @@ module.exports = class Client {
    */
   logger() {
     return this[PRIVATE.LOGGER]
+  }
+
+  connectionPool({
+    metadataMaxAge = DEFAULT_METADATA_MAX_AGE,
+    allowAutoTopicCreation = true,
+    maxInFlightRequests = null,
+  }) {
+    const instrumentationEmitter = new InstrumentationEventEmitter()
+    return this[PRIVATE.CREATE_BROKERPOOL]({
+      metadataMaxAge,
+      allowAutoTopicCreation,
+      maxInFlightRequests,
+      instrumentationEmitter,
+    })
   }
 }

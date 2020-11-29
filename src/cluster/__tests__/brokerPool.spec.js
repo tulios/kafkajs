@@ -212,115 +212,121 @@ describe('Cluster > BrokerPool', () => {
   })
 
   describe('#refreshMetadata', () => {
+    const CASES = [() => [], () => [topicName]]
+
     beforeEach(async () => {
       await brokerPool.connect()
     })
 
-    it('updates the metadata object', async () => {
-      expect(brokerPool.metadata).toEqual(null)
-      await brokerPool.refreshMetadata([topicName])
-      expect(brokerPool.metadata).not.toEqual(null)
-    })
+    CASES.forEach(getTopics => {
+      describe(`with ${getTopics().length} topics`, () => {
+        it('updates the metadata object', async () => {
+          expect(brokerPool.metadata).toEqual(null)
+          await brokerPool.refreshMetadata(getTopics())
+          expect(brokerPool.metadata).not.toEqual(null)
+        })
 
-    it('updates the list of brokers', async () => {
-      expect(brokerPool.brokers).toEqual({})
-      await brokerPool.refreshMetadata([topicName])
-      expect(Object.keys(brokerPool.brokers).sort()).toEqual(['0', '1', '2'])
-      expect(Object.values(brokerPool.brokers)).toEqual(
-        expect.arrayContaining([expect.any(Broker), expect.any(Broker), expect.any(Broker)])
-      )
-    })
+        it('updates the list of brokers', async () => {
+          expect(brokerPool.brokers).toEqual({})
+          await brokerPool.refreshMetadata(getTopics())
+          expect(Object.keys(brokerPool.brokers).sort()).toEqual(['0', '1', '2'])
+          expect(Object.values(brokerPool.brokers)).toEqual(
+            expect.arrayContaining([expect.any(Broker), expect.any(Broker), expect.any(Broker)])
+          )
+        })
 
-    it('includes the seed broker into the broker pool', async () => {
-      await brokerPool.refreshMetadata([topicName])
-      const seed = brokerPool.seedBroker.connection
-      const brokers = Object.values(brokerPool.brokers)
-      const seedFromBrokerPool = brokers
-        .map(b => b.connection)
-        .find(b => b.host === seed.host && b.port === seed.port)
+        it('includes the seed broker into the broker pool', async () => {
+          await brokerPool.refreshMetadata(getTopics())
+          const seed = brokerPool.seedBroker.connection
+          const brokers = Object.values(brokerPool.brokers)
+          const seedFromBrokerPool = brokers
+            .map(b => b.connection)
+            .find(b => b.host === seed.host && b.port === seed.port)
 
-      expect(seedFromBrokerPool).toEqual(seed)
-    })
+          expect(seedFromBrokerPool).toEqual(seed)
+        })
 
-    it('cleans up unused brokers', async () => {
-      await brokerPool.refreshMetadata([topicName])
+        it('cleans up unused brokers', async () => {
+          await brokerPool.refreshMetadata(getTopics())
 
-      const nodeId = 'fakebroker'
-      const fakeBroker = new Broker({
-        connection: createConnection(),
-        logger: newLogger(),
-      })
+          const nodeId = 'fakebroker'
+          const fakeBroker = new Broker({
+            connection: createConnection(),
+            logger: newLogger(),
+          })
 
-      jest.spyOn(fakeBroker, 'disconnect')
-      brokerPool.brokers[nodeId] = fakeBroker
-      expect(Object.keys(brokerPool.brokers)).toEqual(['0', '1', '2', 'fakebroker'])
+          jest.spyOn(fakeBroker, 'disconnect')
+          brokerPool.brokers[nodeId] = fakeBroker
+          expect(Object.keys(brokerPool.brokers)).toEqual(['0', '1', '2', 'fakebroker'])
 
-      await brokerPool.refreshMetadata([topicName])
+          await brokerPool.refreshMetadata(getTopics())
 
-      expect(fakeBroker.disconnect).toHaveBeenCalled()
-      expect(Object.keys(brokerPool.brokers)).toEqual(['0', '1', '2'])
-    })
+          expect(fakeBroker.disconnect).toHaveBeenCalled()
+          expect(Object.keys(brokerPool.brokers)).toEqual(['0', '1', '2'])
+        })
 
-    it('retries on LEADER_NOT_AVAILABLE errors', async () => {
-      const leaderNotAvailableError = new KafkaJSProtocolError({
-        message: 'LEADER_NOT_AVAILABLE',
-        type: 'LEADER_NOT_AVAILABLE',
-        code: 5,
-      })
+        it('retries on LEADER_NOT_AVAILABLE errors', async () => {
+          const leaderNotAvailableError = new KafkaJSProtocolError({
+            message: 'LEADER_NOT_AVAILABLE',
+            type: 'LEADER_NOT_AVAILABLE',
+            code: 5,
+          })
 
-      brokerPool.findConnectedBroker = jest.fn(() => brokerPool.seedBroker)
-      jest.spyOn(brokerPool.seedBroker, 'metadata').mockImplementationOnce(() => {
-        throw leaderNotAvailableError
-      })
+          brokerPool.findConnectedBroker = jest.fn(() => brokerPool.seedBroker)
+          jest.spyOn(brokerPool.seedBroker, 'metadata').mockImplementationOnce(() => {
+            throw leaderNotAvailableError
+          })
 
-      expect(brokerPool.metadata).toEqual(null)
-      await brokerPool.refreshMetadata([topicName])
-      expect(brokerPool.metadata).not.toEqual(null)
-    })
+          expect(brokerPool.metadata).toEqual(null)
+          await brokerPool.refreshMetadata(getTopics())
+          expect(brokerPool.metadata).not.toEqual(null)
+        })
 
-    describe('when replacing nodeIds with different host/port/rack', () => {
-      let lastBroker
+        describe('when replacing nodeIds with different host/port/rack', () => {
+          let lastBroker
 
-      beforeEach(async () => {
-        await brokerPool.refreshMetadata([topicName])
-        lastBroker = brokerPool.brokers[Object.keys(brokerPool.brokers).length - 1]
-        jest.spyOn(brokerPool, 'findConnectedBroker').mockImplementation(() => lastBroker)
-      })
+          beforeEach(async () => {
+            await brokerPool.refreshMetadata(getTopics())
+            lastBroker = brokerPool.brokers[Object.keys(brokerPool.brokers).length - 1]
+            jest.spyOn(brokerPool, 'findConnectedBroker').mockImplementation(() => lastBroker)
+          })
 
-      it('replaces the broker when the host change', async () => {
-        jest.spyOn(lastBroker, 'metadata').mockImplementationOnce(() => ({
-          ...brokerPool.metadata,
-          brokers: brokerPool.metadata.brokers.map(broker =>
-            broker.nodeId === 0 ? { ...broker, host: '0.0.0.0' } : broker
-          ),
-        }))
+          it('replaces the broker when the host changes', async () => {
+            jest.spyOn(lastBroker, 'metadata').mockImplementationOnce(() => ({
+              ...brokerPool.metadata,
+              brokers: brokerPool.metadata.brokers.map(broker =>
+                broker.nodeId === 0 ? { ...broker, host: '0.0.0.0' } : broker
+              ),
+            }))
 
-        await brokerPool.refreshMetadata([topicName])
-        expect(brokerPool.brokers[0].connection.host).toEqual('0.0.0.0')
-      })
+            await brokerPool.refreshMetadata(getTopics())
+            expect(brokerPool.brokers[0].connection.host).toEqual('0.0.0.0')
+          })
 
-      it('replaces the broker when the port change', async () => {
-        jest.spyOn(lastBroker, 'metadata').mockImplementationOnce(() => ({
-          ...brokerPool.metadata,
-          brokers: brokerPool.metadata.brokers.map(broker =>
-            broker.nodeId === 0 ? { ...broker, port: 4321 } : broker
-          ),
-        }))
+          it('replaces the broker when the port changes', async () => {
+            jest.spyOn(lastBroker, 'metadata').mockImplementationOnce(() => ({
+              ...brokerPool.metadata,
+              brokers: brokerPool.metadata.brokers.map(broker =>
+                broker.nodeId === 0 ? { ...broker, port: 4321 } : broker
+              ),
+            }))
 
-        await brokerPool.refreshMetadata([topicName])
-        expect(brokerPool.brokers[0].connection.port).toEqual(4321)
-      })
+            await brokerPool.refreshMetadata(getTopics())
+            expect(brokerPool.brokers[0].connection.port).toEqual(4321)
+          })
 
-      it('replaces the broker when the rack change', async () => {
-        jest.spyOn(lastBroker, 'metadata').mockImplementationOnce(() => ({
-          ...brokerPool.metadata,
-          brokers: brokerPool.metadata.brokers.map(broker =>
-            broker.nodeId === 0 ? { ...broker, rack: 'south-1' } : broker
-          ),
-        }))
+          it('replaces the broker when the rack changes', async () => {
+            jest.spyOn(lastBroker, 'metadata').mockImplementationOnce(() => ({
+              ...brokerPool.metadata,
+              brokers: brokerPool.metadata.brokers.map(broker =>
+                broker.nodeId === 0 ? { ...broker, rack: 'south-1' } : broker
+              ),
+            }))
 
-        await brokerPool.refreshMetadata([topicName])
-        expect(brokerPool.brokers[0].connection.rack).toEqual('south-1')
+            await brokerPool.refreshMetadata(getTopics())
+            expect(brokerPool.brokers[0].connection.rack).toEqual('south-1')
+          })
+        })
       })
     })
   })

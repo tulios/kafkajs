@@ -226,7 +226,8 @@ kafka.consumer({
   maxWaitTimeInMs: <Number>,
   retry: <Object>,
   maxInFlightRequests: <Number>,
-  rackId: <String>
+  rackId: <String>,
+  connectionPool: <ConnectionPool>
 })
 ```
 
@@ -246,6 +247,7 @@ kafka.consumer({
 | readUncommitted        | Configures the consumer isolation level. If `false` (default), the consumer will not return any transactional messages which were not committed.                                                                                                                                                                                                   | `false`                           |
 | maxInFlightRequests | Max number of requests that may be in progress at any time. If falsey then no limit.                                    | `null` _(no limit)_ |
 | rackId                 | Configure the "rack" in which the consumer resides to enable [follower fetching](#follower-fetching)                 | `null` _(fetch from the leader always)_ |
+| connectionPool         | Configure a shared [connection pool](ConnectionPooling.md)                                                           | `null` _(use independent connections for this consumer)_ |
 
 ## <a name="pause-resume"></a> Pause & Resume
 

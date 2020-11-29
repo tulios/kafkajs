@@ -11,6 +11,7 @@
       "instrumentation-events",
       "custom-logger",
       "retry-detailed",
+      "connection-pooling",
       "faq",
       "pre-releases"
     ],

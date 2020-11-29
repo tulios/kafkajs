@@ -6,6 +6,7 @@ const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 const Cluster = require('../src/cluster')
 const waitFor = require('../src/utils/waitFor')
+const BrokerPool = require('../src/cluster/brokerPool')
 const connectionBuilder = require('../src/cluster/connectionBuilder')
 const Connection = require('../src/network/connection')
 const defaultSocketFactory = require('../src/network/socketFactory')
@@ -171,8 +172,15 @@ const createConnectionBuilder = (opts = {}, brokers = plainTextBrokers()) => {
   })
 }
 
+const createBrokerPool = (opts = {}, brokers = plainTextBrokers()) =>
+  new BrokerPool({
+    logger: newLogger(),
+    connectionBuilder: createConnectionBuilder({ ...opts }, brokers),
+    ...opts,
+  })
+
 const createCluster = (opts = {}, brokers = plainTextBrokers()) =>
-  new Cluster(Object.assign(connectionOpts(), opts, { brokers }))
+  new Cluster({ logger: newLogger(), brokerPool: createBrokerPool({ ...opts }, brokers), ...opts })
 
 const createModPartitioner = () => ({ partitionMetadata, message }) => {
   const numPartitions = partitionMetadata.length
@@ -347,6 +355,7 @@ module.exports = {
   saslEntries,
   createConnection,
   createConnectionBuilder,
+  createBrokerPool,
   createCluster,
   createModPartitioner,
   plainTextBrokers,

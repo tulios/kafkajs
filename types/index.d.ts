@@ -12,6 +12,7 @@ export class Kafka {
   consumer(config?: ConsumerConfig): Consumer
   admin(config?: AdminConfig): Admin
   logger(): Logger
+  connectionPool(config?: ConnectionPoolConfig): ConnectionPool
 }
 
 export type BrokersFunction = () => string[] | Promise<string[]>
@@ -57,16 +58,15 @@ export type SASLMechanism = keyof SASLMechanismOptionsMap
 type SASLMechanismOptions<T> = T extends SASLMechanism ? { mechanism: T } & SASLMechanismOptionsMap[T] : never
 export type SASLOptions = SASLMechanismOptions<SASLMechanism>
 
-export interface ProducerConfig {
+export interface BaseProducerConfig {
   createPartitioner?: ICustomPartitioner
   retry?: RetryOptions
-  metadataMaxAge?: number
-  allowAutoTopicCreation?: boolean
   idempotent?: boolean
   transactionalId?: string
   transactionTimeout?: number
-  maxInFlightRequests?: number
 }
+
+export type ProducerConfig = BaseProducerConfig & (ConnectionPoolConfig | { connectionPool: ConnectionPool })
 
 export interface Message {
   key?: Buffer | string | null
@@ -104,10 +104,9 @@ export interface IHeaders {
   [key: string]: Buffer | string | undefined
 }
 
-export interface ConsumerConfig {
+export interface BaseConsumerConfig {
   groupId: string
   partitionAssigners?: PartitionAssigner[]
-  metadataMaxAge?: number
   sessionTimeout?: number
   rebalanceTimeout?: number
   heartbeatInterval?: number
@@ -116,11 +115,11 @@ export interface ConsumerConfig {
   maxBytes?: number
   maxWaitTimeInMs?: number
   retry?: RetryOptions & { restartOnFailure?: (err: Error) => Promise<boolean> }
-  allowAutoTopicCreation?: boolean
-  maxInFlightRequests?: number
   readUncommitted?: boolean
   rackId?: string
 }
+
+export type ConsumerConfig = BaseConsumerConfig & (ConnectionPoolConfig | { connectionPool?: ConnectionPool })
 
 export type PartitionAssigner = (config: { cluster: Cluster }) => Assigner
 
@@ -889,6 +888,16 @@ export var CompressionCodecs: {
   [CompressionTypes.Snappy]: () => any
   [CompressionTypes.LZ4]: () => any
   [CompressionTypes.ZSTD]: () => any
+}
+
+export interface ConnectionPoolConfig {
+  metadataMaxAge?: number
+  allowAutoTopicCreation?: boolean
+  maxInFlightRequests?: number
+}
+
+export interface ConnectionPool {
+  // No exported interface
 }
 
 export class KafkaJSError extends Error {
