@@ -12,19 +12,14 @@ Save the following file as `docker-compose.yml` in the root of your project.
 ```yml
 version: '2'
 services:
-  zookeeper:
-    image: wurstmeister/zookeeper:latest
-    ports:
-      - "2181:2181"
   kafka:
-    image: wurstmeister/kafka:2.11-1.1.1
+    image: spotify/kafka
     ports:
       - "9092:9092"
-    links:
-      - zookeeper
+      - "2181:2181"
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: ${HOST_IP}
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      ADVERTISED_HOST: ${HOST_IP}
+      ADVERTISED_PORT: 9092
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
       KAFKA_CREATE_TOPICS: "topic-test:1:1"
