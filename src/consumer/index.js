@@ -256,7 +256,7 @@ module.exports = ({
         cluster.removeBroker({ host: e.host, port: e.port })
       }
 
-      await disconnect()
+      await stop()
 
       const isErrorRetriable = e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true
       const shouldRestart =
