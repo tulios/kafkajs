@@ -170,7 +170,6 @@ const createConnectionBuilder = (opts = {}, brokers = plainTextBrokers()) => {
     sasl,
     clientId,
     connectionTimeout: 1000,
-    retry: null,
   })
 }
 

@@ -11,7 +11,6 @@ module.exports = ({
   enforceRequestTimeout,
   connectionTimeout,
   maxInFlightRequests,
-  retry,
   logger,
   instrumentationEmitter = null,
 }) => {
@@ -74,7 +73,6 @@ module.exports = ({
         enforceRequestTimeout,
         maxInFlightRequests,
         instrumentationEmitter,
-        retry,
         logger,
       })
     },
