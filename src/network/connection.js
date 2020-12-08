@@ -1,4 +1,3 @@
-const createRetry = require('../retry')
 const createSocket = require('./socket')
 const createRequest = require('../protocol/request')
 const Decoder = require('../protocol/decoder')
@@ -26,8 +25,6 @@ const requestInfo = ({ apiName, apiKey, apiVersion }) =>
  *                             key "mechanism". Connection is not actively using the SASL attributes
  *                             but acting as a data object for this information
  * @param {number} [connectionTimeout=1000] The connection timeout, in milliseconds
- * @param {Object} [retry=null] Configurations for the built-in retry mechanism. More information at the
- *                              retry module inside network
  * @param {number} [maxInFlightRequests=null] The maximum number of unacknowledged requests on a connection before
  *                                            enqueuing
  * @param {InstrumentationEventEmitter} [instrumentationEmitter=null]
@@ -47,7 +44,6 @@ module.exports = class Connection {
     enforceRequestTimeout = false,
     maxInFlightRequests = null,
     instrumentationEmitter = null,
-    retry = {},
   }) {
     this.host = host
     this.port = port
@@ -60,8 +56,6 @@ module.exports = class Connection {
     this.ssl = ssl
     this.sasl = sasl
 
-    this.retry = retry
-    this.retrier = createRetry({ ...this.retry })
     this.requestTimeout = requestTimeout
     this.connectionTimeout = connectionTimeout
 

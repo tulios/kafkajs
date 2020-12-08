@@ -75,7 +75,6 @@ module.exports = class Cluster {
       requestTimeout,
       enforceRequestTimeout,
       maxInFlightRequests,
-      retry,
     })
 
     this.targetTopics = new Set()
