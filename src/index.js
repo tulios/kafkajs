@@ -50,7 +50,7 @@ module.exports = class Client {
     connectionTimeout,
     authenticationTimeout,
     reauthenticationThreshold,
-    requestTimeout,
+    requestTimeout = 30000,
     enforceRequestTimeout = false,
     retry,
     socketFactory = defaultSocketFactory(),
@@ -136,6 +136,7 @@ module.exports = class Client {
         retry: this[PRIVATE.CLUSTER_RETRY],
         offsets: this[PRIVATE.OFFSETS],
         isolationLevel,
+        targetTopicsLockTimeout: requestTimeout,
         brokerPool,
       })
     }

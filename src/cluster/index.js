@@ -22,7 +22,7 @@ module.exports = class Cluster {
   /**
    * @param {Object} options
    * @param {number} options.isolationLevel
-   * @param {number} [options.requestTimeout=30000] - in milliseconds
+   * @param {number} [options.targetTopicsLockTimeout=30000] - in milliseconds
    * @param {import("../../types").RetryOptions} options.retry
    * @param {import("../../types").Logger} options.logger
    * @param {Map} [options.offsets]
@@ -30,7 +30,7 @@ module.exports = class Cluster {
    */
   constructor({
     logger: rootLogger,
-    requestTimeout = 30000,
+    targetTopicsLockTimeout = 30000,
     retry,
     isolationLevel,
     offsets = new Map(),
@@ -43,7 +43,7 @@ module.exports = class Cluster {
     this.targetTopics = new Set()
     this.mutatingTargetTopics = new Lock({
       description: `updating target topics`,
-      timeout: requestTimeout,
+      timeout: targetTopicsLockTimeout,
     })
     this.isolationLevel = isolationLevel
     this.brokerPool = brokerPool
