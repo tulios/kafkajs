@@ -61,6 +61,12 @@ module.exports = class BrokerPool {
     this.pendingMetadataTopicRejects = {}
     /** @type {Promise<void>} */
     this.nextSuccessfulRefreshMetadata = undefined
+
+    /**
+     * Handles for clusters that currently are connected
+     * @type {Set<number>}
+     */
+    this.connectedClusters = new Set()
   }
 
   /**
@@ -88,9 +94,14 @@ module.exports = class BrokerPool {
 
   /**
    * @public
+   * @param {number} [clusterHandle]
    * @returns {Promise<null>}
    */
-  async connect() {
+  async connect(clusterHandle) {
+    if (clusterHandle) {
+      this.connectedClusters.add(clusterHandle)
+    }
+
     if (this.hasConnectedBrokers()) {
       return
     }
@@ -123,9 +134,17 @@ module.exports = class BrokerPool {
 
   /**
    * @public
+   * @param {number} [clusterHandle]
    * @returns {Promise}
    */
-  async disconnect() {
+  async disconnect(clusterHandle) {
+    if (clusterHandle) {
+      this.connectedClusters.delete(clusterHandle)
+    }
+    if (this.connectedClusters.size > 0) {
+      // Other clusters are connected, ignore the call
+      return
+    }
     this.seedBroker && (await this.seedBroker.disconnect())
     await Promise.all(values(this.brokers).map(broker => broker.disconnect()))
 

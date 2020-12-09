@@ -18,6 +18,11 @@ const mergeTopics = (obj, { topic, partitions }) => ({
   [topic]: [...(obj[topic] || []), ...partitions],
 })
 
+/**
+ * Handle to use for the next cluster created
+ */
+let nextClusterHandle = 0
+
 module.exports = class Cluster {
   /**
    * @param {Object} options
@@ -47,10 +52,12 @@ module.exports = class Cluster {
     })
     this.isolationLevel = isolationLevel
     this.brokerPool = brokerPool
+    this.clusterHandle = nextClusterHandle++
     this.committedOffsetsByGroup = offsets
   }
 
   isConnected() {
+    // XXX: Would this also mean "... and consider me one of the stakeholders?"
     return this.brokerPool.hasConnectedBrokers()
   }
 
@@ -59,7 +66,7 @@ module.exports = class Cluster {
    * @returns {Promise<void>}
    */
   async connect() {
-    await this.brokerPool.connect()
+    await this.brokerPool.connect(this.clusterHandle)
   }
 
   /**
@@ -67,7 +74,7 @@ module.exports = class Cluster {
    * @returns {Promise<void>}
    */
   async disconnect() {
-    await this.brokerPool.disconnect()
+    await this.brokerPool.disconnect(this.clusterHandle)
   }
 
   /**
