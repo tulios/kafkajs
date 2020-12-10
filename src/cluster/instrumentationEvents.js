@@ -4,8 +4,6 @@ const InstrumentationEventType = require('../instrumentation/eventType')
 const connectionPoolType = InstrumentationEventType('connectionPool')
 
 const events = {
-  CONNECT: connectionPoolType('connect'),
-  DISCONNECT: connectionPoolType('disconnect'),
   REQUEST: connectionPoolType(networkEvents.NETWORK_REQUEST),
   REQUEST_TIMEOUT: connectionPoolType(networkEvents.NETWORK_REQUEST_TIMEOUT),
   REQUEST_QUEUE_SIZE: connectionPoolType(networkEvents.NETWORK_REQUEST_QUEUE_SIZE),
