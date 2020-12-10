@@ -8,6 +8,7 @@ const { KafkaJSNonRetriableError } = require('./errors')
 const InstrumentationEventEmitter = require('./instrumentation/emitter')
 const LoggerConsole = require('./loggers/console')
 const Cluster = require('./cluster')
+const ConnectionPool = require('./cluster/connectionPool')
 const BrokerPool = require('./cluster/brokerPool')
 const createConnectionBuilder = require('./cluster/connectionBuilder')
 const createProducer = require('./producer')
@@ -60,12 +61,15 @@ module.exports = class Client {
     this[PRIVATE.OFFSETS] = new Map()
     this[PRIVATE.LOGGER] = createLogger({ level: logLevel, logCreator })
     this[PRIVATE.CLUSTER_RETRY] = retry
-    this[PRIVATE.CREATE_BROKERPOOL] = ({
-      metadataMaxAge = DEFAULT_METADATA_MAX_AGE,
-      allowAutoTopicCreation = true,
-      maxInFlightRequests = null,
-      instrumentationEmitter = null,
-    }) => {
+    this[PRIVATE.CREATE_BROKERPOOL] = (
+      {
+        metadataMaxAge = DEFAULT_METADATA_MAX_AGE,
+        allowAutoTopicCreation = true,
+        maxInFlightRequests = null,
+        instrumentationEmitter = null,
+      },
+      BrokerPoolType = BrokerPool
+    ) => {
       const connectionBuilder = createConnectionBuilder({
         logger: this[PRIVATE.LOGGER],
         retry: this[PRIVATE.CLUSTER_RETRY],
@@ -80,7 +84,7 @@ module.exports = class Client {
         enforceRequestTimeout,
         maxInFlightRequests,
       })
-      return new BrokerPool({
+      return new BrokerPoolType({
         logger: this[PRIVATE.LOGGER],
         retry: this[PRIVATE.CLUSTER_RETRY],
         connectionBuilder,
@@ -88,6 +92,7 @@ module.exports = class Client {
         authenticationTimeout,
         reauthenticationThreshold,
         metadataMaxAge,
+        instrumentationEmitter,
       })
     }
     this[PRIVATE.ACQUIRE_BROKERPOOL] = ({
@@ -263,11 +268,14 @@ module.exports = class Client {
     maxInFlightRequests = null,
   }) {
     const instrumentationEmitter = new InstrumentationEventEmitter()
-    return this[PRIVATE.CREATE_BROKERPOOL]({
-      metadataMaxAge,
-      allowAutoTopicCreation,
-      maxInFlightRequests,
-      instrumentationEmitter,
-    })
+    return this[PRIVATE.CREATE_BROKERPOOL](
+      {
+        metadataMaxAge,
+        allowAutoTopicCreation,
+        maxInFlightRequests,
+        instrumentationEmitter,
+      },
+      ConnectionPool
+    )
   }
 }
