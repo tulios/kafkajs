@@ -25,7 +25,7 @@ const { CONNECT, DISCONNECT } = events
  * @param {boolean} [params.idempotent]
  * @param {string} [params.transactionalId]
  * @param {number} [params.transactionTimeout]
- * @param {import('../instrumentation/emitter')} [params.instrumentationEmitter]
+ * @param {InstrumentationEventEmitter} [params.instrumentationEmitter]
  *
  * @returns {import('../../types').Producer}
  */

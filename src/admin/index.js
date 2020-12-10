@@ -65,7 +65,7 @@ const indexByPartition = array =>
  *
  * @param {Object} params
  * @param {import("../../types").Logger} params.logger
- * @param {import('../instrumentation/emitter')} [params.instrumentationEmitter]
+ * @param {InstrumentationEventEmitter} [params.instrumentationEmitter]
  * @param {import('../../types').RetryOptions} params.retry
  * @param {import("../../types").Cluster} params.cluster
  *

@@ -39,7 +39,7 @@ const specialOffsets = [
  * @param {number} [params.maxWaitTimeInMs]
  * @param {number} [params.isolationLevel]
  * @param {string} [params.rackId]
- * @param {import('../instrumentation/emitter')} [params.instrumentationEmitter]
+ * @param {InstrumentationEventEmitter} [params.instrumentationEmitter]
  * @param {number} params.metadataMaxAge
  *
  * @returns {import("../../types").Consumer}

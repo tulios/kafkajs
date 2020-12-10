@@ -110,7 +110,7 @@ module.exports = class RequestQueue extends EventEmitter {
 
   /**
    * @typedef {Object} PushedRequest
-   * @property {RequestEntry} entry
+   * @property {import("./socketRequest").RequestEntry} entry
    * @property {boolean} expectResponse
    * @property {Function} sendRequest
    * @property {number} [requestTimeout]
@@ -184,9 +184,10 @@ module.exports = class RequestQueue extends EventEmitter {
 
   /**
    * @public
-   * @param {number} correlationId
-   * @param {Buffer} payload
-   * @param {number} size
+   * @param {object} response
+   * @param {number} response.correlationId
+   * @param {Buffer} response.payload
+   * @param {number} response.size
    */
   fulfillRequest({ correlationId, payload, size }) {
     const socketRequest = this.inflight.get(correlationId)

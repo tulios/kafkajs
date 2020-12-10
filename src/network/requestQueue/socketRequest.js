@@ -47,7 +47,7 @@ module.exports = class SocketRequest {
    * @param {RequestEntry} options.entry
    * @param {boolean} options.expectResponse
    * @param {Function} options.send
-   * @param {number} options.timeout
+   * @param {() => void} options.timeout
    * @param {import("../../instrumentation/emitter")} [options.instrumentationEmitter=null]
    */
   constructor({
