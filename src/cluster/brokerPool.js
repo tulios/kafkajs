@@ -95,7 +95,7 @@ module.exports = class BrokerPool {
   /**
    * @public
    * @param {number} [clusterHandle]
-   * @returns {Promise<null>}
+   * @returns {Promise<void>}
    */
   async connect(clusterHandle) {
     if (clusterHandle) {
