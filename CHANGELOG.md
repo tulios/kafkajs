@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2020-11-24
+### Added
+  - Initial work for static membership #888
+  - Add consumer instrumentation event: received unsubscribed topics #897
+  - Add option for `admin.fetchOffsets` to resolve the offsets #895
+  - Add ACL functions to admin client #697
+  - Add `admin.deleteTopicRecords` #905
+  - Emit `GROUP_JOIN` event on stale partition assignments #937
+
+### Changed
+  - Added properties to error classes typescript types #900
+  - Make header value type definition possibly undefined #927
+  - Bump API versions for client-side throttling #933
+  - Add `UNKNOWN_TOPIC_OR_PARTITION` check for `addMultipleTargetTopics` #938
+
+### Fixed
+  - Fix describe/alter broker configs (introduced `ConfigResourceTypes`) #898
+  - Fix record batch compression masking (fix ZSTD compression) #912
+  - Prevent inflight's correlation id collisions #926
+  - Fix ACL, ISocketFactory and SaslOptions type definitions #941 #959 #966
+  - Fix deadlock on the connection `onError` handler #944
+  - Fix deadlock on the connection `onTimeout ` handler #956
+  - Remove nested retriers from producer #962 (fixes #958 #950)
+
 ## [1.14.0] - 2020-09-21
 ### Added
   - Support Produce v6 protocol #869

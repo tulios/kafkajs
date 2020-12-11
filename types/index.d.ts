@@ -41,18 +41,21 @@ export interface ISocketFactoryArgs {
 
 export type ISocketFactory = (args: ISocketFactoryArgs) => net.Socket
 
-export type SASLMechanism = 'plain' | 'scram-sha-256' | 'scram-sha-512' | 'aws' | 'oauthbearer'
-
 export interface OauthbearerProviderResponse {
   value: string
 }
 
-export interface SASLOptions {
-  mechanism: SASLMechanism
-  username?: string
-  password?: string
-  oauthBearerProvider?: () => Promise<OauthbearerProviderResponse>
+type SASLMechanismOptionsMap = {
+  'plain': { username: string, password: string },
+  'scram-sha-256': { username: string, password: string },
+  'scram-sha-512': { username: string, password: string },
+  'aws': { authorizationIdentity: string, accessKeyId: string, secretAccessKey: string, sessionToken?: string },
+  'oauthbearer': { oauthBearerProvider: () => Promise<OauthbearerProviderResponse> }
 }
+
+export type SASLMechanism = keyof SASLMechanismOptionsMap
+type SASLMechanismOptions<T> = T extends SASLMechanism ? { mechanism: T } & SASLMechanismOptionsMap[T] : never
+export type SASLOptions = SASLMechanismOptions<SASLMechanism>
 
 export interface ProducerConfig {
   createPartitioner?: ICustomPartitioner
@@ -837,7 +840,7 @@ export type Consumer = {
   stop(): Promise<void>
   run(config?: ConsumerRunConfig): Promise<void>
   commitOffsets(topicPartitions: Array<TopicPartitionOffsetAndMetadata>): Promise<void>
-  seek(topicPartition: { topic: string; partition: number; offset: string }): void
+  seek(topicPartition: { topic: string; partition: number; offset: number | string }): void
   describeGroup(): Promise<GroupDescription>
   pause(topics: Array<{ topic: string; partitions?: number[] }>): void
   paused(): TopicPartitions[]

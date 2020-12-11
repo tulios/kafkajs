@@ -20,12 +20,12 @@ const decodeMessages = async decoder => {
   const magicByte = messagesBuffer.slice(MAGIC_OFFSET).readInt8(0)
 
   if (magicByte === MAGIC_BYTE) {
-    let records = []
+    const records = []
 
     while (messagesDecoder.canReadBytes(RECORD_BATCH_OVERHEAD)) {
       try {
         const recordBatch = await RecordBatchDecoder(messagesDecoder)
-        records = [...records, ...recordBatch.records]
+        records.push(...recordBatch.records)
       } catch (e) {
         // The tail of the record batches can have incomplete records
         // due to how maxBytes works. See https://cwiki.apache.org/confluence/display/KAFKA/A+Guide+To+The+Kafka+Protocol#AGuideToTheKafkaProtocol-FetchAPI
