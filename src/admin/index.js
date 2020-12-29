@@ -428,6 +428,82 @@ module.exports = ({
 
   /**
    * @param {string} groupId
+   * @param {string[]]} topics
+   * @param {boolean} [resolveOffsets=false]
+   * @return {Promise}
+   */
+  const fetchConsumerGroupOffsets = async ({ groupId, topics, resolveOffsets = false }) => {
+    if (!groupId) {
+      throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
+    }
+
+    const coordinator = await cluster.findGroupCoordinator({ groupId })
+
+    let consumerOffsets
+    if (topics.length) {
+      const topicsToFetch = Promise.all(
+        topics.map(async topic => {
+          const partitions = await findTopicPartitions(cluster, topic)
+          const partitionsToFetch = partitions.map(partition => ({ partition }))
+          return { topic, partitions: partitionsToFetch }
+        })
+      )
+      const { responses } = await coordinator.offsetFetch({
+        groupId,
+        topicsToFetch,
+      })
+      consumerOffsets = responses
+    } else {
+      const { responses } = await coordinator.offsetFetch({ groupId })
+      consumerOffsets = responses
+    }
+
+    if (resolveOffsets) {
+      consumerOffsets = Promise.all(
+        consumerOffsets.map(async ({ topic, partitions }) => {
+          const indexedOffsets = indexByPartition(await fetchTopicOffsets(topic))
+          const recalculatedPartitions = partitions.map(({ offset, partition, ...props }) => {
+            let resolvedOffset = offset
+            if (Number(offset) === EARLIEST_OFFSET) {
+              resolvedOffset = indexedOffsets[partition].low
+            }
+            if (Number(offset) === LATEST_OFFSET) {
+              resolvedOffset = indexedOffsets[partition].high
+            }
+            return {
+              partition,
+              offset: resolvedOffset,
+              ...props,
+            }
+          })
+
+          return {
+            topic,
+            partitions: recalculatedPartitions,
+          }
+        })
+      )
+
+      await Promise.all(
+        consumerOffsets.map(({ topic, partitions }) => setOffsets({ groupId, topic, partitions }))
+      )
+    }
+
+    return consumerOffsets
+      .filter(response => !topics.length || response.topic in topics)
+      .map(({ topic, partitions }) => {
+        const completePartitions = partitions.map(({ partition, offset, metadata }) => ({
+          partition,
+          offset,
+          metadata: metadata || null,
+        }))
+
+        return { topic, partitions: completePartitions }
+      })
+  }
+
+  /**
+   * @param {string} groupId
    * @param {string} topic
    * @param {boolean} [earliest=false]
    * @return {Promise}
@@ -1459,6 +1535,7 @@ module.exports = ({
     describeCluster,
     events,
     fetchOffsets,
+    fetchConsumerGroupOffsets,
     fetchTopicOffsets,
     fetchTopicOffsetsByTimestamp,
     setOffsets,
