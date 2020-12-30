@@ -33,9 +33,9 @@ export interface KafkaConfig {
 }
 
 export interface ISocketFactoryArgs {
-  host: string,
-  port: number,
-  ssl: tls.ConnectionOptions,
+  host: string
+  port: number
+  ssl: tls.ConnectionOptions
   onConnect: () => void
 }
 
@@ -46,15 +46,22 @@ export interface OauthbearerProviderResponse {
 }
 
 type SASLMechanismOptionsMap = {
-  'plain': { username: string, password: string },
-  'scram-sha-256': { username: string, password: string },
-  'scram-sha-512': { username: string, password: string },
-  'aws': { authorizationIdentity: string, accessKeyId: string, secretAccessKey: string, sessionToken?: string },
-  'oauthbearer': { oauthBearerProvider: () => Promise<OauthbearerProviderResponse> }
+  plain: { username: string; password: string }
+  'scram-sha-256': { username: string; password: string }
+  'scram-sha-512': { username: string; password: string }
+  aws: {
+    authorizationIdentity: string
+    accessKeyId: string
+    secretAccessKey: string
+    sessionToken?: string
+  }
+  oauthbearer: { oauthBearerProvider: () => Promise<OauthbearerProviderResponse> }
 }
 
 export type SASLMechanism = keyof SASLMechanismOptionsMap
-type SASLMechanismOptions<T> = T extends SASLMechanism ? { mechanism: T } & SASLMechanismOptionsMap[T] : never
+type SASLMechanismOptions<T> = T extends SASLMechanism
+  ? { mechanism: T } & SASLMechanismOptionsMap[T]
+  : never
 export type SASLOptions = SASLMechanismOptions<SASLMechanism>
 
 export interface ProducerConfig {
@@ -359,6 +366,11 @@ export interface SeekEntry {
   offset: string
 }
 
+export interface ConsumerGroupOffsets {
+  topic: string
+  partitions: Array<SeekEntry & { metadata: string | null }>
+}
+
 export interface Acl {
   principal: string
   host: string
@@ -440,6 +452,11 @@ export type Admin = {
     topic: string
     resolveOffsets?: boolean
   }): Promise<Array<SeekEntry & { metadata: string | null }>>
+  fetchConsumerGroupOffsets(options: {
+    groupId: string
+    topics: string[]
+    resolveOffsets?: boolean
+  }): Promise<Array<ConsumerGroupOffsets>>
   fetchTopicOffsets(topic: string): Promise<Array<SeekEntry & { high: string; low: string }>>
   fetchTopicOffsetsByTimestamp(topic: string, timestamp?: number): Promise<Array<SeekEntry>>
   describeCluster(): Promise<{
@@ -663,7 +680,13 @@ export type MemberDescription = {
 }
 
 // See https://github.com/apache/kafka/blob/2.4.0/clients/src/main/java/org/apache/kafka/common/ConsumerGroupState.java#L25
-export type ConsumerGroupState = 'Unknown' | 'PreparingRebalance' | 'CompletingRebalance' | 'Stable' | 'Dead' | 'Empty';
+export type ConsumerGroupState =
+  | 'Unknown'
+  | 'PreparingRebalance'
+  | 'CompletingRebalance'
+  | 'Stable'
+  | 'Dead'
+  | 'Empty'
 
 export type GroupDescription = {
   groupId: string
@@ -869,10 +892,10 @@ export var CompressionCodecs: {
 }
 
 export class KafkaJSError extends Error {
-  readonly message: Error["message"];
-  readonly name: string;
-  readonly retriable: boolean;
-  readonly helpUrl?: string;
+  readonly message: Error['message']
+  readonly name: string
+  readonly retriable: boolean
+  readonly helpUrl?: string
 
   constructor(e: Error | string, metadata?: KafkaJSErrorMetadata)
 }
@@ -882,36 +905,36 @@ export class KafkaJSNonRetriableError extends KafkaJSError {
 }
 
 export class KafkaJSProtocolError extends KafkaJSError {
-  readonly code: number;
-  readonly type: string;
+  readonly code: number
+  readonly type: string
   constructor(e: Error | string)
 }
 
 export class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
-  readonly topic: string;
-  readonly partition: number;
+  readonly topic: string
+  readonly partition: number
   constructor(e: Error | string, metadata?: KafkaJSOffsetOutOfRangeMetadata)
 }
 
 export class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
-  readonly stack: string;
-  readonly originalError: Error;
-  readonly retryCount: number;
-  readonly retryTime: number;
+  readonly stack: string
+  readonly originalError: Error
+  readonly retryCount: number
+  readonly retryTime: number
   constructor(e: Error | string, metadata?: KafkaJSNumberOfRetriesExceededMetadata)
 }
 
 export class KafkaJSConnectionError extends KafkaJSError {
-  readonly broker: string;
+  readonly broker: string
   constructor(e: Error | string, metadata?: KafkaJSConnectionErrorMetadata)
 }
 
 export class KafkaJSRequestTimeoutError extends KafkaJSError {
-  readonly broker: string;
-  readonly correlationId: number;
-  readonly createdAt: number;
-  readonly sentAt: number;
-  readonly pendingDuration: number;
+  readonly broker: string
+  readonly correlationId: number
+  readonly createdAt: number
+  readonly sentAt: number
+  readonly pendingDuration: number
   constructor(e: Error | string, metadata?: KafkaJSRequestTimeoutErrorMetadata)
 }
 
@@ -920,18 +943,18 @@ export class KafkaJSMetadataNotLoaded extends KafkaJSError {
 }
 
 export class KafkaJSTopicMetadataNotLoaded extends KafkaJSMetadataNotLoaded {
-  readonly topic: string;
+  readonly topic: string
   constructor(e: Error | string, metadata?: KafkaJSTopicMetadataNotLoadedMetadata)
 }
 
 export class KafkaJSStaleTopicMetadataAssignment extends KafkaJSError {
-  readonly topic: string;
-  readonly unknownPartitions: number;
+  readonly topic: string
+  readonly unknownPartitions: number
   constructor(e: Error | string, metadata?: KafkaJSStaleTopicMetadataAssignmentMetadata)
 }
 
 export class KafkaJSServerDoesNotSupportApiKey extends KafkaJSNonRetriableError {
-  readonly apiKey: number;
+  readonly apiKey: number
   readonly apiName: string
   constructor(e: Error | string, metadata?: KafkaJSServerDoesNotSupportApiKeyMetadata)
 }
@@ -969,7 +992,7 @@ export class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSError {
 }
 
 export class KafkaJSDeleteGroupsError extends KafkaJSError {
-  readonly groups: DeleteGroupsResult[];
+  readonly groups: DeleteGroupsResult[]
   constructor(e: Error | string, groups?: KafkaJSDeleteGroupsErrorGroups[])
 }
 
@@ -983,15 +1006,14 @@ export interface KafkaJSDeleteGroupsErrorGroups {
   error: KafkaJSError
 }
 
-
 export interface KafkaJSDeleteTopicRecordsErrorTopic {
-  topic: string,
+  topic: string
   partitions: KafkaJSDeleteTopicRecordsErrorPartition[]
 }
 
 export interface KafkaJSDeleteTopicRecordsErrorPartition {
-  partition: number;
-  offset: string;
+  partition: number
+  offset: string
   error: KafkaJSError
 }
 

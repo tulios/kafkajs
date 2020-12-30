@@ -13,15 +13,17 @@ const {
 } = require('testHelpers')
 
 describe('Admin', () => {
-  let admin, cluster, groupId, logger, topicName, anotherTopicName
+  let admin, cluster, groupId, logger, topicName, anotherTopicName, yetAnotherTopicName
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
     anotherTopicName = `another-topic-${secureRandom()}`
+    yetAnotherTopicName = `yet-another-topic-${secureRandom()}`
     groupId = `consumer-group-id-${secureRandom()}`
 
     await createTopic({ topic: topicName })
     await createTopic({ topic: anotherTopicName })
+    await createTopic({ topic: yetAnotherTopicName })
 
     logger = newLogger()
     cluster = createCluster()
@@ -34,18 +36,24 @@ describe('Admin', () => {
     admin && (await admin.disconnect())
   })
 
-  describe('fetchOffsets', () => {
+  describe('fetchConsumerGroupOffsets', () => {
     test('throws an error if the groupId is invalid', async () => {
-      await expect(admin.fetchOffsets({ groupId: null })).rejects.toHaveProperty(
+      await expect(admin.fetchConsumerGroupOffsets({ groupId: null })).rejects.toHaveProperty(
         'message',
         'Invalid groupId null'
       )
     })
 
+    test('throws an error if the topics argument is not a valid list', async () => {
+      await expect(
+        admin.fetchConsumerGroupOffsets({ groupId: 'groupId', topics: topicName })
+      ).rejects.toHaveProperty('message', `Expected topics array, got ${topicName}`)
+    })
+
     test('returns unresolved consumer group offsets', async () => {
-      const offsets = await admin.fetchOffsets({
+      const offsets = await admin.fetchConsumerGroupOffsets({
         groupId,
-        topic: topicName,
+        topics: [topicName],
       })
 
       expect(offsets).toEqual([
@@ -60,12 +68,14 @@ describe('Admin', () => {
         partitions: [{ partition: 0, offset: 13 }],
       })
 
-      const offsets = await admin.fetchOffsets({
+      const offsets = await admin.fetchConsumerGroupOffsets({
         groupId,
-        topic: topicName,
+        topics: [topicName],
       })
 
-      expect(offsets).toEqual([{ partition: 0, offset: '13', metadata: null }])
+      expect(offsets).toEqual([
+        { topic: topicName, partitions: [{ partition: 0, offset: '13', metadata: null }] },
+      ])
     })
 
     test('returns consumer group offsets for all topics', async () => {
@@ -77,16 +87,48 @@ describe('Admin', () => {
       await admin.setOffsets({
         groupId,
         topic: anotherTopicName,
+        partitions: [{ partition: 0, offset: 23 }],
+      })
+      await admin.setOffsets({
+        groupId,
+        topic: yetAnotherTopicName,
         partitions: [{ partition: 0, offset: 42 }],
       })
 
-      const offsets = await admin.fetchOffsets({
+      const offsets = await admin.fetchConsumerGroupOffsets({
         groupId,
       })
 
       expect(offsets).toEqual([
+        {
+          topic: yetAnotherTopicName,
+          partitions: [{ partition: 0, offset: '42', metadata: null }],
+        },
+        { topic: anotherTopicName, partitions: [{ partition: 0, offset: '23', metadata: null }] },
         { topic: topicName, partitions: [{ partition: 0, offset: '13', metadata: null }] },
+      ])
+    })
+
+    test('returns consumer group offsets for list of topics', async () => {
+      await admin.setOffsets({
+        groupId,
+        topic: topicName,
+        partitions: [{ partition: 0, offset: 13 }],
+      })
+      await admin.setOffsets({
+        groupId,
+        topic: anotherTopicName,
+        partitions: [{ partition: 0, offset: 42 }],
+      })
+
+      const offsets = await admin.fetchConsumerGroupOffsets({
+        groupId,
+        topics: [topicName, anotherTopicName],
+      })
+
+      expect(offsets).toEqual([
         { topic: anotherTopicName, partitions: [{ partition: 0, offset: '42', metadata: null }] },
+        { topic: topicName, partitions: [{ partition: 0, offset: '13', metadata: null }] },
       ])
     })
 
@@ -139,67 +181,85 @@ describe('Admin', () => {
       })
 
       test('no reset: returns latest *committed* consumer offsets', async () => {
-        const offsetsBeforeResolving = await admin.fetchOffsets({
+        const offsetsBeforeResolving = await admin.fetchConsumerGroupOffsets({
           groupId,
-          topic: topicName,
+          topics: [topicName],
         })
-        const offsetsUponResolving = await admin.fetchOffsets({
+        const offsetsUponResolving = await admin.fetchConsumerGroupOffsets({
           groupId,
-          topic: topicName,
+          topics: [topicName],
           resolveOffsets: true,
         })
-        const offsetsAfterResolving = await admin.fetchOffsets({
+        const offsetsAfterResolving = await admin.fetchConsumerGroupOffsets({
           groupId,
-          topic: topicName,
+          topics: [topicName],
         })
 
-        expect(offsetsBeforeResolving).toEqual([{ partition: 0, offset: '5', metadata: null }])
-        expect(offsetsUponResolving).toEqual([{ partition: 0, offset: '5', metadata: null }])
-        expect(offsetsAfterResolving).toEqual([{ partition: 0, offset: '5', metadata: null }])
+        expect(offsetsBeforeResolving).toEqual([
+          { topic: topicName, partitions: [{ partition: 0, offset: '5', metadata: null }] },
+        ])
+        expect(offsetsUponResolving).toEqual([
+          { topic: topicName, partitions: [{ partition: 0, offset: '5', metadata: null }] },
+        ])
+        expect(offsetsAfterResolving).toEqual([
+          { topic: topicName, partitions: [{ partition: 0, offset: '5', metadata: null }] },
+        ])
       })
 
       test('reset to latest: returns latest *topic* offsets after resolving', async () => {
         await admin.resetOffsets({ groupId, topic: topicName })
 
-        const offsetsBeforeResolving = await admin.fetchOffsets({
+        const offsetsBeforeResolving = await admin.fetchConsumerGroupOffsets({
           groupId,
-          topic: topicName,
+          topics: [topicName],
         })
-        const offsetsUponResolving = await admin.fetchOffsets({
+        const offsetsUponResolving = await admin.fetchConsumerGroupOffsets({
           groupId,
-          topic: topicName,
+          topics: [topicName],
           resolveOffsets: true,
         })
-        const offsetsAfterResolving = await admin.fetchOffsets({
+        const offsetsAfterResolving = await admin.fetchConsumerGroupOffsets({
           groupId,
-          topic: topicName,
+          topics: [topicName],
         })
 
-        expect(offsetsBeforeResolving).toEqual([{ partition: 0, offset: '-1', metadata: null }])
-        expect(offsetsUponResolving).toEqual([{ partition: 0, offset: '10', metadata: null }])
-        expect(offsetsAfterResolving).toEqual([{ partition: 0, offset: '10', metadata: null }])
+        expect(offsetsBeforeResolving).toEqual([
+          { topic: topicName, partitions: [{ partition: 0, offset: '-1', metadata: null }] },
+        ])
+        expect(offsetsUponResolving).toEqual([
+          { topic: topicName, partitions: [{ partition: 0, offset: '10', metadata: null }] },
+        ])
+        expect(offsetsAfterResolving).toEqual([
+          { topic: topicName, partitions: [{ partition: 0, offset: '10', metadata: null }] },
+        ])
       })
 
       test('reset to earliest: returns earliest *topic* offsets after resolving', async () => {
         await admin.resetOffsets({ groupId, topic: topicName, earliest: true })
 
-        const offsetsBeforeResolving = await admin.fetchOffsets({
+        const offsetsBeforeResolving = await admin.fetchConsumerGroupOffsets({
           groupId,
-          topic: topicName,
+          topics: [topicName],
         })
-        const offsetsUponResolving = await admin.fetchOffsets({
+        const offsetsUponResolving = await admin.fetchConsumerGroupOffsets({
           groupId,
-          topic: topicName,
+          topics: [topicName],
           resolveOffsets: true,
         })
-        const offsetsAfterResolving = await admin.fetchOffsets({
+        const offsetsAfterResolving = await admin.fetchConsumerGroupOffsets({
           groupId,
-          topic: topicName,
+          topics: [topicName],
         })
 
-        expect(offsetsBeforeResolving).toEqual([{ partition: 0, offset: '-2', metadata: null }])
-        expect(offsetsUponResolving).toEqual([{ partition: 0, offset: '0', metadata: null }])
-        expect(offsetsAfterResolving).toEqual([{ partition: 0, offset: '0', metadata: null }])
+        expect(offsetsBeforeResolving).toEqual([
+          { topic: topicName, partitions: [{ partition: 0, offset: '-2', metadata: null }] },
+        ])
+        expect(offsetsUponResolving).toEqual([
+          { topic: topicName, partitions: [{ partition: 0, offset: '0', metadata: null }] },
+        ])
+        expect(offsetsAfterResolving).toEqual([
+          { topic: topicName, partitions: [{ partition: 0, offset: '0', metadata: null }] },
+        ])
       })
 
       testIfKafkaAtLeast_0_11(
@@ -216,23 +276,29 @@ describe('Admin', () => {
           await admin.deleteTopicRecords({ topic: topicName, partitions: messagesToDelete })
           await admin.resetOffsets({ groupId, topic: topicName, earliest: true })
 
-          const offsetsBeforeResolving = await admin.fetchOffsets({
+          const offsetsBeforeResolving = await admin.fetchConsumerGroupOffsets({
             groupId,
-            topic: topicName,
+            topics: [topicName],
           })
-          const offsetsUponResolving = await admin.fetchOffsets({
+          const offsetsUponResolving = await admin.fetchConsumerGroupOffsets({
             groupId,
-            topic: topicName,
+            topics: [topicName],
             resolveOffsets: true,
           })
-          const offsetsAfterResolving = await admin.fetchOffsets({
+          const offsetsAfterResolving = await admin.fetchConsumerGroupOffsets({
             groupId,
-            topic: topicName,
+            topics: [topicName],
           })
 
-          expect(offsetsBeforeResolving).toEqual([{ partition: 0, offset: '-2', metadata: null }])
-          expect(offsetsUponResolving).toEqual([{ partition: 0, offset: '7', metadata: null }])
-          expect(offsetsAfterResolving).toEqual([{ partition: 0, offset: '7', metadata: null }])
+          expect(offsetsBeforeResolving).toEqual([
+            { topic: topicName, partitions: [{ partition: 0, offset: '-2', metadata: null }] },
+          ])
+          expect(offsetsUponResolving).toEqual([
+            { topic: topicName, partitions: [{ partition: 0, offset: '7', metadata: null }] },
+          ])
+          expect(offsetsAfterResolving).toEqual([
+            { topic: topicName, partitions: [{ partition: 0, offset: '7', metadata: null }] },
+          ])
         }
       )
     })

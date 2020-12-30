@@ -368,6 +368,9 @@ module.exports = ({
   }
 
   /**
+   * @deprecated - This method was replaced by `fetchConsumerGroupOffsets`. This implementation
+   * is limited to fetching offsets to a single topic only, and lacks a default option of retrieving
+   * offsets for all topics for a consumer group.
    * @param {string} groupId
    * @param {string} topic
    * @param {boolean} [resolveOffsets=false]
@@ -428,38 +431,43 @@ module.exports = ({
 
   /**
    * @param {string} groupId
-   * @param {string[]]} topics
+   * @param {string[]} topics
    * @param {boolean} [resolveOffsets=false]
    * @return {Promise}
    */
-  const fetchConsumerGroupOffsets = async ({ groupId, topics, resolveOffsets = false }) => {
+  const fetchConsumerGroupOffsets = async ({ groupId, topics = [], resolveOffsets = false }) => {
     if (!groupId) {
       throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
+    }
+
+    if (!Array.isArray(topics)) {
+      throw new KafkaJSNonRetriableError(`Expected topics array, got ${topics}`)
     }
 
     const coordinator = await cluster.findGroupCoordinator({ groupId })
 
     let consumerOffsets
     if (topics.length) {
-      const topicsToFetch = Promise.all(
+      const topicsToFetch = await Promise.all(
         topics.map(async topic => {
           const partitions = await findTopicPartitions(cluster, topic)
           const partitionsToFetch = partitions.map(partition => ({ partition }))
           return { topic, partitions: partitionsToFetch }
         })
       )
+
       const { responses } = await coordinator.offsetFetch({
         groupId,
-        topicsToFetch,
+        topics: topicsToFetch,
       })
       consumerOffsets = responses
     } else {
-      const { responses } = await coordinator.offsetFetch({ groupId })
+      const { responses } = await coordinator.offsetFetch({ groupId }, [])
       consumerOffsets = responses
     }
 
     if (resolveOffsets) {
-      consumerOffsets = Promise.all(
+      consumerOffsets = await Promise.all(
         consumerOffsets.map(async ({ topic, partitions }) => {
           const indexedOffsets = indexByPartition(await fetchTopicOffsets(topic))
           const recalculatedPartitions = partitions.map(({ offset, partition, ...props }) => {
@@ -489,17 +497,15 @@ module.exports = ({
       )
     }
 
-    return consumerOffsets
-      .filter(response => !topics.length || response.topic in topics)
-      .map(({ topic, partitions }) => {
-        const completePartitions = partitions.map(({ partition, offset, metadata }) => ({
-          partition,
-          offset,
-          metadata: metadata || null,
-        }))
+    return consumerOffsets.map(({ topic, partitions }) => {
+      const completePartitions = partitions.map(({ partition, offset, metadata }) => ({
+        partition,
+        offset,
+        metadata: metadata || null,
+      }))
 
-        return { topic, partitions: completePartitions }
-      })
+      return { topic, partitions: completePartitions }
+    })
   }
 
   /**
