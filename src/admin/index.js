@@ -462,7 +462,7 @@ module.exports = ({
       })
       consumerOffsets = responses
     } else {
-      const { responses } = await coordinator.offsetFetch({ groupId }, [])
+      const { responses } = await coordinator.offsetFetch({ groupId, topics: [] })
       consumerOffsets = responses
     }
 

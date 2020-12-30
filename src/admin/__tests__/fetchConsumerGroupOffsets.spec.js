@@ -99,14 +99,17 @@ describe('Admin', () => {
         groupId,
       })
 
-      expect(offsets).toEqual([
-        {
-          topic: yetAnotherTopicName,
-          partitions: [{ partition: 0, offset: '42', metadata: null }],
-        },
-        { topic: anotherTopicName, partitions: [{ partition: 0, offset: '23', metadata: null }] },
-        { topic: topicName, partitions: [{ partition: 0, offset: '13', metadata: null }] },
-      ])
+      // There's no guarantee for the order of topics so we compare sets to avoid flaky tests.
+      expect(new Set(offsets)).toEqual(
+        new Set([
+          {
+            topic: yetAnotherTopicName,
+            partitions: [{ partition: 0, offset: '42', metadata: null }],
+          },
+          { topic: anotherTopicName, partitions: [{ partition: 0, offset: '23', metadata: null }] },
+          { topic: topicName, partitions: [{ partition: 0, offset: '13', metadata: null }] },
+        ])
+      )
     })
 
     test('returns consumer group offsets for list of topics', async () => {
@@ -126,10 +129,13 @@ describe('Admin', () => {
         topics: [topicName, anotherTopicName],
       })
 
-      expect(offsets).toEqual([
-        { topic: anotherTopicName, partitions: [{ partition: 0, offset: '42', metadata: null }] },
-        { topic: topicName, partitions: [{ partition: 0, offset: '13', metadata: null }] },
-      ])
+      // There's no guarantee for the order of topics so we compare sets to avoid flaky tests.
+      expect(new Set(offsets)).toEqual(
+        new Set([
+          { topic: anotherTopicName, partitions: [{ partition: 0, offset: '42', metadata: null }] },
+          { topic: topicName, partitions: [{ partition: 0, offset: '13', metadata: null }] },
+        ])
+      )
     })
 
     describe('when used with the resolvedOffsets option', () => {
