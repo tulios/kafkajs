@@ -52,7 +52,7 @@ module.exports = ({ cluster }) => ({
       const assignee = sortedMembers[i % membersCount]
 
       if (!assignment[assignee]) {
-        assignment[assignee] = []
+        assignment[assignee] = Object.create(null)
       }
 
       if (!assignment[assignee][topicPartition.topic]) {
