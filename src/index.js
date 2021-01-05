@@ -22,6 +22,20 @@ const PRIVATE = {
 const DEFAULT_METADATA_MAX_AGE = 300000
 
 module.exports = class Client {
+  /**
+   * @param {Object} options
+   * @param {Array<string>} options.brokers example: ['127.0.0.1:9092', '127.0.0.1:9094']
+   * @param {Object} options.ssl
+   * @param {Object} options.sasl
+   * @param {string} options.clientId
+   * @param {number} options.connectionTimeout - in milliseconds
+   * @param {number} options.authenticationTimeout - in milliseconds
+   * @param {number} options.reauthenticationThreshold - in milliseconds
+   * @param {number} [options.requestTimeout=30000] - in milliseconds
+   * @param {boolean} [options.enforceRequestTimeout]
+   * @param {import("../types").RetryOptions} [options.retry]
+   * @param {import("../types").ISocketFactory} [options.socketFactory]
+   */
   constructor({
     brokers,
     ssl,

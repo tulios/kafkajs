@@ -7,10 +7,20 @@ const responseSerializer = require('./responseSerializer')
 
 const { keys } = Object
 
+/**
+ * @param {Object} options
+ * @param {import("../../types").Logger} options.logger
+ * @param {import("../../types").Cluster} options.cluster
+ * @param {ReturnType<import("../../types").ICustomPartitioner>} options.partitioner
+ * @param {import("./eosManager").EosManager} options.eosManager
+ * @param {import("../retry").Retrier} options.retrier
+ */
 module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
   return async ({ acks, timeout, compression, topicMessages }) => {
+    /** @type {Map<import("../../types").Broker, any[]>} */
     const responsePerBroker = new Map()
 
+    /** @param {Map<import("../../types").Broker, any[]>} responsePerBroker */
     const createProducerRequests = async responsePerBroker => {
       const topicMetadata = new Map()
 

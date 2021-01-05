@@ -26,7 +26,13 @@ const COMMIT_RETRIABLE_PROTOCOL_ERRORS = [
 const COMMIT_STALE_COORDINATOR_PROTOCOL_ERRORS = ['COORDINATOR_NOT_AVAILABLE', 'NOT_COORDINATOR']
 
 /**
+ * @typedef {Object} EosManager
+ */
+
+/**
  * Manage behavior for an idempotent producer and transactions.
+ *
+ * @returns {EosManager}
  */
 module.exports = ({
   logger,
