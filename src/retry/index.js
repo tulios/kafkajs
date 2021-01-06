@@ -54,6 +54,14 @@ const createRetriable = (configs, resolve, reject, fn) => {
   return retry
 }
 
+/**
+ * @typedef {(fn: (bail: (err: Error) => void, retryCount: number, retryTime: number) => any) => Promise<ReturnType<fn>>} Retrier
+ */
+
+/**
+ * @param {import("../../types").RetryOptions} [opts]
+ * @returns {Retrier}
+ */
 module.exports = (opts = {}) => fn => {
   return new Promise((resolve, reject) => {
     const configs = Object.assign({}, RETRY_DEFAULT, opts)

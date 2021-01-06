@@ -11,7 +11,6 @@ describe('Cluster > ConnectionBuilder', () => {
   const sasl = { sasl: true }
   const clientId = 'test-client-id'
   const connectionTimeout = 30000
-  const retry = { retry: true }
   const logger = newLogger()
   const socketFactory = jest.fn()
 
@@ -23,7 +22,6 @@ describe('Cluster > ConnectionBuilder', () => {
       sasl,
       clientId,
       connectionTimeout,
-      retry,
       logger,
     })
   })
@@ -37,7 +35,6 @@ describe('Cluster > ConnectionBuilder', () => {
     expect(connection.sasl).toEqual(sasl)
     expect(connection.clientId).toEqual(clientId)
     expect(connection.connectionTimeout).toEqual(connectionTimeout)
-    expect(connection.retry).toEqual(retry)
     expect(connection.logger).not.toBeFalsy()
     expect(connection.socketFactory).toBe(socketFactory)
   })
@@ -72,7 +69,6 @@ describe('Cluster > ConnectionBuilder', () => {
         sasl,
         clientId,
         connectionTimeout,
-        retry,
         logger,
       }).build()
     ).rejects.toEqual(new KafkaJSNonRetriableError('Failed to connect: brokers array is empty'))
@@ -87,7 +83,6 @@ describe('Cluster > ConnectionBuilder', () => {
         sasl,
         clientId,
         connectionTimeout,
-        retry,
         logger,
       }).build()
     ).rejects.toEqual(
@@ -104,7 +99,6 @@ describe('Cluster > ConnectionBuilder', () => {
         sasl,
         clientId,
         connectionTimeout,
-        retry,
         logger,
       }).build()
     ).rejects.toEqual(
@@ -123,7 +117,6 @@ describe('Cluster > ConnectionBuilder', () => {
         sasl,
         clientId,
         connectionTimeout,
-        retry,
         logger,
       }).build()
     ).rejects.toEqual(
@@ -139,7 +132,6 @@ describe('Cluster > ConnectionBuilder', () => {
       sasl,
       clientId,
       connectionTimeout,
-      retry,
       logger,
     })
 
@@ -157,7 +149,6 @@ describe('Cluster > ConnectionBuilder', () => {
       sasl,
       clientId,
       connectionTimeout,
-      retry,
       logger,
     })
 

@@ -321,10 +321,16 @@ module.exports = class ConsumerGroup {
     })
   }
 
+  /**
+   * @param {import("../../types").TopicPartition} topicPartition
+   */
   resetOffset({ topic, partition }) {
     this.offsetManager.resetOffset({ topic, partition })
   }
 
+  /**
+   * @param {import("../../types").TopicPartitionOffset} topicPartitionOffset
+   */
   resolveOffset({ topic, partition, offset }) {
     this.offsetManager.resolveOffset({ topic, partition, offset })
   }
@@ -334,9 +340,7 @@ module.exports = class ConsumerGroup {
    * on the next fetch. If this API is invoked for the same topic/partition more
    * than once, the latest offset will be used on the next fetch.
    *
-   * @param {string} topic
-   * @param {number} partition
-   * @param {string} offset
+   * @param {import("../../types").TopicPartitionOffset} topicPartitionOffset
    */
   seek({ topic, partition, offset }) {
     this.seekOffset.set(topic, partition, offset)
