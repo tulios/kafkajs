@@ -13,10 +13,12 @@ const {
 } = require('testHelpers')
 
 describe('Admin', () => {
-  let admin, cluster, groupId, logger, topicName
+  let admin, cluster, groupId, logger, topicName, anotherTopicName, yetAnotherTopicName
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
+    anotherTopicName = `another-topic-${secureRandom()}`
+    yetAnotherTopicName = `yet-another-topic-${secureRandom()}`
     groupId = `consumer-group-id-${secureRandom()}`
 
     await createTopic({ topic: topicName })
@@ -40,11 +42,16 @@ describe('Admin', () => {
       )
     })
 
-    test('throws an error if the topic name is not a valid string', async () => {
-      await expect(admin.fetchOffsets({ groupId: 'groupId', topic: null })).rejects.toHaveProperty(
-        'message',
-        'Invalid topic null'
-      )
+    test('throws an error if the topics argument is not a valid list', async () => {
+      await expect(
+        admin.fetchOffsets({ groupId: 'groupId', topics: topicName })
+      ).rejects.toHaveProperty('message', `Expected topic or topics array to be set`)
+    })
+
+    test('throws an error if both topic and topics are set', async () => {
+      await expect(
+        admin.fetchOffsets({ groupId: 'groupId', topic: topicName, topics: [topicName] })
+      ).rejects.toHaveProperty('message', `Either topic or topics must be set, not both`)
     })
 
     test('returns unresolved consumer group offsets', async () => {
@@ -69,6 +76,66 @@ describe('Admin', () => {
       })
 
       expect(offsets).toEqual([{ partition: 0, offset: '13', metadata: null }])
+    })
+
+    test('returns consumer group offsets for all topics', async () => {
+      await admin.setOffsets({
+        groupId,
+        topic: topicName,
+        partitions: [{ partition: 0, offset: 13 }],
+      })
+      await admin.setOffsets({
+        groupId,
+        topic: anotherTopicName,
+        partitions: [{ partition: 0, offset: 23 }],
+      })
+      await admin.setOffsets({
+        groupId,
+        topic: yetAnotherTopicName,
+        partitions: [{ partition: 0, offset: 42 }],
+      })
+
+      const offsets = await admin.fetchOffsets({
+        groupId,
+      })
+
+      // There's no guarantee for the order of topics so we compare sets to avoid flaky tests.
+      expect(new Set(offsets)).toEqual(
+        new Set([
+          {
+            topic: yetAnotherTopicName,
+            partitions: [{ partition: 0, offset: '42', metadata: null }],
+          },
+          { topic: anotherTopicName, partitions: [{ partition: 0, offset: '23', metadata: null }] },
+          { topic: topicName, partitions: [{ partition: 0, offset: '13', metadata: null }] },
+        ])
+      )
+    })
+
+    test('returns consumer group offsets for list of topics', async () => {
+      await admin.setOffsets({
+        groupId,
+        topic: topicName,
+        partitions: [{ partition: 0, offset: 13 }],
+      })
+      await admin.setOffsets({
+        groupId,
+        topic: anotherTopicName,
+        partitions: [{ partition: 0, offset: 42 }],
+      })
+
+      const offsets = await admin.fetchOffsets({
+        groupId,
+        topics: [topicName, anotherTopicName],
+      })
+
+      // There's no guarantee for the order of topics so we compare sets to avoid flaky tests.
+      expect(new Set(offsets)).toEqual(
+        new Set([
+          { topic: anotherTopicName, partitions: [{ partition: 0, offset: '42', metadata: null }] },
+          { topic: topicName, partitions: [{ partition: 0, offset: '13', metadata: null }] },
+        ])
+      )
     })
 
     describe('when used with the resolvedOffsets option', () => {

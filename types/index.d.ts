@@ -359,11 +359,6 @@ export interface SeekEntry {
   offset: string
 }
 
-export interface ConsumerGroupOffsets {
-  topic: string
-  partitions: Array<SeekEntry & { metadata: string | null }>
-}
-
 export interface Acl {
   principal: string
   host: string
@@ -442,14 +437,10 @@ export type Admin = {
   fetchTopicMetadata(options?: { topics: string[] }): Promise<{ topics: Array<ITopicMetadata> }>
   fetchOffsets(options: {
     groupId: string
-    topic: string
+    topic?: string
+    topics?: string[]
     resolveOffsets?: boolean
   }): Promise<Array<SeekEntry & { metadata: string | null }>>
-  fetchConsumerGroupOffsets(options: {
-    groupId: string
-    topics: string[]
-    resolveOffsets?: boolean
-  }): Promise<Array<ConsumerGroupOffsets>>
   fetchTopicOffsets(topic: string): Promise<Array<SeekEntry & { high: string; low: string }>>
   fetchTopicOffsetsByTimestamp(topic: string, timestamp?: number): Promise<Array<SeekEntry>>
   describeCluster(): Promise<{

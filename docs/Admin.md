@@ -180,17 +180,25 @@ await admin.fetchTopicOffsetsByTimestamp(topic, timestamp)
 
 ## <a name="fetch-offsets"></a> Fetch consumer group offsets
 
-`fetchOffsets` returns the consumer group offset for a topic.
+`fetchOffsets` returns the consumer group offset for a list of topics.
 
 ```javascript
-await admin.fetchOffsets({ groupId, topic, })
-// [
-//   { partition: 0, offset: '31004' },
-//   { partition: 1, offset: '54312' },
-//   { partition: 2, offset: '32103' },
-//   { partition: 3, offset: '28' },
+await admin.fetchOffsets({ groupId, topics, })
+// [ topic1: [
+//     { partition: 0, offset: '31004' },
+//     { partition: 1, offset: '54312' },
+//     { partition: 2, offset: '32103' },
+//     { partition: 3, offset: '28' },
+//   ],
+//   [
+//   topic2: [
+//     { partition: 0, offset: '1234' }
+//   ] 
+// ]
 // ]
 ```
+
+Omit `topics` altogether if you want to get the consumer group offsets in all of its consumed topics.
 
 Include the optional `resolveOffsets` flag to resolve the offsets without having to start a consumer, useful when fetching directly after calling [resetOffets](#a-name-reset-offsets-a-reset-consumer-group-offsets):
 

@@ -368,103 +368,45 @@ module.exports = ({
   }
 
   /**
-   * @deprecated - This method was replaced by `fetchConsumerGroupOffsets`. This implementation
-   * is limited to fetching offsets to a single topic only, and lacks a default option of retrieving
-   * offsets for all topics for a consumer group.
    * @param {string} groupId
    * @param {string} topic
-   * @param {boolean} [resolveOffsets=false]
-   * @return {Promise}
-   */
-  const fetchOffsets = async ({ groupId, topic, resolveOffsets = false }) => {
-    if (!groupId) {
-      throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
-    }
-
-    if (!topic) {
-      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
-    }
-
-    const partitions = await findTopicPartitions(cluster, topic)
-    const coordinator = await cluster.findGroupCoordinator({ groupId })
-    const partitionsToFetch = partitions.map(partition => ({ partition }))
-
-    let { responses: consumerOffsets } = await coordinator.offsetFetch({
-      groupId,
-      topics: [{ topic, partitions: partitionsToFetch }],
-    })
-
-    if (resolveOffsets) {
-      const indexedOffsets = indexByPartition(await fetchTopicOffsets(topic))
-      consumerOffsets = consumerOffsets.map(({ topic, partitions }) => ({
-        topic,
-        partitions: partitions.map(({ offset, partition, ...props }) => {
-          let resolvedOffset = offset
-          if (Number(offset) === EARLIEST_OFFSET) {
-            resolvedOffset = indexedOffsets[partition].low
-          }
-          if (Number(offset) === LATEST_OFFSET) {
-            resolvedOffset = indexedOffsets[partition].high
-          }
-          return {
-            partition,
-            offset: resolvedOffset,
-            ...props,
-          }
-        }),
-      }))
-      const [{ partitions }] = consumerOffsets
-      await setOffsets({ groupId, topic, partitions })
-    }
-
-    return consumerOffsets
-      .filter(response => response.topic === topic)
-      .map(({ partitions }) =>
-        partitions.map(({ partition, offset, metadata }) => ({
-          partition,
-          offset,
-          metadata: metadata || null,
-        }))
-      )
-      .pop()
-  }
-
-  /**
-   * @param {string} groupId
    * @param {string[]} topics
    * @param {boolean} [resolveOffsets=false]
    * @return {Promise}
    */
-  const fetchConsumerGroupOffsets = async ({ groupId, topics = [], resolveOffsets = false }) => {
+  const fetchOffsets = async ({ groupId, topic, topics, resolveOffsets = false }) => {
     if (!groupId) {
       throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
     }
 
-    if (!Array.isArray(topics)) {
-      throw new KafkaJSNonRetriableError(`Expected topics array, got ${topics}`)
+    if (!topic && !topics) {
+      topics = []
+    }
+
+    if (!topic && !Array.isArray(topics)) {
+      throw new KafkaJSNonRetriableError(`Expected topic or topics array to be set`)
+    }
+
+    if (topic && topics) {
+      throw new KafkaJSNonRetriableError(`Either topic or topics must be set, not both`)
+    }
+
+    if (topic) {
+      topics = [topic]
     }
 
     const coordinator = await cluster.findGroupCoordinator({ groupId })
-
-    let consumerOffsets
-    if (topics.length) {
-      const topicsToFetch = await Promise.all(
-        topics.map(async topic => {
-          const partitions = await findTopicPartitions(cluster, topic)
-          const partitionsToFetch = partitions.map(partition => ({ partition }))
-          return { topic, partitions: partitionsToFetch }
-        })
-      )
-
-      const { responses } = await coordinator.offsetFetch({
-        groupId,
-        topics: topicsToFetch,
+    const topicsToFetch = await Promise.all(
+      topics.map(async topic => {
+        const partitions = await findTopicPartitions(cluster, topic)
+        const partitionsToFetch = partitions.map(partition => ({ partition }))
+        return { topic, partitions: partitionsToFetch }
       })
-      consumerOffsets = responses
-    } else {
-      const { responses } = await coordinator.offsetFetch({ groupId, topics: [] })
-      consumerOffsets = responses
-    }
+    )
+    let { responses: consumerOffsets } = await coordinator.offsetFetch({
+      groupId,
+      topics: topicsToFetch,
+    })
 
     if (resolveOffsets) {
       consumerOffsets = await Promise.all(
@@ -485,19 +427,17 @@ module.exports = ({
             }
           })
 
+          await setOffsets({ groupId, topic, partitions: recalculatedPartitions })
+
           return {
             topic,
             partitions: recalculatedPartitions,
           }
         })
       )
-
-      await Promise.all(
-        consumerOffsets.map(({ topic, partitions }) => setOffsets({ groupId, topic, partitions }))
-      )
     }
 
-    return consumerOffsets.map(({ topic, partitions }) => {
+    const result = consumerOffsets.map(({ topic, partitions }) => {
       const completePartitions = partitions.map(({ partition, offset, metadata }) => ({
         partition,
         offset,
@@ -506,6 +446,12 @@ module.exports = ({
 
       return { topic, partitions: completePartitions }
     })
+
+    if (topic) {
+      return result.pop().partitions
+    } else {
+      return result
+    }
   }
 
   /**
@@ -1541,7 +1487,6 @@ module.exports = ({
     describeCluster,
     events,
     fetchOffsets,
-    fetchConsumerGroupOffsets,
     fetchTopicOffsets,
     fetchTopicOffsetsByTimestamp,
     setOffsets,
