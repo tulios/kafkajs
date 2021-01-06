@@ -1,6 +1,27 @@
 const Connection = require('../network/connection')
 const { KafkaJSConnectionError, KafkaJSNonRetriableError } = require('../errors')
 
+/**
+ * @typedef {Object} ConnectionBuilder
+ * @property {(destination?: { host?: string, port?: number, rack?: string }) => Promise<Connection>} build
+ */
+
+/**
+ * @param {Object} options
+ * @param {import("../../types").ISocketFactory} [options.socketFactory]
+ * @param {string[]|(() => string[])} options.brokers
+ * @param {Object} [options.ssl]
+ * @param {Object} [options.sasl]
+ * @param {string} options.clientId
+ * @param {number} options.requestTimeout
+ * @param {boolean} [options.enforceRequestTimeout]
+ * @param {number} [options.connectionTimeout]
+ * @param {number} [options.maxInFlightRequests]
+ * @param {import("../../types").RetryOptions} [options.retry]
+ * @param {import("../../types").Logger} options.logger
+ * @param {import("../instrumentation/emitter")} [options.instrumentationEmitter]
+ * @returns {ConnectionBuilder}
+ */
 module.exports = ({
   socketFactory,
   brokers,
@@ -11,7 +32,6 @@ module.exports = ({
   enforceRequestTimeout,
   connectionTimeout,
   maxInFlightRequests,
-  retry,
   logger,
   instrumentationEmitter = null,
 }) => {
@@ -74,7 +94,6 @@ module.exports = ({
         enforceRequestTimeout,
         maxInFlightRequests,
         instrumentationEmitter,
-        retry,
         logger,
       })
     },

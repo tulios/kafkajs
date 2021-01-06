@@ -154,7 +154,7 @@ export type Cluster = {
         partitions: Array<{ partition: number }>
       } & XOR<{ fromBeginning: boolean }, { fromTimestamp: number }>
     >
-  ): Promise<{ topic: string; partitions: Array<{ partition: number; offset: string }> }>
+  ): Promise<TopicOffsets[]>
 }
 
 export type Assignment = { [topic: string]: number[] }
@@ -354,10 +354,7 @@ export type RequestQueueSizeEvent = InstrumentationEvent<{
   queueSize: number
 }>
 
-export interface SeekEntry {
-  partition: number
-  offset: string
-}
+export type SeekEntry = PartitionOffset
 
 export interface Acl {
   principal: string
@@ -467,7 +464,7 @@ export type Admin = {
     eventName: ValueOf<AdminEvents>,
     listener: (...args: any[]) => void
   ): RemoveInstrumentationEventListener<typeof eventName>
-  events: AdminEvents
+  readonly events: AdminEvents
 }
 
 export const PartitionAssigners: { roundRobin: PartitionAssigner }
@@ -522,30 +519,48 @@ export type Logger = {
   error: (message: string, extra?: object) => void
   warn: (message: string, extra?: object) => void
   debug: (message: string, extra?: object) => void
+
+  namespace: (namespace: string, logLevel?: logLevel) => Logger
+  setLogLevel: (logLevel: logLevel) => void
+}
+
+export interface BrokerMetadata {
+  brokers: Array<{ nodeId: number; host: string; port: number; rack?: string }>
+  topicMetadata: Array<{
+    topicErrorCode: number
+    topic: string
+    partitionMetadata: PartitionMetadata[]
+  }>
+}
+
+export interface ApiVersions {
+  [apiKey: number]: {
+    minVersion: number
+    maxVersion: number
+  }
 }
 
 export type Broker = {
   isConnected(): boolean
   connect(): Promise<void>
   disconnect(): Promise<void>
-  apiVersions(): Promise<{ [apiKey: number]: { minVersion: number; maxVersion: number } }>
+  apiVersions(): Promise<ApiVersions>
   metadata(
     topics: string[]
-  ): Promise<{
-    brokers: Array<{ nodeId: number; host: string; port: number; rack?: string }>
-    topicMetadata: Array<{
-      topicErrorCode: number
-      topic: number
-      partitionMetadata: PartitionMetadata[]
-    }>
-  }>
+  ): Promise<BrokerMetadata>
   offsetCommit(request: {
     groupId: string
     groupGenerationId: number
     memberId: string
     retentionTime?: number
-    topics: Array<{ topic: string; partitions: Array<{ partition: number; offset: string }> }>
+    topics: TopicOffsets[]
   }): Promise<any>
+  offsetFetch(request: {
+    groupId: string
+    topics: TopicOffsets[]
+  }): Promise<{
+    responses: TopicOffsets[]
+  }>
   fetch(request: {
     replicaId?: number
     isolationLevel?: number
@@ -557,6 +572,18 @@ export type Broker = {
       partitions: Array<{ partition: number; fetchOffset: string; maxBytes: number }>
     }>
     rackId?: string
+  }): Promise<any>
+  produce(request: {
+    topicData: Array<{
+      topic: string
+      partitions: Array<{ partition: number; firstSequence?: number; messages: Message[] }>
+    }>
+    transactionalId?: string
+    producerId?: number
+    producerEpoch?: number
+    acks?: number
+    timeout?: number
+    compression?: CompressionTypes
   }): Promise<any>
 }
 
@@ -632,7 +659,7 @@ export type Producer = Sender & {
   connect(): Promise<void>
   disconnect(): Promise<void>
   isIdempotent(): boolean
-  events: ProducerEvents
+  readonly events: ProducerEvents
   on(
     eventName: ValueOf<ProducerEvents>,
     listener: (...args: any[]) => void
@@ -679,10 +706,15 @@ export type GroupDescriptions = {
 }
 
 export type TopicPartitions = { topic: string; partitions: number[] }
-export type TopicPartitionOffsetAndMetadata = {
+
+export type TopicPartition = {
   topic: string
   partition: number
+}
+export type TopicPartitionOffset = TopicPartition & {
   offset: string
+}
+export type TopicPartitionOffsetAndMetadata = TopicPartitionOffset & {
   metadata?: string | null
 }
 
@@ -738,13 +770,7 @@ export type ConsumerCommitOffsetsEvent = InstrumentationEvent<{
   groupId: string
   memberId: string
   groupGenerationId: number
-  topics: {
-    topic: string
-    partitions: {
-      offset: string
-      partition: string
-    }[]
-  }[]
+  topics: TopicOffsets[]
 }>
 export interface IMemberAssignment {
   [key: string]: number[]
@@ -841,7 +867,7 @@ export type Consumer = {
   stop(): Promise<void>
   run(config?: ConsumerRunConfig): Promise<void>
   commitOffsets(topicPartitions: Array<TopicPartitionOffsetAndMetadata>): Promise<void>
-  seek(topicPartition: { topic: string; partition: number; offset: number | string }): void
+  seek(topicPartitionOffset: TopicPartitionOffset): void
   describeGroup(): Promise<GroupDescription>
   pause(topics: Array<{ topic: string; partitions?: number[] }>): void
   paused(): TopicPartitions[]
@@ -851,7 +877,7 @@ export type Consumer = {
     listener: (...args: any[]) => void
   ): RemoveInstrumentationEventListener<typeof eventName>
   logger(): Logger
-  events: ConsumerEvents
+  readonly events: ConsumerEvents
 }
 
 export enum CompressionTypes {
