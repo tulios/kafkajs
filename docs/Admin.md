@@ -184,17 +184,23 @@ await admin.fetchTopicOffsetsByTimestamp(topic, timestamp)
 
 ```javascript
 await admin.fetchOffsets({ groupId, topics, })
-// [ topic1: [
-//     { partition: 0, offset: '31004' },
-//     { partition: 1, offset: '54312' },
-//     { partition: 2, offset: '32103' },
-//     { partition: 3, offset: '28' },
-//   ],
-//   [
-//   topic2: [
-//     { partition: 0, offset: '1234' }
-//   ] 
-// ]
+// [
+//   {
+//     topic: 'topic1',
+//     partitions: [
+//       { partition: 0, offset: '31004' },
+//       { partition: 1, offset: '54312' },
+//       { partition: 2, offset: '32103' },
+//       { partition: 3, offset: '28' },
+//     ],
+//   },
+//   {
+//     topic: 'topic2',
+//     partitions: [
+//       { partition: 0, offset: '1234' },
+//       { partition: 1, offset: '4567' },
+//     ],
+//   },
 // ]
 ```
 
