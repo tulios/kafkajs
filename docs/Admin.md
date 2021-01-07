@@ -204,7 +204,7 @@ await admin.fetchOffsets({ groupId, topics, })
 // ]
 ```
 
-Omit `topics` altogether if you want to get the consumer group offsets for all of its consumed topics.
+Omit `topics` altogether if you want to get the consumer group offsets for all topics with committed offsets.
 
 Include the optional `resolveOffsets` flag to resolve the offsets without having to start a consumer, useful when fetching directly after calling [resetOffets](#a-name-reset-offsets-a-reset-consumer-group-offsets):
 
