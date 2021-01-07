@@ -440,12 +440,12 @@ export type Admin = {
     groupId: string
     topic: string
     resolveOffsets?: boolean
-  }): Promise<FetchOffsetsPartition>
+  }): Promise<FetchOffsetsPartition[]>
   fetchOffsets(options: {
     groupId: string
     topics?: string[]
     resolveOffsets?: boolean
-  }): Promise<Array<{topic: string, partitions: FetchOffsetsPartition}>>
+  }): Promise<Array<{topic: string, partitions: FetchOffsetsPartition[]}>>
   fetchTopicOffsets(topic: string): Promise<Array<SeekEntry & { high: string; low: string }>>
   fetchTopicOffsetsByTimestamp(topic: string, timestamp?: number): Promise<Array<SeekEntry>>
   describeCluster(): Promise<{
