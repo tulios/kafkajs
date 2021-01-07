@@ -356,7 +356,7 @@ export type RequestQueueSizeEvent = InstrumentationEvent<{
 
 export type SeekEntry = PartitionOffset
 
-export type FetchOffsetsPartitions = Array<PartitionOffset & { metadata: string | null }>
+export type FetchOffsetsPartition = PartitionOffset & { metadata: string | null }
 export interface Acl {
   principal: string
   host: string
@@ -440,12 +440,12 @@ export type Admin = {
     groupId: string
     topic: string
     resolveOffsets?: boolean
-  }): Promise<FetchOffsetsPartitions>
+  }): Promise<FetchOffsetsPartition>
   fetchOffsets(options: {
     groupId: string
     topics?: string[]
     resolveOffsets?: boolean
-  }): Promise<Array<{topic: string, partitions: FetchOffsetsPartitions}>>
+  }): Promise<Array<{topic: string, partitions: FetchOffsetsPartition}>>
   fetchTopicOffsets(topic: string): Promise<Array<SeekEntry & { high: string; low: string }>>
   fetchTopicOffsetsByTimestamp(topic: string, timestamp?: number): Promise<Array<SeekEntry>>
   describeCluster(): Promise<{
