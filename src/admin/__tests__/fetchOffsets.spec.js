@@ -43,9 +43,10 @@ describe('Admin', () => {
     })
 
     test('throws an error if the topics argument is not a valid list', async () => {
-      await expect(
-        admin.fetchOffsets({ groupId: 'groupId', topics: topicName })
-      ).rejects.toHaveProperty('message', `Expected topic or topics array to be set`)
+      await expect(broker.apiVersions()).rejects.toThrow(
+        KafkaJSNonRetriableError,
+        `Invalid argument "topics". Expected array of strings, got: "${topicName}"`
+      )
     })
 
     test('throws an error if both topic and topics are set', async () => {
