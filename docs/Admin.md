@@ -183,7 +183,7 @@ await admin.fetchTopicOffsetsByTimestamp(topic, timestamp)
 `fetchOffsets` returns the consumer group offset for a list of topics.
 
 ```javascript
-await admin.fetchOffsets({ groupId, topics, })
+await admin.fetchOffsets({ groupId, topics: ['topic1', 'topic2'] })
 // [
 //   {
 //     topic: 'topic1',
