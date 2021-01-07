@@ -180,6 +180,7 @@ const runAdmin = async () => {
 
   await admin.listTopics()
 
+  await admin.fetchOffsets({ groupId: 'test-group' })
   await admin.fetchOffsets({ groupId: 'test-group', topic: 'topic1' })
   await admin.fetchOffsets({ groupId: 'test-group', topics: ['topic1', 'topic2'] })
 

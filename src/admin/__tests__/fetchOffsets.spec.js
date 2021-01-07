@@ -11,6 +11,7 @@ const {
   generateMessages,
   testIfKafkaAtLeast_0_11,
 } = require('testHelpers')
+const { KafkaJSNonRetriableError } = require('../../errors')
 
 describe('Admin', () => {
   let admin, cluster, groupId, logger, topicName, anotherTopicName, yetAnotherTopicName
@@ -36,23 +37,23 @@ describe('Admin', () => {
 
   describe('fetchOffsets', () => {
     test('throws an error if the groupId is invalid', async () => {
-      await expect(admin.fetchOffsets({ groupId: null })).rejects.toHaveProperty(
-        'message',
+      await expect(admin.fetchOffsets({ groupId: null })).rejects.toThrow(
+        KafkaJSNonRetriableError,
         'Invalid groupId null'
       )
     })
 
     test('throws an error if the topics argument is not a valid list', async () => {
-      await expect(broker.apiVersions()).rejects.toThrow(
+      await expect(admin.fetchOffsets({ groupId: 'groupId', topics: topicName })).rejects.toThrow(
         KafkaJSNonRetriableError,
-        `Invalid argument "topics". Expected array of strings, got: "${topicName}"`
+        'Expected topic or topics array to be set'
       )
     })
 
     test('throws an error if both topic and topics are set', async () => {
       await expect(
         admin.fetchOffsets({ groupId: 'groupId', topic: topicName, topics: [topicName] })
-      ).rejects.toHaveProperty('message', `Either topic or topics must be set, not both`)
+      ).rejects.toThrow(KafkaJSNonRetriableError, 'Either topic or topics must be set, not both')
     })
 
     test('returns unresolved consumer group offsets', async () => {
@@ -128,12 +129,10 @@ describe('Admin', () => {
       })
 
       // There's no guarantee for the order of topics so we compare sets to avoid flaky tests.
-      expect(new Set(offsets)).toEqual(
-        new Set([
-          { topic: anotherTopicName, partitions: [{ partition: 0, offset: '42', metadata: null }] },
-          { topic: topicName, partitions: [{ partition: 0, offset: '13', metadata: null }] },
-        ])
-      )
+      expect(offsets).toIncludeSameMembers([
+        { topic: anotherTopicName, partitions: [{ partition: 0, offset: '42', metadata: null }] },
+        { topic: topicName, partitions: [{ partition: 0, offset: '13', metadata: null }] },
+      ])
     })
 
     describe('when used with the resolvedOffsets option', () => {

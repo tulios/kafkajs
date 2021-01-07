@@ -369,9 +369,13 @@ module.exports = ({
   }
 
   /**
+   * Fetch offsets for a topic or multiple topics
+   *
+   * Note: set either topic or topics but not both.
+   *
    * @param {string} groupId
-   * @param {string} topic
-   * @param {string[]} topics
+   * @param {string} topic - deprecated, use the `topics` parameter. Topic to fetch offsets for.
+   * @param {string[]} topics - list of topics to fetch offsets for, defaults to `[]` which fetches all topics for `groupId`.
    * @param {boolean} [resolveOffsets=false]
    * @return {Promise}
    */
