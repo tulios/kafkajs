@@ -9,7 +9,7 @@ type XOR<T, U> = T | U extends object ? (Without<T, U> & U) | (Without<U, T> & T
 export class Kafka {
   constructor(config: KafkaConfig)
   producer(config?: ProducerConfig): Producer
-  consumer(config?: ConsumerConfig): Consumer
+  consumer(config: ConsumerConfig): Consumer
   admin(config?: AdminConfig): Admin
   logger(): Logger
 }
