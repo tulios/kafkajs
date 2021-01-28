@@ -329,6 +329,17 @@ consumer.seek({ topic: 'example', partition: 0, offset: 12384 })
 
 Upon seeking to an offset, any messages in active batches are marked as stale and discarded, making sure the next message read for the partition is from the offset sought to. Make sure to check `isStale()` before processing a message using [the `eachBatch` interface](#each-batch) of `consumer.run`.
 
+By default, the consumer will commit the offset seeked. To disable this, set the [`autoCommit`](#auto-commit) option to `false` on the consumer.
+
+```javascript
+consumer.run({
+    autoCommit: false,
+    eachMessage: async ({ topic, message }) => true
+})
+// This will now only resolve the previous offset, not commit it
+consumer.seek({ topic: 'example', partition: 0, offset: 12384 })
+```
+
 ## <a name="custom-partition-assigner"></a> Custom partition assigner
 
 It's possible to configure the strategy the consumer will use to distribute partitions amongst the consumer group. KafkaJS has a round robin assigner configured by default.
