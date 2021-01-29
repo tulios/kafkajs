@@ -186,7 +186,7 @@ describe('Consumer', () => {
         })
         await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-        const messagesConsumed = []
+        let messagesConsumed = []
         consumer.run({
           autoCommit: false,
           eachMessage: async event => messagesConsumed.push(event),
@@ -207,6 +207,22 @@ describe('Consumer', () => {
             partition: 0,
             offset: '-1',
           }),
+        ])
+
+        messagesConsumed = []
+        consumer.seek({ topic: topicName, partition: 0, offset: 1 })
+
+        await expect(waitForMessages(messagesConsumed, { number: 2 })).resolves.toEqual([
+          {
+            topic: topicName,
+            partition: 0,
+            message: expect.objectContaining({ offset: '1' }),
+          },
+          {
+            topic: topicName,
+            partition: 0,
+            message: expect.objectContaining({ offset: '2' }),
+          },
         ])
       })
     })
