@@ -295,13 +295,14 @@ module.exports = class Runner extends EventEmitter {
       })
     }
 
-    const { lock, unlock, unlockWithError } = barrier()
+    const { lock, unlock } = barrier()
     const concurrently = limitConcurrency({ limit: this.partitionsConsumedConcurrently })
 
     let requestsCompleted = false
     let numberOfExecutions = 0
     let expectedNumberOfExecutions = 0
     const enqueuedTasks = []
+    let error = null
 
     while (true) {
       const result = iterator.next()
@@ -322,31 +323,33 @@ module.exports = class Runner extends EventEmitter {
       }
 
       enqueuedTasks.push(async () => {
-        const batches = await result.value
+        let batches
+        try {
+          batches = await result.value
+        } catch (e) {
+          error = error || e
+          throw e
+        }
         expectedNumberOfExecutions += batches.length
 
         batches.map(batch =>
           concurrently(async () => {
             try {
-              if (!this.running) {
-                return
-              }
-
-              if (batch.isEmpty()) {
+              if (!this.running || batch.isEmpty() || error) {
                 return
               }
 
               await onBatch(batch)
               await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
             } catch (e) {
-              unlockWithError(e)
+              error = error || e
             } finally {
               numberOfExecutions++
               if (requestsCompleted && numberOfExecutions === expectedNumberOfExecutions) {
                 unlock()
               }
             }
-          }).catch(unlockWithError)
+          })
         )
       })
     }
@@ -358,7 +361,7 @@ module.exports = class Runner extends EventEmitter {
       unlock()
     }
 
-    const error = await lock
+    await lock
     if (error) {
       throw error
     }
