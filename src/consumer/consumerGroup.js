@@ -55,6 +55,7 @@ module.exports = class ConsumerGroup {
     minBytes,
     maxBytes,
     maxWaitTimeInMs,
+    autoCommit,
     autoCommitInterval,
     autoCommitThreshold,
     isolationLevel,
@@ -77,6 +78,7 @@ module.exports = class ConsumerGroup {
     this.minBytes = minBytes
     this.maxBytes = maxBytes
     this.maxWaitTime = maxWaitTimeInMs
+    this.autoCommit = autoCommit
     this.autoCommitInterval = autoCommitInterval
     this.autoCommitThreshold = autoCommitThreshold
     this.isolationLevel = isolationLevel
@@ -274,6 +276,7 @@ module.exports = class ConsumerGroup {
         }),
         {}
       ),
+      autoCommit: this.autoCommit,
       autoCommitInterval: this.autoCommitInterval,
       autoCommitThreshold: this.autoCommitThreshold,
       coordinator,

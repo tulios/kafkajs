@@ -82,7 +82,7 @@ module.exports = ({
     )
   }
 
-  const createConsumerGroup = ({ autoCommitInterval, autoCommitThreshold }) => {
+  const createConsumerGroup = ({ autoCommit, autoCommitInterval, autoCommitThreshold }) => {
     return new ConsumerGroup({
       logger: rootLogger,
       topics: keys(topics),
@@ -98,6 +98,7 @@ module.exports = ({
       maxBytes,
       maxWaitTimeInMs,
       instrumentationEmitter,
+      autoCommit,
       autoCommitInterval,
       autoCommitThreshold,
       isolationLevel,
@@ -218,6 +219,7 @@ module.exports = ({
     }
 
     consumerGroup = createConsumerGroup({
+      autoCommit,
       autoCommitInterval,
       autoCommitThreshold,
     })

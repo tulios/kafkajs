@@ -167,7 +167,7 @@ module.exports = class Runner extends EventEmitter {
 
       this.consumerGroup.resolveOffset({ topic, partition, offset: message.offset })
       await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
-      await this.consumerGroup.commitOffsetsIfNecessary()
+      await this.autoCommitOffsetsIfNecessary()
     }
   }
 
