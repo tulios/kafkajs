@@ -18,6 +18,7 @@ module.exports = class OffsetManager {
    * @param {import("../../../types").Cluster} options.cluster
    * @param {import("../../../types").Broker} options.coordinator
    * @param {import("../../../types").IMemberAssignment} options.memberAssignment
+   * @param {boolean} options.autoCommit
    * @param {number | null} options.autoCommitInterval
    * @param {number | null} options.autoCommitThreshold
    * @param {{[topic: string]: { fromBeginning: boolean }}} options.topicConfigurations
@@ -30,6 +31,7 @@ module.exports = class OffsetManager {
     cluster,
     coordinator,
     memberAssignment,
+    autoCommit,
     autoCommitInterval,
     autoCommitThreshold,
     topicConfigurations,
@@ -54,6 +56,7 @@ module.exports = class OffsetManager {
     this.generationId = generationId
     this.memberId = memberId
 
+    this.autoCommit = autoCommit
     this.autoCommitInterval = autoCommitInterval
     this.autoCommitThreshold = autoCommitThreshold
     this.lastCommit = Date.now()
@@ -163,6 +166,17 @@ module.exports = class OffsetManager {
    */
   async seek({ topic, partition, offset }) {
     if (!this.memberAssignment[topic] || !this.memberAssignment[topic].includes(partition)) {
+      return
+    }
+
+    if (!this.autoCommit) {
+      this.resolveOffset({
+        topic,
+        partition,
+        offset: Long.fromValue(offset)
+          .subtract(1)
+          .toString(),
+      })
       return
     }
 
