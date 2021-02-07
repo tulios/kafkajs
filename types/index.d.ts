@@ -234,6 +234,16 @@ export enum ConfigResourceTypes {
   BROKER_LOGGER = 8,
 }
 
+export enum ConfigSource {
+  UNKNOWN = 0,
+  TOPIC_CONFIG = 1,
+  DYNAMIC_BROKER_CONFIG = 2,
+  DYNAMIC_DEFAULT_BROKER_CONFIG = 3,
+  STATIC_BROKER_CONFIG = 4,
+  DEFAULT_CONFIG = 5,
+  DYNAMIC_BROKER_LOGGER_CONFIG = 6,
+}
+
 export enum AclPermissionTypes {
   UNKNOWN = 0,
   ANY = 1,
@@ -275,6 +285,7 @@ export interface ConfigEntries {
   configName: string
   configValue: string
   isDefault: boolean
+  configSource: ConfigSource,
   isSensitive: boolean
   readOnly: boolean
   configSynonyms: ConfigSynonyms[]
@@ -283,7 +294,7 @@ export interface ConfigEntries {
 export interface ConfigSynonyms {
   configName: string
   configValue: string
-  configSource: number
+  configSource: ConfigSource
 }
 
 export interface DescribeConfigResponse {
