@@ -363,6 +363,7 @@ Example response:
                 configName: 'cleanup.policy',
                 configValue: 'delete',
                 isDefault: true,
+                configSource: 5,
                 isSensitive: false,
                 readOnly: false
             }],
