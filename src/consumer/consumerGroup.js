@@ -4,6 +4,7 @@ const BufferedAsyncIterator = require('../utils/bufferedAsyncIterator')
 const websiteUrl = require('../utils/websiteUrl')
 const arrayDiff = require('../utils/arrayDiff')
 const createRetry = require('../retry')
+const sharedPromiseTo = require('../utils/sharedPromiseTo')
 
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
@@ -107,6 +108,8 @@ module.exports = class ConsumerGroup {
     this.subscriptionState = new SubscriptionState()
 
     this.lastRequest = Date.now()
+
+    this.sharedPromiseToToHeartbeat = sharedPromiseTo()
   }
 
   isLeader() {
@@ -384,20 +387,22 @@ module.exports = class ConsumerGroup {
   }
 
   async heartbeat({ interval }) {
-    const { groupId, generationId, memberId } = this
-    const now = Date.now()
+    return await this.sharedPromiseToToHeartbeat(async () => {
+      const { groupId, generationId, memberId } = this
+      const now = Date.now()
 
-    if (memberId && now >= this.lastRequest + interval) {
-      const payload = {
-        groupId,
-        memberId,
-        groupGenerationId: generationId,
+      if (memberId && now >= this.lastRequest + interval) {
+        const payload = {
+          groupId,
+          memberId,
+          groupGenerationId: generationId,
+        }
+
+        await this.coordinator.heartbeat(payload)
+        this.instrumentationEmitter.emit(HEARTBEAT, payload)
+        this.lastRequest = Date.now()
       }
-
-      await this.coordinator.heartbeat(payload)
-      this.instrumentationEmitter.emit(HEARTBEAT, payload)
-      this.lastRequest = Date.now()
-    }
+    })
   }
 
   async fetch() {
