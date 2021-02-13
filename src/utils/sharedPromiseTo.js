@@ -4,11 +4,9 @@
  */
 module.exports = defaultFunc => {
   let promise = null
-  return async func => {
-    if (promise) {
-      return await promise
-    }
-    promise = defaultFunc ? defaultFunc() : func()
-    return await promise.finally(() => (promise = null))
+  return func => {
+    if (promise == null)
+      promise = (defaultFunc ? defaultFunc() : func()).finally(() => (promise = null))
+    return promise
   }
 }
