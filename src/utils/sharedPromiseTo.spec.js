@@ -1,7 +1,7 @@
 const sharedPromiseTo = require('./sharedPromiseTo')
 
 describe('Utils > sharedPromiseTo', () => {
-  let resolvePromise1, rejectPromise1, sharedPromise1
+  let resolvePromise1, rejectPromise1, sharedPromise1, asyncFunction
 
   const setResolveReject1 = () =>
     new Promise((resolve, reject) => {
@@ -11,7 +11,8 @@ describe('Utils > sharedPromiseTo', () => {
 
   describe('pass async function at creation time', () => {
     beforeEach(() => {
-      sharedPromise1 = sharedPromiseTo(setResolveReject1)
+      asyncFunction = jest.fn(setResolveReject1)
+      sharedPromise1 = sharedPromiseTo(asyncFunction)
     })
 
     it('Returns the same pending promise for every invocation', async () => {
@@ -20,6 +21,7 @@ describe('Utils > sharedPromiseTo', () => {
       const p3 = sharedPromise1()
       expect(Object.is(p1, p2)).toBe(true)
       expect(Object.is(p2, p3)).toBe(true)
+      expect(asyncFunction).toHaveBeenCalledTimes(1)
     })
 
     it('After resolving, returns a new promise on next invocation', async () => {
@@ -30,6 +32,7 @@ describe('Utils > sharedPromiseTo', () => {
       await expect(p1).resolves.toBe(message)
       const p2 = sharedPromise1()
       expect(Object.is(p1, p2)).toBe(false)
+      expect(asyncFunction).toHaveBeenCalledTimes(2)
     })
 
     it('After rejecting, returns a new promise on next invocation', async () => {
@@ -40,9 +43,10 @@ describe('Utils > sharedPromiseTo', () => {
       await expect(p1).rejects.toThrow(message)
       const p2 = sharedPromise1()
       expect(Object.is(p1, p2)).toBe(false)
+      expect(asyncFunction).toHaveBeenCalledTimes(2)
     })
 
-    it('Ignores function passed at call time', async () => {
+    it('Ignores function passed at invocation time', async () => {
       const f = jest.fn()
       const p1 = sharedPromise1(f)
       resolvePromise1()
@@ -51,40 +55,44 @@ describe('Utils > sharedPromiseTo', () => {
     })
   })
 
-  describe('pass async function at call time', () => {
+  describe('pass async function at invocation time', () => {
     beforeEach(() => {
+      asyncFunction = jest.fn(setResolveReject1)
       sharedPromise1 = sharedPromiseTo()
     })
 
-    it('Returns the same pending promise for every invocation', async () => {
-      const p1 = sharedPromise1(setResolveReject1)
-      const p2 = sharedPromise1(setResolveReject1)
-      const p3 = sharedPromise1(setResolveReject1)
+    it('Returns the same pending promise for every invocation (function at invocation)', async () => {
+      const p1 = sharedPromise1(asyncFunction)
+      const p2 = sharedPromise1(asyncFunction)
+      const p3 = sharedPromise1(asyncFunction)
       expect(Object.is(p1, p2)).toBe(true)
       expect(Object.is(p2, p3)).toBe(true)
+      expect(asyncFunction).toHaveBeenCalledTimes(1)
     })
 
-    it('After resolving, returns a new promise on next invocation', async () => {
+    it('After resolving, returns a new promise on next invocation (function at invocation)', async () => {
       const message = 'Resolved promise #1'
-      const p1 = sharedPromise1(setResolveReject1)
+      const p1 = sharedPromise1(asyncFunction)
       resolvePromise1(message)
 
       await expect(p1).resolves.toBe(message)
-      const p2 = sharedPromise1(setResolveReject1)
+      const p2 = sharedPromise1(asyncFunction)
       expect(Object.is(p1, p2)).toBe(false)
+      expect(asyncFunction).toHaveBeenCalledTimes(2)
     })
 
-    it('After rejecting, returns a new promise on next invocation', async () => {
+    it('After rejecting, returns a new promise on next invocation (function at invocation)', async () => {
       const message = 'Rejected promise #1'
-      const p1 = sharedPromise1(setResolveReject1)
+      const p1 = sharedPromise1(asyncFunction)
       rejectPromise1(new Error(message))
 
       await expect(p1).rejects.toThrow(message)
-      const p2 = sharedPromise1(setResolveReject1)
+      const p2 = sharedPromise1(asyncFunction)
       expect(Object.is(p1, p2)).toBe(false)
+      expect(asyncFunction).toHaveBeenCalledTimes(2)
     })
 
-    it('Errors out if no function passed', async () => {
+    it('Errors out if no function passed at invocation', async () => {
       expect(() => sharedPromise1()).toThrow()
     })
   })
