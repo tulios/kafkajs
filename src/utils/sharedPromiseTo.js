@@ -1,6 +1,7 @@
 /**
- * @param { () => Promise<void> } [func]
- * @returns { (() => Promise<void>?) => Promise<void> }
+ * @template T
+ * @param { () => Promise<T> } [defaultFunc]
+ * @returns { (func?: () => Promise<T>) => Promise<T> }
  */
 module.exports = defaultFunc => {
   let promise = null
