@@ -38,6 +38,8 @@ const isRebalancing = e =>
 const PRIVATE = {
   JOIN: Symbol('private:ConsumerGroup:join'),
   SYNC: Symbol('private:ConsumerGroup:sync'),
+  HEARTBEAT: Symbol('private:ConsumerGroup:heartbeat'),
+  SHAREDHEARTBEAT: Symbol('private:ConsumerGroup:sharedHeartbeat'),
 }
 
 module.exports = class ConsumerGroup {
@@ -109,7 +111,22 @@ module.exports = class ConsumerGroup {
 
     this.lastRequest = Date.now()
 
-    this.sharedPromiseToToHeartbeat = sharedPromiseTo()
+    this[PRIVATE.SHAREDHEARTBEAT] = sharedPromiseTo(async ({ interval }) => {
+      const { groupId, generationId, memberId } = this
+      const now = Date.now()
+
+      if (memberId && now >= this.lastRequest + interval) {
+        const payload = {
+          groupId,
+          memberId,
+          groupGenerationId: generationId,
+        }
+
+        await this.coordinator.heartbeat(payload)
+        this.instrumentationEmitter.emit(HEARTBEAT, payload)
+        this.lastRequest = Date.now()
+      }
+    })
   }
 
   isLeader() {
@@ -387,22 +404,7 @@ module.exports = class ConsumerGroup {
   }
 
   async heartbeat({ interval }) {
-    return await this.sharedPromiseToToHeartbeat(async () => {
-      const { groupId, generationId, memberId } = this
-      const now = Date.now()
-
-      if (memberId && now >= this.lastRequest + interval) {
-        const payload = {
-          groupId,
-          memberId,
-          groupGenerationId: generationId,
-        }
-
-        await this.coordinator.heartbeat(payload)
-        this.instrumentationEmitter.emit(HEARTBEAT, payload)
-        this.lastRequest = Date.now()
-      }
-    })
+    return this[PRIVATE.SHAREDHEARTBEAT]({ interval })
   }
 
   async fetch() {
