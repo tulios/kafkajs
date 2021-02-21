@@ -32,6 +32,18 @@ A rebalance will happen in a number of scenarios:
 
 The rebalancing state is enforced on the broker side. When a consumer tries to commit offsets, the broker will respond with `REBALANCE_IN_PROGRESS`. Upon receiving that, the consumer group leader will receive a list of currently active members of the consumer group. Using the [partition assigner](Consuming.md#a-name-custom-partition-assigner-a-custom-partition-assigner) configured on the client, the consumer group leader will assign each partition to a consumer within the group and submit the assignment back to the group coordinator, which distributes the relevant assignments to the members of the consumer group. When this is done, the group is considered in-sync again and processing can continue.
 
+## Can KafkaJS be used in a browser?
+
+No - KafkaJS is a library for NodeJS and will not work in a browser context.
+
+Communication with Kafka happens over a TCP socket. The NodeJS API used to create that socket is [`net.connect`](https://nodejs.org/api/net.html#net_net_connect)/[`tls.connect`](https://nodejs.org/api/tls.html#tls_tls_connect_options_callback). There is no equivalent API in browsers [as of yet](https://github.com/WICG/raw-sockets), which means that even if you run KafkaJS through a transpilation tool like [Browserify](http://browserify.org/), it cannot polyfill those modules.
+
+For more information, see:
+
+* [#508](https://github.com/tulios/kafkajs/issues/508#issuecomment-535382981)
+* [#36](https://github.com/tulios/kafkajs/issues/36)
+* [Custom Socket Factory](https://kafka.js.org/docs/configuration#custom-socket-factory)
+
 ## Didn't find what you were looking for?
 
 Please [open an issue](https://github.com/tulios/kafkajs/issues) or [join our Slack community](https://kafkajs-slackin.herokuapp.com)

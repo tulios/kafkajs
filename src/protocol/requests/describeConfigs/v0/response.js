@@ -1,5 +1,7 @@
 const Decoder = require('../../../decoder')
 const { failure, createErrorFromCode } = require('../../../error')
+const ConfigSource = require('../../../configSource')
+const ConfigResourceTypes = require('../../../configResourceTypes')
 
 /**
  * DescribeConfigs Response (Version: 0) => throttle_time_ms [resources]
@@ -17,21 +19,58 @@ const { failure, createErrorFromCode } = require('../../../error')
  *       is_sensitive => BOOLEAN
  */
 
-const decodeConfigEntries = decoder => ({
-  configName: decoder.readString(),
-  configValue: decoder.readString(),
-  readOnly: decoder.readBoolean(),
-  isDefault: decoder.readBoolean(),
-  isSensitive: decoder.readBoolean(),
-})
+const decodeConfigEntries = (decoder, resourceType) => {
+  const configName = decoder.readString()
+  const configValue = decoder.readString()
+  const readOnly = decoder.readBoolean()
+  const isDefault = decoder.readBoolean()
+  const isSensitive = decoder.readBoolean()
 
-const decodeResources = decoder => ({
-  errorCode: decoder.readInt16(),
-  errorMessage: decoder.readString(),
-  resourceType: decoder.readInt8(),
-  resourceName: decoder.readString(),
-  configEntries: decoder.readArray(decodeConfigEntries),
-})
+  /**
+   * Backporting ConfigSource value to v0
+   * @see https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/common/requests/DescribeConfigsResponse.java#L232-L242
+   */
+  let configSource
+  if (isDefault) {
+    configSource = ConfigSource.DEFAULT_CONFIG
+  } else {
+    switch (resourceType) {
+      case ConfigResourceTypes.BROKER:
+        configSource = ConfigSource.STATIC_BROKER_CONFIG
+        break
+      case ConfigResourceTypes.TOPIC:
+        configSource = ConfigSource.TOPIC_CONFIG
+        break
+      default:
+        configSource = ConfigSource.UNKNOWN
+    }
+  }
+
+  return {
+    configName,
+    configValue,
+    readOnly,
+    isDefault,
+    configSource,
+    isSensitive,
+  }
+}
+
+const decodeResources = decoder => {
+  const errorCode = decoder.readInt16()
+  const errorMessage = decoder.readString()
+  const resourceType = decoder.readInt8()
+  const resourceName = decoder.readString()
+  const configEntries = decoder.readArray(decoder => decodeConfigEntries(decoder, resourceType))
+
+  return {
+    errorCode,
+    errorMessage,
+    resourceType,
+    resourceName,
+    configEntries,
+  }
+}
 
 const decode = async rawData => {
   const decoder = new Decoder(rawData)

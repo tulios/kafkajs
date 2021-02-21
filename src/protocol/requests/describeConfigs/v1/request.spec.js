@@ -1,4 +1,5 @@
 const RequestV1Protocol = require('./request')
+const ConfigResourceTypes = require('../../../configResourceTypes')
 
 describe('Protocol > Requests > DescribeConfigs > v1', () => {
   test('request', async () => {
@@ -6,8 +7,8 @@ describe('Protocol > Requests > DescribeConfigs > v1', () => {
       includeSynonyms: true,
       resources: [
         {
-          type: 2,
-          name: 'test-topic-e0cadb9e9f1a6396c116-54438-43bb8b69-32cf-4909-af02-cbe20c2d9e3d',
+          type: ConfigResourceTypes.TOPIC,
+          name: 'topic-test1',
           configNames: ['compression.type', 'retention.ms'],
         },
       ],
