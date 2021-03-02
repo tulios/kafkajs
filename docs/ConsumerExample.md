@@ -8,7 +8,7 @@ The following example assumes that you are using the local Kafka configuration d
 ```javascript
 const ip = require('ip')
 
-const { Kafka, logLevel } = require('../index')
+const { Kafka, logLevel } = require('kafkajs')
 
 const host = process.env.HOST_IP || ip.address()
 
