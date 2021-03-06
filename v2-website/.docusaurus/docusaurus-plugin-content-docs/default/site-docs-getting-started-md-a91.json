@@ -1,7 +1,7 @@
 {
   "unversionedId": "getting-started",
   "id": "getting-started",
-  "isDocsHomePage": true,
+  "isDocsHomePage": false,
   "title": "Getting Started",
   "description": "Install KafkaJS using yarn:",
   "source": "@site/docs\\GettingStarted.md",

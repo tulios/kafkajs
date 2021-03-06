@@ -22,7 +22,6 @@ module.exports={
       "@docusaurus/preset-classic",
       {
         "docs": {
-          "homePageId": "getting-started",
           "showLastUpdateAuthor": true,
           "showLastUpdateTime": true,
           "editUrl": "https://github.com/tulios/kafkajs/edit/master/docs/",

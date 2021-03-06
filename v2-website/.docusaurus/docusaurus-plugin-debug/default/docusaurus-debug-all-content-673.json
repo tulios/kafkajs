@@ -346,7 +346,7 @@
             {
               "unversionedId": "getting-started",
               "id": "getting-started",
-              "isDocsHomePage": true,
+              "isDocsHomePage": false,
               "title": "Getting Started",
               "description": "Install KafkaJS using yarn:",
               "source": "@site/docs\\GettingStarted.md",
@@ -918,7 +918,7 @@
             {
               "unversionedId": "getting-started",
               "id": "version-1.15.0/getting-started",
-              "isDocsHomePage": true,
+              "isDocsHomePage": false,
               "title": "Getting Started",
               "description": "Install KafkaJS using yarn:",
               "source": "@site/versioned_docs\\version-1.15.0\\GettingStarted.md",
@@ -1489,7 +1489,7 @@
             {
               "unversionedId": "getting-started",
               "id": "version-1.14.0/getting-started",
-              "isDocsHomePage": true,
+              "isDocsHomePage": false,
               "title": "Getting Started",
               "description": "Install KafkaJS using yarn:",
               "source": "@site/versioned_docs\\version-1.14.0\\GettingStarted.md",
@@ -2060,7 +2060,7 @@
             {
               "unversionedId": "getting-started",
               "id": "version-1.13.0/getting-started",
-              "isDocsHomePage": true,
+              "isDocsHomePage": false,
               "title": "Getting Started",
               "description": "Install KafkaJS using yarn:",
               "source": "@site/versioned_docs\\version-1.13.0\\GettingStarted.md",
@@ -2631,7 +2631,7 @@
             {
               "unversionedId": "getting-started",
               "id": "version-1.12.0/getting-started",
-              "isDocsHomePage": true,
+              "isDocsHomePage": false,
               "title": "Getting Started",
               "description": "Install KafkaJS using yarn:",
               "source": "@site/versioned_docs\\version-1.12.0\\GettingStarted.md",
@@ -3202,7 +3202,7 @@
             {
               "unversionedId": "getting-started",
               "id": "version-1.11.0/getting-started",
-              "isDocsHomePage": true,
+              "isDocsHomePage": false,
               "title": "Getting Started",
               "description": "Install KafkaJS using yarn:",
               "source": "@site/versioned_docs\\version-1.11.0\\GettingStarted.md",
@@ -3773,7 +3773,7 @@
             {
               "unversionedId": "getting-started",
               "id": "version-1.10.0/getting-started",
-              "isDocsHomePage": true,
+              "isDocsHomePage": false,
               "title": "Getting Started",
               "description": "Install KafkaJS using yarn:",
               "source": "@site/versioned_docs\\version-1.10.0\\GettingStarted.md",
