@@ -1,0 +1,30 @@
+{
+  "docs": {
+    "Usage": [
+      "introduction",
+      "getting-started",
+      "configuration",
+      "producing",
+      "transactions",
+      "consuming",
+      "admin",
+      "instrumentation-events",
+      "custom-logger",
+      "retry-detailed",
+      "faq",
+      "pre-releases"
+    ],
+    "Examples": [
+      "running-kafka-in-development",
+      "producer-example",
+      "consumer-example"
+    ],
+    "API Reference": [],
+    "Developing KafkaJS": [
+      "contribution-guide",
+      "development-environment",
+      "testing",
+      "development-resources"
+    ]
+  }
+}
