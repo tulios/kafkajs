@@ -1,0 +1,23 @@
+{
+  "unversionedId": "transactions",
+  "id": "version-1.15.0/transactions",
+  "isDocsHomePage": false,
+  "title": "Transactions",
+  "description": "KafkaJS provides a a simple interface to support Kafka transactions.",
+  "source": "@site/versioned_docs\\version-1.15.0\\Transactions.md",
+  "slug": "/transactions",
+  "permalink": "/docs/transactions",
+  "editUrl": "https://github.com/tulios/kafkajs/edit/master/docs/versioned_docs/version-1.15.0/Transactions.md",
+  "version": "1.15.0",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055,
+  "sidebar": "version-1.15.0/docs",
+  "previous": {
+    "title": "Producing Messages",
+    "permalink": "/docs/producing"
+  },
+  "next": {
+    "title": "Consuming Messages",
+    "permalink": "/docs/consuming"
+  }
+}

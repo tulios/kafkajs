@@ -1,0 +1,23 @@
+{
+  "unversionedId": "consumer-example",
+  "id": "consumer-example",
+  "isDocsHomePage": false,
+  "title": "Consumer",
+  "description": "The following example assumes that you are using the local Kafka configuration described in Running Kafka in Development.",
+  "source": "@site/docs\\ConsumerExample.md",
+  "slug": "/consumer-example",
+  "permalink": "/docs/next/consumer-example",
+  "editUrl": "https://github.com/tulios/kafkajs/edit/master/docs/docs/ConsumerExample.md",
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055,
+  "sidebar": "docs",
+  "previous": {
+    "title": "Producer",
+    "permalink": "/docs/next/producer-example"
+  },
+  "next": {
+    "title": "Contributing",
+    "permalink": "/docs/next/contribution-guide"
+  }
+}

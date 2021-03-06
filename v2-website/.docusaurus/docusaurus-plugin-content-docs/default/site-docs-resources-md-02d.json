@@ -1,0 +1,19 @@
+{
+  "unversionedId": "development-resources",
+  "id": "development-resources",
+  "isDocsHomePage": false,
+  "title": "Resources",
+  "description": "When developing KafkaJS, these are some useful resources:",
+  "source": "@site/..\\docs\\Resources.md",
+  "slug": "/development-resources",
+  "permalink": "/docs/next/development-resources",
+  "editUrl": "https://github.com/tulios/kafkajs/edit/master/docs/../docs/Resources.md",
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055,
+  "sidebar": "docs",
+  "previous": {
+    "title": "Testing",
+    "permalink": "/docs/next/testing"
+  }
+}

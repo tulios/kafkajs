@@ -1,0 +1,23 @@
+{
+  "unversionedId": "running-kafka-in-development",
+  "id": "running-kafka-in-development",
+  "isDocsHomePage": false,
+  "title": "Running Kafka in Development",
+  "description": "The following configuration will be used in the examples listed here. For more complete and up-to-date documentation, see wurstmeister/kafka-docker.",
+  "source": "@site/docs\\DockerLocal.md",
+  "slug": "/running-kafka-in-development",
+  "permalink": "/docs/next/running-kafka-in-development",
+  "editUrl": "https://github.com/tulios/kafkajs/edit/master/docs/docs/DockerLocal.md",
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055,
+  "sidebar": "docs",
+  "previous": {
+    "title": "Pre-releases",
+    "permalink": "/docs/next/pre-releases"
+  },
+  "next": {
+    "title": "Producer",
+    "permalink": "/docs/next/producer-example"
+  }
+}

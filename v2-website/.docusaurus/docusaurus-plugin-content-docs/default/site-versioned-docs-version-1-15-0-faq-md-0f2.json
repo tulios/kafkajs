@@ -1,0 +1,23 @@
+{
+  "unversionedId": "faq",
+  "id": "version-1.15.0/faq",
+  "isDocsHomePage": false,
+  "title": "FAQ",
+  "description": "Is KafkaJS used in production?",
+  "source": "@site/versioned_docs\\version-1.15.0\\FAQ.md",
+  "slug": "/faq",
+  "permalink": "/docs/faq",
+  "editUrl": "https://github.com/tulios/kafkajs/edit/master/docs/versioned_docs/version-1.15.0/FAQ.md",
+  "version": "1.15.0",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055,
+  "sidebar": "version-1.15.0/docs",
+  "previous": {
+    "title": "Retry Mechanism Explained",
+    "permalink": "/docs/retry-detailed"
+  },
+  "next": {
+    "title": "Pre-releases",
+    "permalink": "/docs/pre-releases"
+  }
+}

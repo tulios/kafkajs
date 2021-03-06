@@ -1,0 +1,23 @@
+{
+  "unversionedId": "custom-logger",
+  "id": "version-1.14.0/custom-logger",
+  "isDocsHomePage": false,
+  "title": "Custom Logger",
+  "description": "The logger is customized using log creators. A log creator is a function which receives a log level and returns a log function. The log function receives namespace, level, label, and log.",
+  "source": "@site/versioned_docs\\version-1.14.0\\CustomLogger.md",
+  "slug": "/custom-logger",
+  "permalink": "/docs/1.14.0/custom-logger",
+  "editUrl": "https://github.com/tulios/kafkajs/edit/master/docs/versioned_docs/version-1.14.0/CustomLogger.md",
+  "version": "1.14.0",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055,
+  "sidebar": "version-1.14.0/docs",
+  "previous": {
+    "title": "Instrumentation Events",
+    "permalink": "/docs/1.14.0/instrumentation-events"
+  },
+  "next": {
+    "title": "Retry Mechanism Explained",
+    "permalink": "/docs/1.14.0/retry-detailed"
+  }
+}

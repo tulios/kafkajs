@@ -1,0 +1,23 @@
+{
+  "unversionedId": "pre-releases",
+  "id": "version-1.15.0/pre-releases",
+  "isDocsHomePage": false,
+  "title": "Pre-releases",
+  "description": "Stable KafkaJS versions can take a while to be released. Release candidates are usually deployed in production for at least a week before general availability. We do this to make sure that all releases are stable, and we trust our services to verify most production use-cases. Although this process guarantees some quality, it can be too slow or unpredictable. Some versions go out faster than others, and it can be frustrating if you need a particular feature that has not been included in a stable release yet.",
+  "source": "@site/versioned_docs\\version-1.15.0\\PreReleases.md",
+  "slug": "/pre-releases",
+  "permalink": "/docs/pre-releases",
+  "editUrl": "https://github.com/tulios/kafkajs/edit/master/docs/versioned_docs/version-1.15.0/PreReleases.md",
+  "version": "1.15.0",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055,
+  "sidebar": "version-1.15.0/docs",
+  "previous": {
+    "title": "FAQ",
+    "permalink": "/docs/faq"
+  },
+  "next": {
+    "title": "Running Kafka in Development",
+    "permalink": "/docs/running-kafka-in-development"
+  }
+}

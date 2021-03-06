@@ -1,0 +1,23 @@
+{
+  "unversionedId": "development-environment",
+  "id": "development-environment",
+  "isDocsHomePage": false,
+  "title": "Development Environment",
+  "description": "When developing KafkaJS, we run a Kafka cluster in a similar way to what is described in Running Kafka in Development, using docker and docker-compose. Before you proceed, make sure that you have both docker and docker-compose available.",
+  "source": "@site/..\\docs\\DevelopmentEnvironment.md",
+  "slug": "/development-environment",
+  "permalink": "/docs/next/development-environment",
+  "editUrl": "https://github.com/tulios/kafkajs/edit/master/docs/../docs/DevelopmentEnvironment.md",
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055,
+  "sidebar": "docs",
+  "previous": {
+    "title": "Contributing",
+    "permalink": "/docs/next/contribution-guide"
+  },
+  "next": {
+    "title": "Testing",
+    "permalink": "/docs/next/testing"
+  }
+}

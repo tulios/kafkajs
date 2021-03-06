@@ -1,0 +1,23 @@
+{
+  "unversionedId": "contribution-guide",
+  "id": "contribution-guide",
+  "isDocsHomePage": false,
+  "title": "Contributing",
+  "description": "KafkaJS is an open-source project where development takes place in the open on GitHub. Although the project is maintained by a small group of dedicated volunteers, we are grateful to the community for bug fixes, feature development and other contributions.",
+  "source": "@site/..\\docs\\ContributionGuide.md",
+  "slug": "/contribution-guide",
+  "permalink": "/docs/next/contribution-guide",
+  "editUrl": "https://github.com/tulios/kafkajs/edit/master/docs/../docs/ContributionGuide.md",
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055,
+  "sidebar": "docs",
+  "previous": {
+    "title": "Consumer",
+    "permalink": "/docs/next/consumer-example"
+  },
+  "next": {
+    "title": "Development Environment",
+    "permalink": "/docs/next/development-environment"
+  }
+}

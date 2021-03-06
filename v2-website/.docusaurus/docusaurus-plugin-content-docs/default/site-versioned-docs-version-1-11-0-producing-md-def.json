@@ -1,0 +1,23 @@
+{
+  "unversionedId": "producing",
+  "id": "version-1.11.0/producing",
+  "isDocsHomePage": false,
+  "title": "Producing Messages",
+  "description": "To publish messages to Kafka you have to create a producer. Simply call the producer function of the client to create it:",
+  "source": "@site/versioned_docs\\version-1.11.0\\Producing.md",
+  "slug": "/producing",
+  "permalink": "/docs/1.11.0/producing",
+  "editUrl": "https://github.com/tulios/kafkajs/edit/master/docs/versioned_docs/version-1.11.0/Producing.md",
+  "version": "1.11.0",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055,
+  "sidebar": "version-1.11.0/docs",
+  "previous": {
+    "title": "Client Configuration",
+    "permalink": "/docs/1.11.0/configuration"
+  },
+  "next": {
+    "title": "Transactions",
+    "permalink": "/docs/1.11.0/transactions"
+  }
+}

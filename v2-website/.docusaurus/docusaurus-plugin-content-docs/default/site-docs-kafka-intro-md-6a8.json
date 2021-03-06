@@ -1,0 +1,20 @@
+{
+  "unversionedId": "introduction",
+  "id": "introduction",
+  "isDocsHomePage": false,
+  "title": "A Brief Intro to Kafka",
+  "description": "Kafka is a messaging system that safely moves data between systems. Depending on how each component is",
+  "source": "@site/..\\docs\\KafkaIntro.md",
+  "slug": "/introduction",
+  "permalink": "/docs/next/introduction",
+  "editUrl": "https://github.com/tulios/kafkajs/edit/master/docs/../docs/KafkaIntro.md",
+  "version": "current",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055,
+  "sidebar_label": "Intro to Kafka",
+  "sidebar": "docs",
+  "next": {
+    "title": "Getting Started",
+    "permalink": "/docs/next/"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "unversionedId": "getting-started",
+  "id": "version-1.13.0/getting-started",
+  "isDocsHomePage": true,
+  "title": "Getting Started",
+  "description": "Install KafkaJS using yarn:",
+  "source": "@site/versioned_docs\\version-1.13.0\\GettingStarted.md",
+  "slug": "/",
+  "permalink": "/docs/1.13.0/",
+  "editUrl": "https://github.com/tulios/kafkajs/edit/master/docs/versioned_docs/version-1.13.0/GettingStarted.md",
+  "version": "1.13.0",
+  "lastUpdatedBy": "Author",
+  "lastUpdatedAt": 1539502055,
+  "sidebar_label": "Getting Started",
+  "sidebar": "version-1.13.0/docs",
+  "previous": {
+    "title": "A Brief Intro to Kafka",
+    "permalink": "/docs/1.13.0/introduction"
+  },
+  "next": {
+    "title": "Client Configuration",
+    "permalink": "/docs/1.13.0/configuration"
+  }
+}

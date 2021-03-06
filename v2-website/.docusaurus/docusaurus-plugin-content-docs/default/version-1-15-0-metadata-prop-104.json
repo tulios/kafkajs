@@ -1,0 +1,153 @@
+{
+  "pluginId": "default",
+  "version": "1.15.0",
+  "label": "1.15.0",
+  "isLast": true,
+  "docsSidebars": {
+    "version-1.15.0/docs": [
+      {
+        "collapsed": true,
+        "type": "category",
+        "label": "Usage",
+        "items": [
+          {
+            "type": "link",
+            "label": "Intro to Kafka",
+            "href": "/docs/introduction"
+          },
+          {
+            "type": "link",
+            "label": "Getting Started",
+            "href": "/docs/"
+          },
+          {
+            "type": "link",
+            "label": "Client Configuration",
+            "href": "/docs/configuration"
+          },
+          {
+            "type": "link",
+            "label": "Producing Messages",
+            "href": "/docs/producing"
+          },
+          {
+            "type": "link",
+            "label": "Transactions",
+            "href": "/docs/transactions"
+          },
+          {
+            "type": "link",
+            "label": "Consuming Messages",
+            "href": "/docs/consuming"
+          },
+          {
+            "type": "link",
+            "label": "Admin Client",
+            "href": "/docs/admin"
+          },
+          {
+            "type": "link",
+            "label": "Instrumentation Events",
+            "href": "/docs/instrumentation-events"
+          },
+          {
+            "type": "link",
+            "label": "Custom Logger",
+            "href": "/docs/custom-logger"
+          },
+          {
+            "type": "link",
+            "label": "Retry Mechanism Explained",
+            "href": "/docs/retry-detailed"
+          },
+          {
+            "type": "link",
+            "label": "FAQ",
+            "href": "/docs/faq"
+          },
+          {
+            "type": "link",
+            "label": "Pre-releases",
+            "href": "/docs/pre-releases"
+          }
+        ]
+      },
+      {
+        "collapsed": true,
+        "type": "category",
+        "label": "Examples",
+        "items": [
+          {
+            "type": "link",
+            "label": "Running Kafka in Development",
+            "href": "/docs/running-kafka-in-development"
+          },
+          {
+            "type": "link",
+            "label": "Producer",
+            "href": "/docs/producer-example"
+          },
+          {
+            "type": "link",
+            "label": "Consumer",
+            "href": "/docs/consumer-example"
+          }
+        ]
+      },
+      {
+        "collapsed": true,
+        "type": "category",
+        "label": "API Reference",
+        "items": []
+      },
+      {
+        "collapsed": true,
+        "type": "category",
+        "label": "Developing KafkaJS",
+        "items": [
+          {
+            "type": "link",
+            "label": "Contributing",
+            "href": "/docs/contribution-guide"
+          },
+          {
+            "type": "link",
+            "label": "Development Environment",
+            "href": "/docs/development-environment"
+          },
+          {
+            "type": "link",
+            "label": "Testing",
+            "href": "/docs/testing"
+          },
+          {
+            "type": "link",
+            "label": "Resources",
+            "href": "/docs/development-resources"
+          }
+        ]
+      }
+    ]
+  },
+  "permalinkToSidebar": {
+    "/docs/admin": "version-1.15.0/docs",
+    "/docs/configuration": "version-1.15.0/docs",
+    "/docs/consumer-example": "version-1.15.0/docs",
+    "/docs/consuming": "version-1.15.0/docs",
+    "/docs/contribution-guide": "version-1.15.0/docs",
+    "/docs/custom-logger": "version-1.15.0/docs",
+    "/docs/development-environment": "version-1.15.0/docs",
+    "/docs/development-resources": "version-1.15.0/docs",
+    "/docs/faq": "version-1.15.0/docs",
+    "/docs/": "version-1.15.0/docs",
+    "/docs/instrumentation-events": "version-1.15.0/docs",
+    "/docs/introduction": "version-1.15.0/docs",
+    "/docs/pre-releases": "version-1.15.0/docs",
+    "/docs/producer-example": "version-1.15.0/docs",
+    "/docs/producing": "version-1.15.0/docs",
+    "/docs/retry-detailed": "version-1.15.0/docs",
+    "/docs/running-kafka-in-development": "version-1.15.0/docs",
+    "/docs/testing": "version-1.15.0/docs",
+    "/docs/transactions": "version-1.15.0/docs"
+  }
+}

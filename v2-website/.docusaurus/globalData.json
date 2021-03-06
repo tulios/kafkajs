@@ -1,0 +1,737 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/docs",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": false,
+          "path": "/docs/next",
+          "mainDocId": "getting-started",
+          "docs": [
+            {
+              "id": "admin",
+              "path": "/docs/next/admin",
+              "sidebar": "docs"
+            },
+            {
+              "id": "configuration",
+              "path": "/docs/next/configuration",
+              "sidebar": "docs"
+            },
+            {
+              "id": "consumer-example",
+              "path": "/docs/next/consumer-example",
+              "sidebar": "docs"
+            },
+            {
+              "id": "consuming",
+              "path": "/docs/next/consuming",
+              "sidebar": "docs"
+            },
+            {
+              "id": "contribution-guide",
+              "path": "/docs/next/contribution-guide",
+              "sidebar": "docs"
+            },
+            {
+              "id": "custom-logger",
+              "path": "/docs/next/custom-logger",
+              "sidebar": "docs"
+            },
+            {
+              "id": "development-environment",
+              "path": "/docs/next/development-environment",
+              "sidebar": "docs"
+            },
+            {
+              "id": "development-resources",
+              "path": "/docs/next/development-resources",
+              "sidebar": "docs"
+            },
+            {
+              "id": "faq",
+              "path": "/docs/next/faq",
+              "sidebar": "docs"
+            },
+            {
+              "id": "getting-started",
+              "path": "/docs/next/",
+              "sidebar": "docs"
+            },
+            {
+              "id": "instrumentation-events",
+              "path": "/docs/next/instrumentation-events",
+              "sidebar": "docs"
+            },
+            {
+              "id": "introduction",
+              "path": "/docs/next/introduction",
+              "sidebar": "docs"
+            },
+            {
+              "id": "pre-releases",
+              "path": "/docs/next/pre-releases",
+              "sidebar": "docs"
+            },
+            {
+              "id": "producer-example",
+              "path": "/docs/next/producer-example",
+              "sidebar": "docs"
+            },
+            {
+              "id": "producing",
+              "path": "/docs/next/producing",
+              "sidebar": "docs"
+            },
+            {
+              "id": "retry-detailed",
+              "path": "/docs/next/retry-detailed",
+              "sidebar": "docs"
+            },
+            {
+              "id": "running-kafka-in-development",
+              "path": "/docs/next/running-kafka-in-development",
+              "sidebar": "docs"
+            },
+            {
+              "id": "testing",
+              "path": "/docs/next/testing",
+              "sidebar": "docs"
+            },
+            {
+              "id": "transactions",
+              "path": "/docs/next/transactions",
+              "sidebar": "docs"
+            }
+          ]
+        },
+        {
+          "name": "1.15.0",
+          "label": "1.15.0",
+          "isLast": true,
+          "path": "/docs",
+          "mainDocId": "getting-started",
+          "docs": [
+            {
+              "id": "admin",
+              "path": "/docs/admin",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "configuration",
+              "path": "/docs/configuration",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "consumer-example",
+              "path": "/docs/consumer-example",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "consuming",
+              "path": "/docs/consuming",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "contribution-guide",
+              "path": "/docs/contribution-guide",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "custom-logger",
+              "path": "/docs/custom-logger",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "development-environment",
+              "path": "/docs/development-environment",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "development-resources",
+              "path": "/docs/development-resources",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "faq",
+              "path": "/docs/faq",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "getting-started",
+              "path": "/docs/",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "instrumentation-events",
+              "path": "/docs/instrumentation-events",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "introduction",
+              "path": "/docs/introduction",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "pre-releases",
+              "path": "/docs/pre-releases",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "producer-example",
+              "path": "/docs/producer-example",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "producing",
+              "path": "/docs/producing",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "retry-detailed",
+              "path": "/docs/retry-detailed",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "running-kafka-in-development",
+              "path": "/docs/running-kafka-in-development",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "testing",
+              "path": "/docs/testing",
+              "sidebar": "version-1.15.0/docs"
+            },
+            {
+              "id": "transactions",
+              "path": "/docs/transactions",
+              "sidebar": "version-1.15.0/docs"
+            }
+          ]
+        },
+        {
+          "name": "1.14.0",
+          "label": "1.14.0",
+          "isLast": false,
+          "path": "/docs/1.14.0",
+          "mainDocId": "getting-started",
+          "docs": [
+            {
+              "id": "admin",
+              "path": "/docs/1.14.0/admin",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "configuration",
+              "path": "/docs/1.14.0/configuration",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "consumer-example",
+              "path": "/docs/1.14.0/consumer-example",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "consuming",
+              "path": "/docs/1.14.0/consuming",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "contribution-guide",
+              "path": "/docs/1.14.0/contribution-guide",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "custom-logger",
+              "path": "/docs/1.14.0/custom-logger",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "development-environment",
+              "path": "/docs/1.14.0/development-environment",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "development-resources",
+              "path": "/docs/1.14.0/development-resources",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "faq",
+              "path": "/docs/1.14.0/faq",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "getting-started",
+              "path": "/docs/1.14.0/",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "instrumentation-events",
+              "path": "/docs/1.14.0/instrumentation-events",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "introduction",
+              "path": "/docs/1.14.0/introduction",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "pre-releases",
+              "path": "/docs/1.14.0/pre-releases",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "producer-example",
+              "path": "/docs/1.14.0/producer-example",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "producing",
+              "path": "/docs/1.14.0/producing",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "retry-detailed",
+              "path": "/docs/1.14.0/retry-detailed",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "running-kafka-in-development",
+              "path": "/docs/1.14.0/running-kafka-in-development",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "testing",
+              "path": "/docs/1.14.0/testing",
+              "sidebar": "version-1.14.0/docs"
+            },
+            {
+              "id": "transactions",
+              "path": "/docs/1.14.0/transactions",
+              "sidebar": "version-1.14.0/docs"
+            }
+          ]
+        },
+        {
+          "name": "1.13.0",
+          "label": "1.13.0",
+          "isLast": false,
+          "path": "/docs/1.13.0",
+          "mainDocId": "getting-started",
+          "docs": [
+            {
+              "id": "admin",
+              "path": "/docs/1.13.0/admin",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "configuration",
+              "path": "/docs/1.13.0/configuration",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "consumer-example",
+              "path": "/docs/1.13.0/consumer-example",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "consuming",
+              "path": "/docs/1.13.0/consuming",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "contribution-guide",
+              "path": "/docs/1.13.0/contribution-guide",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "custom-logger",
+              "path": "/docs/1.13.0/custom-logger",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "development-environment",
+              "path": "/docs/1.13.0/development-environment",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "development-resources",
+              "path": "/docs/1.13.0/development-resources",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "faq",
+              "path": "/docs/1.13.0/faq",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "getting-started",
+              "path": "/docs/1.13.0/",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "instrumentation-events",
+              "path": "/docs/1.13.0/instrumentation-events",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "introduction",
+              "path": "/docs/1.13.0/introduction",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "pre-releases",
+              "path": "/docs/1.13.0/pre-releases",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "producer-example",
+              "path": "/docs/1.13.0/producer-example",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "producing",
+              "path": "/docs/1.13.0/producing",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "retry-detailed",
+              "path": "/docs/1.13.0/retry-detailed",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "running-kafka-in-development",
+              "path": "/docs/1.13.0/running-kafka-in-development",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "testing",
+              "path": "/docs/1.13.0/testing",
+              "sidebar": "version-1.13.0/docs"
+            },
+            {
+              "id": "transactions",
+              "path": "/docs/1.13.0/transactions",
+              "sidebar": "version-1.13.0/docs"
+            }
+          ]
+        },
+        {
+          "name": "1.12.0",
+          "label": "1.12.0",
+          "isLast": false,
+          "path": "/docs/1.12.0",
+          "mainDocId": "getting-started",
+          "docs": [
+            {
+              "id": "admin",
+              "path": "/docs/1.12.0/admin",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "configuration",
+              "path": "/docs/1.12.0/configuration",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "consumer-example",
+              "path": "/docs/1.12.0/consumer-example",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "consuming",
+              "path": "/docs/1.12.0/consuming",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "contribution-guide",
+              "path": "/docs/1.12.0/contribution-guide",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "custom-logger",
+              "path": "/docs/1.12.0/custom-logger",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "development-environment",
+              "path": "/docs/1.12.0/development-environment",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "development-resources",
+              "path": "/docs/1.12.0/development-resources",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "faq",
+              "path": "/docs/1.12.0/faq",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "getting-started",
+              "path": "/docs/1.12.0/",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "instrumentation-events",
+              "path": "/docs/1.12.0/instrumentation-events",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "introduction",
+              "path": "/docs/1.12.0/introduction",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "pre-releases",
+              "path": "/docs/1.12.0/pre-releases",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "producer-example",
+              "path": "/docs/1.12.0/producer-example",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "producing",
+              "path": "/docs/1.12.0/producing",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "retry-detailed",
+              "path": "/docs/1.12.0/retry-detailed",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "running-kafka-in-development",
+              "path": "/docs/1.12.0/running-kafka-in-development",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "testing",
+              "path": "/docs/1.12.0/testing",
+              "sidebar": "version-1.12.0/docs"
+            },
+            {
+              "id": "transactions",
+              "path": "/docs/1.12.0/transactions",
+              "sidebar": "version-1.12.0/docs"
+            }
+          ]
+        },
+        {
+          "name": "1.11.0",
+          "label": "1.11.0",
+          "isLast": false,
+          "path": "/docs/1.11.0",
+          "mainDocId": "getting-started",
+          "docs": [
+            {
+              "id": "admin",
+              "path": "/docs/1.11.0/admin",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "configuration",
+              "path": "/docs/1.11.0/configuration",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "consumer-example",
+              "path": "/docs/1.11.0/consumer-example",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "consuming",
+              "path": "/docs/1.11.0/consuming",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "contribution-guide",
+              "path": "/docs/1.11.0/contribution-guide",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "custom-logger",
+              "path": "/docs/1.11.0/custom-logger",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "development-environment",
+              "path": "/docs/1.11.0/development-environment",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "development-resources",
+              "path": "/docs/1.11.0/development-resources",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "faq",
+              "path": "/docs/1.11.0/faq",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "getting-started",
+              "path": "/docs/1.11.0/",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "instrumentation-events",
+              "path": "/docs/1.11.0/instrumentation-events",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "introduction",
+              "path": "/docs/1.11.0/introduction",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "pre-releases",
+              "path": "/docs/1.11.0/pre-releases",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "producer-example",
+              "path": "/docs/1.11.0/producer-example",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "producing",
+              "path": "/docs/1.11.0/producing",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "retry-detailed",
+              "path": "/docs/1.11.0/retry-detailed",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "running-kafka-in-development",
+              "path": "/docs/1.11.0/running-kafka-in-development",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "testing",
+              "path": "/docs/1.11.0/testing",
+              "sidebar": "version-1.11.0/docs"
+            },
+            {
+              "id": "transactions",
+              "path": "/docs/1.11.0/transactions",
+              "sidebar": "version-1.11.0/docs"
+            }
+          ]
+        },
+        {
+          "name": "1.10.0",
+          "label": "1.10.0",
+          "isLast": false,
+          "path": "/docs/1.10.0",
+          "mainDocId": "getting-started",
+          "docs": [
+            {
+              "id": "admin",
+              "path": "/docs/1.10.0/admin",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "configuration",
+              "path": "/docs/1.10.0/configuration",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "consumer-example",
+              "path": "/docs/1.10.0/consumer-example",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "consuming",
+              "path": "/docs/1.10.0/consuming",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "contribution-guide",
+              "path": "/docs/1.10.0/contribution-guide",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "custom-logger",
+              "path": "/docs/1.10.0/custom-logger",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "development-environment",
+              "path": "/docs/1.10.0/development-environment",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "development-resources",
+              "path": "/docs/1.10.0/development-resources",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "faq",
+              "path": "/docs/1.10.0/faq",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "getting-started",
+              "path": "/docs/1.10.0/",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "instrumentation-events",
+              "path": "/docs/1.10.0/instrumentation-events",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "introduction",
+              "path": "/docs/1.10.0/introduction",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "pre-releases",
+              "path": "/docs/1.10.0/pre-releases",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "producer-example",
+              "path": "/docs/1.10.0/producer-example",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "producing",
+              "path": "/docs/1.10.0/producing",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "retry-detailed",
+              "path": "/docs/1.10.0/retry-detailed",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "running-kafka-in-development",
+              "path": "/docs/1.10.0/running-kafka-in-development",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "testing",
+              "path": "/docs/1.10.0/testing",
+              "sidebar": "version-1.10.0/docs"
+            },
+            {
+              "id": "transactions",
+              "path": "/docs/1.10.0/transactions",
+              "sidebar": "version-1.10.0/docs"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

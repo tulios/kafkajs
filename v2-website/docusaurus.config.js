@@ -26,12 +26,12 @@ module.exports={
           "showLastUpdateAuthor": true,
           "showLastUpdateTime": true,
           "editUrl": "https://github.com/tulios/kafkajs/edit/master/docs/",
-          "path": "..\\docs",
-          "sidebarPath": "..\\website\\sidebars.json"
+          "path": "./docs",
+          "sidebarPath": require.resolve("./sidebars.json"),
         },
         "blog": {},
         "theme": {
-          "customCss": "..\\src\\css\\customTheme.css"
+          "customCss": [require.resolve('./src/css/customTheme.css')],
         }
       }
     ]

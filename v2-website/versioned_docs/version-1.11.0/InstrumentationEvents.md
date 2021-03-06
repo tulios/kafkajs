@@ -28,7 +28,7 @@ Instrumentation Event:
 }
 ```
 
-## <a name="list"> List of available events:
+## <a name="list"> </a> List of available events:
 
 ### <a name="consumer"></a> Consumer
 

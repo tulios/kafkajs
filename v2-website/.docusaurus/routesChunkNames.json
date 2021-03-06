@@ -1,0 +1,599 @@
+{
+  "/-d7d": {
+    "component": "component---site-src-pages-index-jsece-a18",
+    "config": "config---5-e-9-4f3"
+  },
+  "/__docusaurus/debug-3d6": {
+    "component": "component---theme-debug-config-23-a-2ff"
+  },
+  "/__docusaurus/debug/config-914": {
+    "component": "component---theme-debug-config-23-a-2ff"
+  },
+  "/__docusaurus/debug/content-d12": {
+    "component": "component---theme-debug-contentba-8-ce7",
+    "allContent": "allContent---docusaurus-debug-content-4-c-9-f03"
+  },
+  "/__docusaurus/debug/globalData-3cf": {
+    "component": "component---theme-debug-global-dataede-0fa"
+  },
+  "/__docusaurus/debug/metadata-31b": {
+    "component": "component---theme-debug-site-metadata-68-e-3d4"
+  },
+  "/__docusaurus/debug/registry-0da": {
+    "component": "component---theme-debug-registry-679-501"
+  },
+  "/__docusaurus/debug/routes-244": {
+    "component": "component---theme-debug-routes-946-699"
+  },
+  "/help-6a6": {
+    "component": "component---site-src-pages-help-js-374-183",
+    "config": "config---5-e-9-4f3"
+  },
+  "/search-03a": {
+    "component": "component---d-github-kafkajs-v-2-website-node-modules-docusaurus-theme-search-algolia-src-theme-search-page-index-jsa-93-d39"
+  },
+  "/versions-27b": {
+    "component": "component---site-src-pages-versions-js-12-f-759",
+    "config": "config---5-e-9-4f3"
+  },
+  "/docs/1.10.0-79c": {
+    "component": "component---theme-doc-page-1-be-9be",
+    "versionMetadata": "versionMetadata---docs-1-10-07-c-5-028"
+  },
+  "/docs/1.10.0/-d7d": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-548-957"
+  },
+  "/docs/1.10.0/admin-4e9": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-admin-419-af2"
+  },
+  "/docs/1.10.0/configuration-465": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-configurationc-31-74d"
+  },
+  "/docs/1.10.0/consumer-example-8e2": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-consumer-example-9-ec-d2e"
+  },
+  "/docs/1.10.0/consuming-a54": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-consuming-683-c71"
+  },
+  "/docs/1.10.0/contribution-guide-225": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-contribution-guidebe-9-298"
+  },
+  "/docs/1.10.0/custom-logger-2a5": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-custom-loggerde-8-fd6"
+  },
+  "/docs/1.10.0/development-environment-8c8": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-development-environmentba-7-e6e"
+  },
+  "/docs/1.10.0/development-resources-f24": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-development-resources-961-d2f"
+  },
+  "/docs/1.10.0/faq-f0a": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-faq-74-b-4f7"
+  },
+  "/docs/1.10.0/instrumentation-events-606": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-instrumentation-eventsb-0-d-83a"
+  },
+  "/docs/1.10.0/introduction-d9f": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-introduction-1-f-3-b5d"
+  },
+  "/docs/1.10.0/pre-releases-817": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-pre-releases-8-f-3-883"
+  },
+  "/docs/1.10.0/producer-example-730": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-producer-example-0-ff-b2f"
+  },
+  "/docs/1.10.0/producing-010": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-producing-1-c-4-785"
+  },
+  "/docs/1.10.0/retry-detailed-4c5": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-retry-detailed-3-ec-6df"
+  },
+  "/docs/1.10.0/running-kafka-in-development-7f1": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-running-kafka-in-development-602-33b"
+  },
+  "/docs/1.10.0/testing-733": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-testing-331-330"
+  },
+  "/docs/1.10.0/transactions-535": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-10-0-transactionsef-7-6fe"
+  },
+  "/docs/1.11.0-ae8": {
+    "component": "component---theme-doc-page-1-be-9be",
+    "versionMetadata": "versionMetadata---docs-1-11-00-d-3-85c"
+  },
+  "/docs/1.11.0/-3b8": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-78-e-f28"
+  },
+  "/docs/1.11.0/admin-2d2": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-admin-3-a-1-332"
+  },
+  "/docs/1.11.0/configuration-8c2": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-configurationf-65-353"
+  },
+  "/docs/1.11.0/consumer-example-27e": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-consumer-exampleeb-7-d5e"
+  },
+  "/docs/1.11.0/consuming-d14": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-consumingdbd-597"
+  },
+  "/docs/1.11.0/contribution-guide-890": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-contribution-guide-910-827"
+  },
+  "/docs/1.11.0/custom-logger-8db": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-custom-logger-000-72f"
+  },
+  "/docs/1.11.0/development-environment-6ef": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-development-environment-972-29c"
+  },
+  "/docs/1.11.0/development-resources-d87": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-development-resources-81-e-53a"
+  },
+  "/docs/1.11.0/faq-bc2": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-faq-4-a-2-35d"
+  },
+  "/docs/1.11.0/instrumentation-events-3df": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-instrumentation-events-801-ac3"
+  },
+  "/docs/1.11.0/introduction-a3e": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-introduction-1-bb-244"
+  },
+  "/docs/1.11.0/pre-releases-0b1": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-pre-releases-865-3f6"
+  },
+  "/docs/1.11.0/producer-example-ff5": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-producer-example-672-1e8"
+  },
+  "/docs/1.11.0/producing-f48": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-producingdef-cfa"
+  },
+  "/docs/1.11.0/retry-detailed-683": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-retry-detailed-3-fc-8c1"
+  },
+  "/docs/1.11.0/running-kafka-in-development-b83": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-running-kafka-in-development-20-c-558"
+  },
+  "/docs/1.11.0/testing-f39": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-testing-96-d-ceb"
+  },
+  "/docs/1.11.0/transactions-6ec": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-11-0-transactions-59-b-5d6"
+  },
+  "/docs/1.12.0-cdf": {
+    "component": "component---theme-doc-page-1-be-9be",
+    "versionMetadata": "versionMetadata---docs-1-12-0-a-59-9f3"
+  },
+  "/docs/1.12.0/-3dd": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-a-59-05a"
+  },
+  "/docs/1.12.0/admin-a6c": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-admin-609-27d"
+  },
+  "/docs/1.12.0/configuration-8ef": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-configuration-314-7e1"
+  },
+  "/docs/1.12.0/consumer-example-d64": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-consumer-example-7-ad-74b"
+  },
+  "/docs/1.12.0/consuming-0b5": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-consumingb-34-a83"
+  },
+  "/docs/1.12.0/contribution-guide-a16": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-contribution-guide-5-c-3-9e7"
+  },
+  "/docs/1.12.0/custom-logger-28b": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-custom-loggeree-1-d2e"
+  },
+  "/docs/1.12.0/development-environment-7bb": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-development-environmentae-3-0b4"
+  },
+  "/docs/1.12.0/development-resources-8f7": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-development-resourcesae-1-854"
+  },
+  "/docs/1.12.0/faq-a0a": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-faqf-7-a-2e5"
+  },
+  "/docs/1.12.0/instrumentation-events-a40": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-instrumentation-events-13-c-e55"
+  },
+  "/docs/1.12.0/introduction-472": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-introductiona-26-d2d"
+  },
+  "/docs/1.12.0/pre-releases-67d": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-pre-releases-644-53f"
+  },
+  "/docs/1.12.0/producer-example-735": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-producer-exampled-8-e-cd4"
+  },
+  "/docs/1.12.0/producing-5dd": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-producing-318-1bf"
+  },
+  "/docs/1.12.0/retry-detailed-712": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-retry-detaileda-61-edc"
+  },
+  "/docs/1.12.0/running-kafka-in-development-6d2": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-running-kafka-in-development-484-bef"
+  },
+  "/docs/1.12.0/testing-cec": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-testing-24-a-d36"
+  },
+  "/docs/1.12.0/transactions-db2": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-12-0-transactionsb-2-e-a5c"
+  },
+  "/docs/1.13.0-86a": {
+    "component": "component---theme-doc-page-1-be-9be",
+    "versionMetadata": "versionMetadata---docs-1-13-0-be-4-20b"
+  },
+  "/docs/1.13.0/-b8a": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-dac-829"
+  },
+  "/docs/1.13.0/admin-b0e": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-adminc-34-40b"
+  },
+  "/docs/1.13.0/configuration-581": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-configuration-8-b-7-3e8"
+  },
+  "/docs/1.13.0/consumer-example-790": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-consumer-example-6-e-9-1d9"
+  },
+  "/docs/1.13.0/consuming-1af": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-consuming-631-51a"
+  },
+  "/docs/1.13.0/contribution-guide-541": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-contribution-guide-091-5dd"
+  },
+  "/docs/1.13.0/custom-logger-062": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-custom-loggerde-5-99c"
+  },
+  "/docs/1.13.0/development-environment-936": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-development-environment-9-e-2-d68"
+  },
+  "/docs/1.13.0/development-resources-07d": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-development-resourcesdfd-1a4"
+  },
+  "/docs/1.13.0/faq-b20": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-faq-1-f-0-d1b"
+  },
+  "/docs/1.13.0/instrumentation-events-777": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-instrumentation-eventsffc-6cd"
+  },
+  "/docs/1.13.0/introduction-859": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-introduction-011-e50"
+  },
+  "/docs/1.13.0/pre-releases-d75": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-pre-releases-8-fc-69c"
+  },
+  "/docs/1.13.0/producer-example-525": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-producer-examplebd-6-71c"
+  },
+  "/docs/1.13.0/producing-5a6": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-producing-833-388"
+  },
+  "/docs/1.13.0/retry-detailed-2d3": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-retry-detailed-6-f-1-73b"
+  },
+  "/docs/1.13.0/running-kafka-in-development-da2": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-running-kafka-in-development-49-f-236"
+  },
+  "/docs/1.13.0/testing-55b": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-testing-45-e-db4"
+  },
+  "/docs/1.13.0/transactions-472": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-13-0-transactions-67-b-919"
+  },
+  "/docs/1.14.0-9a4": {
+    "component": "component---theme-doc-page-1-be-9be",
+    "versionMetadata": "versionMetadata---docs-1-14-02-fe-030"
+  },
+  "/docs/1.14.0/-e3e": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-c-89-c80"
+  },
+  "/docs/1.14.0/admin-000": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-admina-49-c5b"
+  },
+  "/docs/1.14.0/configuration-29d": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-configurationb-2-a-9e0"
+  },
+  "/docs/1.14.0/consumer-example-9ae": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-consumer-example-098-c27"
+  },
+  "/docs/1.14.0/consuming-05f": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-consumingc-21-036"
+  },
+  "/docs/1.14.0/contribution-guide-d70": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-contribution-guide-366-100"
+  },
+  "/docs/1.14.0/custom-logger-efd": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-custom-logger-7-b-2-1d4"
+  },
+  "/docs/1.14.0/development-environment-7d1": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-development-environmentf-03-5c8"
+  },
+  "/docs/1.14.0/development-resources-d88": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-development-resources-413-1d1"
+  },
+  "/docs/1.14.0/faq-dca": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-faq-4-e-8-218"
+  },
+  "/docs/1.14.0/instrumentation-events-017": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-instrumentation-events-96-a-e1b"
+  },
+  "/docs/1.14.0/introduction-d6c": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-introductionaf-2-f5b"
+  },
+  "/docs/1.14.0/pre-releases-924": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-pre-releases-381-c86"
+  },
+  "/docs/1.14.0/producer-example-5d2": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-producer-example-5-e-8-2ea"
+  },
+  "/docs/1.14.0/producing-0d6": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-producing-063-ede"
+  },
+  "/docs/1.14.0/retry-detailed-5cf": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-retry-detailedfd-7-757"
+  },
+  "/docs/1.14.0/running-kafka-in-development-fb5": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-running-kafka-in-development-576-2ad"
+  },
+  "/docs/1.14.0/testing-c2f": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-testing-355-3a5"
+  },
+  "/docs/1.14.0/transactions-c4c": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-1-14-0-transactionsd-49-837"
+  },
+  "/docs/next-890": {
+    "component": "component---theme-doc-page-1-be-9be",
+    "versionMetadata": "versionMetadata---docs-nextf-97-f97"
+  },
+  "/docs/next/-2ca": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-a-91-bcd"
+  },
+  "/docs/next/admin-448": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-adminee-0-018"
+  },
+  "/docs/next/configuration-492": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-configurationa-83-33d"
+  },
+  "/docs/next/consumer-example-357": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-consumer-example-33-e-6d5"
+  },
+  "/docs/next/consuming-c54": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-consuminga-38-cac"
+  },
+  "/docs/next/contribution-guide-fb9": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-contribution-guide-224-0b2"
+  },
+  "/docs/next/custom-logger-22d": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-custom-loggera-54-900"
+  },
+  "/docs/next/development-environment-03e": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-development-environment-4-d-2-d91"
+  },
+  "/docs/next/development-resources-aa9": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-development-resourcesc-79-6a3"
+  },
+  "/docs/next/faq-781": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-faq-238-fee"
+  },
+  "/docs/next/instrumentation-events-1f3": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-instrumentation-eventsaf-1-3bf"
+  },
+  "/docs/next/introduction-1c4": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-introduction-0-cb-ff2"
+  },
+  "/docs/next/pre-releases-e29": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-pre-releases-5-c-7-ac3"
+  },
+  "/docs/next/producer-example-429": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-producer-examplec-73-b1d"
+  },
+  "/docs/next/producing-f43": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-producing-107-a17"
+  },
+  "/docs/next/retry-detailed-225": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-retry-detaileda-30-928"
+  },
+  "/docs/next/running-kafka-in-development-86d": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-running-kafka-in-development-58-a-f34"
+  },
+  "/docs/next/testing-048": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-testing-098-9c8"
+  },
+  "/docs/next/transactions-743": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-next-transactions-04-a-240"
+  },
+  "/docs-ed3": {
+    "component": "component---theme-doc-page-1-be-9be",
+    "versionMetadata": "versionMetadata---docsa-3-f-cf5"
+  },
+  "/docs/-08b": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-60-f-4c4"
+  },
+  "/docs/admin-299": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-admin-4-f-5-97f"
+  },
+  "/docs/configuration-57e": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-configurationa-89-745"
+  },
+  "/docs/consumer-example-eda": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-consumer-exampled-3-e-75c"
+  },
+  "/docs/consuming-8e6": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-consuming-662-e95"
+  },
+  "/docs/contribution-guide-169": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-contribution-guide-343-a50"
+  },
+  "/docs/custom-logger-9ac": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-custom-logger-217-836"
+  },
+  "/docs/development-environment-8c5": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-development-environmentb-11-f1e"
+  },
+  "/docs/development-resources-186": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-development-resources-689-261"
+  },
+  "/docs/faq-11c": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-faq-0-f-2-7ac"
+  },
+  "/docs/instrumentation-events-830": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-instrumentation-eventsdda-4fb"
+  },
+  "/docs/introduction-ef2": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-introduction-7-f-1-f84"
+  },
+  "/docs/pre-releases-dd0": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-pre-releases-02-e-e03"
+  },
+  "/docs/producer-example-738": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-producer-examplef-7-e-dc4"
+  },
+  "/docs/producing-4b7": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-producingb-85-4c3"
+  },
+  "/docs/retry-detailed-5f8": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-retry-detaileda-91-ab5"
+  },
+  "/docs/running-kafka-in-development-857": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-running-kafka-in-development-9-ee-95f"
+  },
+  "/docs/testing-584": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-testing-7-d-6-ae4"
+  },
+  "/docs/transactions-300": {
+    "component": "component---theme-doc-item-178-a40",
+    "content": "content---docs-transactions-55-c-ee2"
+  }
+}
