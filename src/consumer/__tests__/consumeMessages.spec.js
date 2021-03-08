@@ -147,6 +147,64 @@ describe('Consumer', () => {
     expect(hitConcurrencyLimit).toBeTrue()
   })
 
+  it('concurrent heartbeats are consolidated and respect heartbeatInterval', async () => {
+    const partitionsConsumedConcurrently = 5
+    const numberPartitions = 10
+    const heartbeatInterval = 50
+    consumer = createConsumer({
+      cluster,
+      groupId,
+      maxWaitTimeInMs: 0,
+      heartbeatInterval,
+      logger: newLogger(),
+    })
+    topicName = `test-topic-${secureRandom()}`
+    await createTopic({
+      topic: topicName,
+      partitions: numberPartitions,
+    })
+    await consumer.connect()
+    await producer.connect()
+
+    let then = Date.now()
+    const heartbeats = []
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    consumer.on(consumer.events.HEARTBEAT, () => {
+      const now = Date.now()
+      heartbeats.push(now - then)
+      then = now
+    })
+
+    const messagesConsumed = []
+    consumer.run({
+      partitionsConsumedConcurrently,
+      eachBatch: async ({ batch: { messages }, heartbeat }) => {
+        for (const event of messages) {
+          await Promise.all([heartbeat(), heartbeat()])
+          await sleep(1)
+          messagesConsumed.push(event)
+        }
+      },
+    })
+
+    await waitForConsumerToJoinGroup(consumer)
+
+    const messages = Array(200)
+      .fill()
+      .map(() => {
+        const value = secureRandom()
+        return { key: `key-${value}`, value: `value-${value}` }
+      })
+
+    await producer.send({ acks: 1, topic: topicName, messages })
+    await waitForMessages(messagesConsumed, { number: messages.length })
+
+    expect(messagesConsumed.length).toEqual(messages.length)
+    for (const deltaTime of heartbeats) {
+      expect(deltaTime).toBeGreaterThanOrEqual(heartbeatInterval)
+    }
+  })
+
   it('consume GZIP messages', async () => {
     await consumer.connect()
     await producer.connect()
