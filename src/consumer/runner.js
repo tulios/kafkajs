@@ -172,7 +172,7 @@ module.exports = class Runner extends EventEmitter {
   }
 
   async processEachBatch(batch) {
-    const { topic, partition } = batch
+    const { topic, partition, generationId } = batch
     const lastFilteredMessage = batch.messages[batch.messages.length - 1]
 
     try {
@@ -215,7 +215,9 @@ module.exports = class Runner extends EventEmitter {
         },
         uncommittedOffsets: () => this.consumerGroup.uncommittedOffsets(),
         isRunning: () => this.running,
-        isStale: () => this.consumerGroup.hasSeekOffset({ topic, partition }),
+        isStale: () =>
+          this.consumerGroup.hasSeekOffset({ topic, partition }) ||
+          this.consumerGroup.isStaleGeneration({ generationId }),
       })
     } catch (e) {
       if (!isKafkaJSError(e)) {

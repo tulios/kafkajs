@@ -7,7 +7,7 @@ const filterAbortedMessages = require('./filterAbortedMessages')
  * A batch could contain _multiple_ Kafka RecordBatches.
  */
 module.exports = class Batch {
-  constructor(topic, fetchedOffset, partitionData) {
+  constructor(topic, fetchedOffset, partitionData, generationId) {
     this.fetchedOffset = fetchedOffset
     const longFetchedOffset = Long.fromValue(this.fetchedOffset)
     const { abortedTransactions, messages } = partitionData
@@ -31,6 +31,8 @@ module.exports = class Batch {
       messages: this.messagesWithinOffset,
       abortedTransactions,
     }).filter(message => !message.isControlRecord)
+
+    this.generationId = generationId
   }
 
   isEmpty() {

@@ -545,7 +545,7 @@ module.exports = class ConsumerGroup {
               )
 
               const fetchedOffset = partitionRequestData.fetchOffset
-              const batch = new Batch(topicName, fetchedOffset, partitionData)
+              const batch = new Batch(topicName, fetchedOffset, partitionData, this.generationId)
 
               /**
                * Resolve the offset to skip the control batch since `eachBatch` or `eachMessage` callbacks
@@ -684,6 +684,10 @@ module.exports = class ConsumerGroup {
 
   hasSeekOffset({ topic, partition }) {
     return this.seekOffset.has(topic, partition)
+  }
+
+  isStaleGeneration({ generationId }) {
+    return this.generationId !== generationId
   }
 
   /**
