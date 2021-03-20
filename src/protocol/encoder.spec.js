@@ -10,6 +10,9 @@ describe('Protocol > Encoder', () => {
   const signed32 = number => new Encoder().writeVarInt(number).buffer
   const decode32 = buffer => new Decoder(buffer).readVarInt()
 
+  const unsigned32 = number => new Encoder().writeUVarInt(number).buffer
+  const decodeU32 = buffer => new Decoder(buffer).readUVarInt.buffer
+
   const signed64 = number => new Encoder().writeVarLong(number).buffer
   const decode64 = buffer => new Decoder(buffer).readVarLong()
 

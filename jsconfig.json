@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+      "baseUrl": ".",
+      "module": "commonjs",
+      "target": "es6",
+      "paths": {
+        "testHelpers": ["./testHelpers"]
+      }
+    },
+    "include": [
+      "src",
+      "testHelpers"
+    ]
+  }

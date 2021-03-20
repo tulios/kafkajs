@@ -4,6 +4,7 @@ const INT8_SIZE = 1
 const INT16_SIZE = 2
 const INT32_SIZE = 4
 const INT64_SIZE = 8
+const FLOAT64_SIZE = 8
 
 const MOST_SIGNIFICANT_BIT = 0x80 // 128
 const OTHER_BITS = 0x7f // 127
@@ -125,6 +126,13 @@ module.exports = class Encoder {
     this.buf.writeInt32BE(longValue.getHighBits(), this.offset)
     this.buf.writeInt32BE(longValue.getLowBits(), this.offset + INT32_SIZE)
     this.offset += INT64_SIZE
+    return this
+  }
+
+  writeFloat64(value) {
+    this.ensureAvailable(FLOAT64_SIZE)
+    this.buf.writeDoubleBE(value, this.offset)
+    this.offset += FLOAT64_SIZE
     return this
   }
 
@@ -297,19 +305,32 @@ module.exports = class Encoder {
     }
     return this
   }
+  
+  writeUVarIntArray(array, type) {
+    if (type === 'object') {
+      this.writeUVarInt(array.length + 1)
+      this.writeEncoderArray(array)
+    } else {
+      const objectArray = array.filter(v => typeof v === 'object')
+      this.writeUVarInt(objectArray.length + 1)
+      this.writeEncoderArray(objectArray)
+    }
+    return this
+  }
 
   // Based on:
   // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java#L106
   writeVarInt(value) {
-    const byteArray = []
-    let encodedValue = Encoder.encodeZigZag(value)
+    return this.writeUVarInt(Encoder.encodeZigZag(value));
+  }
 
-    while ((encodedValue & UNSIGNED_INT32_MAX_NUMBER) !== 0) {
-      byteArray.push((encodedValue & OTHER_BITS) | MOST_SIGNIFICANT_BIT)
-      encodedValue >>>= 7
+  writeUVarInt(value) {
+    const byteArray = [];
+    while((value & UNSIGNED_INT32_MAX_NUMBER) !== 0) {
+      byteArray.push((value & OTHER_BITS) | MOST_SIGNIFICANT_BIT)
+      value >>>=7
     }
-
-    byteArray.push(encodedValue & OTHER_BITS)
+    byteArray.push(value | OTHER_BITS)
     this.writeBufferInternal(Buffer.from(byteArray))
     return this
   }
