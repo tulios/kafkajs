@@ -337,7 +337,7 @@ consumer.run({
     eachMessage: async ({ topic, message }) => true
 })
 // This will now only resolve the previous offset, not commit it
-consumer.seek({ topic: 'example', partition: 0, offset: 12384 })
+consumer.seek({ topic: 'example', partition: 0, offset: "12384" })
 ```
 
 ## <a name="custom-partition-assigner"></a> Custom partition assigner
