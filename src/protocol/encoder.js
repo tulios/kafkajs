@@ -305,7 +305,7 @@ module.exports = class Encoder {
     }
     return this
   }
-  
+
   writeUVarIntArray(array, type) {
     if (type === 'object') {
       this.writeUVarInt(array.length + 1)
@@ -321,16 +321,16 @@ module.exports = class Encoder {
   // Based on:
   // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java#L106
   writeVarInt(value) {
-    return this.writeUVarInt(Encoder.encodeZigZag(value));
+    return this.writeUVarInt(Encoder.encodeZigZag(value))
   }
 
   writeUVarInt(value) {
-    const byteArray = [];
-    while((value & UNSIGNED_INT32_MAX_NUMBER) !== 0) {
+    const byteArray = []
+    while ((value & UNSIGNED_INT32_MAX_NUMBER) !== 0) {
       byteArray.push((value & OTHER_BITS) | MOST_SIGNIFICANT_BIT)
-      value >>>=7
+      value >>>= 7
     }
-    byteArray.push(value | OTHER_BITS)
+    byteArray.push(value & OTHER_BITS)
     this.writeBufferInternal(Buffer.from(byteArray))
     return this
   }

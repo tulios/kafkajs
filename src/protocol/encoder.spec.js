@@ -2,6 +2,7 @@ const Long = require('../utils/long')
 
 const Encoder = require('./encoder')
 const Decoder = require('./decoder')
+const { describe } = require('jest-circus')
 
 const MAX_SAFE_POSITIVE_SIGNED_INT = 2147483647
 const MIN_SAFE_NEGATIVE_SIGNED_INT = -2147483648
@@ -11,7 +12,7 @@ describe('Protocol > Encoder', () => {
   const decode32 = buffer => new Decoder(buffer).readVarInt()
 
   const unsigned32 = number => new Encoder().writeUVarInt(number).buffer
-  const decodeU32 = buffer => new Decoder(buffer).readUVarInt.buffer
+  const decode32u = buffer => new Decoder(buffer).readVarInt()
 
   const signed64 = number => new Encoder().writeVarLong(number).buffer
   const decode64 = buffer => new Decoder(buffer).readVarLong()
@@ -105,6 +106,22 @@ describe('Protocol > Encoder', () => {
     test('decode signed int32 boundaries', () => {
       expect(decode32(signed32(MAX_SAFE_POSITIVE_SIGNED_INT))).toEqual(MAX_SAFE_POSITIVE_SIGNED_INT)
       expect(decode32(signed32(MIN_SAFE_NEGATIVE_SIGNED_INT))).toEqual(MIN_SAFE_NEGATIVE_SIGNED_INT)
+    })
+  })
+
+  describe('uvarint', () => {
+    test('encode unsigned int32 numbers', () => {
+      expect(unsigned32(0)).toEqual(B(0x00))
+      expect(unsigned32(1)).toEqual(B(0x01))
+      expect(unsigned32(127)).toEqual(B(0x7f))
+      expect(unsigned32(128)).toEqual(B(0x80, 0x01))
+      expect(unsigned32(8192)).toEqual(B(0x80, 0x40))
+      expect(unsigned32(16383)).toEqual(B(0xff, 0x7f))
+      expect(unsigned32(16384)).toEqual(B(0x80, 0x80, 0x01))
+      expect(unsigned32(1048575)).toEqual(B(0xfe, 0xff, 0x7f))
+      expect(unsigned32(1048576)).toEqual(B(0x80, 0x80, 0x80, 0x01))
+      expect(unsigned32(134217727)).toEqual(B(0xfe, 0xff, 0xff, 0x7f))
+      expect(unsigned32(134217728)).toEqual(B(0x80, 0x80, 0x80, 0x80, 0x01))
     })
   })
 
