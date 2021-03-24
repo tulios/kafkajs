@@ -5,129 +5,93 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-const React = require('react')
+import React from 'react';
+import clsx from 'clsx';
+import Layout from '@theme/Layout';
+import Link from '@docusaurus/Link';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import styles from './styles.module.css';
 
-const CompLibrary = {
-  Container: props => <div {...props}></div>,
-  GridBlock: props => <div {...props}></div>,
-  MarkdownBlock: props => <div {...props}></div>
+const features = [
+  {
+    title: 'No Dependencies',
+    content: 'Committed to staying lean and dependency free. 100% Javascript, with no native addons required.',
+  },
+  {
+    title: 'Well Tested',
+    content: 'Every commit is tested against a production-like multi-broker Kafka cluster, ensuring that regressions never make it into production.',
+  },
+  {
+    title: 'Battle Hardened',
+    content: 'Dog-fooded by the authors in dozens of high-traffic services with strict uptime requirements.',
+  },
+]
+
+function Feature({ title, content }) {
+  return (
+    <div className={clsx('col col--4', styles.feature)}>
+      <h3>{title}</h3>
+      <p>{content}</p>
+    </div>
+  )
 }
 
-import Layout from "@theme/Layout";
+export default function Index() {
+  const context = useDocusaurusContext();
+  const { siteConfig = {} } = context;
 
-const MarkdownBlock = CompLibrary.MarkdownBlock/* Used to read markdown */
-const Container = CompLibrary.Container
-const GridBlock = CompLibrary.GridBlock
+  return (
+    <Layout
+      title={`${siteConfig.title} ${siteConfig.titleDelimiter} ${siteConfig.tagline}`}
+    >
 
-const Button = props => (
-  <div className="pluginWrapper buttonWrapper">
-    <a className="button" href={props.href} target={props.target}>
-      {props.children}
-    </a>
-  </div>
-)
+      <div className={clsx('hero hero--dark', styles.heroBanner)}>
+        <div className="container">
+          <img
+            className={clsx(styles.heroBannerLogo)}
+            alt="Create React App logo"
+            src={useBaseUrl('img/kafkajs-logoV2.svg')}
+          />
+          <p className={clsx(styles.heroSubtitle)}>{siteConfig.tagline}</p>
 
-const createLinkGenerator = ({ siteConfig, language = '' }) => {
-  const { baseUrl, docsUrl } = siteConfig
-  const docsPart = `${docsUrl ? `${docsUrl}/` : ''}`
-  const langPart = `${language ? `${language}/` : ''}`
-  return doc => `${baseUrl}${docsPart}${langPart}${doc}`
+          <div className={styles.getStarted}>
+            <Link
+              className="button button--outline button--md"
+              to={useBaseUrl('docs/getting-started')}
+            >
+              Documentation
+            </Link>
+
+            <Link
+              className="button button--outline button--md"
+              to={siteConfig.customFields.repoUrl}
+            >
+              GitHub
+            </Link>
+          </div>
+
+          <div className={clsx(styles.heroTrademark, "hero__subtitle")}>
+            <small>
+            KAFKA is a registered trademark of The Apache Software Foundation and has been licensed for use by KafkaJS. KafkaJS has no affiliation with and is not endorsed by The Apache Software Foundation.
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <main>
+        {features && features.length > 0 && (
+          <section className={styles.features}>
+            <div className="container">
+              <div className="row">
+                {features.map((props, idx) => (
+                  <Feature key={idx} {...props} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+      </main>
+    </Layout>
+  )
 }
-
-class HomeSplash extends React.Component {
-  render() {
-    const { siteConfig } = this.props
-    const { baseUrl } = siteConfig
-    const docUrl = createLinkGenerator(this.props)
-
-    const SplashContainer = props => (
-      <div className="homeContainer">
-        <div className="homeSplashFade">
-          <div className="wrapper homeWrapper">{props.children}</div>
-        </div>
-      </div>
-    )
-
-    const Logo = props => (
-      <img src={props.img_src} alt={siteConfig.title} aria-label="kafka.js.org" />
-    )
-
-    const ProjectTitle = () => (
-      <h2 className="projectTitle">
-        <Logo img_src={`${baseUrl}img/kafkajs-logoV2.svg`} />
-        <small>{siteConfig.tagline}</small>
-      </h2>
-    )
-
-    const PromoSection = props => (
-      <div className="section promoSection">
-        <div className="promoRow">
-          <div className="pluginRowBlock">{props.children}</div>
-        </div>
-      </div>
-    )
-
-    return (
-      <SplashContainer>
-        <div className="inner">
-          <ProjectTitle siteConfig={siteConfig} />
-          <PromoSection>
-            <Button href={docUrl('getting-started')}>Documentation</Button>
-            <Button href={siteConfig.repoUrl}>Github</Button>
-          </PromoSection>
-          <Container className="trademark-notice">
-          <small>KAFKA is a registered trademark of The Apache Software Foundation and has been licensed for use by KafkaJS. KafkaJS has no affiliation with and is not endorsed by The Apache Software Foundation.</small>
-      </Container>
-        </div>
-      </SplashContainer>
-    )
-  }
-}
-
-class Index extends React.Component {
-  render() {
-    const { config: siteConfig, language = '' } = this.props
-    const docUrl = createLinkGenerator({ siteConfig, language })
-
-    const Block = props => (
-      <Container padding={['bottom', 'top']} id={props.id} background={props.background}>
-        <GridBlock align="center" contents={props.children} layout={props.layout} />
-      </Container>
-    )
-
-    const Features = props => (
-      <div id="feature">
-        <Block layout="fourColumn">
-          {[
-            {
-              title: 'No Dependencies',
-              content:
-                'Committed to staying lean and dependency free. 100% Javascript, with no native addons required.',
-            },
-            {
-              title: 'Well Tested',
-              content:
-                'Every commit is tested against a production-like multi-broker Kafka cluster, ensuring that regressions never make it into production.',
-            },
-            {
-              title: 'Battle Hardened',
-              content:
-                'Dog-fooded by the authors in dozens of high-traffic services with strict uptime requirements.',
-            },
-          ]}
-        </Block>
-      </div>
-    )
-
-    return (
-      <div>
-        <HomeSplash siteConfig={siteConfig} language={language} />
-        <div className="mainContainer">
-          <Features />
-        </div>
-      </div>
-    )
-  }
-}
-
-export default props => <Layout><Index {...props} /></Layout>;

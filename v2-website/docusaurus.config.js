@@ -1,13 +1,14 @@
-module.exports={
+module.exports = {
   "title": "KafkaJS",
   "tagline": "KafkaJS, a modern Apache Kafka client for Node.js",
   "url": "https://kafka.js.org",
   "baseUrl": "/",
   "organizationName": "tulios",
   "projectName": "kafkajs",
-  "scripts": [
-    "https://buttons.github.io/buttons.js"
-  ],
+  "scripts": [{
+    "src": "https://buttons.github.io/buttons.js",
+    "async": true
+  }],
   "favicon": "img/favicon.png",
   "customFields": {
     "gaGtag": true,
@@ -44,7 +45,7 @@ module.exports={
       },
       "items": [
         {
-          "to": "docs/",
+          "to": "docs/getting-started",
           "label": "Docs",
           "position": "left"
         },
@@ -99,7 +100,58 @@ module.exports={
     },
     "image": "img/kafkajs_circle.png",
     "footer": {
-      "links": [],
+      "style": "dark",
+      "links": [
+        {
+          "title": "Docs",
+          "items": [
+            {
+              "label": "Usage",
+              "to": "docs/getting-started"
+            }
+          ]
+        },
+        {
+          "title": "Community",
+          "items": [
+            {
+              "label": "Slack",
+              "to": "https://kafkajs-slackin.herokuapp.com"
+            }
+          ]
+        },
+        {
+          "title": "More",
+          "items": [
+            {
+              "label": "GitHub",
+              "to": "https://github.com/tulios/kafkajs"
+            },
+            {
+              "html": `
+              <a
+                className="github-button"
+                href="https://github.com/tulios/kafkajs"
+                data-icon="octicon-star"
+                data-count-href="/tulios/kafkajs/stargazers"
+                data-show-count="true"
+                data-count-aria-label="# stargazers on GitHub"
+                aria-label="Star this project on GitHub"
+              >
+                Star
+              </a>
+              `
+            },
+            {
+              "html": `
+              <a href="https://badge.fury.io/js/kafkajs">
+                <img src="https://badge.fury.io/js/kafkajs.svg" alt="npm version" height="18" />
+              </a>
+              `
+            }
+          ]
+        }
+      ],
       "logo": {
         "src": "img/kafkajs-logoV2.svg"
       }

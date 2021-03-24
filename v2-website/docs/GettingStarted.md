@@ -2,7 +2,6 @@
 id: getting-started
 title: Getting Started
 sidebar_label: Getting Started
-slug: /
 ---
 
 Install KafkaJS using [`yarn`](https://yarnpkg.com/en/package/kafkajs):
