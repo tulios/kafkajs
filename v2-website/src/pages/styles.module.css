@@ -75,3 +75,7 @@
     font-size: 1rem;
     max-width: 900px;
 }
+
+.linkUnderlined {
+    text-decoration: underline;
+}

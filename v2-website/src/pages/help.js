@@ -5,63 +5,95 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-const React = require('react')
-
-const CompLibrary = {
-  Container: props => <div {...props}></div>,
-  GridBlock: props => <div {...props}></div>,
-  MarkdownBlock: props => <div {...props}></div>
-}
-
+import React from 'react';
+import clsx from 'clsx';
 import Layout from "@theme/Layout";
+import Link from '@docusaurus/Link';
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import styles from './styles.module.css';
 
-const Container = CompLibrary.Container
-const GridBlock = CompLibrary.GridBlock
+export default function Help() {
+  const context = useDocusaurusContext();
+  const { siteConfig = {}, language = '' } = context;
 
-function Help(props) {
-  const { config: siteConfig, language = '' } = props
-  const { baseUrl, docsUrl, slackUrl, repoUrl } = siteConfig
-  const docsPart = `${docsUrl ? `${docsUrl}/` : ''}`
-  const langPart = `${language ? `${language}/` : ''}`
-  const docUrl = doc => `${baseUrl}${docsPart}${langPart}${doc}`
-
-  const supportLinks = [
-    {
-      content: `Learn more using the [documentation on this site.](${docUrl('getting-started')})`,
-      title: 'Browse Docs',
-    },
-    {
-      content: `Ask questions about the documentation and project in [our Slack channel](${slackUrl})`,
-      title: 'Join the community',
-    },
-    {
-      content: `Believe you have found a bug? Please [open an issue](https://github.com/tulios/kafkajs/issues) describing the issue as clearly as you can.`,
-      title: 'Open an issue',
-    },
-  ]
+  const { customFields = {} } = siteConfig;
+  const { slackUrl, repoUrl } = customFields;
 
   return (
-    <div className="docMainWrapper wrapper">
-      <Container className="mainContainer documentContainer postContainer">
-        <div className="post">
-          <header className="postHeader">
-            <h1>Need help?</h1>
-          </header>
-          <p>
-            This free, open-source project is developed and maintained by a small group of
-            volunteers. Please check if your question is answered already on the{' '}
-            <a href={docUrl('faq')}>Frequently Asked Questions page</a> or among the{' '}
-            <a href={repoUrl + '/issues'}>Github issues</a>.
+    <Layout>
+      <div className="hero">
+        <div className="container">
+          <div className="post">
+            <header className="postHeader">
+              <h1>Need help?</h1>
+            </header>
+            <p>
+              This free, open-source project is developed and maintained by a small group of volunteers. Please check if your question is answered already on the {' '}
+              <Link
+                to={useBaseUrl('docs/faq')}
+                className={clsx(styles.linkUnderlined)}
+              >
+                Frequently Asked Questions page
+              </Link>
+              {' '} or among the {' '}
+              <Link
+                to={repoUrl + '/issues'}
+                className={clsx(styles.linkUnderlined)}
+              >
+                Github issues
+              </Link>
+              .
           </p>
-          <p>
-            If you're still unable to find a solution to your problem, feel free to check out the
-            links below.
+            <p>
+              If you're still unable to find a solution to your problem, feel free check out the links below.
           </p>
-          <GridBlock contents={supportLinks} layout="threeColumn" />
+          </div>
+
+          <section className={styles.features}>
+            <div className="container">
+              <div className="row">
+                <div className={clsx('col col--4', styles.feature)}>
+                  <h3>Browse Docs</h3>
+                  <p>Learn more using the {' '}
+                    <Link
+                      to={useBaseUrl('docs/getting-started')}
+                      className={clsx(styles.linkUnderlined)}
+                    >
+                      documentation on this site
+                    </Link>
+                  </p>
+                </div>
+
+                <div className={clsx('col col--4', styles.feature)}>
+                  <h3>Join the community</h3>
+                  <p>Ask questions about the documentation and project in {' '}
+                    <Link
+                      to={slackUrl}
+                      className={clsx(styles.linkUnderlined)}
+                    >
+                      our Slack channel
+                    </Link>
+                  </p>
+                </div>
+
+                <div className={clsx('col col--4', styles.feature)}>
+                  <h3>Open an issue</h3>
+                  <p>Believe you have found a bug? Please {' '}
+                    <Link
+                      to={repoUrl + '/issues'}
+                      className={clsx(styles.linkUnderlined)}
+                    >
+                      open an issue
+                    </Link>
+                    {' '} describing the issue as clearly as you can.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
-      </Container>
-    </div>
+      </div >
+    </Layout >
   )
 }
-
-export default props => <Layout><Help {...props} /></Layout>;
