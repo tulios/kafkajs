@@ -68,6 +68,10 @@
     line-height: 1.2em;
 }
 
+.getStarted a:hover {
+    background: #7f4898;
+}
+
 .heroTrademark{
     margin-top: 10px;
     padding: 0 20px;

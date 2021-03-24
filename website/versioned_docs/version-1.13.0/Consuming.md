@@ -1,5 +1,5 @@
 ---
-id: version-1.13.0-consuming
+id: consuming
 title: Consuming Messages
 original_id: consuming
 ---

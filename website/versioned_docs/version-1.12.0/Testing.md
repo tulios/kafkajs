@@ -1,5 +1,5 @@
 ---
-id: version-1.12.0-testing
+id: testing
 title: Testing
 original_id: testing
 ---

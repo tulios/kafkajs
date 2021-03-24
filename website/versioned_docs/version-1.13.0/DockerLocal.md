@@ -1,5 +1,5 @@
 ---
-id: version-1.13.0-running-kafka-in-development
+id: running-kafka-in-development
 title: Running Kafka in Development
 original_id: running-kafka-in-development
 ---

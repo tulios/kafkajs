@@ -1,5 +1,5 @@
 ---
-id: version-1.12.0-development-resources
+id: development-resources
 title: Resources
 original_id: development-resources
 ---

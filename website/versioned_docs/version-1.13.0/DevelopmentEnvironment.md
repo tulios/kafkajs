@@ -1,5 +1,5 @@
 ---
-id: version-1.13.0-development-environment
+id: development-environment
 title: Development Environment
 original_id: development-environment
 ---

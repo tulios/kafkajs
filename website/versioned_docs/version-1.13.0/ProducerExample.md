@@ -1,5 +1,5 @@
 ---
-id: version-1.13.0-producer-example
+id: producer-example
 title: Producer
 original_id: producer-example
 ---

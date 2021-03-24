@@ -1,5 +1,5 @@
 ---
-id: version-1.12.0-instrumentation-events
+id: instrumentation-events
 title: Instrumentation Events
 original_id: instrumentation-events
 ---
@@ -28,7 +28,7 @@ Instrumentation Event:
 }
 ```
 
-## <a name="list"> List of available events:
+## <a name="list"> </a> List of available events:
 
 ### <a name="consumer"></a> Consumer
 

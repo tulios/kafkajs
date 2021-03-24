@@ -1,5 +1,5 @@
 ---
-id: version-1.12.0-transactions
+id: transactions
 title: Transactions
 original_id: transactions
 ---

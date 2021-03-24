@@ -1,5 +1,5 @@
 ---
-id: version-1.10.0-contribution-guide
+id: contribution-guide
 title: Contributing
 original_id: contribution-guide
 ---

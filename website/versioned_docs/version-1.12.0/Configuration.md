@@ -1,5 +1,5 @@
 ---
-id: version-1.12.0-configuration
+id: configuration
 title: Client Configuration
 original_id: configuration
 ---

@@ -1,5 +1,5 @@
 ---
-id: version-1.12.0-custom-logger
+id: custom-logger
 title: Custom Logger
 original_id: custom-logger
 ---

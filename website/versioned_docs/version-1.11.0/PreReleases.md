@@ -1,5 +1,5 @@
 ---
-id: version-1.11.0-pre-releases
+id: pre-releases
 title: Pre-releases
 original_id: pre-releases
 ---

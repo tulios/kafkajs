@@ -1,5 +1,5 @@
 ---
-id: version-1.11.0-consumer-example
+id: consumer-example
 title: Consumer
 original_id: consumer-example
 ---

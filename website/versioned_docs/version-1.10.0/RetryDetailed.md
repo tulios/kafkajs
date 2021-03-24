@@ -1,5 +1,5 @@
 ---
-id: version-1.10.0-retry-detailed
+id: retry-detailed
 title: Retry Mechanism Explained
 original_id: retry-detailed
 ---
