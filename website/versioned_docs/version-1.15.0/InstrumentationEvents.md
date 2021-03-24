@@ -1,5 +1,5 @@
 ---
-id: version-1.15.0-instrumentation-events
+id: instrumentation-events
 title: Instrumentation Events
 original_id: instrumentation-events
 ---
@@ -26,7 +26,7 @@ Instrumentation Event:
 }
 ```
 
-## <a name="list"> List of available events:
+## <a name="list"> </a> List of available events:
 
 ### <a name="consumer"></a> Consumer
 
@@ -42,7 +42,7 @@ Instrumentation Event:
 | COMMIT_OFFSETS      | {`groupId`, `memberId`, `groupGenerationId`, `topics`}                                                                                                                                                | Committed offsets. |
 | STOP                |                                                                                                                                                                                                               | Consumer has stopped. |
 | DISCONNECT          |                                                                                                                                                                                                               | Consumer has disconnected. |
-| CRASH               | {`error`, `groupId`, `restart`}                                                                                                                                                                                      | Consumer has crashed. In the case of CRASH, the consumer will try to restart itself. If the error is not retriable, the consumer will instead stop and exit. If your application wants to react to the error, such as by cleanly shutting down resources,</br>restarting the consumer itself, or exiting the process entirely, it should listen to the CRASH event. |
+| CRASH               | {`error`, `groupId`, `restart`}                                                                                                                                                                                      | Consumer has crashed. In the case of CRASH, the consumer will try to restart itself. If the error is not retriable, the consumer will instead stop and exit. If your application wants to react to the error, such as by cleanly shutting down resources,<br/>restarting the consumer itself, or exiting the process entirely, it should listen to the CRASH event. |
 | HEARTBEAT           | {`groupId`, `memberId`, `groupGenerationId`}                                                                                                                                                            | Heartbeat sent to the coordinator. |
 | REQUEST_TIMEOUT     | {`broker`, `clientId`, `correlationId`, `createdAt`, `sentAt`, `pendingDuration`, `apiName`, `apiKey`, `apiVersion`}                                 | Request to a broker has timed out. |
 | REQUEST_QUEUE_SIZE  | {`broker`, `clientId`, `queueSize`}                                                                                                                                                      | All requests go through a request queue where concurrency is managed (`maxInflightRequests`). Whenever the size of the queue changes, this event is emitted. |

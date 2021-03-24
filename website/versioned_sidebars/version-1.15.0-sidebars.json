@@ -1,0 +1,103 @@
+{
+  "version-1.15.0/docs": [
+    {
+      "type": "category",
+      "label": "Usage",
+      "items": [
+        {
+          "type": "doc",
+          "id": "version-1.15.0/introduction"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/getting-started"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/configuration"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/producing"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/transactions"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/consuming"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/admin"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/instrumentation-events"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/custom-logger"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/retry-detailed"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/faq"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/pre-releases"
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Examples",
+      "items": [
+        {
+          "type": "doc",
+          "id": "version-1.15.0/running-kafka-in-development"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/producer-example"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/consumer-example"
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "API Reference",
+      "items": []
+    },
+    {
+      "type": "category",
+      "label": "Developing KafkaJS",
+      "items": [
+        {
+          "type": "doc",
+          "id": "version-1.15.0/contribution-guide"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/development-environment"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/testing"
+        },
+        {
+          "type": "doc",
+          "id": "version-1.15.0/development-resources"
+        }
+      ]
+    }
+  ]
+}

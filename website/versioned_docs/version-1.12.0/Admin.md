@@ -1,5 +1,5 @@
 ---
-id: version-1.12.0-admin
+id: admin
 title: Admin Client
 original_id: admin
 ---

@@ -1,5 +1,5 @@
 ---
-id: version-1.10.0-introduction
+id: introduction
 title: A Brief Intro to Kafka
 sidebar_label: Intro to Kafka
 original_id: introduction

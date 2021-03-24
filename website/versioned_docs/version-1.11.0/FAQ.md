@@ -1,5 +1,5 @@
 ---
-id: version-1.11.0-faq
+id: faq
 title: FAQ
 original_id: faq
 ---
