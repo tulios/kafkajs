@@ -60,41 +60,8 @@ module.exports = {
           "position": "left"
         },
         {
-          "label": "Version",
-          "to": "docs",
-          "position": "right",
-          "items": [
-            {
-              "label": "1.15.0",
-              "to": "docs/",
-              "activeBaseRegex": "docs/(?!1.10.0|1.11.0|1.12.0|1.13.0|1.14.0|1.15.0|next)"
-            },
-            {
-              "label": "1.14.0",
-              "to": "docs/1.14.0/"
-            },
-            {
-              "label": "1.13.0",
-              "to": "docs/1.13.0/"
-            },
-            {
-              "label": "1.12.0",
-              "to": "docs/1.12.0/"
-            },
-            {
-              "label": "1.11.0",
-              "to": "docs/1.11.0/"
-            },
-            {
-              "label": "1.10.0",
-              "to": "docs/1.10.0/"
-            },
-            {
-              "label": "Master/Unreleased",
-              "to": "docs/next/",
-              "activeBaseRegex": "docs/next/(?!support|team|resources)"
-            }
-          ]
+          "type": "docsVersionDropdown",
+          "position": "right"
         }
       ]
     },

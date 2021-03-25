@@ -50,7 +50,7 @@ export default function Index() {
         <div className="container">
           <img
             className={clsx(styles.heroBannerLogo)}
-            alt="Create React App logo"
+            alt="KafkaJS logo"
             src={useBaseUrl('img/kafkajs-logoV2.svg')}
           />
           <p className={clsx(styles.heroSubtitle)}>{siteConfig.tagline}</p>

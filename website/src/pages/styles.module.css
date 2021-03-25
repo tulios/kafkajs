@@ -72,12 +72,13 @@
     background: #7f4898;
 }
 
-.heroTrademark{
+.heroTrademark {
     margin-top: 10px;
     padding: 0 20px;
     color: hsla(0,0%,100%,.7);
     font-size: 1rem;
     max-width: 900px;
+    display: inline-block;
 }
 
 .linkUnderlined {
