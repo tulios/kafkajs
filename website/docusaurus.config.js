@@ -120,7 +120,8 @@ module.exports = {
         }
       ],
       "logo": {
-        "src": "img/kafkajs-logoV2.svg"
+        "src": "img/kafkajs-logoV2.svg",
+        "href": "https://kafka.js.org",
       }
     },
     "algolia": {
