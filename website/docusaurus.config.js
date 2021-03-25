@@ -61,7 +61,13 @@ module.exports = {
         },
         {
           "type": "docsVersionDropdown",
-          "position": "right"
+          "position": "right",
+          "dropdownItemsAfter": [
+            {
+              "to": "/versions",
+              "label": "All versions",
+            },
+          ],
         }
       ]
     },
