@@ -133,7 +133,8 @@ module.exports = {
     "algolia": {
       "apiKey": "7c56b6be30976fce32eb287e2af6cf06",
       "indexName": "kafka_js",
-      "algoliaOptions": {}
+      // "contextualSearch": true,
+      "searchParameters": {},
     },
     "gtag": {
       "trackingID": "UA-133751873-1"
