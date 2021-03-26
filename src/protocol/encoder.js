@@ -319,6 +319,7 @@ module.exports = class Encoder {
   }
 
   // Based on:
+  // https://en.wikipedia.org/wiki/LEB128 Using LEB128 format similar to VLQ.
   // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java#L106
   writeVarInt(value) {
     return this.writeUVarInt(Encoder.encodeZigZag(value))

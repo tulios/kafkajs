@@ -7,12 +7,15 @@ const { describe } = require('jest-circus')
 const MAX_SAFE_POSITIVE_SIGNED_INT = 2147483647
 const MIN_SAFE_NEGATIVE_SIGNED_INT = -2147483648
 
+const MAX_SAFE_UNSIGNED_INT = 4294967295
+const MIN_SAFE_UNSIGNED_INT = 0
+
 describe('Protocol > Encoder', () => {
   const signed32 = number => new Encoder().writeVarInt(number).buffer
   const decode32 = buffer => new Decoder(buffer).readVarInt()
 
   const unsigned32 = number => new Encoder().writeUVarInt(number).buffer
-  const decode32u = buffer => new Decoder(buffer).readVarInt()
+  const decode32u = buffer => new Decoder(buffer).readUVarInt()
 
   const signed64 = number => new Encoder().writeVarLong(number).buffer
   const decode64 = buffer => new Decoder(buffer).readVarLong()
@@ -80,7 +83,7 @@ describe('Protocol > Encoder', () => {
       expect(signed32(MIN_SAFE_NEGATIVE_SIGNED_INT)).toEqual(B(0xff, 0xff, 0xff, 0xff, 0x0f))
     })
 
-    test('decode int32 numbers', () => {
+    test('decode signed int32 numbers', () => {
       expect(decode32(signed32(0))).toEqual(0)
       expect(decode32(signed32(1))).toEqual(1)
       expect(decode32(signed32(63))).toEqual(63)
@@ -118,10 +121,33 @@ describe('Protocol > Encoder', () => {
       expect(unsigned32(8192)).toEqual(B(0x80, 0x40))
       expect(unsigned32(16383)).toEqual(B(0xff, 0x7f))
       expect(unsigned32(16384)).toEqual(B(0x80, 0x80, 0x01))
-      expect(unsigned32(1048575)).toEqual(B(0xfe, 0xff, 0x7f))
-      expect(unsigned32(1048576)).toEqual(B(0x80, 0x80, 0x80, 0x01))
-      expect(unsigned32(134217727)).toEqual(B(0xfe, 0xff, 0xff, 0x7f))
-      expect(unsigned32(134217728)).toEqual(B(0x80, 0x80, 0x80, 0x80, 0x01))
+      expect(unsigned32(2097151)).toEqual(B(0xff, 0xff, 0x7f))
+      expect(unsigned32(2097152)).toEqual(B(0x80, 0x80, 0x80, 0x01))
+      expect(unsigned32(134217728)).toEqual(B(0x80, 0x80, 0x80, 0x40))
+      expect(unsigned32(268435455)).toEqual(B(0xff, 0xff, 0xff, 0x7f))
+    })
+
+    test('encode unsigned int32 boundaries', () => {
+      expect(unsigned32(MAX_SAFE_UNSIGNED_INT)).toEqual(B(0xff, 0xff, 0xff, 0xff, 0x0f))
+      expect(unsigned32(MIN_SAFE_UNSIGNED_INT)).toEqual(B(0x00))
+    })
+
+    test('decode unsigned int32 numbers', () => {
+      expect(decode32u(unsigned32(0))).toEqual(0)
+      expect(decode32u(unsigned32(1))).toEqual(1)
+      expect(decode32u(unsigned32(127))).toEqual(127)
+      expect(decode32u(unsigned32(128))).toEqual(128)
+      expect(decode32u(unsigned32(8192))).toEqual(8192)
+      expect(decode32u(unsigned32(16383))).toEqual(16383)
+      expect(decode32u(unsigned32(16384))).toEqual(16384)
+      expect(decode32u(unsigned32(2097151))).toEqual(2097151)
+      expect(decode32u(unsigned32(134217728))).toEqual(134217728)
+      expect(decode32u(unsigned32(268435455))).toEqual(268435455)
+    })
+
+    test('decode unsigned int32 boundaries', () => {
+      expect(decode32u(unsigned32(MAX_SAFE_UNSIGNED_INT))).toEqual(MAX_SAFE_UNSIGNED_INT)
+      expect(decode32u(unsigned32(MIN_SAFE_UNSIGNED_INT))).toEqual(MIN_SAFE_UNSIGNED_INT)
     })
   })
 
