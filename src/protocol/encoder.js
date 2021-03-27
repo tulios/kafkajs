@@ -4,7 +4,7 @@ const INT8_SIZE = 1
 const INT16_SIZE = 2
 const INT32_SIZE = 4
 const INT64_SIZE = 8
-const FLOAT64_SIZE = 8
+const DOUBLE_SIZE = 8
 
 const MOST_SIGNIFICANT_BIT = 0x80 // 128
 const OTHER_BITS = 0x7f // 127
@@ -129,10 +129,10 @@ module.exports = class Encoder {
     return this
   }
 
-  writeFloat64(value) {
-    this.ensureAvailable(FLOAT64_SIZE)
+  writeDouble(value) {
+    this.ensureAvailable(DOUBLE_SIZE)
     this.buf.writeDoubleBE(value, this.offset)
-    this.offset += FLOAT64_SIZE
+    this.offset += DOUBLE_SIZE
     return this
   }
 
