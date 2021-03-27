@@ -1,4 +1,3 @@
-const { isRegularExpressionLiteral } = require('typescript')
 const Long = require('../utils/long')
 
 const INT8_SIZE = 1
@@ -203,13 +202,14 @@ module.exports = class Decoder {
 
     return Decoder.decodeZigZag(result)
   }
+
   // By default JavaScript's numbers are of type float64, performing bitwise operations converts the numbers to a signed 32-bit integer
   // Unsigned Right Shift Operator >>> ensures the returned value is an unsigned 32-bit integer
   readUVarInt() {
     let currentByte
     let result = 0
     let i = 0
-    while (((currentByte = this.buffer[this.offset++]) & MOST_SIGNIFICANT_BIT) != 0) {
+    while (((currentByte = this.buffer[this.offset++]) & MOST_SIGNIFICANT_BIT) !== 0) {
       result |= (currentByte & OTHER_BITS) << i
       i += 7
       if (i > 35) {
