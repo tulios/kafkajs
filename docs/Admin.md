@@ -485,6 +485,14 @@ await admin.describeGroups([ 'testgroup' ])
 //   }]
 // }
 ```
+Helper function to decode `memeberMetadata` and `memberAssignment` is available in `AssignerProtocol`
+
+Example: 
+
+`const memberMetadata = AssignerProtocol.MemberMetadata.decode(memberMetadata)`
+
+`const memberAssignment = AssignerProtocol.MemberAssignment.decode(memberAssignment)`
+
 
 ## <a name="delete-groups"></a> Delete groups
 
