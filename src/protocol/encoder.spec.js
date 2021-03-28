@@ -146,6 +146,7 @@ describe('Protocol > Encoder', () => {
     })
 
     test('decode unsigned int32 boundaries', () => {
+      expect(() => decode32u(B(0xff, 0xff, 0xff, 0xff, 0xff, 0x01))).toThrow()
       expect(decode32u(unsigned32(MAX_SAFE_UNSIGNED_INT))).toEqual(MAX_SAFE_UNSIGNED_INT)
       expect(decode32u(unsigned32(MIN_SAFE_UNSIGNED_INT))).toEqual(MIN_SAFE_UNSIGNED_INT)
     })

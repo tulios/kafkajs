@@ -212,7 +212,7 @@ module.exports = class Decoder {
     while (((currentByte = this.buffer[this.offset++]) & MOST_SIGNIFICANT_BIT) !== 0) {
       result |= (currentByte & OTHER_BITS) << i
       i += 7
-      if (i > 35) {
+      if (i > 28) {
         throw new Error('Variable length quantity is too long')
       }
     }
