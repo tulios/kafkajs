@@ -211,6 +211,13 @@ class KafkaJSInvariantViolation extends KafkaJSNonRetriableError {
   }
 }
 
+class KafkaJSInvalidVarIntError extends KafkaJSNonRetriableError {
+  constructor() {
+    super(...arguments)
+    this.name = 'KafkaJSNonRetriableError'
+  }
+}
+
 module.exports = {
   KafkaJSError,
   KafkaJSNonRetriableError,
@@ -236,4 +243,5 @@ module.exports = {
   KafkaJSUnsupportedMagicByteInMessageSet,
   KafkaJSDeleteTopicRecordsError,
   KafkaJSInvariantViolation,
+  KafkaJSInvalidVarIntError,
 }

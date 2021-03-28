@@ -1,3 +1,4 @@
+const { KafkaJSInvalidVarIntError } = require('../errors')
 const Long = require('../utils/long')
 
 const INT8_SIZE = 1
@@ -213,7 +214,7 @@ module.exports = class Decoder {
       result |= (currentByte & OTHER_BITS) << i
       i += 7
       if (i > 28) {
-        throw new Error('Variable length quantity is too long')
+        throw new KafkaJSInvalidVarIntError('Invalid VarInt, must contain less 5 bytes or less')
       }
     }
     result |= currentByte << i
