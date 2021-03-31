@@ -775,6 +775,7 @@ export type ConsumerEvents = {
   DISCONNECT: 'consumer.disconnect'
   STOP: 'consumer.stop'
   CRASH: 'consumer.crash'
+  REBALANCING: 'consumer.rebalancing'
   RECEIVED_UNSUBSCRIBED_TOPICS: 'consumer.received_unsubscribed_topics'
   REQUEST: 'consumer.network.request'
   REQUEST_TIMEOUT: 'consumer.network.request_timeout'
