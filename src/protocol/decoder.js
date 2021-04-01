@@ -227,12 +227,12 @@ module.exports = class Decoder {
     let i = 0
 
     do {
-      currentByte = this.buffer[this.offset++]
-      result = result.add(Long.fromInt(currentByte & OTHER_BITS).shiftLeft(i))
-      i += 7
       if (i > 63) {
         throw new KafkaJSInvalidLongError('Invalid Long, must contain 9 bytes or less')
       }
+      currentByte = this.buffer[this.offset++]
+      result = result.add(Long.fromInt(currentByte & OTHER_BITS).shiftLeft(i))
+      i += 7
     } while (currentByte >= MOST_SIGNIFICANT_BIT)
 
     return Decoder.decodeZigZag64(result)
