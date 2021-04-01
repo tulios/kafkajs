@@ -169,6 +169,20 @@ module.exports = class Encoder {
     return this
   }
 
+  writeUVarIntString(value) {
+    if (value == null) {
+      this.writeUVarInt(0)
+      return this
+    }
+
+    const byteLength = Buffer.byteLength(value, 'utf8')
+    this.writeUVarInt(byteLength + 1)
+    this.ensureAvailable(byteLength)
+    this.buf.write(value, this.offset, byteLength, 'utf8')
+    this.offset += byteLength
+    return this
+  }
+
   writeBytes(value) {
     if (value == null) {
       this.writeInt32(-1)

@@ -2,7 +2,6 @@ const Long = require('../utils/long')
 
 const Encoder = require('./encoder')
 const Decoder = require('./decoder')
-const { describe } = require('jest-circus')
 
 const MAX_SAFE_POSITIVE_SIGNED_INT = 2147483647
 const MIN_SAFE_NEGATIVE_SIGNED_INT = -2147483648
@@ -20,8 +19,25 @@ describe('Protocol > Encoder', () => {
   const signed64 = number => new Encoder().writeVarLong(number).buffer
   const decode64 = buffer => new Decoder(buffer).readVarLong()
 
+  const ustring = string => new Encoder().writeUVarIntString(string).buffer
+  const decodeUString = buffer => new Decoder(buffer).readUVarIntString()
+
   const B = (...args) => Buffer.from(args)
   const L = value => Long.fromString(`${value}`)
+
+  describe('writeUVarIntString', () => {
+    test('encode uvarint string', () => {
+      expect(ustring(null)).toEqual(B(0x00))
+      expect(ustring('')).toEqual(B(0x01))
+      expect(ustring('kafkajs')).toEqual(B(0x08, 0x6b, 0x61, 0x66, 0x6b, 0x61, 0x6a, 0x73))
+    })
+
+    test('decode uvarint string', () => {
+      expect(decodeUString(ustring(null))).toEqual(null)
+      expect(decodeUString(ustring(''))).toEqual('')
+      expect(decodeUString(ustring('kafkajs'))).toEqual('kafkajs')
+    })
+  })
 
   describe('writeEncoder', () => {
     it('should throw if the value is not an Encoder', () => {

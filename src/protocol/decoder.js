@@ -109,6 +109,19 @@ module.exports = class Decoder {
     return value
   }
 
+  readUVarIntString() {
+    const byteLength = this.readUVarInt()
+
+    if (byteLength === 0) {
+      return null
+    }
+
+    const stringBuffer = this.buffer.slice(this.offset, this.offset + byteLength)
+    const value = stringBuffer.toString('utf8')
+    this.offset += byteLength
+    return value
+  }
+
   canReadBytes(length) {
     return Buffer.byteLength(this.buffer) - this.offset >= length
   }
