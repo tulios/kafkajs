@@ -827,6 +827,10 @@ export type ConsumerCrashEvent = InstrumentationEvent<{
   groupId: string
   restart: boolean
 }>
+export type ConsumerRebalancingEvent = InstrumentationEvent<{
+  groupId: string
+  memberId: string
+}>
 export type ConsumerReceivedUnsubcribedTopicsEvent = InstrumentationEvent<{
   groupId: string
   generationId: number

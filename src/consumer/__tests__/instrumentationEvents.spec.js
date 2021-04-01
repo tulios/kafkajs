@@ -375,6 +375,11 @@ describe('Consumer > Instrumentation Events', () => {
       }),
     })
 
+    let memberId
+    consumer1.on(consumer.events.GROUP_JOIN, async event => {
+      memberId = event.payload.memberId
+    })
+
     consumer1.on(consumer.events.REBALANCING, async event => {
       onRebalancing(event)
     })
@@ -398,8 +403,8 @@ describe('Consumer > Instrumentation Events', () => {
       timestamp: expect.any(Number),
       type: 'consumer.rebalancing',
       payload: {
-        groupId: expect.any(String),
-        memberId: expect.any(String),
+        groupId: groupId,
+        memberId: memberId,
       },
     })
   })
