@@ -378,6 +378,7 @@ describe('Consumer > Instrumentation Events', () => {
     let memberId
     consumer1.on(consumer.events.GROUP_JOIN, async event => {
       memberId = event.payload.memberId
+      consumer1.removeAllListeners(consumer.events.GROUP_JOIN)
     })
 
     consumer1.on(consumer.events.REBALANCING, async event => {
