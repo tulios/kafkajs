@@ -15,6 +15,7 @@ const events = {
   DISCONNECT: consumerType('disconnect'),
   STOP: consumerType('stop'),
   CRASH: consumerType('crash'),
+  REBALANCING: consumerType('rebalancing'),
   RECEIVED_UNSUBSCRIBED_TOPICS: consumerType('received_unsubscribed_topics'),
   REQUEST: consumerType(networkEvents.NETWORK_REQUEST),
   REQUEST_TIMEOUT: consumerType(networkEvents.NETWORK_REQUEST_TIMEOUT),
