@@ -249,6 +249,9 @@ describe('Protocol > Encoder', () => {
       expect(decode64(signed64(L('4611686018427387903')))).toEqual(L('4611686018427387903'))
       expect(decode64(signed64(L('4611686018427387904')))).toEqual(L('4611686018427387904'))
       expect(decode64(signed64(Long.MAX_VALUE))).toEqual(Long.MAX_VALUE)
+      // expect(() =>
+      //   decode64(B(0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01))
+      // ).toThrow()
     })
   })
 

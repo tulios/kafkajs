@@ -1,4 +1,4 @@
-const { KafkaJSInvalidVarIntError } = require('../errors')
+const { KafkaJSInvalidVarIntError, KafkaJSInvalidLongError } = require('../errors')
 const Long = require('../utils/long')
 
 const INT8_SIZE = 1
@@ -214,7 +214,7 @@ module.exports = class Decoder {
       result |= (currentByte & OTHER_BITS) << i
       i += 7
       if (i > 28) {
-        throw new KafkaJSInvalidVarIntError('Invalid VarInt, must contain less 5 bytes or less')
+        throw new KafkaJSInvalidVarIntError('Invalid VarInt, must contain 5 bytes or less')
       }
     }
     result |= currentByte << i
@@ -230,6 +230,9 @@ module.exports = class Decoder {
       currentByte = this.buffer[this.offset++]
       result = result.add(Long.fromInt(currentByte & OTHER_BITS).shiftLeft(i))
       i += 7
+      if (i > 63) {
+        throw new KafkaJSInvalidLongError('Invalid Long, must contain 9 bytes or less')
+      }
     } while (currentByte >= MOST_SIGNIFICANT_BIT)
 
     return Decoder.decodeZigZag64(result)
