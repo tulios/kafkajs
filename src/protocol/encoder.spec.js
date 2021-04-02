@@ -75,22 +75,34 @@ describe('Protocol > Encoder', () => {
 
   describe('double', () => {
     test('encode double', () => {
+      expect(encodeDouble(-3.1415926535897932)).toEqual(
+        B(0xc0, 0x09, 0x21, 0xfb, 0x54, 0x44, 0x2d, 0x18)
+      )
+      expect(encodeDouble(-0.3333333333333333)).toEqual(
+        B(0xbf, 0xd5, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55)
+      )
+      expect(encodeDouble(-59.82946381)).toEqual(B(0xc0, 0x4d, 0xea, 0x2b, 0xde, 0xc0, 0x95, 0x31))
+      expect(encodeDouble(-1.5)).toEqual(B(0xbf, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))
       expect(encodeDouble(0.0)).toEqual(B(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))
+      expect(encodeDouble(1.5)).toEqual(B(0x3f, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))
+      expect(encodeDouble(59.82946381)).toEqual(B(0x40, 0x4d, 0xea, 0x2b, 0xde, 0xc0, 0x95, 0x31))
       expect(encodeDouble(0.3333333333333333)).toEqual(
         B(0x3f, 0xd5, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55)
       )
-      expect(encodeDouble(1.5)).toEqual(B(0x3f, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))
       expect(encodeDouble(3.1415926535897932)).toEqual(
         B(0x40, 0x09, 0x21, 0xfb, 0x54, 0x44, 0x2d, 0x18)
       )
-      expect(encodeDouble(59.82946381)).toEqual(B(0x40, 0x4d, 0xea, 0x2b, 0xde, 0xc0, 0x95, 0x31))
     })
     test('decode double', () => {
+      expect(decodeDouble(encodeDouble(-3.1415926535897932))).toEqual(-3.1415926535897932)
+      expect(decodeDouble(encodeDouble(-0.3333333333333333))).toEqual(-0.3333333333333333)
+      expect(decodeDouble(encodeDouble(-59.82946381))).toEqual(-59.82946381)
+      expect(decodeDouble(encodeDouble(-1.5))).toEqual(-1.5)
       expect(decodeDouble(encodeDouble(0.0))).toEqual(0.0)
-      expect(decodeDouble(encodeDouble(0.3333333333333333))).toEqual(0.3333333333333333)
       expect(decodeDouble(encodeDouble(1.5))).toEqual(1.5)
-      expect(decodeDouble(encodeDouble(3.1415926535897932))).toEqual(3.1415926535897932)
       expect(decodeDouble(encodeDouble(59.82946381))).toEqual(59.82946381)
+      expect(decodeDouble(encodeDouble(0.3333333333333333))).toEqual(0.3333333333333333)
+      expect(decodeDouble(encodeDouble(3.1415926535897932))).toEqual(3.1415926535897932)
     })
   })
 
