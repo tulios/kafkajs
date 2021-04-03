@@ -228,6 +228,28 @@ module.exports = class Encoder {
     return this
   }
 
+  writeUVarIntBytes(value) {
+    if (value == null) {
+      this.writeVarInt(0)
+      return this
+    }
+
+    if (Buffer.isBuffer(value)) {
+      // raw bytes
+      this.writeUVarInt(value.length + 1)
+      this.writeBufferInternal(value)
+    } else {
+      const valueToWrite = String(value)
+      const byteLength = Buffer.byteLength(valueToWrite, 'utf8')
+      this.writeUVarInt(byteLength + 1)
+      this.ensureAvailable(byteLength)
+      this.buf.write(valueToWrite, this.offset, byteLength, 'utf8')
+      this.offset += byteLength
+    }
+
+    return this
+  }
+
   writeEncoder(value) {
     if (value == null || !Buffer.isBuffer(value.buf)) {
       throw new Error('value should be an instance of Encoder')
