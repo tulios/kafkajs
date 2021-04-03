@@ -241,6 +241,25 @@ const waitForConsumerToJoinGroup = (consumer, { maxWait = 10000, label = '' } = 
     })
   })
 
+const waitForConsumerToRebalance = (consumer, { maxWait = 10000, label = '' } = {}) =>
+  new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      consumer.disconnect().then(() => {
+        reject(new Error(`Timeout ${label}`.trim()))
+      })
+    }, maxWait)
+    consumer.on(consumer.events.REBALANCE, event => {
+      clearTimeout(timeoutId)
+      resolve(event)
+    })
+    consumer.on(consumer.events.CRASH, event => {
+      clearTimeout(timeoutId)
+      consumer.disconnect().then(() => {
+        reject(event.payload.error)
+      })
+    })
+  })
+
 const createTopic = async ({ topic, partitions = 1, replicas = 1, config = [] }) => {
   const kafka = new Kafka({ clientId: 'testHelpers', brokers: [`${getHost()}:9092`] })
   const admin = kafka.admin()
@@ -359,6 +378,7 @@ module.exports = {
   waitForMessages,
   waitForNextEvent,
   waitForConsumerToJoinGroup,
+  waitForConsumerToRebalance,
   testIfKafkaAtMost_0_10,
   testIfKafkaAtLeast_0_11,
   testIfKafkaAtLeast_1_1_0,

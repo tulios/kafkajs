@@ -10,6 +10,7 @@ const {
   newLogger,
   waitFor,
   waitForConsumerToJoinGroup,
+  waitForConsumerToRebalance,
 } = require('testHelpers')
 
 describe('Consumer > Instrumentation Events', () => {
@@ -32,7 +33,7 @@ describe('Consumer > Instrumentation Events', () => {
     topicName = `test-topic-${secureRandom()}`
     groupId = `consumer-group-id-${secureRandom()}`
 
-    await createTopic({ topic: topicName })
+    await createTopic({ topic: topicName, partitions: 1 })
 
     emitter = new InstrumentationEventEmitter()
     cluster = createCluster({ instrumentationEmitter: emitter, metadataMaxAge: 50 })
@@ -354,7 +355,7 @@ describe('Consumer > Instrumentation Events', () => {
     })
   })
 
-  it('emits rebalancing', async () => {
+  it('emits rebalance', async () => {
     const onRebalancing = jest.fn()
 
     const groupId = `consumer-group-id-${secureRandom()}`
@@ -375,13 +376,7 @@ describe('Consumer > Instrumentation Events', () => {
       }),
     })
 
-    let memberId
-    consumer1.on(consumer.events.GROUP_JOIN, async event => {
-      memberId = event.payload.memberId
-      consumer1.removeAllListeners(consumer.events.GROUP_JOIN)
-    })
-
-    consumer1.on(consumer.events.REBALANCING, async event => {
+    consumer1.on(consumer1.events.REBALANCE, async event => {
       onRebalancing(event)
     })
 
@@ -390,22 +385,31 @@ describe('Consumer > Instrumentation Events', () => {
 
     consumer1.run({ eachMessage: () => true })
 
-    await waitForConsumerToJoinGroup(consumer1, { label: 'consumer1' })
+    const {
+      payload: { memberId },
+    } = await waitForConsumerToJoinGroup(consumer1)
+
+    let memberAssignment
+    consumer1.on(consumer1.events.GROUP_JOIN, async event => {
+      // Get the latest memberAssignment for consumer1
+      if (memberId === event.payload.memberId) memberAssignment = event.payload.memberAssignment
+    })
 
     await consumer2.connect()
     await consumer2.subscribe({ topic: topicName, fromBeginning: true })
 
     consumer2.run({ eachMessage: () => true })
 
-    await waitForConsumerToJoinGroup(consumer2, { label: 'consumer2' })
+    await waitForConsumerToRebalance(consumer1, { label: 'consumer1' })
 
     expect(onRebalancing).toBeCalledWith({
       id: expect.any(Number),
       timestamp: expect.any(Number),
-      type: 'consumer.rebalancing',
+      type: 'consumer.rebalance',
       payload: {
-        groupId: groupId,
-        memberId: memberId,
+        groupId,
+        memberId,
+        memberAssignment,
       },
     })
   })

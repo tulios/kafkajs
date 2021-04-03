@@ -6,7 +6,7 @@ const { KafkaJSError } = require('../errors')
 const barrier = require('./barrier')
 
 const {
-  events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS, REBALANCING },
+  events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS, REBALANCE },
 } = require('./instrumentationEvents')
 
 const isRebalancing = e =>
@@ -88,6 +88,28 @@ module.exports = class Runner extends EventEmitter {
     }
 
     return this.join().catch(this.onCrash)
+  }
+
+  async rebalance() {
+    await this.join()
+
+    this.instrumentationEmitter.emit(REBALANCE, {
+      groupId: this.consumerGroup.groupId,
+      memberId: this.consumerGroup.memberId,
+      memberAssignment: this.consumerGroup.formattedAssigned(),
+    })
+  }
+
+  async scheduleRebalance() {
+    if (!this.running) {
+      this.logger.debug('consumer not running, exiting', {
+        groupId: this.consumerGroup.groupId,
+        memberId: this.consumerGroup.memberId,
+      })
+      return
+    }
+
+    return this.rebalance().catch(this.onCrash)
   }
 
   async start() {
@@ -405,12 +427,7 @@ module.exports = class Runner extends EventEmitter {
             retryTime,
           })
 
-          this.instrumentationEmitter.emit(REBALANCING, {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-          })
-
-          await this.join()
+          await this.rebalance()
           setImmediate(() => this.scheduleFetch())
           return
         }
@@ -500,12 +517,7 @@ module.exports = class Runner extends EventEmitter {
             retryTime,
           })
 
-          this.instrumentationEmitter.emit(REBALANCING, {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-          })
-
-          setImmediate(() => this.scheduleJoin())
+          setImmediate(() => this.scheduleRebalance())
 
           bail(new KafkaJSError(e))
         }

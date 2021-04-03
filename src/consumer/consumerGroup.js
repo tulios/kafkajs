@@ -313,17 +313,12 @@ module.exports = class ConsumerGroup {
         await this[PRIVATE.JOIN]()
         await this[PRIVATE.SYNC]()
 
-        const memberAssignment = this.assigned().reduce(
-          (result, { topic, partitions }) => ({ ...result, [topic]: partitions }),
-          {}
-        )
-
         const payload = {
           groupId: this.groupId,
           memberId: this.memberId,
           leaderId: this.leaderId,
           isLeader: this.isLeader(),
-          memberAssignment,
+          memberAssignment: this.formattedAssigned(),
           groupProtocol: this.groupProtocol,
           duration: Date.now() - startJoin,
         }
@@ -385,6 +380,13 @@ module.exports = class ConsumerGroup {
 
   assigned() {
     return this.subscriptionState.assigned()
+  }
+
+  formattedAssigned() {
+    return this.assigned().reduce(
+      (result, { topic, partitions }) => ({ ...result, [topic]: partitions }),
+      {}
+    )
   }
 
   paused() {
