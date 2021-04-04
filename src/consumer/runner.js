@@ -302,7 +302,7 @@ module.exports = class Runner extends EventEmitter {
     let numberOfExecutions = 0
     let expectedNumberOfExecutions = 0
     const enqueuedTasks = []
-    let error = null
+    let error = null // the first fetch request, processing or heartbeat error encountered
 
     while (true) {
       const result = iterator.next()
@@ -323,26 +323,28 @@ module.exports = class Runner extends EventEmitter {
       }
 
       enqueuedTasks.push(async () => {
-        let batches
-        try {
-          batches = await result.value
-        } catch (e) {
-          error = error || e
-          throw e
-        }
+        const batches = await result.value.catch(e => {
+          error = error || e // A broker fetch request error
+          return []
+        })
+
         expectedNumberOfExecutions += batches.length
 
-        batches.map(batch =>
+        batches.forEach(batch =>
           concurrently(async () => {
             try {
-              if (!this.running || batch.isEmpty() || error) {
+              // If stopping or any error has occurred, don't process (or resolve) any more batches
+              if (!this.running || error || batch.isEmpty()) {
                 return
               }
 
-              await onBatch(batch)
+              if (!batch.isEmpty()) {
+                await onBatch(batch)
+              }
+
               await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
             } catch (e) {
-              error = error || e
+              error = error || e // A processing or heartbeat error
             } finally {
               numberOfExecutions++
               if (requestsCompleted && numberOfExecutions === expectedNumberOfExecutions) {
@@ -354,7 +356,7 @@ module.exports = class Runner extends EventEmitter {
       })
     }
 
-    await Promise.all(enqueuedTasks.map(fn => fn()))
+    await Promise.all(enqueuedTasks.map(fn => fn())) // Never throws
     requestsCompleted = true
 
     if (expectedNumberOfExecutions === numberOfExecutions) {
