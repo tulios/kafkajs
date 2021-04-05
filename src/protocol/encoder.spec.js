@@ -25,8 +25,25 @@ describe('Protocol > Encoder', () => {
   const ustring = string => new Encoder().writeUVarIntString(string).buffer
   const decodeUString = buffer => new Decoder(buffer).readUVarIntString()
 
+  const ubytes = bytes => new Encoder().writeUVarIntBytes(bytes).buffer
+  const decodeUBytes = buffer => new Decoder(buffer).readUVarIntBytes()
+
   const B = (...args) => Buffer.from(args)
   const L = value => Long.fromString(`${value}`)
+
+  describe('writeUVarBytes', () => {
+    test('encode uvarint bytes', () => {
+      expect(ubytes(null)).toEqual(B(0x00))
+      expect(ubytes('')).toEqual(B(0x01))
+      expect(ubytes('kafkajs')).toEqual(B(0x08, 0x6b, 0x61, 0x66, 0x6b, 0x61, 0x6a, 0x73))
+    })
+
+    test('decode uvarint bytes', () => {
+      expect(decodeUBytes(ubytes(null))).toEqual(null)
+      expect(decodeUBytes(ubytes(''))).toEqual(B())
+      expect(decodeUBytes(ubytes('kafkajs'))).toEqual(B(0x6b, 0x61, 0x66, 0x6b, 0x61, 0x6a, 0x73))
+    })
+  })
 
   describe('writeUVarIntString', () => {
     test('encode uvarint string', () => {
