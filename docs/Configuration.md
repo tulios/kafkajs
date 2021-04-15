@@ -218,7 +218,7 @@ __Available options:__
 | factor              | Randomization factor                                                                                                    | `0.2`               |
 | multiplier          | Exponential factor                                                                                                      | `2`                 |
 | retries             | Max number of retries per call                                                                                          | `5`                 |
-| restartOnFailure    | Only used in consumer. See [`restartOnFailure`](#restart-on-failure)                                                    | `async () => true`  |
+| restartOnFailure    | Only used in consumer. See [`restartOnFailure`](#restartonfailure)                                                      | `async () => true`  |
 
 Example:
 
