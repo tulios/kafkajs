@@ -207,8 +207,8 @@ module.exports = class Decoder {
       return []
     }
 
-    const array = new Array(length)
-    for (let i = 0; i < length; i++) {
+    const array = new Array(length - 1)
+    for (let i = 0; i < length - 1; i++) {
       array[i] = reader(this)
     }
 

@@ -28,10 +28,29 @@ describe('Protocol > Encoder', () => {
   const ubytes = bytes => new Encoder().writeUVarIntBytes(bytes).buffer
   const decodeUBytes = buffer => new Decoder(buffer).readUVarIntBytes()
 
+  const uarray = array => new Encoder().writeUVarIntArray(array).buffer
+
   const B = (...args) => Buffer.from(args)
   const L = value => Long.fromString(`${value}`)
 
-  describe('writeUVarBytes', () => {
+  describe('Unsigned VarInt Array', () => {
+    const encodeUVarInt = number => new Encoder().writeUVarInt(number)
+    const array = [7681, 823, 9123, 9812, 3219]
+    test('encode uvarint array', () => {
+      expect(uarray(array.map(encodeUVarInt))).toEqual(
+        B(0x06, 0x81, 0x3c, 0xb7, 0x06, 0xa3, 0x47, 0xd4, 0x4c, 0x93, 0x19)
+      )
+    })
+
+    test('decode uvarint array', () => {
+      const decodeUVarInt = decoder => decoder.readUVarInt()
+      const encodedArray = uarray(array.map(encodeUVarInt))
+      const decoder = new Decoder(encodedArray)
+      expect(decoder.readUVarIntArray(decodeUVarInt)).toEqual(array)
+    })
+  })
+
+  describe('Unsigned VarInt Bytes', () => {
     test('encode uvarint bytes', () => {
       expect(ubytes(null)).toEqual(B(0x00))
       expect(ubytes('')).toEqual(B(0x01))
@@ -45,7 +64,7 @@ describe('Protocol > Encoder', () => {
     })
   })
 
-  describe('writeUVarIntString', () => {
+  describe('Unsigned VarInt String', () => {
     test('encode uvarint string', () => {
       expect(ustring(null)).toEqual(B(0x00))
       expect(ustring('')).toEqual(B(0x01))
