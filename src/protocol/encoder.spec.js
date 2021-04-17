@@ -6,15 +6,77 @@ const Decoder = require('./decoder')
 const MAX_SAFE_POSITIVE_SIGNED_INT = 2147483647
 const MIN_SAFE_NEGATIVE_SIGNED_INT = -2147483648
 
+const MAX_SAFE_UNSIGNED_INT = 4294967295
+const MIN_SAFE_UNSIGNED_INT = 0
+
 describe('Protocol > Encoder', () => {
   const signed32 = number => new Encoder().writeVarInt(number).buffer
   const decode32 = buffer => new Decoder(buffer).readVarInt()
 
+  const unsigned32 = number => new Encoder().writeUVarInt(number).buffer
+  const decode32u = buffer => new Decoder(buffer).readUVarInt()
+
   const signed64 = number => new Encoder().writeVarLong(number).buffer
   const decode64 = buffer => new Decoder(buffer).readVarLong()
 
+  const encodeDouble = number => new Encoder().writeDouble(number).buffer
+  const decodeDouble = buffer => new Decoder(buffer).readDouble()
+
+  const ustring = string => new Encoder().writeUVarIntString(string).buffer
+  const decodeUString = buffer => new Decoder(buffer).readUVarIntString()
+
+  const ubytes = bytes => new Encoder().writeUVarIntBytes(bytes).buffer
+  const decodeUBytes = buffer => new Decoder(buffer).readUVarIntBytes()
+
+  const uarray = array => new Encoder().writeUVarIntArray(array).buffer
+
   const B = (...args) => Buffer.from(args)
   const L = value => Long.fromString(`${value}`)
+
+  describe('Unsigned VarInt Array', () => {
+    const encodeUVarInt = number => new Encoder().writeUVarInt(number)
+    const array = [7681, 823, 9123, 9812, 3219]
+    test('encode uvarint array', () => {
+      expect(uarray(array.map(encodeUVarInt))).toEqual(
+        B(0x06, 0x81, 0x3c, 0xb7, 0x06, 0xa3, 0x47, 0xd4, 0x4c, 0x93, 0x19)
+      )
+    })
+
+    test('decode uvarint array', () => {
+      const decodeUVarInt = decoder => decoder.readUVarInt()
+      const encodedArray = uarray(array.map(encodeUVarInt))
+      const decoder = new Decoder(encodedArray)
+      expect(decoder.readUVarIntArray(decodeUVarInt)).toEqual(array)
+    })
+  })
+
+  describe('Unsigned VarInt Bytes', () => {
+    test('encode uvarint bytes', () => {
+      expect(ubytes(null)).toEqual(B(0x00))
+      expect(ubytes('')).toEqual(B(0x01))
+      expect(ubytes('kafkajs')).toEqual(B(0x08, 0x6b, 0x61, 0x66, 0x6b, 0x61, 0x6a, 0x73))
+    })
+
+    test('decode uvarint bytes', () => {
+      expect(decodeUBytes(ubytes(null))).toEqual(null)
+      expect(decodeUBytes(ubytes(''))).toEqual(B())
+      expect(decodeUBytes(ubytes('kafkajs'))).toEqual(B(0x6b, 0x61, 0x66, 0x6b, 0x61, 0x6a, 0x73))
+    })
+  })
+
+  describe('Unsigned VarInt String', () => {
+    test('encode uvarint string', () => {
+      expect(ustring(null)).toEqual(B(0x00))
+      expect(ustring('')).toEqual(B(0x01))
+      expect(ustring('kafkajs')).toEqual(B(0x08, 0x6b, 0x61, 0x66, 0x6b, 0x61, 0x6a, 0x73))
+    })
+
+    test('decode uvarint string', () => {
+      expect(decodeUString(ustring(null))).toEqual(null)
+      expect(decodeUString(ustring(''))).toEqual('')
+      expect(decodeUString(ustring('kafkajs'))).toEqual('kafkajs')
+    })
+  })
 
   describe('writeEncoder', () => {
     it('should throw if the value is not an Encoder', () => {
@@ -47,6 +109,39 @@ describe('Protocol > Encoder', () => {
     })
   })
 
+  describe('double', () => {
+    test('encode double', () => {
+      expect(encodeDouble(-3.1415926535897932)).toEqual(
+        B(0xc0, 0x09, 0x21, 0xfb, 0x54, 0x44, 0x2d, 0x18)
+      )
+      expect(encodeDouble(-0.3333333333333333)).toEqual(
+        B(0xbf, 0xd5, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55)
+      )
+      expect(encodeDouble(-59.82946381)).toEqual(B(0xc0, 0x4d, 0xea, 0x2b, 0xde, 0xc0, 0x95, 0x31))
+      expect(encodeDouble(-1.5)).toEqual(B(0xbf, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))
+      expect(encodeDouble(0.0)).toEqual(B(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))
+      expect(encodeDouble(1.5)).toEqual(B(0x3f, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))
+      expect(encodeDouble(59.82946381)).toEqual(B(0x40, 0x4d, 0xea, 0x2b, 0xde, 0xc0, 0x95, 0x31))
+      expect(encodeDouble(0.3333333333333333)).toEqual(
+        B(0x3f, 0xd5, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55)
+      )
+      expect(encodeDouble(3.1415926535897932)).toEqual(
+        B(0x40, 0x09, 0x21, 0xfb, 0x54, 0x44, 0x2d, 0x18)
+      )
+    })
+    test('decode double', () => {
+      expect(decodeDouble(encodeDouble(-3.1415926535897932))).toEqual(-3.1415926535897932)
+      expect(decodeDouble(encodeDouble(-0.3333333333333333))).toEqual(-0.3333333333333333)
+      expect(decodeDouble(encodeDouble(-59.82946381))).toEqual(-59.82946381)
+      expect(decodeDouble(encodeDouble(-1.5))).toEqual(-1.5)
+      expect(decodeDouble(encodeDouble(0.0))).toEqual(0.0)
+      expect(decodeDouble(encodeDouble(1.5))).toEqual(1.5)
+      expect(decodeDouble(encodeDouble(59.82946381))).toEqual(59.82946381)
+      expect(decodeDouble(encodeDouble(0.3333333333333333))).toEqual(0.3333333333333333)
+      expect(decodeDouble(encodeDouble(3.1415926535897932))).toEqual(3.1415926535897932)
+    })
+  })
+
   describe('varint', () => {
     test('encode signed int32 numbers', () => {
       expect(signed32(0)).toEqual(B(0x00))
@@ -76,7 +171,7 @@ describe('Protocol > Encoder', () => {
       expect(signed32(MIN_SAFE_NEGATIVE_SIGNED_INT)).toEqual(B(0xff, 0xff, 0xff, 0xff, 0x0f))
     })
 
-    test('decode int32 numbers', () => {
+    test('decode signed int32 numbers', () => {
       expect(decode32(signed32(0))).toEqual(0)
       expect(decode32(signed32(1))).toEqual(1)
       expect(decode32(signed32(63))).toEqual(63)
@@ -102,6 +197,46 @@ describe('Protocol > Encoder', () => {
     test('decode signed int32 boundaries', () => {
       expect(decode32(signed32(MAX_SAFE_POSITIVE_SIGNED_INT))).toEqual(MAX_SAFE_POSITIVE_SIGNED_INT)
       expect(decode32(signed32(MIN_SAFE_NEGATIVE_SIGNED_INT))).toEqual(MIN_SAFE_NEGATIVE_SIGNED_INT)
+    })
+  })
+
+  describe('uvarint', () => {
+    test('encode unsigned int32 numbers', () => {
+      expect(unsigned32(0)).toEqual(B(0x00))
+      expect(unsigned32(1)).toEqual(B(0x01))
+      expect(unsigned32(127)).toEqual(B(0x7f))
+      expect(unsigned32(128)).toEqual(B(0x80, 0x01))
+      expect(unsigned32(8192)).toEqual(B(0x80, 0x40))
+      expect(unsigned32(16383)).toEqual(B(0xff, 0x7f))
+      expect(unsigned32(16384)).toEqual(B(0x80, 0x80, 0x01))
+      expect(unsigned32(2097151)).toEqual(B(0xff, 0xff, 0x7f))
+      expect(unsigned32(2097152)).toEqual(B(0x80, 0x80, 0x80, 0x01))
+      expect(unsigned32(134217728)).toEqual(B(0x80, 0x80, 0x80, 0x40))
+      expect(unsigned32(268435455)).toEqual(B(0xff, 0xff, 0xff, 0x7f))
+    })
+
+    test('encode unsigned int32 boundaries', () => {
+      expect(unsigned32(MAX_SAFE_UNSIGNED_INT)).toEqual(B(0xff, 0xff, 0xff, 0xff, 0x0f))
+      expect(unsigned32(MIN_SAFE_UNSIGNED_INT)).toEqual(B(0x00))
+    })
+
+    test('decode unsigned int32 numbers', () => {
+      expect(decode32u(unsigned32(0))).toEqual(0)
+      expect(decode32u(unsigned32(1))).toEqual(1)
+      expect(decode32u(unsigned32(127))).toEqual(127)
+      expect(decode32u(unsigned32(128))).toEqual(128)
+      expect(decode32u(unsigned32(8192))).toEqual(8192)
+      expect(decode32u(unsigned32(16383))).toEqual(16383)
+      expect(decode32u(unsigned32(16384))).toEqual(16384)
+      expect(decode32u(unsigned32(2097151))).toEqual(2097151)
+      expect(decode32u(unsigned32(134217728))).toEqual(134217728)
+      expect(decode32u(unsigned32(268435455))).toEqual(268435455)
+    })
+
+    test('decode unsigned int32 boundaries', () => {
+      expect(() => decode32u(B(0xff, 0xff, 0xff, 0xff, 0xff, 0x01))).toThrow()
+      expect(decode32u(unsigned32(MAX_SAFE_UNSIGNED_INT))).toEqual(MAX_SAFE_UNSIGNED_INT)
+      expect(decode32u(unsigned32(MIN_SAFE_UNSIGNED_INT))).toEqual(MIN_SAFE_UNSIGNED_INT)
     })
   })
 
@@ -202,6 +337,9 @@ describe('Protocol > Encoder', () => {
       expect(decode64(signed64(L('4611686018427387903')))).toEqual(L('4611686018427387903'))
       expect(decode64(signed64(L('4611686018427387904')))).toEqual(L('4611686018427387904'))
       expect(decode64(signed64(Long.MAX_VALUE))).toEqual(Long.MAX_VALUE)
+      expect(() =>
+        decode64(B(0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01))
+      ).toThrow()
     })
   })
 

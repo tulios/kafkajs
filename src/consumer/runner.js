@@ -6,7 +6,7 @@ const { KafkaJSError } = require('../errors')
 const barrier = require('./barrier')
 
 const {
-  events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS },
+  events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS, REBALANCING },
 } = require('./instrumentationEvents')
 
 const isRebalancing = e =>
@@ -410,6 +410,11 @@ module.exports = class Runner extends EventEmitter {
             retryTime,
           })
 
+          this.instrumentationEmitter.emit(REBALANCING, {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+          })
+
           await this.join()
           setImmediate(() => this.scheduleFetch())
           return
@@ -498,6 +503,11 @@ module.exports = class Runner extends EventEmitter {
             error: e.message,
             retryCount,
             retryTime,
+          })
+
+          this.instrumentationEmitter.emit(REBALANCING, {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
           })
 
           setImmediate(() => this.scheduleJoin())
