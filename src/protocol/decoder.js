@@ -1,9 +1,11 @@
+const { KafkaJSInvalidVarIntError, KafkaJSInvalidLongError } = require('../errors')
 const Long = require('../utils/long')
 
 const INT8_SIZE = 1
 const INT16_SIZE = 2
 const INT32_SIZE = 4
 const INT64_SIZE = 8
+const DOUBLE_SIZE = 8
 
 const MOST_SIGNIFICANT_BIT = 0x80 // 128
 const OTHER_BITS = 0x7f // 127
@@ -75,6 +77,12 @@ module.exports = class Decoder {
     return (BigInt(low) << 32n) + BigInt(high)
   }
 
+  readDouble() {
+    const value = this.buffer.readDoubleBE(this.offset)
+    this.offset += DOUBLE_SIZE
+    return value
+  }
+
   readString() {
     const byteLength = this.readInt16()
 
@@ -92,6 +100,19 @@ module.exports = class Decoder {
     const byteLength = this.readVarInt()
 
     if (byteLength === -1) {
+      return null
+    }
+
+    const stringBuffer = this.buffer.slice(this.offset, this.offset + byteLength)
+    const value = stringBuffer.toString('utf8')
+    this.offset += byteLength
+    return value
+  }
+
+  readUVarIntString() {
+    const byteLength = this.readUVarInt()
+
+    if (byteLength === 0) {
       return null
     }
 
@@ -119,6 +140,18 @@ module.exports = class Decoder {
     const byteLength = this.readVarInt()
 
     if (byteLength === -1) {
+      return null
+    }
+
+    const stringBuffer = this.buffer.slice(this.offset, this.offset + byteLength)
+    this.offset += byteLength
+    return stringBuffer
+  }
+
+  readUVarIntBytes() {
+    const byteLength = this.readUVarInt()
+
+    if (byteLength === 0) {
       return null
     }
 
@@ -167,6 +200,21 @@ module.exports = class Decoder {
     return array
   }
 
+  readUVarIntArray(reader) {
+    const length = this.readUVarInt()
+
+    if (length === 0) {
+      return []
+    }
+
+    const array = new Array(length - 1)
+    for (let i = 0; i < length - 1; i++) {
+      array[i] = reader(this)
+    }
+
+    return array
+  }
+
   async readArrayAsync(reader) {
     const length = this.readInt32()
 
@@ -196,12 +244,32 @@ module.exports = class Decoder {
     return Decoder.decodeZigZag(result)
   }
 
+  // By default JavaScript's numbers are of type float64, performing bitwise operations converts the numbers to a signed 32-bit integer
+  // Unsigned Right Shift Operator >>> ensures the returned value is an unsigned 32-bit integer
+  readUVarInt() {
+    let currentByte
+    let result = 0
+    let i = 0
+    while (((currentByte = this.buffer[this.offset++]) & MOST_SIGNIFICANT_BIT) !== 0) {
+      result |= (currentByte & OTHER_BITS) << i
+      i += 7
+      if (i > 28) {
+        throw new KafkaJSInvalidVarIntError('Invalid VarInt, must contain 5 bytes or less')
+      }
+    }
+    result |= currentByte << i
+    return result >>> 0
+  }
+
   readVarLong() {
     let currentByte
     let result = Long.fromInt(0)
     let i = 0
 
     do {
+      if (i > 63) {
+        throw new KafkaJSInvalidLongError('Invalid Long, must contain 9 bytes or less')
+      }
       currentByte = this.buffer[this.offset++]
       result = result.add(Long.fromInt(currentByte & OTHER_BITS).shiftLeft(i))
       i += 7
