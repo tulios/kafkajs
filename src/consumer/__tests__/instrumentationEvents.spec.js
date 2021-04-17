@@ -359,7 +359,7 @@ describe('Consumer > Instrumentation Events', () => {
 
     const groupId = `consumer-group-id-${secureRandom()}`
 
-    const consumer1 = createTestConsumer({
+    consumer = createTestConsumer({
       groupId,
       cluster: createCluster({
         instrumentationEmitter: new InstrumentationEventEmitter(),
@@ -367,7 +367,7 @@ describe('Consumer > Instrumentation Events', () => {
       }),
     })
 
-    const consumer2 = createTestConsumer({
+    consumer2 = createTestConsumer({
       groupId,
       cluster: createCluster({
         instrumentationEmitter: new InstrumentationEventEmitter(),
@@ -376,21 +376,20 @@ describe('Consumer > Instrumentation Events', () => {
     })
 
     let memberId
-    consumer1.on(consumer.events.GROUP_JOIN, async event => {
-      memberId = event.payload.memberId
-      consumer1.removeAllListeners(consumer.events.GROUP_JOIN)
+    consumer.on(consumer.events.GROUP_JOIN, async event => {
+      memberId = memberId || event.payload.memberId
     })
 
-    consumer1.on(consumer.events.REBALANCING, async event => {
+    consumer.on(consumer.events.REBALANCING, async event => {
       onRebalancing(event)
     })
 
-    await consumer1.connect()
-    await consumer1.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-    consumer1.run({ eachMessage: () => true })
+    consumer.run({ eachMessage: () => true })
 
-    await waitForConsumerToJoinGroup(consumer1, { label: 'consumer1' })
+    await waitForConsumerToJoinGroup(consumer, { label: 'consumer1' })
 
     await consumer2.connect()
     await consumer2.subscribe({ topic: topicName, fromBeginning: true })
