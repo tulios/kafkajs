@@ -334,7 +334,7 @@ module.exports = class Runner extends EventEmitter {
           concurrently(async () => {
             try {
               // If stopping or any error has occurred, don't process (or resolve) any more batches
-              if (!this.running || error || batch.isEmpty()) {
+              if (!this.running || error) {
                 return
               }
 
