@@ -113,9 +113,7 @@ export default class ExampleConsumer {
     try {
       await this.kafkaConsumer.connect()
       await this.kafkaConsumer.subscribe(topic)
-
       await this.kafkaConsumer.run({
-        partitionsConsumedConcurrently: 3,
         eachBatch: async (eatchBatchPayload: EachBatchPayload) => {
           await this.messageProcessor.processInBatch(eatchBatchPayload)
         }
@@ -135,7 +133,6 @@ export default class ExampleConsumer {
       brokers: ['example.kafka.broker:9092']
     })
     const consumer = kafka.consumer({ groupId: 'consumer-group' })
-
     return consumer
   }
 }
