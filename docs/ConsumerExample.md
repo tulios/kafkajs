@@ -64,6 +64,83 @@ signalTraps.map(type => {
 })
 ```
 
+## <a name="typescript-consumer-example"></a> TypeScript Example
+
+A similar example in TypeScript
+
+```typescript
+import { Consumer, ConsumerSubscribeTopic, EachBatchPayload, Kafka, EachMessagePayload } from 'kafkajs'
+
+// ExampleMessageProcessor is a placeholder for the logic applied to each 
+// message or message batch and is not provided by kafkajs
+import ExampleMessageProcessor from './ExampleMessageProcessor'
+
+export default class ExampleConsumer {
+  private kafkaConsumer: Consumer
+  private messageProcessor: ExampleMessageProcessor
+
+  public constructor(messageProcessor: ExampleMessageProcessor) {
+    this.messageProcessor = messageProcessor
+    this.kafkaConsumer = this.createKafkaConsumer()
+  }
+
+  public async startConsumer(): Promise<void> {
+    const topic: ConsumerSubscribeTopic = {
+      topic: 'example-topic',
+      fromBeginning: false
+    }
+
+    try {
+      await this.kafkaConsumer.connect()
+      await this.kafkaConsumer.subscribe(topic)
+
+      await this.kafkaConsumer.run({
+        eachMessage: async (message: EachMessagePayload) => {
+          await this.messageProcessor.processMessage(message)
+        }
+      })
+    } catch (error) {
+      console.log('Error: ', error)
+    }
+  }
+
+  public async startBatchConsumer(): Promise<void> {
+    const topic: ConsumerSubscribeTopic = {
+      topic: 'example-topic',
+      fromBeginning: false
+    }
+
+    try {
+      await this.kafkaConsumer.connect()
+      await this.kafkaConsumer.subscribe(topic)
+
+      await this.kafkaConsumer.run({
+        partitionsConsumedConcurrently: 3,
+        eachBatch: async (eatchBatchPayload: EachBatchPayload) => {
+          await this.messageProcessor.processInBatch(eatchBatchPayload)
+        }
+      })
+    } catch (error) {
+      console.log('Error: ', error)
+    }
+  }
+
+  public async shutdown(): Promise<void> {
+    await this.kafkaConsumer.disconnect()
+  }
+
+  private createKafkaConsumer(): Consumer {
+    const kafka = new Kafka({ 
+      clientId: 'client-id',
+      brokers: ['example.kafka.broker:9092']
+    })
+    const consumer = kafka.consumer({ groupId: 'consumer-group' })
+
+    return consumer
+  }
+}
+```
+
 ## <a name="ssl-and-sasl-authentication"></a> SSL & SASL Authentication
 
 The following example assumes a valid SSL certificate and SASL authentication using the `scram-sha-256` mechanism. Other mechanisms are also available (see [Client Configuration](Configuration.md#sasl)).
