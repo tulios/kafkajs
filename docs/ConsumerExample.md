@@ -71,10 +71,6 @@ A similar example in TypeScript
 ```typescript
 import { Consumer, ConsumerSubscribeTopic, EachBatchPayload, Kafka, EachMessagePayload } from 'kafkajs'
 
-// ExampleMessageProcessor is a placeholder for the logic applied to each 
-// message or message batch and is not provided by kafkajs
-import ExampleMessageProcessor from './ExampleMessageProcessor'
-
 export default class ExampleConsumer {
   private kafkaConsumer: Consumer
   private messageProcessor: ExampleMessageProcessor
@@ -95,8 +91,10 @@ export default class ExampleConsumer {
       await this.kafkaConsumer.subscribe(topic)
 
       await this.kafkaConsumer.run({
-        eachMessage: async (message: EachMessagePayload) => {
-          await this.messageProcessor.processMessage(message)
+        eachMessage: async (messagePayload: EachMessagePayload) => {
+          const { topic, partition, message } = messagePayload
+          const prefix = `${topic}[${partition} | ${message.offset}] / ${message.timestamp}`
+          console.log(`- ${prefix} ${message.key}#${message.value}`)
         }
       })
     } catch (error) {
@@ -115,7 +113,11 @@ export default class ExampleConsumer {
       await this.kafkaConsumer.subscribe(topic)
       await this.kafkaConsumer.run({
         eachBatch: async (eatchBatchPayload: EachBatchPayload) => {
-          await this.messageProcessor.processInBatch(eatchBatchPayload)
+          const { topic, partition, batch } = eachBatchPayload
+          for (const message of batch.messages) {
+            const prefix = `${topic}[${partition} | ${message.offset}] / ${message.timestamp}`
+            console.log(`- ${prefix} ${message.key}#${message.value}`) 
+          }
         }
       })
     } catch (error) {
