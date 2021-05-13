@@ -171,6 +171,21 @@ You can also programmatically retrieve the `aws:userid` for currently available 
 A complete breakdown can be found in the IAM User Guide's
 [Reference on Policy Variables](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html#policy-vars-infotouse).
 
+### Custom Authentication Mechanisms
+
+If an authentication mechanism is not supported out of the box in KafkaJS, a custom authentication
+mechanism can be introduced as a plugin:
+
+```js
+const CustomAuthenticationMechanism = require('custom-authentication-mechanism')
+const { AuthenticationMechanisms } = require('kafkajs')
+
+AuthenticationMechanisms['CUSTOM_AUTHENTICATION'] = CustomAuthenticationMechanism
+```
+
+See [Custom Authentication Mechanisms](CustomAuthenticationMechanism.md) for more information on how to implement your own
+authentication mechanism.
+
 ### Use Encrypted Protocols
 
 It is **highly recommended** that you use SSL for encryption when using `PLAIN` or `AWS`,

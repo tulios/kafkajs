@@ -9,6 +9,7 @@
       "consuming",
       "admin",
       "instrumentation-events",
+      "custom-authentication-mechanism",
       "custom-logger",
       "retry-detailed",
       "faq",
