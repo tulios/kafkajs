@@ -4,7 +4,7 @@ const { Types: Compression } = require('../protocol/message/compression')
 const { requests, lookup } = require('../protocol/requests')
 const { KafkaJSNonRetriableError } = require('../errors')
 const apiKeys = require('../protocol/requests/apiKeys')
-const SASLAuthenticator = require('./saslAuthenticator')
+const { SASLAuthenticator } = require('./saslAuthenticator')
 const shuffle = require('../utils/shuffle')
 
 const PRIVATE = {

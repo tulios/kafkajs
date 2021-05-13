@@ -113,7 +113,8 @@ class SCRAM {
    * @param {Function} saslAuthenticate
    * @param {DigestDefinition} digestDefinition
    */
-  constructor(connection, logger, saslAuthenticate, digestDefinition) {
+  constructor(sasl, connection, logger, saslAuthenticate, digestDefinition) {
+    this.sasl = sasl
     this.connection = connection
     this.logger = logger
     this.saslAuthenticate = saslAuthenticate
@@ -127,10 +128,10 @@ class SCRAM {
 
   async authenticate() {
     const { PREFIX } = this
-    const { host, port, sasl } = this.connection
+    const { host, port } = this.connection
     const broker = `${host}:${port}`
 
-    if (sasl.username == null || sasl.password == null) {
+    if (this.sasl.username == null || this.sasl.password == null) {
       throw new KafkaJSSASLAuthenticationError(`${this.PREFIX}: Invalid username or password`)
     }
 
@@ -155,7 +156,7 @@ class SCRAM {
       this.logger.debug(`${PREFIX} successful`, { broker })
     } catch (e) {
       const error = new KafkaJSSASLAuthenticationError(`${PREFIX} failed: ${e.message}`)
-      this.logger.error(error.message, { broker })
+      this.logger.error(error.message, { broker, stack: error.stack })
       throw error
     }
   }
@@ -169,7 +170,6 @@ class SCRAM {
     const response = scram.firstMessage.response
 
     return this.saslAuthenticate({
-      authExpectResponse: true,
       request,
       response,
     })
@@ -202,7 +202,6 @@ class SCRAM {
     const response = scram.finalMessage.response
 
     return this.saslAuthenticate({
-      authExpectResponse: true,
       request,
       response,
     })
@@ -287,7 +286,7 @@ class SCRAM {
    * @private
    */
   encodedUsername() {
-    const { username } = this.connection.sasl
+    const { username } = this.sasl
     return SCRAM.sanitizeString(username).toString('utf-8')
   }
 
@@ -295,7 +294,7 @@ class SCRAM {
    * @private
    */
   encodedPassword() {
-    const { password } = this.connection.sasl
+    const { password } = this.sasl
     return password.toString('utf-8')
   }
 

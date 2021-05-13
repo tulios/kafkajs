@@ -3,7 +3,11 @@ const OAuthBearer = require('./oauthBearer')
 
 describe('Broker > SASL Authenticator > OAUTHBEARER', () => {
   it('throws KafkaJSSASLAuthenticationError for missing oauthBearerProvider', async () => {
-    const oauthBearer = new OAuthBearer({ sasl: {} }, newLogger())
+    const oauthBearer = OAuthBearer({
+      sasl: {},
+      connection: { host: 'host', port: 9094 },
+      logger: newLogger(),
+    })
     await expect(oauthBearer.authenticate()).rejects.toThrow('Missing OAuth bearer token provider')
   })
 
@@ -12,7 +16,11 @@ describe('Broker > SASL Authenticator > OAUTHBEARER', () => {
       return {}
     }
 
-    const oauthBearer = new OAuthBearer({ sasl: { oauthBearerProvider } }, newLogger())
+    const oauthBearer = OAuthBearer({
+      sasl: { oauthBearerProvider },
+      connection: { host: 'host', port: 9094 },
+      logger: newLogger(),
+    })
     await expect(oauthBearer.authenticate()).rejects.toThrow('Invalid OAuth bearer token')
   })
 })

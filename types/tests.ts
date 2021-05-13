@@ -21,8 +21,12 @@ import {
   KafkaJSTopicMetadataNotLoaded,
   KafkaJSStaleTopicMetadataAssignment,
   PartitionMetadata,
-  KafkaJSServerDoesNotSupportApiKey,
+  KafkaJSServerDoesNotSupportApiKey
 } from './index'
+
+interface SASLMechanismOptionsMap {
+  "FAKE-MECHANISM": { myProp1: string, myProp2: string }
+}
 
 const { roundRobin } = PartitionAssigners
 

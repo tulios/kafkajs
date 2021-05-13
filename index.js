@@ -11,6 +11,7 @@ const AclOperationTypes = require('./src/protocol/aclOperationTypes')
 const AclPermissionTypes = require('./src/protocol/aclPermissionTypes')
 const ResourcePatternTypes = require('./src/protocol/resourcePatternTypes')
 const { LEVELS } = require('./src/loggers')
+const { AuthenticationMechanisms } = require('./src/broker/saslAuthenticator')
 
 module.exports = {
   Kafka,
@@ -33,4 +34,5 @@ module.exports = {
   AclPermissionTypes,
   ResourcePatternTypes,
   ConfigSource,
+  AuthenticationMechanisms,
 }

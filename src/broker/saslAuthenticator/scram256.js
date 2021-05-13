@@ -1,7 +1,11 @@
 const { SCRAM, DIGESTS } = require('./scram')
 
-module.exports = class SCRAM256Authenticator extends SCRAM {
-  constructor(connection, logger, saslAuthenticate) {
-    super(connection, logger.namespace('SCRAM256Authenticator'), saslAuthenticate, DIGESTS.SHA256)
+function SCRAM256Authenticator({ sasl, connection, logger, saslAuthenticate }) {
+  const scram = new SCRAM(sasl, connection, logger, saslAuthenticate, DIGESTS.SHA256)
+
+  return {
+    authenticate: async () => scram.authenticate(),
   }
 }
+
+module.exports = SCRAM256Authenticator

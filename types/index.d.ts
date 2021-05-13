@@ -45,7 +45,36 @@ export interface OauthbearerProviderResponse {
   value: string
 }
 
-type SASLMechanismOptionsMap = {
+type AuthenticationMechanism = {
+  authenticate(): Promise<void>
+}
+
+type SaslAuthenticationRequest = () => {
+  encode: () => Buffer | Promise<Buffer>
+}
+
+type SaslAuthenticationResponse<ParseResult> = () => {
+  decode: (rawResponse: Buffer) => Buffer | Promise<Buffer>
+  parse: (data: Buffer) => ParseResult
+}
+
+type SaslAuthenticationFunction<ParseResult> = (handlers: { request: SaslAuthenticationRequest, response?: SaslAuthenticationResponse<ParseResult> }) => Promise<ParseResult>
+type AuthenticationMechanismCreator<SASLOptions, ParseResult> = (params: {
+  sasl: SASLOptions,
+  connection: { host: string, port: number },
+  logger: Logger,
+  saslAuthenticate: SaslAuthenticationFunction<ParseResult>
+}) => AuthenticationMechanism
+
+export var AuthenticationMechanisms: {
+  'plain': AuthenticationMechanismCreator<SASLMechanismOptionsMap['plain'], void>,
+  'scram-sha-256': AuthenticationMechanismCreator<SASLMechanismOptionsMap['scram-sha-256'], { original: string, r?: string, s?: string, i?: string, e?: string, v?: string }>,
+  'scram-sha-512': AuthenticationMechanismCreator<SASLMechanismOptionsMap['scram-sha-512'], { original: string, r?: string, s?: string, i?: string, e?: string, v?: string }>,
+  'aws': AuthenticationMechanismCreator<SASLMechanismOptionsMap['aws'], void>,
+  'oauthbearer': AuthenticationMechanismCreator<SASLMechanismOptionsMap['aws'], void>,
+}
+
+export type SASLMechanismOptionsMap = {
   'plain': { username: string, password: string },
   'scram-sha-256': { username: string, password: string },
   'scram-sha-512': { username: string, password: string },
@@ -53,9 +82,9 @@ type SASLMechanismOptionsMap = {
   'oauthbearer': { oauthBearerProvider: () => Promise<OauthbearerProviderResponse> }
 }
 
-export type SASLMechanism = keyof SASLMechanismOptionsMap
+type SASLMechanism = keyof SASLMechanismOptionsMap
 type SASLMechanismOptions<T> = T extends SASLMechanism ? { mechanism: T } & SASLMechanismOptionsMap[T] : never
-export type SASLOptions = SASLMechanismOptions<SASLMechanism>
+type SASLOptions = SASLMechanismOptions<SASLMechanism>
 
 export interface ProducerConfig {
   createPartitioner?: ICustomPartitioner

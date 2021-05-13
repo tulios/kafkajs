@@ -23,6 +23,6 @@ module.exports = ({ authorizationIdentity = null, username, password }) => ({
   encode: async () => {
     return new Encoder().writeBytes(
       [authorizationIdentity, username, password].join(US_ASCII_NULL_CHAR)
-    )
+    ).buffer
   },
 })

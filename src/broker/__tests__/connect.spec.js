@@ -2,6 +2,7 @@ const {
   createConnection,
   connectionOpts,
   saslSCRAM256ConnectionOpts,
+  sslConnectionOpts,
   newLogger,
   testIfKafkaAtLeast_1_1_0,
   describeIfOauthbearerDisabled,
@@ -10,6 +11,7 @@ const {
 
 const Long = require('../../utils/long')
 const Broker = require('../index')
+const { AuthenticationMechanisms } = require('../../../index')
 
 describe('Broker > connect', () => {
   let broker
@@ -34,6 +36,48 @@ describe('Broker > connect', () => {
     expect(broker.versions).toEqual(null)
     await broker.connect()
     expect(broker.versions).toBeTruthy()
+  })
+
+  test('throws if the mechanism is not supported', async () => {
+    broker = new Broker({
+      connection: createConnection(
+        Object.assign(sslConnectionOpts(), {
+          port: 9094,
+          sasl: {
+            mechanism: 'fake-mechanism',
+          },
+        })
+      ),
+      logger: newLogger(),
+    })
+
+    await expect(broker.connect()).rejects.toThrow(
+      'SASL FAKE-MECHANISM mechanism is not supported by the client'
+    )
+  })
+
+  test("throws if the mechanism isn't supported by the server", async () => {
+    AuthenticationMechanisms['FAKE-MECHANISM'] = () => ({
+      authenticate: async () => {
+        throw new Error('🥸')
+      },
+    })
+
+    broker = new Broker({
+      connection: createConnection(
+        Object.assign(sslConnectionOpts(), {
+          port: 9094,
+          sasl: {
+            mechanism: 'fake-mechanism',
+          },
+        })
+      ),
+      logger: newLogger(),
+    })
+
+    await expect(broker.connect()).rejects.toThrow(
+      'The broker does not support the requested SASL mechanism'
+    )
   })
 
   for (const e of saslEntries) {
