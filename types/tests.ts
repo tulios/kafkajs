@@ -21,11 +21,11 @@ import {
   KafkaJSTopicMetadataNotLoaded,
   KafkaJSStaleTopicMetadataAssignment,
   PartitionMetadata,
-  KafkaJSServerDoesNotSupportApiKey
+  KafkaJSServerDoesNotSupportApiKey,
 } from './index'
 
 interface SASLMechanismOptionsMap {
-  "FAKE-MECHANISM": { myProp1: string, myProp2: string }
+  'FAKE-MECHANISM': { myProp1: string; myProp2: string }
 }
 
 const { roundRobin } = PartitionAssigners
@@ -48,7 +48,7 @@ const kafka = new Kafka({
     password: 'testtest',
   },
   logCreator: (logLevel: logLevel) => (entry: LogEntry) => {
-    Date.parse(entry.log.timestamp);
+    Date.parse(entry.log.timestamp)
   },
 })
 
