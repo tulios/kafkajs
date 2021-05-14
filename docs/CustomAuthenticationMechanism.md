@@ -22,24 +22,24 @@ configure your brokers.
 A custom authentication mechanism needs to fulfill the following interface:
 
 ```ts
-type AuthenticationMechanismCreator = (params: {
-  sasl: Record<string, any>,
+type AuthenticationMechanismCreator<SaslOptions, ParseResult> = (params: {
+  sasl?: SaslOptions,
   connection: { host: string, port: number },
   logger: Logger,
-  saslAuthenticate: (handlers: { request: SaslAuthenticationRequest, response?: SaslAuthenticationResponse }) => Promise<void>
+  saslAuthenticate: (handlers: { request: SaslAuthenticationRequest<SaslOptions>, response?: SaslAuthenticationResponse<ParseResult> }) => Promise<ParseResult>
 }) => AuthenticationMechanism
 
 type AuthenticationMechanism = {
   authenticate(): Promise<void>
 }
 
-type SaslAuthenticationRequest = (sasl: Record<string, any>) => {
-  encode: () => Buffer
+type SaslAuthenticationRequest<SaslOptions> = (sasl: SaslOptions) => {
+  encode: () => Buffer | Promise<Buffer>
 }
 
-type SaslAuthenticationResponse = () => {
-  decode: (rawResponse: Buffer) => Buffer
-  parse: (data: Buffer) => any
+type SaslAuthenticationResponse<ParseResult> = () => {
+  decode: (rawResponse: Buffer) => Buffer | Promise<Buffer>
+  parse: (data: Buffer) => ParseResult
 }
 ```
 
@@ -147,4 +147,3 @@ function SimonAuthenticator({ sasl, connection, logger, saslAuthenticate }) {
 
 The `response` argument to `saslAuthenticate` is optional, in case the authentication
 method does not require the `auth_bytes` in the response.
-
