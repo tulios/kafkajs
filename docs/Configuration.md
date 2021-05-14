@@ -177,10 +177,9 @@ If an authentication mechanism is not supported out of the box in KafkaJS, a cus
 mechanism can be introduced as a plugin:
 
 ```js
-const CustomAuthenticationMechanism = require('custom-authentication-mechanism')
 const { AuthenticationMechanisms } = require('kafkajs')
 
-AuthenticationMechanisms['CUSTOM_AUTHENTICATION'] = CustomAuthenticationMechanism
+AuthenticationMechanisms['CUSTOM_AUTHENTICATION'] = () => require('custom-authentication-mechanism')
 ```
 
 See [Custom Authentication Mechanisms](CustomAuthenticationMechanism.md) for more information on how to implement your own

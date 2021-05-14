@@ -20,6 +20,9 @@
       "contribution-guide": {
         "title": "Contributing"
       },
+      "custom-authentication-mechanism": {
+        "title": "Custom Authentication Mechanisms"
+      },
       "custom-logger": {
         "title": "Custom Logger"
       },

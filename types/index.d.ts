@@ -49,17 +49,19 @@ type AuthenticationMechanism = {
   authenticate(): Promise<void>
 }
 
-type SaslAuthenticationRequest = () => {
+type SaslAuthenticationRequest = {
   encode: () => Buffer | Promise<Buffer>
 }
 
-type SaslAuthenticationResponse<ParseResult> = () => {
+type SaslAuthenticationResponse<ParseResult> = {
   decode: (rawResponse: Buffer) => Buffer | Promise<Buffer>
   parse: (data: Buffer) => ParseResult
 }
 
-type SaslAuthenticationFunction<ParseResult> = (handlers: { request: SaslAuthenticationRequest, response?: SaslAuthenticationResponse<ParseResult> }) => Promise<ParseResult>
-type AuthenticationMechanismCreator<SASLOptions, ParseResult> = (params: {
+type SaslAuthenticationFunction<ParseResult> = ParseResult extends undefined
+  ? (handlers: { request: SaslAuthenticationRequest }) => Promise<void>
+  : (handlers: { request: SaslAuthenticationRequest, response?: SaslAuthenticationResponse<ParseResult> }) => Promise<ParseResult>
+type AuthenticationMechanismCreator<SASLOptions, ParseResult= void> = (params: {
   sasl: SASLOptions,
   connection: { host: string, port: number },
   logger: Logger,
@@ -67,14 +69,14 @@ type AuthenticationMechanismCreator<SASLOptions, ParseResult> = (params: {
 }) => AuthenticationMechanism
 
 export var AuthenticationMechanisms: {
-  'plain': AuthenticationMechanismCreator<SASLMechanismOptionsMap['plain'], void>,
+  'plain': AuthenticationMechanismCreator<SASLMechanismOptionsMap['plain']>,
   'scram-sha-256': AuthenticationMechanismCreator<SASLMechanismOptionsMap['scram-sha-256'], { original: string, r?: string, s?: string, i?: string, e?: string, v?: string }>,
   'scram-sha-512': AuthenticationMechanismCreator<SASLMechanismOptionsMap['scram-sha-512'], { original: string, r?: string, s?: string, i?: string, e?: string, v?: string }>,
-  'aws': AuthenticationMechanismCreator<SASLMechanismOptionsMap['aws'], void>,
-  'oauthbearer': AuthenticationMechanismCreator<SASLMechanismOptionsMap['aws'], void>,
+  'aws': AuthenticationMechanismCreator<SASLMechanismOptionsMap['aws']>,
+  'oauthbearer': AuthenticationMechanismCreator<SASLMechanismOptionsMap['aws']>,
 }
 
-export type SASLMechanismOptionsMap = {
+export interface SASLMechanismOptionsMap {
   'plain': { username: string, password: string },
   'scram-sha-256': { username: string, password: string },
   'scram-sha-512': { username: string, password: string },
