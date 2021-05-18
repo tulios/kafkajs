@@ -225,6 +225,20 @@ class KafkaJSInvalidLongError extends KafkaJSNonRetriableError {
   }
 }
 
+class KafkaJSCreateTopicError extends KafkaJSProtocolError {
+  constructor(e, topicName) {
+    super(e)
+    this.topic = topicName
+    this.name = 'KafkaJSCreateTopicError'
+  }
+}
+class KafkaJSAggregateError extends Error {
+ constructor(message, errors){
+   super(message)
+   this.errors = errors
+ }
+}
+
 module.exports = {
   KafkaJSError,
   KafkaJSNonRetriableError,
@@ -252,4 +266,6 @@ module.exports = {
   KafkaJSInvariantViolation,
   KafkaJSInvalidVarIntError,
   KafkaJSInvalidLongError,
+  KafkaJSCreateTopicError,
+  KafkaJSAggregateError
 }
