@@ -26,8 +26,12 @@ const decode = async rawData => {
 const parse = async data => {
   const topicsWithError = data.topicErrors.filter(({ errorCode }) => failure(errorCode))
   if (topicsWithError.length > 0) {
-    throw new KafkaJSAggregateError('Topic creation errors', 
-    topicsWithError.map(error => new KafkaJSCreateTopicError(createErrorFromCode(error.errorCode), error.topic)))
+    throw new KafkaJSAggregateError(
+      'Topic creation errors',
+      topicsWithError.map(
+        error => new KafkaJSCreateTopicError(createErrorFromCode(error.errorCode), error.topic)
+      )
+    )
   }
 
   return data

@@ -233,10 +233,10 @@ class KafkaJSCreateTopicError extends KafkaJSProtocolError {
   }
 }
 class KafkaJSAggregateError extends Error {
- constructor(message, errors){
-   super(message)
-   this.errors = errors
- }
+  constructor(message, errors) {
+    super(message)
+    this.errors = errors
+  }
 }
 
 module.exports = {
@@ -267,5 +267,5 @@ module.exports = {
   KafkaJSInvalidVarIntError,
   KafkaJSInvalidLongError,
   KafkaJSCreateTopicError,
-  KafkaJSAggregateError
+  KafkaJSAggregateError,
 }

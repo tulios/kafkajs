@@ -11,7 +11,7 @@ const {
   KafkaJSDeleteGroupsError,
   KafkaJSBrokerNotFound,
   KafkaJSDeleteTopicRecordsError,
-  KafkaJSAggregateError
+  KafkaJSAggregateError,
 } = require('../errors')
 const { staleMetadata } = require('../protocol/error')
 const CONFIG_RESOURCE_TYPES = require('../protocol/configResourceTypes')
@@ -156,8 +156,8 @@ module.exports = ({
           throw e
         }
 
-        if (e instanceof KafkaJSAggregateError){
-          if(e.errors.every(error => error.type === 'TOPIC_ALREADY_EXISTS')){
+        if (e instanceof KafkaJSAggregateError) {
+          if (e.errors.every(error => error.type === 'TOPIC_ALREADY_EXISTS')) {
             return false
           }
         }

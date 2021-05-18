@@ -1,5 +1,9 @@
 const createAdmin = require('../index')
-const { KafkaJSProtocolError, KafkaJSAggregateError, KafkaJSCreateTopicError } = require('../../errors')
+const {
+  KafkaJSProtocolError,
+  KafkaJSAggregateError,
+  KafkaJSCreateTopicError,
+} = require('../../errors')
 const { createErrorFromCode } = require('../../protocol/error')
 
 const { secureRandom, createCluster, newLogger } = require('testHelpers')
@@ -95,7 +99,7 @@ describe('Admin', () => {
       cluster.findControllerBroker = jest.fn(() => broker)
       broker.createTopics.mockImplementationOnce(() => {
         throw new KafkaJSAggregateError('error', [
-          new KafkaJSCreateTopicError(createErrorFromCode(TOPIC_ALREADY_EXISTS), topicName)
+          new KafkaJSCreateTopicError(createErrorFromCode(TOPIC_ALREADY_EXISTS), topicName),
         ])
       })
 
@@ -145,7 +149,7 @@ describe('Admin', () => {
 
       broker.createTopics.mockImplementationOnce(() => {
         throw new KafkaJSAggregateError('error', [
-          new KafkaJSCreateTopicError(createErrorFromCode(TOPIC_ALREADY_EXISTS), topicName)
+          new KafkaJSCreateTopicError(createErrorFromCode(INVALID_TOPIC_EXCEPTION), topicName),
         ])
       })
       admin = createAdmin({ cluster, logger: newLogger() })
