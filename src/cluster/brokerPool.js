@@ -20,6 +20,7 @@ module.exports = class BrokerPool {
    * @param {number} [options.authenticationTimeout]
    * @param {number} [options.reauthenticationThreshold]
    * @param {number} [options.metadataMaxAge]
+   * @param {function} [options.getMetadataBrokers]
    */
   constructor({
     connectionBuilder,
@@ -29,12 +30,14 @@ module.exports = class BrokerPool {
     authenticationTimeout,
     reauthenticationThreshold,
     metadataMaxAge,
+    getMetadataBrokers,
   }) {
     this.rootLogger = logger
     this.connectionBuilder = connectionBuilder
     this.metadataMaxAge = metadataMaxAge || 0
     this.logger = logger.namespace('BrokerPool')
     this.retrier = createRetry(assign({}, retry))
+    this.getMetadataBrokers = getMetadataBrokers
 
     this.createBroker = options =>
       new Broker({
@@ -162,6 +165,10 @@ module.exports = class BrokerPool {
         this.metadataExpireAt = Date.now() + this.metadataMaxAge
 
         const replacedBrokers = []
+
+        if (this.getMetadataBrokers) {
+          this.metadata.brokers = await this.getMetadataBrokers(this.metadata.brokers)
+        }
 
         this.brokers = await this.metadata.brokers.reduce(
           async (resultPromise, { nodeId, host, port, rack }) => {

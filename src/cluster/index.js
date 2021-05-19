@@ -41,6 +41,7 @@ module.exports = class Cluster {
    * @param {import("../../types").ISocketFactory} options.socketFactory
    * @param {Map} [options.offsets]
    * @param {import("../instrumentation/emitter")} [options.instrumentationEmitter=null]
+   * @param {function} [options.getMetadataBrokers]
    */
   constructor({
     logger: rootLogger,
@@ -61,6 +62,7 @@ module.exports = class Cluster {
     isolationLevel,
     instrumentationEmitter = null,
     offsets = new Map(),
+    getMetadataBrokers,
   }) {
     this.rootLogger = rootLogger
     this.logger = rootLogger.namespace('Cluster')
@@ -93,6 +95,7 @@ module.exports = class Cluster {
       authenticationTimeout,
       reauthenticationThreshold,
       metadataMaxAge,
+      getMetadataBrokers,
     })
     this.committedOffsetsByGroup = offsets
   }

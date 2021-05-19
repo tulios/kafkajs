@@ -35,6 +35,7 @@ module.exports = class Client {
    * @param {boolean} [options.enforceRequestTimeout]
    * @param {import("../types").RetryOptions} [options.retry]
    * @param {import("../types").ISocketFactory} [options.socketFactory]
+   * @param {function} [options.getMetadataBrokers]
    */
   constructor({
     brokers,
@@ -50,6 +51,7 @@ module.exports = class Client {
     socketFactory = defaultSocketFactory(),
     logLevel = INFO,
     logCreator = LoggerConsole,
+    getMetadataBrokers,
   }) {
     this[PRIVATE.OFFSETS] = new Map()
     this[PRIVATE.LOGGER] = createLogger({ level: logLevel, logCreator })
@@ -80,6 +82,7 @@ module.exports = class Client {
         allowAutoTopicCreation,
         maxInFlightRequests,
         isolationLevel,
+        getMetadataBrokers,
       })
   }
 
