@@ -38,9 +38,26 @@
 
 KafkaJS is a modern [Apache Kafka](https://kafka.apache.org/) client for Node.js. It is compatible with Kafka 0.10+ and offers native support for 0.11 features.
 
-<small>KAFKA is a registered trademark of The Apache Software Foundation and
-has been licensed for use by KafkaJS. KafkaJS has no
-affiliation with and is not endorsed by The Apache Software Foundation.</small>
+<table>
+  <thead>
+    <tr>
+      <td>
+        🤝 &nbsp; <b>Get help directly from a KafkaJS developer</b>
+      </td>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr>
+      <td>
+        <p>Become a Github Sponsor to have a video call with one of the KafkaJS developers. Receive personalized support, validate ideas or accelerate your learning, either one-on-one or with whole teams. Save time and get productive sooner, while supporting KafkaJS!</p>
+        <p><b><a href="https://github.com/sponsors/Nevon?frequency=one-time&sponsor=Nevon">See support options</a></b></p>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<small>KAFKA is a registered trademark of The Apache Software Foundation and has been licensed for use by KafkaJS. KafkaJS has no affiliation with and is not endorsed by The Apache Software Foundation.</small>
 
 ### <a name="features"></a> Features
 
