@@ -6,6 +6,7 @@ const Encoder = require('../protocol/encoder')
 const { KafkaJSRequestTimeoutError } = require('../errors')
 const Connection = require('./connection')
 const { CONNECTION_STATUS } = require('./connectionStatus')
+const EventEmitter = require('events')
 
 describe('Network > Connection', () => {
   // According to RFC 5737:
@@ -49,8 +50,16 @@ describe('Network > Connection', () => {
       })
 
       test('rejects the Promise in case of timeouts', async () => {
-        connection = new Connection(sslConnectionOpts({ connectionTimeout: 1 }))
-        connection.host = invalidIP
+        const socketFactory = () => {
+          const socket = new EventEmitter()
+          socket.end = () => {}
+          socket.unref = () => {}
+          return socket
+        }
+        connection = new Connection({
+          ...sslConnectionOpts({ connectionTimeout: 1 }),
+          socketFactory,
+        })
 
         await expect(connection.connect()).rejects.toHaveProperty('message', 'Connection timeout')
         expect(connection.connected).toEqual(false)
