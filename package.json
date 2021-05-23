@@ -28,7 +28,7 @@
     "test:debug": "NODE_ENV=test KAFKAJS_DEBUG_PROTOCOL_BUFFERS=1 node --inspect-brk $(yarn bin 2>/dev/null)/jest --detectOpenHandles --runInBand --watch",
     "test:local:watch": "yarn test:local --watch",
     "test": "yarn lint && JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh 'yarn jest --ci --maxWorkers=4 --no-watchman --forceExit'",
-    "lint": "find . -path ./node_modules -prune -o -path ./coverage -prune -o -path ./website -prune -o -name '*.[jt]s' -print0 | xargs -0 eslint",
+    "lint": "find . -path ./node_modules -prune -o -path ./coverage -prune -o -path ./website -prune -o -name '*.js' -print0 | xargs -0 eslint",
     "format": "find . -path ./node_modules -prune -o -path ./coverage -prune -o -path ./website -prune -o -name '*.[jt]s' -print0 | xargs -0 prettier --write",
     "precommit": "lint-staged",
     "test:group:broker": "yarn jest --forceExit --testPathPattern 'src/broker/.*'",
