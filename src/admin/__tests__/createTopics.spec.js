@@ -154,12 +154,12 @@ describe('Admin', () => {
       })
       admin = createAdmin({ cluster, logger: newLogger() })
 
-      expect(
-        await admin.createTopics({
+      await expect(
+        admin.createTopics({
           waitForLeaders: true,
           topics: [{ topic: topicName }],
         })
-      ).toThrow(KafkaJSAggregateError)
+      ).rejects.toBeInstanceOf(KafkaJSAggregateError)
 
       expect(cluster.refreshMetadata).toHaveBeenCalledTimes(1)
       expect(cluster.findControllerBroker).toHaveBeenCalledTimes(1)
