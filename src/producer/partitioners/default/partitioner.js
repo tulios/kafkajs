@@ -18,12 +18,11 @@ const toPositive = x => x & 0x7fffffff
  *  - If no partition or key is present choose a partition in a round-robin fashion
  */
 module.exports = murmur2 => () => {
-  let counters = {}
+  const counters = {}
 
   return ({ topic, partitionMetadata, message }) => {
-
     if (!(topic in counters)) {
-      counters[topic] = randomBytes(32).readUInt32BE(0);
+      counters[topic] = randomBytes(32).readUInt32BE(0)
     }
     const numPartitions = partitionMetadata.length
     const availablePartitions = partitionMetadata.filter(p => p.leader >= 0)
