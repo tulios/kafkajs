@@ -226,7 +226,7 @@ const runAdmin = async () => {
       resourceType: r.resourceType,
       resourceName: r.resourceName,
       resourcePatternType: r.resourcePatternType,
-      acls: r.acl,
+      acls: r.acls,
     })),
   })
 

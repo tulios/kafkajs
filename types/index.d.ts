@@ -384,7 +384,7 @@ export interface AclResource {
 export type AclEntry = Acl & AclResource
 
 export type DescribeAclResource = AclResource & {
-  acl: Acl[]
+  acls: Acl[]
 }
 
 export interface DescribeAclResponse {
