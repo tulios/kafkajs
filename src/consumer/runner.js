@@ -295,14 +295,13 @@ module.exports = class Runner extends EventEmitter {
       })
     }
 
-    const { lock, unlock } = barrier()
+    const { lock, unlock, setError, error } = barrier()
     const concurrently = limitConcurrency({ limit: this.partitionsConsumedConcurrently })
 
     let requestsCompleted = false
     let numberOfExecutions = 0
     let expectedNumberOfExecutions = 0
     const enqueuedTasks = []
-    let error = null // the first fetch request, processing or heartbeat error encountered
 
     while (true) {
       const result = iterator.next()
@@ -324,7 +323,8 @@ module.exports = class Runner extends EventEmitter {
 
       enqueuedTasks.push(async () => {
         const batches = await result.value.catch(e => {
-          error = error || e // A broker fetch request error
+          // A broker fetch request error
+          setError(e)
           return []
         })
 
@@ -344,7 +344,7 @@ module.exports = class Runner extends EventEmitter {
 
               await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
             } catch (e) {
-              error = error || e // A processing or heartbeat error
+              setError(e) // A processing or heartbeat error
             } finally {
               numberOfExecutions++
               if (requestsCompleted && numberOfExecutions === expectedNumberOfExecutions) {
@@ -364,9 +364,6 @@ module.exports = class Runner extends EventEmitter {
     }
 
     await lock
-    if (error) {
-      throw error
-    }
 
     await this.autoCommitOffsets()
     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })

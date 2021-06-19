@@ -1,14 +1,20 @@
 /**
  * @template T
- * @return {{lock: Promise<T>, unlock: (v?: T) => void, unlockWithError: (e: Error) => void}}
+ * @return {{lock: Promise<T>, unlock: (v?: T) => void, setError: (e: Error) => void, error: Error}}
  */
 module.exports = () => {
-  let unlock
-  let unlockWithError
-  const lock = new Promise(resolve => {
-    unlock = resolve
-    unlockWithError = resolve
+  let _resolve
+  let _reject
+  let error = null
+  const lock = new Promise((resolve, reject) => {
+    _resolve = resolve
+    _reject = reject
   })
 
-  return { lock, unlock, unlockWithError }
+  return {
+    lock,
+    unlock: v => (error ? _reject(error) : _resolve(v)),
+    setError: e => (error = error || e),
+    error,
+  }
 }
