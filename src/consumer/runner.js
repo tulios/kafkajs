@@ -3,7 +3,6 @@ const Long = require('../utils/long')
 const createRetry = require('../retry')
 const limitConcurrency = require('../utils/concurrency')
 const { KafkaJSError } = require('../errors')
-const barrier = require('./barrier')
 
 const {
   events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS, REBALANCING },
@@ -246,7 +245,7 @@ module.exports = class Runner extends EventEmitter {
 
     this.instrumentationEmitter.emit(FETCH_START, {})
 
-    const iterator = await this.consumerGroup.fetch()
+    const fetchIterator = await this.consumerGroup.fetch()
 
     this.instrumentationEmitter.emit(FETCH, {
       /**
@@ -295,75 +294,51 @@ module.exports = class Runner extends EventEmitter {
       })
     }
 
-    const { lock, unlock, setError, error } = barrier()
     const concurrently = limitConcurrency({ limit: this.partitionsConsumedConcurrently })
 
-    let requestsCompleted = false
-    let numberOfExecutions = 0
-    let expectedNumberOfExecutions = 0
-    const enqueuedTasks = []
+    const brokerFetchPromises = []
+    const processBatchPromises = []
 
-    while (true) {
-      const result = iterator.next()
-
-      if (result.done) {
-        break
-      }
-
+    for (const fetch of fetchIterator) {
       if (!this.running) {
-        result.value.catch(error => {
+        fetch.catch(error => {
           this.logger.debug('Ignoring error in fetch request while stopping runner', {
             error: error.message || error,
             stack: error.stack,
           })
         })
-
         continue
       }
 
-      enqueuedTasks.push(async () => {
-        const batches = await result.value.catch(e => {
-          // A broker fetch request error
-          setError(e)
-          return []
-        })
+      brokerFetchPromises.push(
+        fetch
+          .then(batches => {
+            batches.forEach(batch =>
+              processBatchPromises.push(
+                concurrently(async () => {
+                  if (!this.running) return
 
-        expectedNumberOfExecutions += batches.length
-
-        batches.forEach(batch =>
-          concurrently(async () => {
-            try {
-              // If stopping or any error has occurred, don't process (or resolve) any more batches
-              if (!this.running || error) {
-                return
-              }
-
-              if (!batch.isEmpty()) {
-                await onBatch(batch)
-              }
-
-              await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
-            } catch (e) {
-              setError(e) // A processing or heartbeat error
-            } finally {
-              numberOfExecutions++
-              if (requestsCompleted && numberOfExecutions === expectedNumberOfExecutions) {
-                unlock()
-              }
-            }
+                  try {
+                    if (!batch.isEmpty()) await onBatch(batch)
+                    await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+                  } catch (e) {
+                    return { status: 'rejected', reason: e }
+                  }
+                })
+              )
+            )
           })
-        )
-      })
+          .catch(e => ({ status: 'rejected', reason: e }))
+      )
     }
 
-    await Promise.all(enqueuedTasks.map(fn => fn())) // Never throws
-    requestsCompleted = true
+    const errors = [
+      ...(await Promise.all(brokerFetchPromises)),
+      ...(await Promise.all(processBatchPromises)),
+    ]
 
-    if (expectedNumberOfExecutions === numberOfExecutions) {
-      unlock()
-    }
-
-    await lock
+    const firstError = errors.find(e => e)
+    if (firstError) throw firstError.reason
 
     await this.autoCommitOffsets()
     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
