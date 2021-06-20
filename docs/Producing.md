@@ -287,11 +287,11 @@ const MyCustomSnappyCodec = {
 }
 ```
 
-Now that we have the codec object, we can add it to the implementation:
+Now that we have the codec object, we can wrap it in a function and add it to the implementation:
 
 ```javascript
 const { CompressionTypes, CompressionCodecs } = require('kafkajs')
-CompressionCodecs[CompressionTypes.Snappy] = MyCustomSnappyCodec
+CompressionCodecs[CompressionTypes.Snappy] = () => MyCustomSnappyCodec
 ```
 
 The new codec can now be used with the `send` method, example:

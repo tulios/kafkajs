@@ -43,7 +43,9 @@ const kafka = new Kafka({
     username: 'test',
     password: 'testtest',
   },
-  logCreator: (logLevel: logLevel) => (entry: LogEntry) => {},
+  logCreator: (logLevel: logLevel) => (entry: LogEntry) => {
+    Date.parse(entry.log.timestamp);
+  },
 })
 
 kafka.logger().error('Instantiated KafkaJS')
@@ -224,7 +226,7 @@ const runAdmin = async () => {
       resourceType: r.resourceType,
       resourceName: r.resourceName,
       resourcePatternType: r.resourcePatternType,
-      acls: r.acl,
+      acls: r.acls,
     })),
   })
 
