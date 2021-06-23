@@ -21,7 +21,7 @@ describe('Protocol > Requests > Produce > v3', () => {
                   key: 'key-9d0f348cb2e730e1edc4',
                   value: 'some-value-a17b4c81f9ecd1e896e3',
                   timestamp: 1509928155660,
-                  headers: { a: 'b' },
+                  headers: { a: 'b', c: ['d', 'e'] },
                 },
               ],
             },
@@ -56,7 +56,7 @@ describe('Protocol > Requests > Produce > v3', () => {
                   key: 'key-9d0f348cb2e730e1edc4',
                   value: 'some-value-a17b4c81f9ecd1e896e3',
                   timestamp: 1509928155660,
-                  headers: { a: 'b' },
+                  headers: { a: 'b', c: ['d', 'e'] },
                 },
                 {
                   key: 'key-c7073e965c34b4cc6442',
