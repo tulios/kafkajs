@@ -633,6 +633,13 @@ module.exports = class ConsumerGroup {
         memberId: this.memberId,
       })
       delete preferredReadReplicas[e.partition]
+    } else if (!this.autoCommit) {
+      this.logger.error('Offset out of range', {
+        topic: e.topic,
+        partition: e.partition,
+        groupId: this.groupId,
+        memberId: this.memberId,
+      })
     } else {
       this.logger.error('Offset out of range, resetting to default offset', {
         topic: e.topic,
