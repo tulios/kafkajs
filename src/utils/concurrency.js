@@ -1,6 +1,6 @@
-const { KafkaJSNonRetriableError } = require('../errors')
+const { KafkaJSNonRetriableError, KafkaJSPreviousErrorError } = require('../errors')
 
-const REJECTED_ERROR = new KafkaJSNonRetriableError(
+const REJECTED_ERROR = new KafkaJSPreviousErrorError(
   'Queued function aborted due to earlier promise rejection'
 )
 function NOOP() {}

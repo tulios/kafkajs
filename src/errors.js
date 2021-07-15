@@ -232,11 +232,19 @@ class KafkaJSCreateTopicError extends KafkaJSProtocolError {
     this.name = 'KafkaJSCreateTopicError'
   }
 }
-class KafkaJSAggregateError extends Error {
+
+class KafkaJSAggregateError extends KafkaJSError {
   constructor(message, errors) {
-    super(message)
+    super(Error(message), { retriable: errors.every(e => e.retriable) })
     this.errors = errors
     this.name = 'KafkaJSAggregateError'
+  }
+}
+
+class KafkaJSPreviousErrorError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = 'KafkaJSPreviousErrorError'
   }
 }
 
@@ -269,4 +277,5 @@ module.exports = {
   KafkaJSInvalidLongError,
   KafkaJSCreateTopicError,
   KafkaJSAggregateError,
+  KafkaJSPreviousErrorError,
 }

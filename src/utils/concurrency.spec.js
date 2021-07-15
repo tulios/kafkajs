@@ -1,4 +1,4 @@
-const { KafkaJSNonRetriableError } = require('../errors')
+const { KafkaJSNonRetriableError, KafkaJSPreviousErrorError } = require('../errors')
 const sleep = require('./sleep')
 const concurrency = require('./concurrency')
 
@@ -77,7 +77,7 @@ describe('Utils > concurrency', () => {
 
     expect(input[2][0]).not.toHaveBeenCalled()
     await expect(promises[2]).rejects.toEqual(
-      new KafkaJSNonRetriableError('Queued function aborted due to earlier promise rejection')
+      new KafkaJSPreviousErrorError('Queued function aborted due to earlier promise rejection')
     )
   })
 })

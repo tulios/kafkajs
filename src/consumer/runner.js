@@ -2,14 +2,24 @@ const { EventEmitter } = require('events')
 const Long = require('../utils/long')
 const createRetry = require('../retry')
 const limitConcurrency = require('../utils/concurrency')
-const { KafkaJSError } = require('../errors')
+const {
+  KafkaJSError,
+  KafkaJSProtocolError,
+  KafkaJSAggregateError,
+  KafkaJSPreviousErrorError,
+} = require('../errors')
 
 const {
   events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS, REBALANCING },
 } = require('./instrumentationEvents')
 
 const isRebalancing = e =>
-  e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
+  (e instanceof KafkaJSProtocolError &&
+    (e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP')) ||
+  (e instanceof KafkaJSAggregateError &&
+    e.errors.every(
+      e => e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
+    ))
 
 const isKafkaJSError = e => e instanceof KafkaJSError
 const isSameOffset = (offsetA, offsetB) => Long.fromValue(offsetA).equals(Long.fromValue(offsetB))
@@ -321,12 +331,14 @@ module.exports = class Runner extends EventEmitter {
                   try {
                     if (!batch.isEmpty()) await onBatch(batch)
                     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+                    return { status: 'resolved' }
                   } catch (e) {
                     return { status: 'rejected', reason: e }
                   }
                 })
               )
             )
+            return { status: 'resolved' }
           })
           .catch(e => ({ status: 'rejected', reason: e }))
       )
@@ -336,9 +348,15 @@ module.exports = class Runner extends EventEmitter {
       ...(await Promise.all(brokerFetchPromises)),
       ...(await Promise.all(processBatchPromises)),
     ]
+      .filter(({ status }) => status === 'rejected')
+      .filter(({ reason }) => !(reason instanceof KafkaJSPreviousErrorError))
+      .map(({ reason }) => reason)
 
-    const firstError = errors.find(e => e)
-    if (firstError) throw firstError.reason
+    if (errors.length > 1) {
+      throw new KafkaJSAggregateError('Errors while fetching', errors)
+    } else if (errors.length === 1) {
+      throw errors[0]
+    }
 
     await this.autoCommitOffsets()
     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
