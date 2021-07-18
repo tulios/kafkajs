@@ -235,7 +235,8 @@ class KafkaJSCreateTopicError extends KafkaJSProtocolError {
 
 class KafkaJSAggregateError extends KafkaJSError {
   constructor(message, errors) {
-    super(Error(message), { retriable: errors.every(e => e.retriable) })
+    const messages = `${message}: ${errors.map(({ message }) => message).join(', ')}`
+    super(Error(messages), { retriable: errors.every(e => e.retriable) })
     this.errors = errors
     this.name = 'KafkaJSAggregateError'
   }

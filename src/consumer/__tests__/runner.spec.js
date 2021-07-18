@@ -239,7 +239,7 @@ describe('Consumer > Runner', () => {
     // so we have to wait a bit to give the callback a chance of being executed
     await sleep(100)
 
-    expect(onCrash).toHaveBeenCalledWith(notImplementedError)
+    expect(onCrash.mock.calls[0][0].originalError.errors[0]).toBe(notImplementedError)
   })
 
   describe('commitOffsets', () => {
@@ -350,26 +350,25 @@ describe('Consumer > Runner', () => {
       expect(onCrash).toHaveBeenCalledWith(unknownError)
     })
 
-    it('should ignore request errors from BufferedAsyncIterator on stopped consumer', async () => {
-      const rejectedRequest = () =>
-        new Promise((resolve, reject) => {
-          setTimeout(() => reject(new Error('Failed or manually rejected request')), 10)
-        })
+    it('should ignore fetch errors on stopped consumer', async () => {
+      const rejectedRequest = jest.fn(
+        () =>
+          new Promise((resolve, reject) => {
+            setTimeout(() => reject(new Error('Failed or manually rejected request')), 10)
+          })
+      )
 
-      consumerGroup.fetch.mockImplementationOnce(() => {
+      consumerGroup.fetch.mockImplementation(() => {
+        runner.running = false
         return new Promise(resolve =>
           setTimeout(() => {
             resolve(BufferedAsyncIterator([rejectedRequest(), Promise.resolve([])]))
-          }, 10)
+          }, 1)
         )
       })
 
-      runner.scheduleFetch = jest.fn()
-      await runner.start()
-      runner.running = false
-
-      runner.fetch()
       await sleep(100)
+      expect(rejectedRequest).toHaveBeenCalledTimes(1)
     })
   })
 })
