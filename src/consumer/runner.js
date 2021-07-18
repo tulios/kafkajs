@@ -340,10 +340,9 @@ module.exports = class Runner extends EventEmitter {
       )
     }
 
-    const errors = [
-      ...(await Promise.all(addToQueuePromises)),
-      ...(await Promise.all(processQueuePromises)),
-    ]
+    const fetchResults = await Promise.all(addToQueuePromises)
+    const processingResults = await Promise.all(processQueuePromises)
+    const errors = [...fetchResults, ...processingResults]
       .filter(({ status }) => status === 'rejected')
       .filter(({ reason }) => !(reason instanceof KafkaJSPreviousErrorError))
       .map(({ reason }) => reason)
