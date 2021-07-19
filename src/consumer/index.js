@@ -274,22 +274,23 @@ module.exports = ({
           : e
 
       const isErrorRetriable = e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true
-      const shouldRestart =
-        isErrorRetriable &&
-        (!retry ||
-          !retry.restartOnFailure ||
-          (await retry.restartOnFailure(backwardsCompatibleError).catch(error => {
-            logger.error(
-              'Caught error when invoking user-provided "restartOnFailure" callback. Defaulting to restarting.',
-              {
-                error: error.message || error,
-                originalError: backwardsCompatibleError.message || backwardsCompatibleError,
-                groupId,
-              }
-            )
-
-            return true
-          })))
+      let shouldRestart = true
+      try {
+        shouldRestart =
+          isErrorRetriable &&
+          (!retry ||
+            !retry.restartOnFailure ||
+            (await retry.restartOnFailure(backwardsCompatibleError)))
+      } catch (error) {
+        logger.error(
+          'Caught error when invoking user-provided "restartOnFailure" callback. Defaulting to restarting.',
+          {
+            error: error.message || error,
+            originalError: backwardsCompatibleError.message || backwardsCompatibleError,
+            groupId,
+          }
+        )
+      }
 
       instrumentationEmitter.emit(CRASH, {
         error: backwardsCompatibleError,

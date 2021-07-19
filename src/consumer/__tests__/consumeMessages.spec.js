@@ -6,7 +6,6 @@ const createConsumer = require('../index')
 const { Types } = require('../../protocol/message/compression')
 const ISOLATION_LEVEL = require('../../protocol/isolationLevel')
 const sleep = require('../../utils/sleep')
-const { KafkaJSError } = require('../../errors')
 
 const {
   secureRandom,
@@ -204,99 +203,6 @@ describe('Consumer', () => {
     for (const deltaTime of heartbeats) {
       expect(deltaTime).toBeGreaterThanOrEqual(heartbeatInterval)
     }
-  })
-
-  it('after an error, aborts pending batch processing before retrying', async () => {
-    const partitionsConsumedConcurrently = 1
-    topicName = `test-topic-${secureRandom()}`
-    await createTopic({
-      topic: topicName,
-      partitions: partitionsConsumedConcurrently + 1,
-    })
-    await consumer.connect()
-    await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
-
-    let inProgress = 0
-    let eachBatchCallCount = 0
-    let exceededConcurrencyLimit = false
-
-    const messagesConsumed = []
-    consumer.run({
-      partitionsConsumedConcurrently,
-      eachBatch: async ({ batch: { messages } }) => {
-        if (eachBatchCallCount++ === 0) throw new KafkaJSError(new Error('💣'), { retriable: true })
-        inProgress++
-        exceededConcurrencyLimit =
-          exceededConcurrencyLimit || inProgress > partitionsConsumedConcurrently
-        for (const event of messages) {
-          await sleep(2)
-          messagesConsumed.push(event)
-        }
-        inProgress--
-      },
-    })
-
-    await waitForConsumerToJoinGroup(consumer)
-
-    const messages = Array(100)
-      .fill()
-      .map(() => {
-        const value = secureRandom()
-        return { key: `key-${value}`, value: `value-${value}` }
-      })
-
-    await producer.send({ acks: 1, topic: topicName, messages })
-    await waitForMessages(messagesConsumed, { number: messages.length })
-    expect(messagesConsumed.length).toEqual(messages.length)
-    expect(exceededConcurrencyLimit).toBeFalse()
-  })
-
-  it('after an error, completes in-progress batch processing before retrying', async () => {
-    const partitionsConsumedConcurrently = 2
-    topicName = `test-topic-${secureRandom()}`
-    await createTopic({
-      topic: topicName,
-      partitions: partitionsConsumedConcurrently + 1,
-    })
-    await consumer.connect()
-    await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
-
-    let inProgress = 0
-    let eachBatchCallCount = 0
-    let exceededConcurrencyLimit = false
-
-    const messagesConsumed = []
-    consumer.run({
-      partitionsConsumedConcurrently,
-      eachBatch: async ({ batch: { messages } }) => {
-        if (eachBatchCallCount++ === partitionsConsumedConcurrently - 1)
-          throw new KafkaJSError(new Error('💣'), { retriable: true })
-        inProgress++
-        exceededConcurrencyLimit =
-          exceededConcurrencyLimit || inProgress > partitionsConsumedConcurrently
-        for (const event of messages) {
-          await sleep(2)
-          messagesConsumed.push(event)
-        }
-        inProgress--
-      },
-    })
-
-    await waitForConsumerToJoinGroup(consumer)
-
-    const messages = Array(100)
-      .fill()
-      .map(() => {
-        const value = secureRandom()
-        return { key: `key-${value}`, value: `value-${value}` }
-      })
-
-    await producer.send({ acks: 1, topic: topicName, messages })
-    await waitForMessages(messagesConsumed, { number: messages.length })
-    expect(messagesConsumed.length).toEqual(messages.length)
-    expect(exceededConcurrencyLimit).toBeFalse()
   })
 
   it('consume GZIP messages', async () => {
