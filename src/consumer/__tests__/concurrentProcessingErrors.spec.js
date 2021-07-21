@@ -164,8 +164,8 @@ describe('After a retriable batch processing error', () => {
 
   it('completes in-progress batch processing before retrying the fetch', async () => {
     const eachBatch = jest
-      .fn(incBatchCountAfter(30))
-      .mockImplementationOnce(throwRetriableErrorAfter(1))
+      .fn(incBatchCountAfter(1))
+      .mockImplementationOnce(throwRetriableErrorAfter(30))
 
     consumer.run({
       autoCommit: false,
@@ -191,12 +191,8 @@ describe('After a retriable broker fetch error', () => {
     const broker = await cluster.findBroker({ nodeId: 0 })
     const brokerFetchRequest = jest.spyOn(broker, 'fetch')
 
-    brokerFetchRequest.mockImplementationOnce(throwRetriableErrorAfter(20))
-
-    const eachBatch = jest
-      .fn(incBatchCountAfter(20))
-      .mockImplementationOnce(throwRetriableErrorAfter(10))
-      .mockImplementationOnce(throwRetriableErrorAfter(20))
+    brokerFetchRequest.mockImplementationOnce(throwRetriableErrorAfter(10))
+    const eachBatch = jest.fn(incBatchCountAfter(1)).mockImplementationOnce(incBatchCountAfter(40))
 
     consumer.run({
       autoCommit: false,
