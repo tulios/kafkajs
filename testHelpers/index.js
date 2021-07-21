@@ -176,8 +176,8 @@ const createCluster = (opts = {}, brokers = plainTextBrokers()) =>
 
 const createModPartitioner = () => ({ partitionMetadata, message }) => {
   const numPartitions = partitionMetadata.length
-  const key = parseInt(message.key.replace(/[^\d]/g, ''), 10)
-  return ((key || 0) % 3) % numPartitions
+  const key = parseInt(message.key.replace(/[^\d]/g, '').substring(0, 7), 10) || 0
+  return key % numPartitions
 }
 
 const testWaitFor = async (fn, opts = {}) => waitFor(fn, { ignoreTimeout: true, ...opts })

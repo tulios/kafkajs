@@ -305,7 +305,7 @@ module.exports = class Runner extends EventEmitter {
 
     const addToQueuePromises = []
     const processQueuePromises = []
-    let fetchRequestHasErrored = false
+    let proccessingError = false
 
     for (const fetch of fetchIterator) {
       addToQueuePromises.push(
@@ -315,18 +315,18 @@ module.exports = class Runner extends EventEmitter {
               processQueuePromises.push(
                 concurrently(async () => {
                   try {
-                    if (fetchRequestHasErrored)
+                    if (proccessingError)
                       throw new KafkaJSPreviousErrorError(
-                        'Batch processing aborted due to previous fetch request error'
+                        'Batch processing aborted due to previous batch processing error'
                       )
-
                     if (!this.running) return { status: 'resolved' }
 
                     if (!batch.isEmpty()) await onBatch(batch)
+
                     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
                     return { status: 'resolved' }
                   } catch (e) {
-                    fetchRequestHasErrored = true
+                    proccessingError = true
                     return { status: 'rejected', reason: e }
                   }
                 })
@@ -335,7 +335,6 @@ module.exports = class Runner extends EventEmitter {
             return { status: 'resolved' }
           })
           .catch(e => {
-            fetchRequestHasErrored = true
             return { status: 'rejected', reason: e }
           })
       )
