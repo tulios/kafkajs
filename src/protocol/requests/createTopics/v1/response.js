@@ -1,5 +1,5 @@
 const Decoder = require('../../../decoder')
-const { failure, createErrorFromCode } = require('../../../error')
+const { parse: parseV0 } = require('../v0/response')
 
 /**
  * CreateTopics Response (Version: 1) => [topic_errors]
@@ -24,16 +24,7 @@ const decode = async rawData => {
   }
 }
 
-const parse = async data => {
-  const topicsWithError = data.topicErrors.filter(({ errorCode }) => failure(errorCode))
-  if (topicsWithError.length > 0) {
-    throw createErrorFromCode(topicsWithError[0].errorCode)
-  }
-
-  return data
-}
-
 module.exports = {
   decode,
-  parse,
+  parse: parseV0,
 }
