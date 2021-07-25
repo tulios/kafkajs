@@ -89,17 +89,27 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
             })
           })
 
-          const response = await broker.produce({
-            transactionalId: eosManager.isTransactional()
-              ? eosManager.getTransactionalId()
-              : undefined,
-            producerId: eosManager.getProducerId(),
-            producerEpoch: eosManager.getProducerEpoch(),
-            acks,
-            timeout,
-            compression,
-            topicData,
-          })
+          let response
+          try {
+            response = await broker.produce({
+              transactionalId: eosManager.isTransactional()
+                ? eosManager.getTransactionalId()
+                : undefined,
+              producerId: eosManager.getProducerId(),
+              producerEpoch: eosManager.getProducerEpoch(),
+              acks,
+              timeout,
+              compression,
+              topicData,
+            })
+          } catch (e) {
+            topicData.forEach(({ topic, partitions }) => {
+              partitions.forEach(entry => {
+                eosManager.updateSequence(topic, entry.partition, -entry.messages.length)
+              })
+            })
+            throw e
+          }
 
           const expectResponse = acks !== 0
           const formattedResponse = expectResponse ? responseSerializer(response) : []
