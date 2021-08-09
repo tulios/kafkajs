@@ -148,7 +148,7 @@ describe('Producer > Idempotent producer', () => {
 
       const brokerProduce = jest.spyOn(broker, 'produce')
       brokerProduce.mockImplementationOnce(async () => {
-        await waitFor(() => brokerProduce.mock.results.length === messages.length) // for all the other concurrent calls to have completed
+        await waitFor(() => brokerProduce.mock.calls.length >= messages.length) // for all the other concurrent calls to have completed
         throw new KafkaJSError('retriable error')
       })
     }
@@ -174,7 +174,7 @@ describe('Producer > Idempotent producer', () => {
       const brokerProduce = jest.spyOn(broker, 'produce')
       brokerProduce.mockImplementationOnce()
       brokerProduce.mockImplementationOnce(async () => {
-        await waitFor(() => brokerProduce.mock.results.length === messages.length) // for all the other concurrent calls to have completed
+        await waitFor(() => brokerProduce.mock.calls.length >= messages.length) // for all the other concurrent calls to have completed
         throw new KafkaJSError('retriable error')
       })
     }
