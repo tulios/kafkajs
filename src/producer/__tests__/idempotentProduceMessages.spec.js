@@ -8,13 +8,13 @@ const {
   createCluster,
   createTopic,
   waitForMessages,
+  waitFor,
 } = require('testHelpers')
 const { KafkaJSError, KafkaJSProtocolError } = require('../../errors')
 
 const createProducer = require('../index')
 const createConsumer = require('../../consumer/index')
 const { describe } = require('jest-circus')
-const sleep = require('../../utils/sleep')
 
 const arrayUnique = a => [...new Set(a)]
 
@@ -78,8 +78,7 @@ describe('Producer > Idempotent producer', () => {
       const broker = await cluster.findBroker({ nodeId })
 
       const brokerProduce = jest.spyOn(broker, 'produce')
-      brokerProduce.mockImplementationOnce(async () => {
-        await sleep(5)
+      brokerProduce.mockImplementationOnce(() => {
         throw new KafkaJSError('retriable error')
       })
     }
@@ -149,7 +148,7 @@ describe('Producer > Idempotent producer', () => {
 
       const brokerProduce = jest.spyOn(broker, 'produce')
       brokerProduce.mockImplementationOnce(async () => {
-        await sleep(100)
+        await waitFor(() => brokerProduce.mock.results.length === messages.length) // for all the other concurrent calls to have completed
         throw new KafkaJSError('retriable error')
       })
     }
@@ -175,7 +174,7 @@ describe('Producer > Idempotent producer', () => {
       const brokerProduce = jest.spyOn(broker, 'produce')
       brokerProduce.mockImplementationOnce()
       brokerProduce.mockImplementationOnce(async () => {
-        await sleep(1)
+        await waitFor(() => brokerProduce.mock.results.length === messages.length) // for all the other concurrent calls to have completed
         throw new KafkaJSError('retriable error')
       })
     }
