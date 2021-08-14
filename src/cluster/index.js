@@ -1,5 +1,6 @@
 const BrokerPool = require('./brokerPool')
 const Lock = require('../utils/lock')
+const sharedPromiseTo = require('../utils/sharedPromiseTo')
 const createRetry = require('../retry')
 const connectionBuilder = require('./connectionBuilder')
 const flatten = require('../utils/flatten')
@@ -19,6 +20,13 @@ const mergeTopics = (obj, { topic, partitions }) => ({
   ...obj,
   [topic]: [...(obj[topic] || []), ...partitions],
 })
+
+const PRIVATE = {
+  CONNECT: Symbol('private:Cluster:connect'),
+  REFRESHMETADATA: Symbol('private:Cluster:refreshMetadata'),
+  REFRESHMETADATAIFNECESSARY: Symbol('private:Cluster:refreshMetadataIfNecessary'),
+  FINDCONTROLBROKER: Symbol('private:Cluster:findControllerBroker'),
+}
 
 module.exports = class Cluster {
   /**
@@ -95,6 +103,36 @@ module.exports = class Cluster {
       metadataMaxAge,
     })
     this.committedOffsetsByGroup = offsets
+
+    this[PRIVATE.CONNECT] = sharedPromiseTo(async () => {
+      return await this.brokerPool.connect()
+    })
+
+    this[PRIVATE.REFRESHMETADATA] = sharedPromiseTo(async () => {
+      return await this.brokerPool.refreshMetadata(Array.from(this.targetTopics))
+    })
+
+    this[PRIVATE.REFRESHMETADATAIFNECESSARY] = sharedPromiseTo(async () => {
+      return await this.brokerPool.refreshMetadataIfNecessary(Array.from(this.targetTopics))
+    })
+
+    this[PRIVATE.FINDCONTROLBROKER] = sharedPromiseTo(async () => {
+      const { metadata } = this.brokerPool
+
+      if (!metadata || metadata.controllerId == null) {
+        throw new KafkaJSMetadataNotLoaded('Topic metadata not loaded')
+      }
+
+      const broker = await this.findBroker({ nodeId: metadata.controllerId })
+
+      if (!broker) {
+        throw new KafkaJSBrokerNotFound(
+          `Controller broker with id ${metadata.controllerId} not found in the cached metadata`
+        )
+      }
+
+      return broker
+    })
   }
 
   isConnected() {
@@ -106,7 +144,7 @@ module.exports = class Cluster {
    * @returns {Promise<void>}
    */
   async connect() {
-    await this.brokerPool.connect()
+    return await this[PRIVATE.REFRESHMETADATA]()
   }
 
   /**
@@ -132,7 +170,7 @@ module.exports = class Cluster {
    * @returns {Promise<void>}
    */
   async refreshMetadata() {
-    await this.brokerPool.refreshMetadata(Array.from(this.targetTopics))
+    return await this[PRIVATE.REFRESHMETADATA]()
   }
 
   /**
@@ -140,7 +178,7 @@ module.exports = class Cluster {
    * @returns {Promise<void>}
    */
   async refreshMetadataIfNecessary() {
-    await this.brokerPool.refreshMetadataIfNecessary(Array.from(this.targetTopics))
+    return await this[PRIVATE.REFRESHMETADATAIFNECESSARY]()
   }
 
   /**
@@ -232,21 +270,7 @@ module.exports = class Cluster {
    * @returns {Promise<import("../../types").Broker>}
    */
   async findControllerBroker() {
-    const { metadata } = this.brokerPool
-
-    if (!metadata || metadata.controllerId == null) {
-      throw new KafkaJSMetadataNotLoaded('Topic metadata not loaded')
-    }
-
-    const broker = await this.findBroker({ nodeId: metadata.controllerId })
-
-    if (!broker) {
-      throw new KafkaJSBrokerNotFound(
-        `Controller broker with id ${metadata.controllerId} not found in the cached metadata`
-      )
-    }
-
-    return broker
+    return await this[PRIVATE.FINDCONTROLBROKER]()
   }
 
   /**

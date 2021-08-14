@@ -38,7 +38,6 @@ const isRebalancing = e =>
 const PRIVATE = {
   JOIN: Symbol('private:ConsumerGroup:join'),
   SYNC: Symbol('private:ConsumerGroup:sync'),
-  HEARTBEAT: Symbol('private:ConsumerGroup:heartbeat'),
   SHAREDHEARTBEAT: Symbol('private:ConsumerGroup:sharedHeartbeat'),
 }
 
