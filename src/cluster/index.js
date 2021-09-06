@@ -144,7 +144,7 @@ module.exports = class Cluster {
    * @returns {Promise<void>}
    */
   async connect() {
-    return await this[PRIVATE.REFRESHMETADATA]()
+    return await this[PRIVATE.CONNECT]()
   }
 
   /**
