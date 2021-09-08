@@ -39,7 +39,7 @@ export interface ISocketFactoryArgs {
   onConnect: () => void
 }
 
-export type ISocketFactory = (args: ISocketFactoryArgs) => net.Socket
+export type ISocketFactory = (args: ISocketFactoryArgs) => net.Socket | Promise<net.Socket>
 
 export interface OauthbearerProviderResponse {
   value: string
