@@ -111,12 +111,15 @@ module.exports = class Connection {
       }
 
       let timeoutId
+      let socketPromise
 
       const onConnect = () => {
         clearTimeout(timeoutId)
         this.connectionStatus = CONNECTION_STATUS.CONNECTED
         this.requestQueue.scheduleRequestTimeoutCheck()
-        resolve(true)
+        socketPromise.then(() => {
+          resolve(true)
+        })
       }
 
       const onData = data => {
@@ -176,7 +179,7 @@ module.exports = class Connection {
 
       try {
         timeoutId = setTimeout(onTimeout, this.connectionTimeout)
-        this.socket = createSocket({
+        socketPromise = createSocket({
           socketFactory: this.socketFactory,
           host: this.host,
           port: this.port,
@@ -187,6 +190,17 @@ module.exports = class Connection {
           onError,
           onTimeout,
         })
+          .then(socket => {
+            this.socket = socket
+          })
+          .catch(e => {
+            clearTimeout(timeoutId)
+            reject(
+              new KafkaJSConnectionError(`Failed to connect: ${e.message}`, {
+                broker: `${this.host}:${this.port}`,
+              })
+            )
+          })
       } catch (e) {
         clearTimeout(timeoutId)
         reject(

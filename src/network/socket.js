@@ -10,7 +10,7 @@
  * @param {(err: Error) => void} options.onError
  * @param {() => void} options.onTimeout
  */
-module.exports = ({
+module.exports = async ({
   socketFactory,
   host,
   port,
@@ -21,8 +21,10 @@ module.exports = ({
   onError,
   onTimeout,
 }) => {
-  const socket = socketFactory({ host, port, ssl, onConnect })
-
+  let socket = socketFactory({ host, port, ssl, onConnect })
+  if (socket && socket.then) {
+    socket = await socket
+  }
   socket.on('data', onData)
   socket.on('end', onEnd)
   socket.on('error', onError)
