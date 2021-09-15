@@ -196,10 +196,10 @@ module.exports = class Cluster {
       if (hasChanged) {
         try {
           await this.refreshMetadata()
-          this.previousTopics = this.targetTopics
+          this.previousTopics = new Set(this.targetTopics)
         } catch (e) {
           if (e.type === 'INVALID_TOPIC_EXCEPTION' || e.type === 'UNKNOWN_TOPIC_OR_PARTITION') {
-            this.targetTopics = this.previousTopics
+            this.targetTopics = new Set(this.previousTopics)
           }
 
           throw e
@@ -208,6 +208,17 @@ module.exports = class Cluster {
     } finally {
       await this.mutatingTargetTopics.release()
     }
+  }
+
+  /**
+   * @public
+   * @param {string[]} topics
+   */
+  deleteTopics(topics) {
+    for (const topic of topics) {
+      this.targetTopics.delete(topic)
+    }
+    this.previousTopics = new Set(this.targetTopics)
   }
 
   /**
