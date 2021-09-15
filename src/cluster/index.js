@@ -178,7 +178,7 @@ module.exports = class Cluster {
    */
   async addMultipleTargetTopics(topics) {
     // check if any topics need to be added, skip lock if possible
-    if (this.previousTopics && topics.every(topic => this.previousTopics.has(topic))) {
+    if (this.brokerPool.metadata && this.previousTopics && topics.every(topic => this.previousTopics.has(topic))) {
       return
     }
 
