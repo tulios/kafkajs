@@ -163,6 +163,20 @@ module.exports = class BrokerPool {
 
         const replacedBrokers = []
 
+        // Update the seed broker if necessary
+        let seedNodeMetadata = this.metadata.brokers.find(
+          broker => broker.host === seedHost && broker.port === seedPort && broker.nodeId === this.seedBroker.nodeId
+        )
+        if (!seedNodeMetadata) {
+          seedNodeMetadata = this.metadata.brokers.find(
+            broker => broker.host === seedHost && broker.port === seedPort
+          )
+        }
+        if (seedNodeMetadata) {
+          this.seedBroker.nodeId = seedNodeMetadata.nodeId
+          this.seedBroker.connection.rack = seedNodeMetadata.rack
+        }
+
         this.brokers = await this.metadata.brokers.reduce(
           async (resultPromise, { nodeId, host, port, rack }) => {
             const result = await resultPromise
@@ -175,9 +189,7 @@ module.exports = class BrokerPool {
               replacedBrokers.push(result[nodeId])
             }
 
-            if (host === seedHost && port === seedPort) {
-              this.seedBroker.nodeId = nodeId
-              this.seedBroker.connection.rack = rack
+            if (host === seedHost && port === seedPort && node === this.seedBroker.nodeId) {
               return assign(result, {
                 [nodeId]: this.seedBroker,
               })
