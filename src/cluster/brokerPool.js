@@ -165,7 +165,10 @@ module.exports = class BrokerPool {
 
         // Update the seed broker if necessary
         let seedNodeMetadata = this.metadata.brokers.find(
-          broker => broker.host === seedHost && broker.port === seedPort && broker.nodeId === this.seedBroker.nodeId
+          broker =>
+            broker.host === seedHost &&
+            broker.port === seedPort &&
+            broker.nodeId === this.seedBroker.nodeId
         )
         if (!seedNodeMetadata) {
           seedNodeMetadata = this.metadata.brokers.find(
@@ -189,7 +192,7 @@ module.exports = class BrokerPool {
               replacedBrokers.push(result[nodeId])
             }
 
-            if (host === seedHost && port === seedPort && node === this.seedBroker.nodeId) {
+            if (host === seedHost && port === seedPort && nodeId === this.seedBroker.nodeId) {
               return assign(result, {
                 [nodeId]: this.seedBroker,
               })
