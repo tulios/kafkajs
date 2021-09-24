@@ -231,6 +231,12 @@ describe('Cluster > BrokerPool', () => {
       )
     })
 
+    it('sets the nodeId on the seed broker', async () => {
+      brokerPool.seedBroker.nodeId = null
+      await brokerPool.refreshMetadata([topicName])
+      expect(brokerPool.seedBroker.nodeId).not.toEqual(null)
+    })
+
     it('includes the seed broker into the broker pool', async () => {
       await brokerPool.refreshMetadata([topicName])
       const seed = brokerPool.seedBroker.connection
@@ -276,6 +282,32 @@ describe('Cluster > BrokerPool', () => {
       expect(brokerPool.metadata).toEqual(null)
       await brokerPool.refreshMetadata([topicName])
       expect(brokerPool.metadata).not.toEqual(null)
+    })
+
+    describe('when multiple nodes have the same host and port', () => {
+      // These tests cover compatibility with Oracle Cloud's Stream service, which
+      // uses the same port and host for each node in the cluster
+
+      let lastBroker
+      beforeEach(async () => {
+        await brokerPool.refreshMetadata([topicName])
+        lastBroker = brokerPool.brokers[Object.keys(brokerPool.brokers).length - 1]
+        jest.spyOn(brokerPool, 'findConnectedBroker').mockImplementation(() => lastBroker)
+      })
+
+      it('the seed node will not override other nodes', async () => {
+        const { host: seedHost, port: seedPort } = brokerPool.seedBroker.connection
+        jest.spyOn(lastBroker, 'metadata').mockImplementationOnce(() => ({
+          ...brokerPool.metadata,
+          brokers: brokerPool.metadata.brokers.map(broker => {
+            return { ...broker, host: seedHost, port: seedPort }
+          }),
+        }))
+
+        await brokerPool.refreshMetadata([topicName])
+        expect(Object.keys(brokerPool.brokers)).toEqual(['0', '1', '2'])
+        expect(Object.values(brokerPool.brokers).map(b => b.nodeId)).toEqual([0, 1, 2])
+      })
     })
 
     describe('when replacing nodeIds with different host/port/rack', () => {
