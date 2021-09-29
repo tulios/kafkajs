@@ -128,10 +128,6 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
         const responses = Array.from(responsePerBroker.values())
         return flatten(responses)
       } catch (e) {
-        if (e.name === 'KafkaJSConnectionClosedError') {
-          cluster.removeBroker({ host: e.host, port: e.port })
-        }
-
         if (!cluster.isConnected()) {
           logger.debug(`Cluster has disconnected, reconnecting: ${e.message}`, {
             retryCount,

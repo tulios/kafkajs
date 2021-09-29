@@ -75,6 +75,7 @@ module.exports = class BrokerPool {
       connection: await this.connectionBuilder.build(),
       logger: this.rootLogger,
     })
+    this.seedBroker.connection.onDisconnect = () => this.removeBroker({ broker: this.seedBroker })
   }
 
   /**
@@ -129,21 +130,20 @@ module.exports = class BrokerPool {
   /**
    * @public
    * @param {Object} destination
-   * @param {string} destination.host
-   * @param {number} destination.port
+   * @param {Broker} destination.broker
    */
-  removeBroker({ host, port }) {
-    const removedBroker = values(this.brokers).find(
-      broker => broker.connection.host === host && broker.connection.port === port
-    )
-
-    if (removedBroker) {
-      delete this.brokers[removedBroker.nodeId]
+  removeBroker({ broker }) {
+    if (broker && broker === this.brokers[broker.nodeId]) {
+      delete this.brokers[broker.nodeId]
       this.metadataExpireAt = null
+    }
 
-      if (this.seedBroker.nodeId === removedBroker.nodeId) {
-        this.seedBroker = shuffle(values(this.brokers))[0]
+    if (broker === this.seedBroker) {
+      const nextSeedBroker = shuffle(values(this.brokers))[0]
+      if (nextSeedBroker) {
+        this.seedBroker = nextSeedBroker
       }
+      this.metadataExpireAt = null
     }
   }
 
@@ -193,15 +193,15 @@ module.exports = class BrokerPool {
               })
             }
 
-            return assign(result, {
-              [nodeId]: this.createBroker({
-                logger: this.rootLogger,
-                versions: this.versions,
-                supportAuthenticationProtocol: this.supportAuthenticationProtocol,
-                connection: await this.connectionBuilder.build({ host, port, rack }),
-                nodeId,
-              }),
+            const broker = this.createBroker({
+              logger: this.rootLogger,
+              versions: this.versions,
+              supportAuthenticationProtocol: this.supportAuthenticationProtocol,
+              connection: await this.connectionBuilder.build({ host, port, rack }),
+              nodeId,
             })
+            broker.connection.onDisconnect = () => this.removeBroker({ broker })
+            return assign(result, { [nodeId]: broker })
           },
           this.brokers
         )
@@ -212,9 +212,7 @@ module.exports = class BrokerPool {
 
         const brokerDisconnects = unusedBrokerIds.map(nodeId => {
           const broker = this.brokers[nodeId]
-          return broker.disconnect().then(() => {
-            delete this.brokers[nodeId]
-          })
+          return broker.disconnect()
         })
 
         const replacedBrokersDisconnects = replacedBrokers.map(broker => broker.disconnect())
@@ -344,6 +342,7 @@ module.exports = class BrokerPool {
             port: broker.connection.port,
             rack: broker.connection.rack,
           })
+          broker.connection.onDisconnect = () => this.removeBroker({ broker })
 
           this.logger.error(`Failed to connect to broker, reconnecting`, { retryCount, retryTime })
           throw new KafkaJSProtocolError(e, { retriable: true })

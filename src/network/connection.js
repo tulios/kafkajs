@@ -32,6 +32,7 @@ module.exports = class Connection {
    * @param {number} [options.maxInFlightRequests=null] The maximum number of unacknowledged requests on a connection before
    *                                            enqueuing
    * @param {import("../instrumentation/emitter")} [options.instrumentationEmitter=null]
+   * @param {() => void)} [options.onDisconnect=null] A callback function that is called on disconnect
    */
   constructor({
     host,
@@ -47,6 +48,7 @@ module.exports = class Connection {
     enforceRequestTimeout = false,
     maxInFlightRequests = null,
     instrumentationEmitter = null,
+    onDisconnect = null,
   }) {
     this.host = host
     this.port = port
@@ -61,6 +63,7 @@ module.exports = class Connection {
 
     this.requestTimeout = requestTimeout
     this.connectionTimeout = connectionTimeout
+    this.onDisconnect = onDisconnect
 
     this.bytesBuffered = 0
     this.bytesNeeded = Decoder.int32Size()
@@ -216,6 +219,10 @@ module.exports = class Connection {
 
     this.connectionStatus = CONNECTION_STATUS.DISCONNECTED
     this.logDebug('disconnected')
+
+    if (this.onDisconnect) {
+      this.onDisconnect()
+    }
     return true
   }
 

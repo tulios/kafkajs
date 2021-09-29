@@ -1,6 +1,5 @@
 const {
   createConnectionBuilder,
-  plainTextBrokers,
   createConnection,
   newLogger,
   secureRandom,
@@ -141,35 +140,28 @@ describe('Cluster > BrokerPool', () => {
   })
 
   describe('#removeBroker', () => {
-    let host, port
+    let broker
 
     beforeEach(async () => {
       await brokerPool.connect()
       await brokerPool.refreshMetadata([topicName])
       expect(Object.values(brokerPool.brokers).length).toBeGreaterThan(1)
 
-      const brokerUri = plainTextBrokers().shift()
-      const [hostToRemove, portToRemove] = brokerUri.split(':')
-      host = hostToRemove
-      port = Number(portToRemove)
+      broker = brokerPool.brokers[0]
     })
 
-    it('removes the broker by host and port', () => {
+    it('removes the target broker', () => {
       const numberOfBrokers = Object.values(brokerPool.brokers).length
 
-      brokerPool.removeBroker({ host, port })
+      brokerPool.removeBroker({ broker })
 
-      const brokers = Object.values(brokerPool.brokers)
-      expect(brokers.length).toEqual(numberOfBrokers - 1)
-      expect(
-        brokers.find(broker => broker.connection.host === host && broker.connection.port === port)
-      ).toEqual(undefined)
+      expect(Object.values(brokerPool.brokers).length).toEqual(numberOfBrokers - 1)
+      expect(brokerPool.brokers[broker.nodeId]).toEqual(undefined)
     })
 
     it('replaces the seed broker if it is the target broker', () => {
-      const seedBrokerHost = brokerPool.seedBroker.connection.host
       const seedBrokerPort = brokerPool.seedBroker.connection.port
-      brokerPool.removeBroker({ host: seedBrokerHost, port: seedBrokerPort })
+      brokerPool.removeBroker({ broker: brokerPool.seedBroker })
 
       // check only port since the host will be "localhost" on most tests
       expect(brokerPool.seedBroker.connection.port).not.toEqual(seedBrokerPort)
@@ -177,7 +169,7 @@ describe('Cluster > BrokerPool', () => {
 
     it('erases metadataExpireAt to force a metadata refresh', () => {
       brokerPool.metadataExpireAt = Date.now() + 25
-      brokerPool.removeBroker({ host, port })
+      brokerPool.removeBroker({ broker })
       expect(brokerPool.metadataExpireAt).toEqual(null)
     })
   })
@@ -253,9 +245,11 @@ describe('Cluster > BrokerPool', () => {
 
       const nodeId = 'fakebroker'
       const fakeBroker = new Broker({
+        nodeId,
         connection: createConnection(),
         logger: newLogger(),
       })
+      fakeBroker.connection.onDisconnect = () => brokerPool.removeBroker({ broker: fakeBroker })
 
       jest.spyOn(fakeBroker, 'disconnect')
       brokerPool.brokers[nodeId] = fakeBroker
@@ -432,6 +426,8 @@ describe('Cluster > BrokerPool', () => {
         connection: createConnection(),
         logger: newLogger(),
       })
+      mockBroker.connection.onDisconnect = () => brokerPool.removeBroker({ broker: mockBroker })
+
       jest.spyOn(mockBroker, 'connect').mockImplementationOnce(() => {
         throw createErrorFromCode(errorCodes.find(({ type }) => type === 'ILLEGAL_SASL_STATE').code)
       })
