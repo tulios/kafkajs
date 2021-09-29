@@ -104,7 +104,7 @@ run().catch(<span class="hljs-function"><span class="hljs-params">e</span> =&gt;
 <span class="hljs-keyword">const</span> errorTypes = [<span class="hljs-string">'unhandledRejection'</span>, <span class="hljs-string">'uncaughtException'</span>]
 <span class="hljs-keyword">const</span> signalTraps = [<span class="hljs-string">'SIGTERM'</span>, <span class="hljs-string">'SIGINT'</span>, <span class="hljs-string">'SIGUSR2'</span>]
 
-errorTypes.map(<span class="hljs-function"><span class="hljs-params">type</span> =&gt;</span> {
+errorTypes.forEach(<span class="hljs-function"><span class="hljs-params">type</span> =&gt;</span> {
   process.on(type, <span class="hljs-keyword">async</span> () =&gt; {
     <span class="hljs-keyword">try</span> {
       <span class="hljs-built_in">console</span>.log(<span class="hljs-string">`process.on <span class="hljs-subst">${type}</span>`</span>)
@@ -116,7 +116,7 @@ errorTypes.map(<span class="hljs-function"><span class="hljs-params">type</span>
   })
 })
 
-signalTraps.map(<span class="hljs-function"><span class="hljs-params">type</span> =&gt;</span> {
+signalTraps.forEach(<span class="hljs-function"><span class="hljs-params">type</span> =&gt;</span> {
   process.once(type, <span class="hljs-keyword">async</span> () =&gt; {
     <span class="hljs-keyword">try</span> {
       <span class="hljs-keyword">await</span> producer.disconnect()
