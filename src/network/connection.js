@@ -47,7 +47,6 @@ module.exports = class Connection {
     enforceRequestTimeout = false,
     maxInFlightRequests = null,
     instrumentationEmitter = null,
-    onDisconnect = null,
   }) {
     this.host = host
     this.port = port
@@ -217,7 +216,6 @@ module.exports = class Connection {
 
     this.connectionStatus = CONNECTION_STATUS.DISCONNECTED
     this.logDebug('disconnected')
-
     return true
   }
 

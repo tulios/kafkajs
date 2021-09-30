@@ -90,7 +90,7 @@ describe('Cluster > BrokerPool', () => {
       await broker.connect()
       expect(broker.isConnected()).toEqual(true)
 
-      await brokerPool.seedBroker.disconnect()
+      await brokerPool.seedBroker.connection.disconnect()
       expect(brokerPool.seedBroker.isConnected()).toEqual(false)
 
       jest.spyOn(brokerPool.seedBroker, 'connect')
@@ -424,7 +424,6 @@ describe('Cluster > BrokerPool', () => {
         connection: createConnection(),
         logger: newLogger(),
       })
-
       jest.spyOn(mockBroker, 'connect').mockImplementationOnce(() => {
         throw createErrorFromCode(errorCodes.find(({ type }) => type === 'ILLEGAL_SASL_STATE').code)
       })
@@ -432,6 +431,7 @@ describe('Cluster > BrokerPool', () => {
 
       const broker = await brokerPool.findBroker({ nodeId })
       expect(broker.isConnected()).toEqual(true)
+      expect(brokerPool.brokers[nodeId]).toEqual(broker)
     })
 
     it('throws an error when the broker is not found', async () => {
