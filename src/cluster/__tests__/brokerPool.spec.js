@@ -244,12 +244,10 @@ describe('Cluster > BrokerPool', () => {
       await brokerPool.refreshMetadata([topicName])
 
       const nodeId = 'fakebroker'
-      const fakeBroker = new Broker({
-        nodeId,
+      const fakeBroker = brokerPool.createBroker({
         connection: createConnection(),
         logger: newLogger(),
       })
-      fakeBroker.connection.onDisconnect = () => brokerPool.removeBroker({ broker: fakeBroker })
 
       jest.spyOn(fakeBroker, 'disconnect')
       brokerPool.brokers[nodeId] = fakeBroker
@@ -426,7 +424,6 @@ describe('Cluster > BrokerPool', () => {
         connection: createConnection(),
         logger: newLogger(),
       })
-      mockBroker.connection.onDisconnect = () => brokerPool.removeBroker({ broker: mockBroker })
 
       jest.spyOn(mockBroker, 'connect').mockImplementationOnce(() => {
         throw createErrorFromCode(errorCodes.find(({ type }) => type === 'ILLEGAL_SASL_STATE').code)
