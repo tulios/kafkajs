@@ -1457,11 +1457,7 @@ module.exports = ({
     })
   }
 
-  /**
-   * @param {string} eventName
-   * @param {Function} listener
-   * @return {Function}
-   */
+  /** @type {import("../../types").Admin["on"]} */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {
       throw new KafkaJSNonRetriableError(`Event name should be one of ${eventKeys}`)
