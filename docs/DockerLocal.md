@@ -3,45 +3,38 @@ id: running-kafka-in-development
 title: Running Kafka in Development
 ---
 
-The following configuration will be used in the examples listed here. For more complete and up-to-date documentation, see [wurstmeister/kafka-docker](https://github.com/wurstmeister/kafka-docker).
+The following configuration will be used in the examples listed here. For more complete and up-to-date documentation, see [bitnami/bitnami-docker-kafka](https://github.com/bitnami/bitnami-docker-kafka).
 
 To run this Kafka configuration, [`docker`](https://docs.docker.com/) with [`docker-compose`](https://docs.docker.com/compose/install/) is required.
 
 Save the following file as `docker-compose.yml` in the root of your project.
 
 ```yml
-version: '2'
+version: '3'
 services:
   zookeeper:
-    image: wurstmeister/zookeeper:latest
+    image: zookeeper:latest
     ports:
       - "2181:2181"
   kafka:
-    image: wurstmeister/kafka:2.11-1.1.1
+    image: bitnami/kafka:2.11-1.1.1
     ports:
       - "9092:9092"
-    links:
+    depends_on:
       - zookeeper
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: ${HOST_IP}
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: 'PLAINTEXT://:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://127.0.0.1:9092'
+      ALLOW_PLAINTEXT_LISTENER: 'yes'
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_DELETE_TOPIC_ENABLE: 'true'
-      KAFKA_CREATE_TOPICS: "topic-test:1:1"
+      KAFKA_CREATE_TOPICS: 'topic-test:1:1'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 ```
 
-Now run:
-
-```sh
-export HOST_IP=$(ifconfig | grep -E "([0-9]{1,3}\.){3}[0-9]{1,3}" | grep -v 127.0.0.1 | awk '{ print $2 }' | cut -f2 -d: | head -n1)
-docker-compose up
-```
-
-> Note: To understand why `HOST_IP` is required, see the [kafka-docker connectivity guide](https://github.com/wurstmeister/kafka-docker/wiki/Connectivity)
-
-You will now be able to connect to your Kafka broker at `$(HOST_IP):9092`. See the [Producer example](ProducerExample.md) to learn how to connect to and use your new Kafka broker.
+You will now be able to connect to your Kafka broker at `localhost:9092`. See the [Producer example](ProducerExample.md) to learn how to connect to and use your new Kafka broker.
 
 ## SSL & authentication methods
 
