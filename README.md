@@ -71,6 +71,7 @@ KafkaJS is a modern [Apache Kafka](https://kafka.apache.org/) client for Node.js
 * Support for SCRAM-SHA-256 and SCRAM-SHA-512
 * Support for AWS IAM authentication
 * Admin client
+* Easy events instrumentation
 
 ### <a name="getting-started"></a> Getting Started
 
