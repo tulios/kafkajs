@@ -123,6 +123,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier, getRetryE
       if (!shouldRetry) {
         logger.debug(`Retry bailing due to flag`)
         bail(new Error('Retry bailing due to flag'))
+        return
       }
       const topics = topicMessages.map(({ topic }) => topic)
       await cluster.addMultipleTargetTopics(topics)
