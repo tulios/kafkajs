@@ -9,6 +9,7 @@ module.exports = ({
   eosManager,
   idempotent,
   retrier,
+  getRetryEnabled,
   getConnectionStatus,
 }) => {
   const sendMessages = createSendMessages({
@@ -17,6 +18,7 @@ module.exports = ({
     retrier,
     partitioner,
     eosManager,
+    getRetryEnabled,
   })
 
   const validateConnectionStatus = () => {

@@ -15,7 +15,7 @@ const { keys } = Object
  * @param {import("./eosManager").EosManager} options.eosManager
  * @param {import("../retry").Retrier} options.retrier
  */
-module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
+module.exports = ({ logger, cluster, partitioner, eosManager, retrier, getRetryEnabled }) => {
   return async ({ acks, timeout, compression, topicMessages }) => {
     /** @type {Map<import("../../types").Broker, any[]>} */
     const responsePerBroker = new Map()
@@ -119,6 +119,12 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
     }
 
     return retrier(async (bail, retryCount, retryTime) => {
+      const shouldRetry = getRetryEnabled ? getRetryEnabled() : true
+      if (!shouldRetry) {
+        logger.debug(`Retry bailing due to flag`)
+        bail(new Error('Retry bailing due to flag'))
+        return
+      }
       const topics = topicMessages.map(({ topic }) => topic)
       await cluster.addMultipleTargetTopics(topics)
 
