@@ -140,7 +140,6 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier, getRetryE
         const responses = Array.from(responsePerBroker.values())
         return flatten(responses)
       } catch (e) {
-        if (retryCancelled(bail)) return
         if (e.name === 'KafkaJSConnectionClosedError') {
           cluster.removeBroker({ host: e.host, port: e.port })
         }

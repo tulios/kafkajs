@@ -96,7 +96,6 @@ module.exports = class BrokerPool {
         await this.seedBroker.connect()
         this.versions = this.seedBroker.versions
       } catch (e) {
-        if (this.retryCancelled(bail)) return
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
           // Connection builder will always rotate the seed broker
           await this.createSeedBroker()
@@ -213,7 +212,6 @@ module.exports = class BrokerPool {
         const replacedBrokersDisconnects = replacedBrokers.map(broker => broker.disconnect())
         await Promise.all([...brokerDisconnects, ...replacedBrokersDisconnects])
       } catch (e) {
-        if (this.retryCancelled(bail)) return
         if (e.type === 'LEADER_NOT_AVAILABLE') {
           throw e
         }
@@ -332,7 +330,6 @@ module.exports = class BrokerPool {
       try {
         await broker.connect()
       } catch (e) {
-        if (this.retryCancelled(bail)) return
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
           await broker.disconnect()
         }

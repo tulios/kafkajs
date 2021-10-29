@@ -155,7 +155,6 @@ module.exports = class Cluster {
         await this.brokerPool.refreshMetadataIfNecessary(topics)
         return this.brokerPool.withBroker(async ({ broker }) => broker.metadata(topics))
       } catch (e) {
-        if (this.retryCancelled(bail)) return
         if (e.type === 'LEADER_NOT_AVAILABLE') {
           throw e
         }
@@ -323,9 +322,7 @@ module.exports = class Cluster {
    */
   async findGroupCoordinator({ groupId, coordinatorType = COORDINATOR_TYPES.GROUP }) {
     return this.retrier(async (bail, retryCount, retryTime) => {
-      if (this.retryCancelled(bail)) {
-        return
-      }
+      if (this.retryCancelled(bail)) return
       try {
         const { coordinator } = await this.findGroupCoordinatorMetadata({
           groupId,
@@ -333,9 +330,6 @@ module.exports = class Cluster {
         })
         return await this.findBroker({ nodeId: coordinator.nodeId })
       } catch (e) {
-        if (this.retryCancelled(bail)) {
-          return
-        }
         // A new broker can join the cluster before we have the chance
         // to refresh metadata
         if (e.name === 'KafkaJSBrokerNotFound' || e.type === 'GROUP_COORDINATOR_NOT_AVAILABLE') {
