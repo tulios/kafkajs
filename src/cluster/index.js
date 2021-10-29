@@ -150,15 +150,12 @@ module.exports = class Cluster {
    */
   async metadata({ topics = [] } = {}) {
     return this.retrier(async (bail, retryCount, retryTime) => {
-      if (!this.retryEnabled) {
-        this.logger.debug(`Retry bailing due to flag`)
-        bail(new Error('Retry bailing due to flag'))
-        return
-      }
+      if (this.retryCancelled(bail)) return
       try {
         await this.brokerPool.refreshMetadataIfNecessary(topics)
         return this.brokerPool.withBroker(async ({ broker }) => broker.metadata(topics))
       } catch (e) {
+        if (this.retryCancelled(bail)) return
         if (e.type === 'LEADER_NOT_AVAILABLE') {
           throw e
         }
@@ -166,6 +163,16 @@ module.exports = class Cluster {
         bail(e)
       }
     })
+  }
+
+  retryCancelled(bail) {
+    if (!this.retryEnabled) {
+      this.logger.debug(`Retry bailing due to flag`)
+      bail(new Error('Retry bailing due to flag'))
+      return true
+    } else {
+      return false
+    }
   }
 
   /**
@@ -316,9 +323,7 @@ module.exports = class Cluster {
    */
   async findGroupCoordinator({ groupId, coordinatorType = COORDINATOR_TYPES.GROUP }) {
     return this.retrier(async (bail, retryCount, retryTime) => {
-      if (!this.retryEnabled) {
-        this.logger.debug(`Retry bailing due to flag`)
-        bail(new Error('Retry bailing due to flag'))
+      if (this.retryCancelled(bail)) {
         return
       }
       try {
@@ -328,6 +333,9 @@ module.exports = class Cluster {
         })
         return await this.findBroker({ nodeId: coordinator.nodeId })
       } catch (e) {
+        if (this.retryCancelled(bail)) {
+          return
+        }
         // A new broker can join the cluster before we have the chance
         // to refresh metadata
         if (e.name === 'KafkaJSBrokerNotFound' || e.type === 'GROUP_COORDINATOR_NOT_AVAILABLE') {
@@ -363,11 +371,7 @@ module.exports = class Cluster {
   async findGroupCoordinatorMetadata({ groupId, coordinatorType }) {
     const brokerMetadata = await this.brokerPool.withBroker(async ({ nodeId, broker }) => {
       return await this.retrier(async (bail, retryCount, retryTime) => {
-        if (!this.retryEnabled) {
-          this.logger.debug(`Retry bailing due to flag`)
-          bail(new Error('Retry bailing due to flag'))
-          return
-        }
+        if (this.retryCancelled(bail)) return
         try {
           const brokerMetadata = await broker.findGroupCoordinator({ groupId, coordinatorType })
           this.logger.debug('Found group coordinator', {

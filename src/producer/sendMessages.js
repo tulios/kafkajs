@@ -118,13 +118,19 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier, getRetryE
       })
     }
 
-    return retrier(async (bail, retryCount, retryTime) => {
+    const retryCancelled = bail => {
       const shouldRetry = getRetryEnabled ? getRetryEnabled() : true
       if (!shouldRetry) {
         logger.debug(`Retry bailing due to flag`)
         bail(new Error('Retry bailing due to flag'))
-        return
+        return true
+      } else {
+        return false
       }
+    }
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      if (retryCancelled(bail)) return
       const topics = topicMessages.map(({ topic }) => topic)
       await cluster.addMultipleTargetTopics(topics)
 
@@ -134,6 +140,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier, getRetryE
         const responses = Array.from(responsePerBroker.values())
         return flatten(responses)
       } catch (e) {
+        if (retryCancelled(bail)) return
         if (e.name === 'KafkaJSConnectionClosedError') {
           cluster.removeBroker({ host: e.host, port: e.port })
         }

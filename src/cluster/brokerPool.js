@@ -91,15 +91,12 @@ module.exports = class BrokerPool {
     }
 
     return this.retrier(async (bail, retryCount, retryTime) => {
-      if (!this.retryEnabled) {
-        this.logger.debug(`Retry bailing due to flag`)
-        bail(new Error('Retry bailing due to flag'))
-        return
-      }
+      if (this.retryCancelled(bail)) return
       try {
         await this.seedBroker.connect()
         this.versions = this.seedBroker.versions
       } catch (e) {
+        if (this.retryCancelled(bail)) return
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
           // Connection builder will always rotate the seed broker
           await this.createSeedBroker()
@@ -162,11 +159,7 @@ module.exports = class BrokerPool {
     const { host: seedHost, port: seedPort } = this.seedBroker.connection
 
     return this.retrier(async (bail, retryCount, retryTime) => {
-      if (!this.retryEnabled) {
-        this.logger.debug(`Retry bailing due to flag`)
-        bail(new Error('Retry bailing due to flag'))
-        return
-      }
+      if (this.retryCancelled(bail)) return
       try {
         this.metadata = await broker.metadata(topics)
         this.metadataExpireAt = Date.now() + this.metadataMaxAge
@@ -220,6 +213,7 @@ module.exports = class BrokerPool {
         const replacedBrokersDisconnects = replacedBrokers.map(broker => broker.disconnect())
         await Promise.all([...brokerDisconnects, ...replacedBrokersDisconnects])
       } catch (e) {
+        if (this.retryCancelled(bail)) return
         if (e.type === 'LEADER_NOT_AVAILABLE') {
           throw e
         }
@@ -313,6 +307,16 @@ module.exports = class BrokerPool {
     return this.seedBroker
   }
 
+  retryCancelled(bail) {
+    if (!this.retryEnabled) {
+      this.logger.debug(`Retry bailing due to flag`)
+      bail(new Error('Retry bailing due to flag'))
+      return true
+    } else {
+      return false
+    }
+  }
+
   /**
    * @private
    * @param {Broker} broker
@@ -324,14 +328,11 @@ module.exports = class BrokerPool {
     }
 
     return this.retrier(async (bail, retryCount, retryTime) => {
-      if (!this.retryEnabled) {
-        this.logger.debug(`Retry bailing due to flag`)
-        bail(new Error('Retry bailing due to flag'))
-        return
-      }
+      if (this.retryCancelled(bail)) return
       try {
         await broker.connect()
       } catch (e) {
+        if (this.retryCancelled(bail)) return
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
           await broker.disconnect()
         }
