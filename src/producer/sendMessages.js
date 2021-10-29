@@ -118,13 +118,19 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier, getRetryE
       })
     }
 
-    return retrier(async (bail, retryCount, retryTime) => {
+    const retryCancelled = bail => {
       const shouldRetry = getRetryEnabled ? getRetryEnabled() : true
       if (!shouldRetry) {
         logger.debug(`Retry bailing due to flag`)
         bail(new Error('Retry bailing due to flag'))
-        return
+        return true
+      } else {
+        return false
       }
+    }
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      if (retryCancelled(bail)) return
       const topics = topicMessages.map(({ topic }) => topic)
       await cluster.addMultipleTargetTopics(topics)
 

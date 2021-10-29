@@ -65,6 +65,7 @@ module.exports = class Cluster {
     this.rootLogger = rootLogger
     this.logger = rootLogger.namespace('Cluster')
     this.retrier = createRetry(retry)
+    this.retryEnabled = true
     this.connectionBuilder = connectionBuilder({
       logger: rootLogger,
       instrumentationEmitter,
@@ -106,6 +107,7 @@ module.exports = class Cluster {
    * @returns {Promise<void>}
    */
   async connect() {
+    this.retryEnabled = true
     await this.brokerPool.connect()
   }
 
@@ -114,6 +116,7 @@ module.exports = class Cluster {
    * @returns {Promise<void>}
    */
   async disconnect() {
+    this.retryEnabled = false
     await this.brokerPool.disconnect()
   }
 
@@ -149,6 +152,7 @@ module.exports = class Cluster {
    */
   async metadata({ topics = [] } = {}) {
     return this.retrier(async (bail, retryCount, retryTime) => {
+      if (this.retryCancelled(bail)) return
       try {
         await this.brokerPool.refreshMetadataIfNecessary(topics)
         return this.brokerPool.withBroker(async ({ broker }) => broker.metadata(topics))
@@ -160,6 +164,16 @@ module.exports = class Cluster {
         bail(e)
       }
     })
+  }
+
+  retryCancelled(bail) {
+    if (!this.retryEnabled) {
+      this.logger.debug(`Retry bailing due to flag`)
+      bail(new Error('Retry bailing due to flag'))
+      return true
+    } else {
+      return false
+    }
   }
 
   /**
@@ -310,6 +324,7 @@ module.exports = class Cluster {
    */
   async findGroupCoordinator({ groupId, coordinatorType = COORDINATOR_TYPES.GROUP }) {
     return this.retrier(async (bail, retryCount, retryTime) => {
+      if (this.retryCancelled(bail)) return
       try {
         const { coordinator } = await this.findGroupCoordinatorMetadata({
           groupId,
@@ -352,6 +367,7 @@ module.exports = class Cluster {
   async findGroupCoordinatorMetadata({ groupId, coordinatorType }) {
     const brokerMetadata = await this.brokerPool.withBroker(async ({ nodeId, broker }) => {
       return await this.retrier(async (bail, retryCount, retryTime) => {
+        if (this.retryCancelled(bail)) return
         try {
           const brokerMetadata = await broker.findGroupCoordinator({ groupId, coordinatorType })
           this.logger.debug('Found group coordinator', {

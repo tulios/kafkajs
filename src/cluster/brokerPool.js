@@ -35,7 +35,7 @@ module.exports = class BrokerPool {
     this.metadataMaxAge = metadataMaxAge || 0
     this.logger = logger.namespace('BrokerPool')
     this.retrier = createRetry(assign({}, retry))
-
+    this.retryEnabled = true
     this.createBroker = options =>
       new Broker({
         allowAutoTopicCreation,
@@ -82,6 +82,7 @@ module.exports = class BrokerPool {
    * @returns {Promise<void>}
    */
   async connect() {
+    this.retryEnabled = true
     if (this.hasConnectedBrokers()) {
       return
     }
@@ -91,6 +92,7 @@ module.exports = class BrokerPool {
     }
 
     return this.retrier(async (bail, retryCount, retryTime) => {
+      if (this.retryCancelled(bail)) return
       try {
         await this.seedBroker.connect()
         this.versions = this.seedBroker.versions
@@ -117,6 +119,7 @@ module.exports = class BrokerPool {
    * @returns {Promise}
    */
   async disconnect() {
+    this.retryEnabled = false
     this.seedBroker && (await this.seedBroker.disconnect())
     await Promise.all(values(this.brokers).map(broker => broker.disconnect()))
 
@@ -157,6 +160,7 @@ module.exports = class BrokerPool {
     const { host: seedHost, port: seedPort } = this.seedBroker.connection
 
     return this.retrier(async (bail, retryCount, retryTime) => {
+      if (this.retryCancelled(bail)) return
       try {
         this.metadata = await broker.metadata(topics)
         this.metadataExpireAt = Date.now() + this.metadataMaxAge
@@ -303,6 +307,16 @@ module.exports = class BrokerPool {
     return this.seedBroker
   }
 
+  retryCancelled(bail) {
+    if (!this.retryEnabled) {
+      this.logger.debug(`Retry bailing due to flag`)
+      bail(new Error('Retry bailing due to flag'))
+      return true
+    } else {
+      return false
+    }
+  }
+
   /**
    * @private
    * @param {Broker} broker
@@ -314,6 +328,7 @@ module.exports = class BrokerPool {
     }
 
     return this.retrier(async (bail, retryCount, retryTime) => {
+      if (this.retryCancelled(bail)) return
       try {
         await broker.connect()
       } catch (e) {
