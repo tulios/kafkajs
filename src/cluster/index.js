@@ -107,6 +107,7 @@ module.exports = class Cluster {
    * @returns {Promise<void>}
    */
   async connect() {
+    this.retryEnabled = true
     await this.brokerPool.connect()
   }
 
@@ -115,6 +116,7 @@ module.exports = class Cluster {
    * @returns {Promise<void>}
    */
   async disconnect() {
+    this.retryEnabled = false
     await this.brokerPool.disconnect()
   }
 

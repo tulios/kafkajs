@@ -82,6 +82,7 @@ module.exports = class BrokerPool {
    * @returns {Promise<void>}
    */
   async connect() {
+    this.retryEnabled = true
     if (this.hasConnectedBrokers()) {
       return
     }
@@ -118,6 +119,7 @@ module.exports = class BrokerPool {
    * @returns {Promise}
    */
   async disconnect() {
+    this.retryEnabled = false
     this.seedBroker && (await this.seedBroker.disconnect())
     await Promise.all(values(this.brokers).map(broker => broker.disconnect()))
 
