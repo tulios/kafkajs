@@ -5,8 +5,7 @@ module.exports = () => ({ namespace, level, label, log }) => {
   const message = JSON.stringify(
     Object.assign({ level: label }, log, {
       message: `${prefix}${log.message}`,
-    }),
-    (_, value) => (typeof value === 'bigint' ? value.toString() : value)
+    })
   )
 
   switch (level) {
