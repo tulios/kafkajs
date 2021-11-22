@@ -67,7 +67,7 @@ describe('Cluster > fetchTopicsOffset', () => {
     ])
   })
 
-  test('returns erliest if fromBeginning=true', async () => {
+  test('returns earliest if fromBeginning=true', async () => {
     const result = await cluster.fetchTopicsOffset([
       { topic, partitions: [{ partition: 0 }], fromBeginning: true },
     ])
