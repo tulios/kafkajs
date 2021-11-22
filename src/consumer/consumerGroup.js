@@ -264,7 +264,6 @@ module.exports = class ConsumerGroup {
     this.topics = currentMemberAssignment.map(({ topic }) => topic)
     this.subscriptionState.assign(currentMemberAssignment)
     this.offsetManager = new OffsetManager({
-      logger: this.logger,
       cluster: this.cluster,
       topicConfigurations: this.topicConfigurations,
       instrumentationEmitter: this.instrumentationEmitter,

@@ -24,7 +24,6 @@ module.exports = class OffsetManager {
     groupId,
     generationId,
     memberId,
-    logger,
   }) {
     this.cluster = cluster
     this.coordinator = coordinator
@@ -45,7 +44,6 @@ module.exports = class OffsetManager {
     this.autoCommitInterval = autoCommitInterval
     this.autoCommitThreshold = autoCommitThreshold
     this.lastCommit = Date.now()
-    this.logger = logger
 
     this.topics = keys(memberAssignment)
     this.clearAllOffsets()
