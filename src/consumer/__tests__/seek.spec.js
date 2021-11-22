@@ -42,16 +42,6 @@ describe('Consumer', () => {
   })
 
   describe('when seek offset', () => {
-    let admin
-
-    beforeEach(() => {
-      admin = createAdmin({ logger: newLogger(), cluster })
-    })
-
-    afterEach(async () => {
-      admin && (await admin.disconnect())
-    })
-
     it('throws an error if the topic is invalid', () => {
       expect(() => consumer.seek({ topic: null })).toThrow(
         KafkaJSNonRetriableError,
@@ -173,13 +163,6 @@ describe('Consumer', () => {
           message: expect.objectContaining({ offset: '0' }),
         },
       ])
-
-      await expect(admin.fetchOffsets({ groupId, topic: topicName })).resolves.toEqual([
-        expect.objectContaining({
-          partition: 0,
-          offset: '1',
-        }),
-      ])
     })
 
     describe('When "autoCommit" is false', () => {
@@ -240,41 +223,6 @@ describe('Consumer', () => {
             partition: 0,
             message: expect.objectContaining({ offset: '2' }),
           },
-        ])
-      })
-
-      it('recovers from offset out of range', async () => {
-        await consumer.connect()
-        await producer.connect()
-
-        const key1 = secureRandom()
-        const message1 = { key: `key-${key1}`, value: `value-${key1}` }
-
-        await producer.send({ acks: 1, topic: topicName, messages: [message1] })
-        await consumer.subscribe({ topic: topicName, fromBeginning: true })
-
-        const messagesConsumed = []
-        consumer.run({
-          autoCommit: false,
-          eachMessage: async event => messagesConsumed.push(event),
-        })
-        consumer.seek({ topic: topicName, partition: 0, offset: 100 })
-
-        await waitForConsumerToJoinGroup(consumer)
-
-        await expect(waitForMessages(messagesConsumed, { number: 1 })).resolves.toEqual([
-          {
-            topic: topicName,
-            partition: 0,
-            message: expect.objectContaining({ offset: '0' }),
-          },
-        ])
-
-        await expect(admin.fetchOffsets({ groupId, topic: topicName })).resolves.toEqual([
-          expect.objectContaining({
-            partition: 0,
-            offset: '-1',
-          }),
         ])
       })
     })
