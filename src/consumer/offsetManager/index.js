@@ -143,15 +143,6 @@ module.exports = class OffsetManager {
     const defaultOffset = this.cluster.defaultOffset(this.topicConfigurations[topic])
     const coordinator = await this.getCoordinator()
 
-    if (!this.autoCommit) {
-      this.resolveOffset({
-        topic,
-        partition,
-        offset: defaultOffset,
-      })
-      return
-    }
-
     await coordinator.offsetCommit({
       groupId,
       memberId,
