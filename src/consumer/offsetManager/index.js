@@ -256,11 +256,6 @@ module.exports = class OffsetManager {
       await coordinator.offsetCommit(payload)
       this.instrumentationEmitter.emit(COMMIT_OFFSETS, payload)
 
-      this.logger.debug('Committed offsets', {
-        topics,
-        committedOffsets: this.committedOffsets(),
-      })
-
       // Update local reference of committed offsets
       topics.forEach(({ topic, partitions }) => {
         const updatedOffsets = partitions.reduce(
