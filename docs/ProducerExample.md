@@ -50,7 +50,7 @@ run().catch(e => console.error(`[example/producer] ${e.message}`, e))
 const errorTypes = ['unhandledRejection', 'uncaughtException']
 const signalTraps = ['SIGTERM', 'SIGINT', 'SIGUSR2']
 
-errorTypes.map(type => {
+errorTypes.forEach(type => {
   process.on(type, async () => {
     try {
       console.log(`process.on ${type}`)
@@ -62,7 +62,7 @@ errorTypes.map(type => {
   })
 })
 
-signalTraps.map(type => {
+signalTraps.forEach(type => {
   process.once(type, async () => {
     try {
       await producer.disconnect()
