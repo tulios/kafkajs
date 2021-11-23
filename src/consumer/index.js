@@ -75,6 +75,7 @@ module.exports = ({
   const topics = {}
   let runner = null
   let consumerGroup = null
+  let restartTimeout
 
   if (heartbeatInterval >= sessionTimeout) {
     throw new KafkaJSNonRetriableError(
@@ -155,6 +156,8 @@ module.exports = ({
         consumerGroup = null
         instrumentationEmitter.emit(STOP)
       }
+
+      clearTimeout(restartTimeout)
 
       logger.info('Stopped', { groupId })
     } catch (e) {}
@@ -240,6 +243,7 @@ module.exports = ({
 
     const restart = onCrash => {
       consumerGroup = createConsumerGroup({
+        autoCommit,
         autoCommitInterval,
         autoCommitThreshold,
       })
@@ -292,7 +296,7 @@ module.exports = ({
           groupId,
         })
 
-        setTimeout(() => restart(onCrash), retryTime)
+        restartTimeout = setTimeout(() => restart(onCrash), retryTime)
       }
     }
 

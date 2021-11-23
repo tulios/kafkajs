@@ -1,9 +1,7 @@
 const { EventEmitter } = require('events')
 const Long = require('../utils/long')
 const createRetry = require('../retry')
-const limitConcurrency = require('../utils/concurrency')
 const { KafkaJSError } = require('../errors')
-const barrier = require('./barrier')
 
 const {
   events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS, REBALANCING },
@@ -295,14 +293,6 @@ module.exports = class Runner extends EventEmitter {
       })
     }
 
-    const { lock, unlock, unlockWithError } = barrier()
-    const concurrently = limitConcurrency({ limit: this.partitionsConsumedConcurrently })
-
-    let requestsCompleted = false
-    let numberOfExecutions = 0
-    let expectedNumberOfExecutions = 0
-    const enqueuedTasks = []
-
     while (true) {
       const result = iterator.next()
 
@@ -321,46 +311,20 @@ module.exports = class Runner extends EventEmitter {
         continue
       }
 
-      enqueuedTasks.push(async () => {
-        const batches = await result.value
-        expectedNumberOfExecutions += batches.length
+      const batches = await result.value
 
-        batches.map(batch =>
-          concurrently(async () => {
-            try {
-              if (!this.running) {
-                return
-              }
+      for (const batch of batches) {
+        if (!this.running) {
+          continue
+        }
 
-              if (batch.isEmpty()) {
-                return
-              }
+        if (batch.isEmpty()) {
+          continue
+        }
 
-              await onBatch(batch)
-              await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
-            } catch (e) {
-              unlockWithError(e)
-            } finally {
-              numberOfExecutions++
-              if (requestsCompleted && numberOfExecutions === expectedNumberOfExecutions) {
-                unlock()
-              }
-            }
-          }).catch(unlockWithError)
-        )
-      })
-    }
-
-    await Promise.all(enqueuedTasks.map(fn => fn()))
-    requestsCompleted = true
-
-    if (expectedNumberOfExecutions === numberOfExecutions) {
-      unlock()
-    }
-
-    const error = await lock
-    if (error) {
-      throw error
+        await onBatch(batch)
+        await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+      }
     }
 
     await this.autoCommitOffsets()
