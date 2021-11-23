@@ -2,7 +2,7 @@ const Long = require('../utils/long')
 const createRetry = require('../retry')
 const { initialRetryTime } = require('../retry/defaults')
 const ConsumerGroup = require('./consumerGroup')
-const Runner = require('./runner')
+const createRunnerPool = require('./runnerPool')
 const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentationEvents')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const { KafkaJSNonRetriableError } = require('../errors')
@@ -75,7 +75,7 @@ module.exports = ({
   const topics = {}
   let runner = null
   let consumerGroup = null
-  let restartTimeout
+  let restartTimeout = null
 
   if (heartbeatInterval >= sessionTimeout) {
     throw new KafkaJSNonRetriableError(
@@ -105,29 +105,6 @@ module.exports = ({
       isolationLevel,
       rackId,
       metadataMaxAge,
-    })
-  }
-
-  const createRunner = ({
-    eachBatchAutoResolve,
-    eachBatch,
-    eachMessage,
-    onCrash,
-    autoCommit,
-    partitionsConsumedConcurrently,
-  }) => {
-    return new Runner({
-      autoCommit,
-      logger: rootLogger,
-      consumerGroup,
-      instrumentationEmitter,
-      eachBatchAutoResolve,
-      eachBatch,
-      eachMessage,
-      heartbeatInterval,
-      retry,
-      onCrash,
-      partitionsConsumedConcurrently,
     })
   }
 
@@ -229,11 +206,16 @@ module.exports = ({
 
     const start = async onCrash => {
       logger.info('Starting', { groupId })
-      runner = createRunner({
+      runner = createRunnerPool({
         autoCommit,
+        logger: rootLogger,
+        consumerGroup,
+        instrumentationEmitter,
         eachBatchAutoResolve,
         eachBatch,
         eachMessage,
+        heartbeatInterval,
+        retry,
         onCrash,
         partitionsConsumedConcurrently,
       })

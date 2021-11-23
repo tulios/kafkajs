@@ -1,6 +1,6 @@
 const Runner = require('./runner')
 
-const runnerPool = ({
+const createRunnerPool = ({
   autoCommit,
   logger,
   consumerGroup,
@@ -11,12 +11,12 @@ const runnerPool = ({
   heartbeatInterval,
   retry,
   onCrash,
-  partitionsConsumedConcurrently = 1,
+  partitionsConsumedConcurrently,
 }) => {
   /** @type {Runner[]} */
   let runners = []
 
-  const createRunnerIds = () => Array.from(Array(1).keys()) // TODO: Replace with partitionsConsumedConcurrently
+  const createRunnerIds = () => Array.from(Array(partitionsConsumedConcurrently).keys())
 
   const start = async () => {
     const runnerIds = createRunnerIds()
@@ -35,7 +35,6 @@ const runnerPool = ({
           heartbeatInterval,
           retry,
           onCrash,
-          partitionsConsumedConcurrently,
         })
     )
 
@@ -55,4 +54,4 @@ const runnerPool = ({
   return { start, stop, commitOffsets }
 }
 
-module.exports = runnerPool
+module.exports = createRunnerPool

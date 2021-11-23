@@ -22,7 +22,6 @@ module.exports = class Runner extends EventEmitter {
    * @param {import("./consumerGroup")} options.consumerGroup
    * @param {import("../instrumentation/emitter")} options.instrumentationEmitter
    * @param {boolean} [options.eachBatchAutoResolve=true]
-   * @param {number} [options.partitionsConsumedConcurrently]
    * @param {(payload: import("../../types").EachBatchPayload) => Promise<void>} options.eachBatch
    * @param {(payload: import("../../types").EachMessagePayload) => Promise<void>} options.eachMessage
    * @param {number} [options.heartbeatInterval]
@@ -35,7 +34,6 @@ module.exports = class Runner extends EventEmitter {
     consumerGroup,
     instrumentationEmitter,
     eachBatchAutoResolve = true,
-    partitionsConsumedConcurrently,
     eachBatch,
     eachMessage,
     heartbeatInterval,
@@ -54,7 +52,6 @@ module.exports = class Runner extends EventEmitter {
     this.retrier = createRetry(Object.assign({}, retry))
     this.onCrash = onCrash
     this.autoCommit = autoCommit
-    this.partitionsConsumedConcurrently = partitionsConsumedConcurrently
 
     this.running = false
     this.consuming = false
