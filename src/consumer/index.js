@@ -83,7 +83,12 @@ module.exports = ({
     )
   }
 
-  const createConsumerGroup = ({ autoCommit, autoCommitInterval, autoCommitThreshold }) => {
+  const createConsumerGroup = ({
+    autoCommit,
+    autoCommitInterval,
+    autoCommitThreshold,
+    partitionsConsumedConcurrently,
+  }) => {
     return new ConsumerGroup({
       logger: rootLogger,
       topics: keys(topics),
@@ -105,6 +110,7 @@ module.exports = ({
       isolationLevel,
       rackId,
       metadataMaxAge,
+      partitionsConsumedConcurrently,
     })
   }
 
@@ -202,6 +208,7 @@ module.exports = ({
       autoCommit,
       autoCommitInterval,
       autoCommitThreshold,
+      partitionsConsumedConcurrently,
     })
 
     const start = async onCrash => {
@@ -228,6 +235,7 @@ module.exports = ({
         autoCommit,
         autoCommitInterval,
         autoCommitThreshold,
+        partitionsConsumedConcurrently,
       })
 
       start(onCrash)

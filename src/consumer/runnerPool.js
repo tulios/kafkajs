@@ -1,5 +1,14 @@
 const Runner = require('./runner')
 
+/**
+ * Pool of runners for consuming partitions concurrently.
+ *
+ * @param {object} options
+ * @param {import('./consumerGroup')} options.consumerGroup
+ * @param {(err: Error) => Promise<void>} options.onCrash
+ * @param {number} options.partitionsConsumedConcurrently
+ * @returns
+ */
 const createRunnerPool = ({
   autoCommit,
   logger,
@@ -15,11 +24,13 @@ const createRunnerPool = ({
 }) => {
   /** @type {Runner[]} */
   let runners = []
-
-  const createRunnerIds = () => Array.from(Array(partitionsConsumedConcurrently).keys())
+  let running = false
 
   const start = async () => {
-    const runnerIds = createRunnerIds()
+    if (running) return
+    running = true
+
+    const runnerIds = Array.from(Array(partitionsConsumedConcurrently).keys())
 
     runners = runnerIds.map(
       runnerId =>
@@ -42,6 +53,9 @@ const createRunnerPool = ({
   }
 
   const stop = async () => {
+    if (!running) return
+    running = false
+
     await Promise.all(runners.map(r => r.stop()))
 
     runners = []

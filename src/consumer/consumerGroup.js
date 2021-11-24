@@ -6,6 +6,7 @@ const arrayDiff = require('../utils/arrayDiff')
 const createRetry = require('../retry')
 const sharedPromiseTo = require('../utils/sharedPromiseTo')
 
+const concurrencyManager = require('./concurrencyManager')
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
@@ -64,6 +65,7 @@ module.exports = class ConsumerGroup {
     isolationLevel,
     rackId,
     metadataMaxAge,
+    partitionsConsumedConcurrently,
   }) {
     /** @type {import("../../types").Cluster} */
     this.cluster = cluster
@@ -108,6 +110,7 @@ module.exports = class ConsumerGroup {
     this.preferredReadReplicasPerTopicPartition = {}
     this.offsetManager = null
     this.subscriptionState = new SubscriptionState()
+    this.concurrencyManager = concurrencyManager({ concurrency: partitionsConsumedConcurrently })
 
     this.lastRequest = Date.now()
 
@@ -303,6 +306,10 @@ module.exports = class ConsumerGroup {
       groupId,
       generationId,
       memberId,
+    })
+    this.concurrencyManager.assign({
+      assignment: currentMemberAssignment,
+      findReadReplicaForPartitions: this.findReadReplicaForPartitions,
     })
   }
 
