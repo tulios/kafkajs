@@ -479,9 +479,14 @@ export type Admin = {
   createAcls(options: { acl: AclEntry[] }): Promise<boolean>
   deleteTopicRecords(options: { topic: string; partitions: SeekEntry[] }): Promise<void>
   logger(): Logger
+  on(eventName: AdminEvents['CONNECT'], listener: (event: ConnectEvent) => void): RemoveInstrumentationEventListener<typeof eventName>;
+  on(eventName: AdminEvents['DISCONNECT'], listener: (event: DisconnectEvent) => void): RemoveInstrumentationEventListener<typeof eventName>;
+  on(eventName: AdminEvents['REQUEST'], listener: (event: RequestEvent) => void): RemoveInstrumentationEventListener<typeof eventName>;
+  on(eventName: AdminEvents['REQUEST_QUEUE_SIZE'], listener: (event: RequestQueueSizeEvent) => void): RemoveInstrumentationEventListener<typeof eventName>;
+  on(eventName: AdminEvents['REQUEST_TIMEOUT'], listener: (event: RequestTimeoutEvent) => void): RemoveInstrumentationEventListener<typeof eventName>;
   on(
     eventName: ValueOf<AdminEvents>,
-    listener: (...args: any[]) => void
+    listener: (event: InstrumentationEvent<any>) => void
   ): RemoveInstrumentationEventListener<typeof eventName>
   readonly events: AdminEvents
 }
@@ -679,9 +684,14 @@ export type Producer = Sender & {
   disconnect(): Promise<void>
   isIdempotent(): boolean
   readonly events: ProducerEvents
+  on(eventName: ProducerEvents['CONNECT'], listener: (event: ConnectEvent) => void): RemoveInstrumentationEventListener<typeof eventName>;
+  on(eventName: ProducerEvents['DISCONNECT'], listener: (event: DisconnectEvent) => void): RemoveInstrumentationEventListener<typeof eventName>;
+  on(eventName: ProducerEvents['REQUEST'], listener: (event: RequestEvent) => void): RemoveInstrumentationEventListener<typeof eventName>;
+  on(eventName: ProducerEvents['REQUEST_QUEUE_SIZE'], listener: (event: RequestQueueSizeEvent) => void): RemoveInstrumentationEventListener<typeof eventName>;
+  on(eventName: ProducerEvents['REQUEST_TIMEOUT'], listener: (event: RequestTimeoutEvent) => void): RemoveInstrumentationEventListener<typeof eventName>;
   on(
     eventName: ValueOf<ProducerEvents>,
-    listener: (...args: any[]) => void
+    listener: (event: InstrumentationEvent<any>) => void
   ): RemoveInstrumentationEventListener<typeof eventName>
   transaction(): Promise<Transaction>
   logger(): Logger
@@ -896,9 +906,25 @@ export type Consumer = {
   pause(topics: Array<{ topic: string; partitions?: number[] }>): void
   paused(): TopicPartitions[]
   resume(topics: Array<{ topic: string; partitions?: number[] }>): void
+  on(eventName: ConsumerEvents['HEARTBEAT'], listener: (event: ConsumerHeartbeatEvent) => void): RemoveInstrumentationEventListener<typeof eventName>
+  on(eventName: ConsumerEvents['COMMIT_OFFSETS'], listener: (event: ConsumerCommitOffsetsEvent) => void): RemoveInstrumentationEventListener<typeof eventName>
+  on(eventName: ConsumerEvents['GROUP_JOIN'], listener: (event: ConsumerGroupJoinEvent) => void): RemoveInstrumentationEventListener<typeof eventName>
+  on(eventName: ConsumerEvents['FETCH_START'], listener: (event: InstrumentationEvent<{}>) => void): RemoveInstrumentationEventListener<typeof eventName>
+  on(eventName: ConsumerEvents['FETCH'], listener: (event: ConsumerFetchEvent) => void): RemoveInstrumentationEventListener<typeof eventName>
+  on(eventName: ConsumerEvents['START_BATCH_PROCESS'], listener: (event: ConsumerStartBatchProcessEvent) => void): RemoveInstrumentationEventListener<typeof eventName>
+  on(eventName: ConsumerEvents['END_BATCH_PROCESS'], listener: (event: ConsumerEndBatchProcessEvent) => void): RemoveInstrumentationEventListener<typeof eventName>
+  on(eventName: ConsumerEvents['CONNECT'], listener: (event: ConnectEvent) => void): RemoveInstrumentationEventListener<typeof eventName>
+  on(eventName: ConsumerEvents['DISCONNECT'], listener: (event: DisconnectEvent) => void): RemoveInstrumentationEventListener<typeof eventName>
+  on(eventName: ConsumerEvents['STOP'], listener: (event: InstrumentationEvent<null>) => void): RemoveInstrumentationEventListener<typeof eventName>
+  on(eventName: ConsumerEvents['CRASH'], listener: (event: ConsumerCrashEvent) => void): RemoveInstrumentationEventListener<typeof eventName>
+  on(eventName: ConsumerEvents['REBALANCING'], listener: (event: ConsumerRebalancingEvent) => void): RemoveInstrumentationEventListener<typeof eventName>
+  on(eventName: ConsumerEvents['RECEIVED_UNSUBSCRIBED_TOPICS'], listener: (event: ConsumerReceivedUnsubcribedTopicsEvent) => void): RemoveInstrumentationEventListener<typeof eventName>
+  on(eventName: ConsumerEvents['REQUEST'], listener: (event: RequestEvent) => void): RemoveInstrumentationEventListener<typeof eventName>
+  on(eventName: ConsumerEvents['REQUEST_TIMEOUT'], listener: (event: RequestTimeoutEvent) => void): RemoveInstrumentationEventListener<typeof eventName>
+  on(eventName: ConsumerEvents['REQUEST_QUEUE_SIZE'], listener: (event: RequestQueueSizeEvent) => void): RemoveInstrumentationEventListener<typeof eventName>
   on(
     eventName: ValueOf<ConsumerEvents>,
-    listener: (...args: any[]) => void
+    listener: (event: InstrumentationEvent<any>) => void
   ): RemoveInstrumentationEventListener<typeof eventName>
   logger(): Logger
   readonly events: ConsumerEvents
