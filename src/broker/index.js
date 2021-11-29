@@ -10,11 +10,21 @@ const shuffle = require('../utils/shuffle')
 const PRIVATE = {
   SHOULD_REAUTHENTICATE: Symbol('private:Broker:shouldReauthenticate'),
   SEND_REQUEST: Symbol('private:Broker:sendRequest'),
+  AUTHENTICATE: Symbol('private:Broker:authenticate'),
 }
 
 /** @type {import("../protocol/requests").Lookup} */
 const notInitializedLookup = () => {
   throw new Error('Broker not connected')
+}
+
+/**
+ * @param request - request from protocol
+ * @returns {boolean}
+ */
+const isVersionsRequest = request => {
+  const possibleVersionsProtocol = requests.ApiVersions.protocol({ version: request.apiVersion })
+  return possibleVersionsProtocol && possibleVersionsProtocol().request.apiName === request.apiName
 }
 
 /**
@@ -63,12 +73,17 @@ module.exports = class Broker {
 
     // The lock timeout has twice the connectionTimeout because the same timeout is used
     // for the first apiVersions call
-    const lockTimeout = 2 * this.connection.connectionTimeout + this.authenticationTimeout
+    const lockTimeout = 2 * this.connection.connectionTimeout
     this.brokerAddress = `${this.connection.host}:${this.connection.port}`
 
     this.lock = new Lock({
       timeout: lockTimeout,
       description: `connect to broker ${this.brokerAddress}`,
+    })
+
+    this.authLock = new Lock({
+      timeout: this.authenticationTimeout,
+      description: `authentication to broker ${this.brokerAddress}`,
     })
 
     this.lookupRequest = notInitializedLookup
@@ -110,7 +125,7 @@ module.exports = class Broker {
       }
 
       this.lookupRequest = lookup(this.versions)
-      await this.authenticate()
+      await this[PRIVATE.AUTHENTICATE]()
     } finally {
       await this.lock.release()
     }
@@ -120,35 +135,40 @@ module.exports = class Broker {
    * @private
    * @returns {Promise}
    */
-  async authenticate() {
-    if (this.supportAuthenticationProtocol === null) {
-      try {
-        this.lookupRequest(apiKeys.SaslAuthenticate, requests.SaslAuthenticate)
-        this.supportAuthenticationProtocol = true
-      } catch (_) {
-        this.supportAuthenticationProtocol = false
+  async [PRIVATE.AUTHENTICATE]() {
+    try {
+      await this.authLock.acquire()
+      if (this.supportAuthenticationProtocol === null) {
+        try {
+          this.lookupRequest(apiKeys.SaslAuthenticate, requests.SaslAuthenticate)
+          this.supportAuthenticationProtocol = true
+        } catch (_) {
+          this.supportAuthenticationProtocol = false
+        }
+
+        this.logger.debug(`Verified support for SaslAuthenticate`, {
+          broker: this.brokerAddress,
+          supportAuthenticationProtocol: this.supportAuthenticationProtocol,
+        })
       }
 
-      this.logger.debug(`Verified support for SaslAuthenticate`, {
-        broker: this.brokerAddress,
-        supportAuthenticationProtocol: this.supportAuthenticationProtocol,
-      })
-    }
+      if (
+        (this.authenticatedAt == null || this[PRIVATE.SHOULD_REAUTHENTICATE]()) &&
+        this.connection.sasl
+      ) {
+        const authenticator = new SASLAuthenticator(
+          this.connection,
+          this.rootLogger,
+          this.versions,
+          this.supportAuthenticationProtocol
+        )
 
-    if (
-      (this.authenticatedAt == null || this[PRIVATE.SHOULD_REAUTHENTICATE]()) &&
-      this.connection.sasl
-    ) {
-      const authenticator = new SASLAuthenticator(
-        this.connection,
-        this.rootLogger,
-        this.versions,
-        this.supportAuthenticationProtocol
-      )
-
-      await authenticator.authenticate()
-      this.authenticatedAt = process.hrtime()
-      this.sessionLifetime = Long.fromValue(authenticator.sessionLifetime)
+        await authenticator.authenticate()
+        this.authenticatedAt = process.hrtime()
+        this.sessionLifetime = Long.fromValue(authenticator.sessionLifetime)
+      }
+    } finally {
+      await this.authLock.release()
     }
   }
 
@@ -378,9 +398,6 @@ module.exports = class Broker {
    * @returns {Promise}
    */
   async heartbeat({ groupId, groupGenerationId, memberId }) {
-    if (!this.isAuthenticated()) {
-      await this.authenticate()
-    }
     const heartbeat = this.lookupRequest(apiKeys.Heartbeat, requests.Heartbeat)
     return await this[PRIVATE.SEND_REQUEST](heartbeat({ groupId, groupGenerationId, memberId }))
   }
@@ -934,6 +951,9 @@ module.exports = class Broker {
    * @private
    */
   async [PRIVATE.SEND_REQUEST](protocolRequest) {
+    if (!this.isAuthenticated() && !isVersionsRequest(protocolRequest.request)) {
+      await this[PRIVATE.AUTHENTICATE]()
+    }
     try {
       return await this.connection.send(protocolRequest)
     } catch (e) {
