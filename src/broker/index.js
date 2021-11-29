@@ -6,6 +6,7 @@ const { KafkaJSNonRetriableError } = require('../errors')
 const apiKeys = require('../protocol/requests/apiKeys')
 const SASLAuthenticator = require('./saslAuthenticator')
 const shuffle = require('../utils/shuffle')
+const { ApiVersions: apiVersionsApiKey } = require('../protocol/requests/apiKeys')
 
 const PRIVATE = {
   SHOULD_REAUTHENTICATE: Symbol('private:Broker:shouldReauthenticate'),
@@ -22,9 +23,8 @@ const notInitializedLookup = () => {
  * @param request - request from protocol
  * @returns {boolean}
  */
-const isVersionsRequest = request => {
-  const possibleVersionsProtocol = requests.ApiVersions.protocol({ version: request.apiVersion })
-  return possibleVersionsProtocol && possibleVersionsProtocol().request.apiName === request.apiName
+const isAuthenticatedRequest = request => {
+  return request.apiKey !== apiVersionsApiKey
 }
 
 /**
@@ -73,7 +73,7 @@ module.exports = class Broker {
 
     // The lock timeout has twice the connectionTimeout because the same timeout is used
     // for the first apiVersions call
-    const lockTimeout = 2 * this.connection.connectionTimeout
+    const lockTimeout = 2 * this.connection.connectionTimeout + this.authenticationTimeout
     this.brokerAddress = `${this.connection.host}:${this.connection.port}`
 
     this.lock = new Lock({
@@ -951,10 +951,10 @@ module.exports = class Broker {
    * @private
    */
   async [PRIVATE.SEND_REQUEST](protocolRequest) {
-    if (!this.isAuthenticated() && !isVersionsRequest(protocolRequest.request)) {
-      await this[PRIVATE.AUTHENTICATE]()
-    }
     try {
+      if (!this.isAuthenticated() && isAuthenticatedRequest(protocolRequest.request)) {
+        await this[PRIVATE.AUTHENTICATE]()
+      }
       return await this.connection.send(protocolRequest)
     } catch (e) {
       if (e.name === 'KafkaJSConnectionClosedError') {
