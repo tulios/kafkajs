@@ -78,10 +78,17 @@ module.exports = class Broker {
    * @public
    * @returns {boolean}
    */
+  isAuthenticated() {
+    return this.authenticatedAt != null && !this[PRIVATE.SHOULD_REAUTHENTICATE]()
+  }
+
+  /**
+   * @public
+   * @returns {boolean}
+   */
   isConnected() {
     const { connected, sasl } = this.connection
-    const isAuthenticated = this.authenticatedAt != null && !this[PRIVATE.SHOULD_REAUTHENTICATE]()
-    return sasl ? connected && isAuthenticated : connected
+    return sasl ? connected && this.isAuthenticated() : connected
   }
 
   /**
@@ -103,35 +110,45 @@ module.exports = class Broker {
       }
 
       this.lookupRequest = lookup(this.versions)
-
-      if (this.supportAuthenticationProtocol === null) {
-        try {
-          this.lookupRequest(apiKeys.SaslAuthenticate, requests.SaslAuthenticate)
-          this.supportAuthenticationProtocol = true
-        } catch (_) {
-          this.supportAuthenticationProtocol = false
-        }
-
-        this.logger.debug(`Verified support for SaslAuthenticate`, {
-          broker: this.brokerAddress,
-          supportAuthenticationProtocol: this.supportAuthenticationProtocol,
-        })
-      }
-
-      if (this.authenticatedAt == null && this.connection.sasl) {
-        const authenticator = new SASLAuthenticator(
-          this.connection,
-          this.rootLogger,
-          this.versions,
-          this.supportAuthenticationProtocol
-        )
-
-        await authenticator.authenticate()
-        this.authenticatedAt = process.hrtime()
-        this.sessionLifetime = Long.fromValue(authenticator.sessionLifetime)
-      }
+      await this.authenticate()
     } finally {
       await this.lock.release()
+    }
+  }
+
+  /**
+   * @private
+   * @returns {Promise}
+   */
+  async authenticate() {
+    if (this.supportAuthenticationProtocol === null) {
+      try {
+        this.lookupRequest(apiKeys.SaslAuthenticate, requests.SaslAuthenticate)
+        this.supportAuthenticationProtocol = true
+      } catch (_) {
+        this.supportAuthenticationProtocol = false
+      }
+
+      this.logger.debug(`Verified support for SaslAuthenticate`, {
+        broker: this.brokerAddress,
+        supportAuthenticationProtocol: this.supportAuthenticationProtocol,
+      })
+    }
+
+    if (
+      (this.authenticatedAt == null || this[PRIVATE.SHOULD_REAUTHENTICATE]()) &&
+      this.connection.sasl
+    ) {
+      const authenticator = new SASLAuthenticator(
+        this.connection,
+        this.rootLogger,
+        this.versions,
+        this.supportAuthenticationProtocol
+      )
+
+      await authenticator.authenticate()
+      this.authenticatedAt = process.hrtime()
+      this.sessionLifetime = Long.fromValue(authenticator.sessionLifetime)
     }
   }
 
@@ -361,6 +378,9 @@ module.exports = class Broker {
    * @returns {Promise}
    */
   async heartbeat({ groupId, groupGenerationId, memberId }) {
+    if (!this.isAuthenticated()) {
+      await this.authenticate()
+    }
     const heartbeat = this.lookupRequest(apiKeys.Heartbeat, requests.Heartbeat)
     return await this[PRIVATE.SEND_REQUEST](heartbeat({ groupId, groupGenerationId, memberId }))
   }
