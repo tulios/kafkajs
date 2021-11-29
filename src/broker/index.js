@@ -951,10 +951,10 @@ module.exports = class Broker {
    * @private
    */
   async [PRIVATE.SEND_REQUEST](protocolRequest) {
+    if (!this.isAuthenticated() && isAuthenticatedRequest(protocolRequest.request)) {
+      await this[PRIVATE.AUTHENTICATE]()
+    }
     try {
-      if (!this.isAuthenticated() && isAuthenticatedRequest(protocolRequest.request)) {
-        await this[PRIVATE.AUTHENTICATE]()
-      }
       return await this.connection.send(protocolRequest)
     } catch (e) {
       if (e.name === 'KafkaJSConnectionClosedError') {
