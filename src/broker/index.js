@@ -7,6 +7,7 @@ const apiKeys = require('../protocol/requests/apiKeys')
 const SASLAuthenticator = require('./saslAuthenticator')
 const shuffle = require('../utils/shuffle')
 const { ApiVersions: apiVersionsApiKey } = require('../protocol/requests/apiKeys')
+const sharedPromiseTo = require('../utils/sharedPromiseTo')
 
 const PRIVATE = {
   SHOULD_REAUTHENTICATE: Symbol('private:Broker:shouldReauthenticate'),
@@ -88,6 +89,31 @@ module.exports = class Broker {
     })
 
     this.lookupRequest = notInitializedLookup
+
+    /**
+     * @private
+     * @returns {Promise}
+     */
+    this[PRIVATE.AUTHENTICATE] = sharedPromiseTo(async () => {
+      try {
+        await this.authLock.acquire()
+
+        if (this.connection.sasl && !this.isAuthenticated()) {
+          const authenticator = new SASLAuthenticator(
+            this.connection,
+            this.rootLogger,
+            this.versions,
+            this.supportAuthenticationProtocol
+          )
+
+          await authenticator.authenticate()
+          this.authenticatedAt = process.hrtime()
+          this.sessionLifetime = Long.fromValue(authenticator.sessionLifetime)
+        }
+      } finally {
+        await this.authLock.release()
+      }
+    })
   }
 
   /**
@@ -126,19 +152,7 @@ module.exports = class Broker {
       }
 
       this.lookupRequest = lookup(this.versions)
-      await this[PRIVATE.AUTHENTICATE]()
-    } finally {
-      await this.lock.release()
-    }
-  }
 
-  /**
-   * @private
-   * @returns {Promise}
-   */
-  async [PRIVATE.AUTHENTICATE]() {
-    try {
-      await this.authLock.acquire()
       if (this.supportAuthenticationProtocol === null) {
         try {
           this.lookupRequest(apiKeys.SaslAuthenticate, requests.SaslAuthenticate)
@@ -153,23 +167,9 @@ module.exports = class Broker {
         })
       }
 
-      if (
-        (this.authenticatedAt == null || this[PRIVATE.SHOULD_REAUTHENTICATE]()) &&
-        this.connection.sasl
-      ) {
-        const authenticator = new SASLAuthenticator(
-          this.connection,
-          this.rootLogger,
-          this.versions,
-          this.supportAuthenticationProtocol
-        )
-
-        await authenticator.authenticate()
-        this.authenticatedAt = process.hrtime()
-        this.sessionLifetime = Long.fromValue(authenticator.sessionLifetime)
-      }
+      await this[PRIVATE.AUTHENTICATE]()
     } finally {
-      await this.authLock.release()
+      await this.lock.release()
     }
   }
 
