@@ -49,6 +49,9 @@ const createRunnerPool = ({
         })
     )
 
+    await consumerGroup.connect()
+    await consumerGroup.joinAndSync()
+
     await Promise.all(runners.map(r => r.start()))
   }
 
@@ -57,8 +60,9 @@ const createRunnerPool = ({
     running = false
 
     await Promise.all(runners.map(r => r.stop()))
-
     runners = []
+
+    await consumerGroup.leave()
   }
 
   const commitOffsets = async offsets => {

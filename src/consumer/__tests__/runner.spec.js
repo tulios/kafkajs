@@ -148,7 +148,7 @@ describe('Consumer > Runner', () => {
         onCrash,
         logger: newLogger(),
       })
-      runner.scheduleFetch = jest.fn(() => runner.fetch())
+      runner.scheduleConsume = jest.fn(() => runner.fetch())
     })
 
     it('does not call resolveOffset with the last offset', async () => {
@@ -183,7 +183,7 @@ describe('Consumer > Runner', () => {
         autoCommit: false,
         logger: newLogger(),
       })
-      runner.scheduleFetch = jest.fn(() => runner.fetch())
+      runner.scheduleConsume = jest.fn(() => runner.fetch())
     })
 
     it('should not commit offsets during fetch', async () => {

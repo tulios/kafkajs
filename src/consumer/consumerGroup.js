@@ -1,18 +1,23 @@
-const flatten = require('../utils/flatten')
 const sleep = require('../utils/sleep')
-const BufferedAsyncIterator = require('../utils/bufferedAsyncIterator')
 const websiteUrl = require('../utils/websiteUrl')
 const arrayDiff = require('../utils/arrayDiff')
 const createRetry = require('../retry')
 const sharedPromiseTo = require('../utils/sharedPromiseTo')
 
-const concurrencyManager = require('./concurrencyManager')
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
 const SubscriptionState = require('./subscriptionState')
 const {
-  events: { GROUP_JOIN, HEARTBEAT, CONNECT, RECEIVED_UNSUBSCRIBED_TOPICS },
+  events: {
+    GROUP_JOIN,
+    HEARTBEAT,
+    CONNECT,
+    RECEIVED_UNSUBSCRIBED_TOPICS,
+    FETCH_START,
+    FETCH,
+    REBALANCING,
+  },
 } = require('./instrumentationEvents')
 const { MemberAssignment } = require('./assignerProtocol')
 const {
@@ -20,6 +25,7 @@ const {
   KafkaJSNonRetriableError,
   KafkaJSStaleTopicMetadataAssignment,
 } = require('../errors')
+const fetcherPool = require('./fetcherPool')
 
 const { keys } = Object
 
@@ -110,7 +116,7 @@ module.exports = class ConsumerGroup {
     this.preferredReadReplicasPerTopicPartition = {}
     this.offsetManager = null
     this.subscriptionState = new SubscriptionState()
-    this.concurrencyManager = concurrencyManager({ concurrency: partitionsConsumedConcurrently })
+    this.fetcher = fetcherPool()
 
     this.lastRequest = Date.now()
 
@@ -168,6 +174,9 @@ module.exports = class ConsumerGroup {
 
   async leave() {
     const { groupId, memberId } = this
+
+    this.fetcher.stop()
+
     if (memberId) {
       await this.coordinator.leaveGroup({ groupId, memberId })
       this.memberId = null
@@ -307,9 +316,11 @@ module.exports = class ConsumerGroup {
       generationId,
       memberId,
     })
-    this.concurrencyManager.assign({
-      assignment: currentMemberAssignment,
-      findReadReplicaForPartitions: this.findReadReplicaForPartitions,
+
+    this.fetcher.stop()
+    this.fetcher = fetcherPool({
+      nodeIds: this.cluster.getNodeIds(),
+      fetch: this.fetch,
     })
   }
 
@@ -414,109 +425,65 @@ module.exports = class ConsumerGroup {
     return this[PRIVATE.SHAREDHEARTBEAT]({ interval })
   }
 
-  async fetch() {
-    try {
-      const { topics, maxBytesPerPartition, maxWaitTime, minBytes, maxBytes } = this
-      /** @type {{[nodeId: string]: {topic: string, partitions: { partition: number; fetchOffset: string; maxBytes: number }[]}[]}} */
-      const requestsPerNode = {}
+  createRequests({ nodeId }) {
+    /** @type {{topic: string, partitions: { partition: number; fetchOffset: string; maxBytes: number }[]}[]} */
+    const requests = []
 
-      await this.cluster.refreshMetadataIfNecessary()
-      this.checkForStaleAssignment()
+    const topicPartitions = this.subscriptionState.active()
 
-      while (this.seekOffset.size > 0) {
-        const seekEntry = this.seekOffset.pop()
-        this.logger.debug('Seek offset', {
-          groupId: this.groupId,
-          memberId: this.memberId,
-          seek: seekEntry,
-        })
-        await this.offsetManager.seek(seekEntry)
+    topicPartitions.forEach(({ topic, partitions: activePartitions }) => {
+      const nodePartitions = this.findReadReplicaForPartitions(topic, activePartitions)
+      const partitions = nodePartitions[nodeId]
+      if (!partitions || !partitions.length) {
+        return
       }
+      requests.push({ topic, partitions })
+    })
 
-      const pausedTopicPartitions = this.subscriptionState.paused()
-      const activeTopicPartitions = this.subscriptionState.active()
+    return requests
+  }
 
-      const activePartitions = flatten(activeTopicPartitions.map(({ partitions }) => partitions))
-      const activeTopics = activeTopicPartitions
-        .filter(({ partitions }) => partitions.length > 0)
-        .map(({ topic }) => topic)
+  async fetch(nodeId) {
+    return this.retrier(async (bail, retryCount, retryTime) => {
+      try {
+        const startFetch = Date.now()
 
-      if (activePartitions.length === 0) {
-        this.logger.debug(`No active topic partitions, sleeping for ${this.maxWaitTime}ms`, {
-          topics,
-          activeTopicPartitions,
-          pausedTopicPartitions,
-        })
+        this.instrumentationEmitter.emit(FETCH_START, {})
 
-        await sleep(this.maxWaitTime)
-        return BufferedAsyncIterator([])
-      }
+        const requests = this.createRequests({ nodeId })
 
-      await this.offsetManager.resolveOffsets()
-
-      this.logger.debug(
-        `Fetching from ${activePartitions.length} partitions for ${activeTopics.length} out of ${topics.length} topics`,
-        {
-          topics,
-          activeTopicPartitions,
-          pausedTopicPartitions,
+        if (!requests.length) {
+          await sleep(this.maxWaitTime)
+          return []
         }
-      )
 
-      for (const topicPartition of activeTopicPartitions) {
-        const partitionsPerNode = this.findReadReplicaForPartitions(
-          topicPartition.topic,
-          topicPartition.partitions
-        )
-
-        const nodeIds = keys(partitionsPerNode)
-        const committedOffsets = this.offsetManager.committedOffsets()
-
-        for (const nodeId of nodeIds) {
-          const partitions = partitionsPerNode[nodeId]
-            .filter(partition => {
-              /**
-               * When recovering from OffsetOutOfRange, each partition can recover
-               * concurrently, which invalidates resolved and committed offsets as part
-               * of the recovery mechanism (see OffsetManager.clearOffsets). In concurrent
-               * scenarios this can initiate a new fetch with invalid offsets.
-               *
-               * This was further highlighted by https://github.com/tulios/kafkajs/pull/570,
-               * which increased concurrency, making this more likely to happen.
-               *
-               * This is solved by only making requests for partitions with initialized offsets.
-               *
-               * See the following pull request which explains the context of the problem:
-               * @issue https://github.com/tulios/kafkajs/pull/578
-               */
-              return committedOffsets[topicPartition.topic][partition] != null
-            })
-            .map(partition => ({
-              partition,
-              fetchOffset: this.offsetManager
-                .nextOffset(topicPartition.topic, partition)
-                .toString(),
-              maxBytes: maxBytesPerPartition,
-            }))
-
-          requestsPerNode[nodeId] = requestsPerNode[nodeId] || []
-          requestsPerNode[nodeId].push({ topic: topicPartition.topic, partitions })
-        }
-      }
-
-      const requests = keys(requestsPerNode).map(async nodeId => {
         const broker = await this.cluster.findBroker({ nodeId })
+
         const { responses } = await broker.fetch({
-          maxWaitTime,
-          minBytes,
-          maxBytes,
+          maxWaitTime: this.maxWaitTime,
+          minBytes: this.minBytes,
+          maxBytes: this.maxBytes,
           isolationLevel: this.isolationLevel,
-          topics: requestsPerNode[nodeId],
+          topics: requests,
           rackId: this.rackId,
         })
 
-        const batchesPerPartition = responses.map(({ topicName, partitions }) => {
-          const topicRequestData = requestsPerNode[nodeId].find(({ topic }) => topic === topicName)
+        this.instrumentationEmitter.emit(FETCH, {
+          /**
+           * PR #570 removed support for the number of batches in this instrumentation event;
+           * The new implementation uses an async generation to deliver the batches, which makes
+           * this number impossible to get. The number is set to 0 to keep the event backward
+           * compatible until we bump KafkaJS to version 2, following the end of node 8 LTS.
+           *
+           * @since 2019-11-29
+           */
+          numberOfBatches: 0,
+          duration: Date.now() - startFetch,
+        })
+
+        return responses.flatMap(({ topicName, partitions }) => {
+          const topicRequestData = requests[nodeId].find(({ topic }) => topic === topicName)
+
           let preferredReadReplicas = this.preferredReadReplicasPerTopicPartition[topicName]
           if (!preferredReadReplicas) {
             this.preferredReadReplicasPerTopicPartition[topicName] = preferredReadReplicas = {}
@@ -524,12 +491,13 @@ module.exports = class ConsumerGroup {
 
           return partitions
             .filter(
-              partitionData =>
-                !this.seekOffset.has(topicName, partitionData.partition) &&
-                !this.subscriptionState.isPaused(topicName, partitionData.partition)
+              ({ partition }) =>
+                !this.seekOffset.has(topicName, partition) &&
+                !this.subscriptionState.isPaused(topicName, partition)
             )
             .map(partitionData => {
               const { partition, preferredReadReplica } = partitionData
+
               if (preferredReadReplica != null && preferredReadReplica !== -1) {
                 const { nodeId: currentPreferredReadReplica } =
                   preferredReadReplicas[partition] || {}
@@ -571,22 +539,58 @@ module.exports = class ConsumerGroup {
               return batch
             })
         })
+      } catch (e) {
+        const { groupId, memberId } = this
 
-        return flatten(batchesPerPartition)
-      })
+        if (isRebalancing(e)) {
+          this.logger.error('The group is rebalancing, re-joining', {
+            groupId,
+            memberId,
+            error: e.message,
+            retryCount,
+            retryTime,
+          })
 
-      // fetch can generate empty requests when the consumer group receives an assignment
-      // with more topics than the subscribed, so to prevent a busy loop we wait the
-      // configured max wait time
-      if (requests.length === 0) {
-        await sleep(this.maxWaitTime)
-        return BufferedAsyncIterator([])
+          this.instrumentationEmitter.emit(REBALANCING, { groupId, memberId })
+
+          await this.joinAndSync()
+          return this.fetch(nodeId)
+        }
+
+        if (e.type === 'UNKNOWN_MEMBER_ID') {
+          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
+            groupId,
+            memberId,
+            error: e.message,
+            retryCount,
+            retryTime,
+          })
+
+          this.memberId = null
+          await this.joinAndSync()
+          return this.fetch(nodeId)
+        }
+
+        if (e.name === 'KafkaJSOffsetOutOfRange') {
+          return this.fetch(nodeId)
+        }
+
+        if (e.name === 'KafkaJSNotImplemented') {
+          return bail(e)
+        }
+
+        this.logger.debug('Error while fetching data, trying again...', {
+          groupId: this.consumerGroup.groupId,
+          memberId: this.consumerGroup.memberId,
+          error: e.message,
+          stack: e.stack,
+          retryCount,
+          retryTime,
+        })
+
+        throw e
       }
-
-      return BufferedAsyncIterator(requests, e => this.recoverFromFetch(e))
-    } catch (e) {
-      await this.recoverFromFetch(e)
-    }
+    })
   }
 
   async recoverFromFetch(e) {
