@@ -14,8 +14,8 @@ describe('Admin', () => {
   })
 
   afterEach(async () => {
-    consumer && (await consumer.disconnect())
     admin && (await admin.disconnect())
+    consumer && (await consumer.disconnect())
   })
 
   describe('setOffsets', () => {

@@ -108,9 +108,9 @@ describe('Admin > deleteTopicRecords', () => {
   })
 
   afterEach(async () => {
-    consumer && (await consumer.disconnect())
     producer && (await producer.disconnect())
     admin && (await admin.disconnect())
+    consumer && (await consumer.disconnect())
     jest.resetAllMocks()
     brokerSpy && brokerSpy.mockRestore()
     metadataSpy && metadataSpy.mockRestore()

@@ -3,6 +3,9 @@ const { EventEmitter } = require('stream')
 const fetcher = ({ nodeId, emitter: poolEmitter, fetch, logger: rootLogger }) => {
   const logger = rootLogger.namespace('Fetcher')
   const emitter = new EventEmitter()
+  emitter.on('batch', () => {
+    poolEmitter.emit('batch', { nodeId })
+  })
   const interval = setInterval(() => {}, 1000) // TODO: Hack. Throw away
   const queue = []
   let isFetching = false
@@ -19,11 +22,7 @@ const fetcher = ({ nodeId, emitter: poolEmitter, fetch, logger: rootLogger }) =>
 
     isFetching = false
 
-    poolEmitter.emit('batch', { nodeId })
-
-    if (!isRunning) {
-      emitter.emit('finished')
-    }
+    emitter.emit('batch')
   }
 
   const stop = async () => {
@@ -32,7 +31,7 @@ const fetcher = ({ nodeId, emitter: poolEmitter, fetch, logger: rootLogger }) =>
 
     await new Promise(resolve => {
       if (!isFetching) return resolve()
-      emitter.once('finished', () => resolve())
+      emitter.once('batch', () => resolve())
     })
 
     clearInterval(interval) // TODO: Hack. Throw away

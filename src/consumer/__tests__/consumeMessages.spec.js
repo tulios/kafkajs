@@ -52,9 +52,9 @@ describe('Consumer', () => {
   })
 
   afterEach(async () => {
+    admin && (await admin.disconnect())
     consumer && (await consumer.disconnect())
     producer && (await producer.disconnect())
-    admin && (await admin.disconnect())
   })
 
   it('consume messages', async () => {

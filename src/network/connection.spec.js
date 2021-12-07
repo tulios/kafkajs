@@ -86,9 +86,11 @@ describe('Network > Connection', () => {
       expect(connection.connected).toEqual(false)
       connection.socket = {
         end: jest.fn(),
+        unref: jest.fn(),
       }
       await expect(connection.disconnect()).resolves.toEqual(true)
       expect(connection.socket.end).toHaveBeenCalled()
+      expect(connection.socket.unref).toHaveBeenCalled()
     })
   })
 

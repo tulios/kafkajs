@@ -103,13 +103,14 @@ describe('Consumer', () => {
       })
 
       await waitForConsumerToJoinGroup(consumer)
-      await expect(waitForMessages(offsetsConsumed, { number: 3 })).resolves.toEqual([
+      await expect(waitForMessages(offsetsConsumed, { number: 6 })).resolves.toEqual([
+        '0',
+        '1',
+        '2',
         '0',
         '1',
         '2',
       ])
-
-      await waitForMessages(offsetsConsumed, { number: 3 })
 
       expect(cluster.committedOffsets({ groupId })[topicName][0].toString()).toEqual('1')
     })

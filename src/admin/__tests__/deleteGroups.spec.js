@@ -63,9 +63,9 @@ describe('Admin', () => {
 
   afterEach(async () => {
     // Checking that they exist first, in case the test is skipped or failed before instantiating the admin/consumer
+    admin && (await admin.disconnect())
     consumer && (await consumer.disconnect())
     producer && (await producer.disconnect())
-    admin && (await admin.disconnect())
   })
 
   describe('deleteGroups', () => {

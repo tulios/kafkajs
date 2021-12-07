@@ -65,7 +65,7 @@ describe('Consumer > Runner', () => {
         })
         .mockImplementationOnce(() => true)
 
-      runner.scheduleFetch = jest.fn()
+      runner.scheduleConsume = jest.fn()
       await runner.start()
       expect(runner.scheduleFetch).toHaveBeenCalled()
       expect(onCrash).not.toHaveBeenCalled()
@@ -82,9 +82,9 @@ describe('Consumer > Runner', () => {
     consumerGroup.fetch.mockImplementationOnce(() =>
       BufferedAsyncIterator([Promise.resolve([batch])])
     )
-    runner.scheduleFetch = jest.fn()
+    runner.scheduleConsume = jest.fn()
     await runner.start()
-    await runner.fetch() // Manually fetch for test
+    await runner.consume() // Manually fetch for test
     expect(eachBatch).toHaveBeenCalled()
     expect(consumerGroup.commitOffsets).toHaveBeenCalled()
     expect(onCrash).not.toHaveBeenCalled()
@@ -101,9 +101,9 @@ describe('Consumer > Runner', () => {
       consumerGroup.fetch.mockImplementationOnce(() =>
         BufferedAsyncIterator([Promise.resolve([batch])])
       )
-      runner.scheduleFetch = jest.fn()
+      runner.scheduleConsume = jest.fn()
       await runner.start()
-      await runner.fetch() // Manually fetch for test
+      await runner.consume() // Manually fetch for test
 
       expect(eachBatch).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -148,7 +148,7 @@ describe('Consumer > Runner', () => {
         onCrash,
         logger: newLogger(),
       })
-      runner.scheduleConsume = jest.fn(() => runner.fetch())
+      runner.scheduleConsume = jest.fn(() => runner.consume())
     })
 
     it('does not call resolveOffset with the last offset', async () => {
@@ -183,7 +183,7 @@ describe('Consumer > Runner', () => {
         autoCommit: false,
         logger: newLogger(),
       })
-      runner.scheduleConsume = jest.fn(() => runner.fetch())
+      runner.scheduleConsume = jest.fn(() => runner.consume())
     })
 
     it('should not commit offsets during fetch', async () => {
@@ -196,9 +196,9 @@ describe('Consumer > Runner', () => {
       consumerGroup.fetch.mockImplementationOnce(() =>
         BufferedAsyncIterator([Promise.resolve([batch])])
       )
-      runner.scheduleFetch = jest.fn()
+      runner.scheduleConsume = jest.fn()
       await runner.start()
-      await runner.fetch() // Manually fetch for test
+      await runner.consume() // Manually fetch for test
 
       expect(consumerGroup.commitOffsets).not.toHaveBeenCalled()
       expect(consumerGroup.commitOffsetsIfNecessary).not.toHaveBeenCalled()
@@ -217,7 +217,7 @@ describe('Consumer > Runner', () => {
       })
       .mockImplementationOnce(() => true)
 
-    runner.scheduleFetch = jest.fn()
+    runner.scheduleConsume = jest.fn()
     await runner.start()
 
     // scheduleFetch in runner#start is async, and we never wait for it,
@@ -305,10 +305,10 @@ describe('Consumer > Runner', () => {
     //     BufferedAsyncIterator([longRunningRequest, Promise.resolve([batch])])
     //   )
 
-    //   runner.scheduleFetch = jest.fn()
+    //   runner.scheduleConsume = jest.fn()
     //   await runner.start()
 
-    //   await expect(runner.fetch()).rejects.toThrow('Error while processing batches in parallel')
+    //   await expect(runner.consume()).rejects.toThrow('Error while processing batches in parallel')
     // })
 
     it('correctly catch exceptions in parallel "heartbeat" processing', async () => {
@@ -330,10 +330,12 @@ describe('Consumer > Runner', () => {
         BufferedAsyncIterator([longRunningRequest, Promise.resolve([batch])])
       )
 
-      runner.scheduleFetch = jest.fn()
+      runner.scheduleConsume = jest.fn()
       await runner.start()
 
-      await expect(runner.fetch()).rejects.toThrow('Error while processing heartbeats in parallel')
+      await expect(runner.consume()).rejects.toThrow(
+        'Error while processing heartbeats in parallel'
+      )
     })
 
     it('a triggered rejoin failing should cause a crash', async () => {
@@ -366,11 +368,11 @@ describe('Consumer > Runner', () => {
         )
       })
 
-      runner.scheduleFetch = jest.fn()
+      runner.scheduleConsume = jest.fn()
       await runner.start()
       runner.running = false
 
-      runner.fetch()
+      runner.consume()
       await sleep(100)
     })
   })
