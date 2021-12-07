@@ -1,3 +1,4 @@
+const sleep = require('../utils/sleep')
 const { EventEmitter } = require('stream')
 const fetcher = require('./fetcher')
 
@@ -15,6 +16,7 @@ const fetcherPool = ({ logger: rootLogger, nodeIds, fetch }) => {
 
   const next = async () => {
     if (!isRunning) {
+      await sleep(50) // TODO: Fix. Infinite loop on runner.stop() otherwise?
       return
     }
 
@@ -26,8 +28,9 @@ const fetcherPool = ({ logger: rootLogger, nodeIds, fetch }) => {
     }
 
     return new Promise(resolve => {
-      emitter.once('batch', async () => {
-        resolve(await next())
+      emitter.once('batch', ({ nodeId }) => {
+        const fetcher = fetchers.find(f => f.nodeId === nodeId)
+        resolve(fetcher.next())
       })
     })
   }
