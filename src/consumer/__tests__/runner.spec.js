@@ -67,7 +67,7 @@ describe('Consumer > Runner', () => {
 
       runner.scheduleConsume = jest.fn()
       await runner.start()
-      expect(runner.scheduleFetch).toHaveBeenCalled()
+      expect(runner.scheduleConsume).toHaveBeenCalled()
       expect(onCrash).not.toHaveBeenCalled()
     })
   })
@@ -220,11 +220,11 @@ describe('Consumer > Runner', () => {
     runner.scheduleConsume = jest.fn()
     await runner.start()
 
-    // scheduleFetch in runner#start is async, and we never wait for it,
+    // scheduleConsume in runner#start is async, and we never wait for it,
     // so we have to wait a bit to give the callback a chance of being executed
     await sleep(100)
 
-    expect(runner.scheduleFetch).not.toHaveBeenCalled()
+    expect(runner.scheduleConsume).not.toHaveBeenCalled()
     expect(onCrash).toHaveBeenCalledWith(unknownError)
   })
 
@@ -236,7 +236,7 @@ describe('Consumer > Runner', () => {
 
     await runner.start()
 
-    // scheduleFetch in runner#start is async, and we never wait for it,
+    // scheduleConsume in runner#start is async, and we never wait for it,
     // so we have to wait a bit to give the callback a chance of being executed
     await sleep(100)
 
