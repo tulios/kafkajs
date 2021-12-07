@@ -203,6 +203,7 @@ module.exports = class Connection {
    * @returns {Promise}
    */
   async disconnect() {
+    if (this.connectionStatus === CONNECTION_STATUS.DISCONNECTED) return
     this.connectionStatus = CONNECTION_STATUS.DISCONNECTING
     this.logDebug('disconnecting...')
 
@@ -210,8 +211,9 @@ module.exports = class Connection {
     this.requestQueue.destroy()
 
     if (this.socket) {
-      this.socket.end()
-      this.socket.unref()
+      await new Promise(resolve => {
+        this.socket.end(() => resolve())
+      })
     }
 
     this.connectionStatus = CONNECTION_STATUS.DISCONNECTED

@@ -1,7 +1,7 @@
 const Runner = require('./runner')
 
 /**
- * Pool of runners for consuming partitions concurrently.
+ * Pool of runners that consume batches concurrently.
  *
  * @param {object} options
  * @param {import('./consumerGroup')} options.consumerGroup
@@ -11,7 +11,7 @@ const Runner = require('./runner')
  */
 const createRunnerPool = ({
   autoCommit,
-  logger,
+  logger: rootLogger,
   consumerGroup,
   instrumentationEmitter,
   eachBatchAutoResolve,
@@ -22,6 +22,7 @@ const createRunnerPool = ({
   onCrash,
   partitionsConsumedConcurrently,
 }) => {
+  const logger = rootLogger.namespace('RunnerPool')
   /** @type {Runner[]} */
   let runners = []
   let running = false
@@ -30,24 +31,23 @@ const createRunnerPool = ({
     if (running) return
     running = true
 
-    const runnerIds = Array.from(Array(partitionsConsumedConcurrently).keys())
-
-    runners = runnerIds.map(
-      runnerId =>
-        new Runner({
-          runnerId,
-          autoCommit,
-          logger,
-          consumerGroup,
-          instrumentationEmitter,
-          eachBatchAutoResolve,
-          eachBatch,
-          eachMessage,
-          heartbeatInterval,
-          retry,
-          onCrash,
-        })
-    )
+    runners = Array(partitionsConsumedConcurrently)
+      .fill()
+      .map(
+        () =>
+          new Runner({
+            autoCommit,
+            logger,
+            consumerGroup,
+            instrumentationEmitter,
+            eachBatchAutoResolve,
+            eachBatch,
+            eachMessage,
+            heartbeatInterval,
+            retry,
+            onCrash,
+          })
+      )
 
     await consumerGroup.connect()
     await consumerGroup.joinAndSync()
@@ -56,6 +56,8 @@ const createRunnerPool = ({
   }
 
   const stop = async () => {
+    logger.debug('stop()')
+
     if (!running) return
     running = false
 

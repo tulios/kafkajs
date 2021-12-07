@@ -75,8 +75,8 @@ describe('Admin', () => {
   })
 
   afterAll(async () => {
-    admin && (await admin.disconnect())
     consumers && (await Promise.all(consumers.map(consumer => consumer.disconnect())))
+    admin && (await admin.disconnect())
     producer && (await producer.disconnect())
   })
 

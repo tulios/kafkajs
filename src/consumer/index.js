@@ -122,6 +122,7 @@ module.exports = ({
 
   /** @type {import("../../types").Consumer["disconnect"]} */
   const disconnect = async () => {
+    logger.debug('disconnect()')
     try {
       await stop()
       logger.debug('consumer has stopped, disconnecting', { groupId })
@@ -132,6 +133,7 @@ module.exports = ({
 
   /** @type {import("../../types").Consumer["stop"]} */
   const stop = async () => {
+    logger.debug('stop()')
     try {
       if (runner) {
         await runner.stop()

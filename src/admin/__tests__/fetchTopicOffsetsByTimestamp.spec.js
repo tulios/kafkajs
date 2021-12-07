@@ -29,9 +29,9 @@ describe('Admin', () => {
     })
   })
   afterEach(async () => {
-    admin && (await admin.disconnect())
-    producer && (await producer.disconnect())
     consumer && (await consumer.disconnect())
+    producer && (await producer.disconnect())
+    admin && (await admin.disconnect())
   })
 
   describe('fetchTopicOffsetsByTimestamp', () => {

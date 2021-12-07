@@ -49,8 +49,8 @@ describe('Producer', () => {
   })
 
   afterEach(async () => {
-    producer && (await producer.disconnect())
     consumer && (await consumer.disconnect())
+    producer && (await producer.disconnect())
   })
 
   test('throws an error if the topic is invalid', async () => {

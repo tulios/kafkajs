@@ -13,8 +13,8 @@ describe('Admin', () => {
   })
 
   afterEach(async () => {
-    admin && (await admin.disconnect())
     consumer && (await consumer.disconnect())
+    admin && (await admin.disconnect())
   })
 
   describe('fetchTopicMetadata', () => {

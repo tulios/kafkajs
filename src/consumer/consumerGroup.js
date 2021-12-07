@@ -71,7 +71,6 @@ module.exports = class ConsumerGroup {
     isolationLevel,
     rackId,
     metadataMaxAge,
-    partitionsConsumedConcurrently,
   }) {
     /** @type {import("../../types").Cluster} */
     this.cluster = cluster
@@ -116,7 +115,6 @@ module.exports = class ConsumerGroup {
     this.preferredReadReplicasPerTopicPartition = {}
     this.offsetManager = null
     this.subscriptionState = new SubscriptionState()
-    this.fetcher = fetcherPool()
 
     this.lastRequest = Date.now()
 
@@ -175,7 +173,7 @@ module.exports = class ConsumerGroup {
   async leave() {
     const { groupId, memberId } = this
 
-    this.fetcher.stop()
+    this.fetcher && (await this.fetcher.stop())
 
     if (memberId) {
       await this.coordinator.leaveGroup({ groupId, memberId })
@@ -317,10 +315,11 @@ module.exports = class ConsumerGroup {
       memberId,
     })
 
-    this.fetcher.stop()
+    this.fetcher && (await this.fetcher.stop())
     this.fetcher = fetcherPool({
+      logger: this.logger,
       nodeIds: this.cluster.getNodeIds(),
-      fetch: this.fetch,
+      fetch: this.fetch.bind(this),
     })
   }
 
@@ -433,10 +432,44 @@ module.exports = class ConsumerGroup {
 
     topicPartitions.forEach(({ topic, partitions: activePartitions }) => {
       const nodePartitions = this.findReadReplicaForPartitions(topic, activePartitions)
-      const partitions = nodePartitions[nodeId]
-      if (!partitions || !partitions.length) {
+
+      let partitions = nodePartitions[nodeId]
+      if (!partitions) {
         return
       }
+
+      const committedOffsets = this.offsetManager.committedOffsets()
+
+      this.logger.debug('before', { topic, partitions, committedOffsets })
+      partitions = partitions
+        .filter(partition => {
+          /**
+           * When recovering from OffsetOutOfRange, each partition can recover
+           * concurrently, which invalidates resolved and committed offsets as part
+           * of the recovery mechanism (see OffsetManager.clearOffsets). In concurrent
+           * scenarios this can initiate a new fetch with invalid offsets.
+           *
+           * This was further highlighted by https://github.com/tulios/kafkajs/pull/570,
+           * which increased concurrency, making this more likely to happen.
+           *
+           * This is solved by only making requests for partitions with initialized offsets.
+           *
+           * See the following pull request which explains the context of the problem:
+           * @issue https://github.com/tulios/kafkajs/pull/578
+           */
+          return committedOffsets[topic][partition] != null
+        })
+        .map(partition => ({
+          partition,
+          fetchOffset: this.offsetManager.nextOffset(topic, partition).toString(),
+          maxBytes: this.maxBytesPerPartition,
+        }))
+      this.logger.debug('after', { topic, partitions })
+
+      if (!partitions.length) {
+        return
+      }
+
       requests.push({ topic, partitions })
     })
 
@@ -447,8 +480,22 @@ module.exports = class ConsumerGroup {
     return this.retrier(async (bail, retryCount, retryTime) => {
       try {
         const startFetch = Date.now()
-
         this.instrumentationEmitter.emit(FETCH_START, {})
+
+        await this.cluster.refreshMetadataIfNecessary()
+        this.checkForStaleAssignment()
+
+        while (this.seekOffset.size > 0) {
+          const seekEntry = this.seekOffset.pop()
+          this.logger.debug('Seek offset', {
+            groupId: this.groupId,
+            memberId: this.memberId,
+            seek: seekEntry,
+          })
+          await this.offsetManager.seek(seekEntry)
+        }
+
+        await this.offsetManager.resolveOffsets() // TODO: For specific partitions?
 
         const requests = this.createRequests({ nodeId })
 
@@ -482,7 +529,7 @@ module.exports = class ConsumerGroup {
         })
 
         return responses.flatMap(({ topicName, partitions }) => {
-          const topicRequestData = requests[nodeId].find(({ topic }) => topic === topicName)
+          const topicRequestData = requests.find(({ topic }) => topic === topicName)
 
           let preferredReadReplicas = this.preferredReadReplicasPerTopicPartition[topicName]
           if (!preferredReadReplicas) {
@@ -580,8 +627,8 @@ module.exports = class ConsumerGroup {
         }
 
         this.logger.debug('Error while fetching data, trying again...', {
-          groupId: this.consumerGroup.groupId,
-          memberId: this.consumerGroup.memberId,
+          groupId,
+          memberId,
           error: e.message,
           stack: e.stack,
           retryCount,

@@ -86,6 +86,8 @@ module.exports = class Runner extends EventEmitter {
   }
 
   async stop() {
+    this.logger.debug('stop()')
+
     if (!this.running) return
     this.running = false
 
@@ -108,7 +110,14 @@ module.exports = class Runner extends EventEmitter {
         memberId: this.consumerGroup.memberId,
       })
 
-      this.once(CONSUMING_STOP, () => resolve())
+      this.once(CONSUMING_STOP, () => {
+        this.logger.debug('consumer finished', {
+          groupId: this.consumerGroup.groupId,
+          memberId: this.consumerGroup.memberId,
+        })
+
+        resolve()
+      })
     })
   }
 
@@ -214,6 +223,14 @@ module.exports = class Runner extends EventEmitter {
     }
   }
 
+  async scheduleConsume() {
+    while (this.running) {
+      this.consuming = true
+      await this.consume()
+      this.consuming = false
+    }
+  }
+
   async consume() {
     const batch = await this.consumerGroup.fetcher.next()
 
@@ -253,16 +270,8 @@ module.exports = class Runner extends EventEmitter {
       duration: Date.now() - startBatchProcess,
     })
 
-    await this.autoCommitOffsets()
+    await this.autoCommitOffsets() // TODO: For a single batch (topic, partition) maybe?
     await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
-  }
-
-  async scheduleConsume() {
-    while (this.running) {
-      this.consuming = true
-      await this.consume()
-      this.consuming = false
-    }
   }
 
   autoCommitOffsets() {

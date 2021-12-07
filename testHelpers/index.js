@@ -189,19 +189,16 @@ const testWaitFor = async (fn, opts = {}) => waitFor(fn, { ignoreTimeout: true, 
  * @template T
  */
 const retryProtocol = (errorType, fn) =>
-  waitFor(
-    async () => {
-      try {
-        return await fn()
-      } catch (e) {
-        if (e.type !== errorType) {
-          throw e
-        }
-        return false
+  waitFor(async () => {
+    try {
+      return await fn()
+    } catch (e) {
+      if (e.type !== errorType) {
+        throw e
       }
-    },
-    { ignoreTimeout: true }
-  )
+      return false
+    }
+  })
 
 const waitForMessages = (buffer, { number = 1, delay = 50 } = {}) =>
   waitFor(() => (buffer.length >= number ? buffer : false), { delay, ignoreTimeout: true })

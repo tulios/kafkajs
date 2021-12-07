@@ -179,8 +179,8 @@ describe('Admin', () => {
       })
 
       afterEach(async () => {
-        producer && (await producer.disconnect())
         consumer && (await consumer.disconnect())
+        producer && (await producer.disconnect())
       })
 
       test('no reset: returns latest *committed* consumer offsets', async () => {
