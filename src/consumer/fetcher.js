@@ -1,11 +1,12 @@
 const { EventEmitter } = require('stream')
 
-const fetcher = ({ nodeId, emitter: poolEmitter, fetch }) => {
+const fetcher = ({ nodeId, emitter: poolEmitter, fetch, logger: rootLogger }) => {
+  const logger = rootLogger.namespace('Fetcher')
   const emitter = new EventEmitter()
   emitter.on('batch', () => {
     poolEmitter.emit('batch', { nodeId })
   })
-  const queue = []
+  let queue = []
   let isFetching = false
   let isRunning = true
 
@@ -15,8 +16,13 @@ const fetcher = ({ nodeId, emitter: poolEmitter, fetch }) => {
     if (isRunning) {
       isFetching = true
 
-      const batches = await fetch(nodeId)
-      queue.push(...batches)
+      try {
+        const batches = await fetch(nodeId)
+        queue.push(...batches)
+      } catch (error) {
+        logger.error('CRASH', { error })
+        throw error // TODO: Handle onCrash across all workers
+      }
 
       isFetching = false
     }
@@ -31,6 +37,8 @@ const fetcher = ({ nodeId, emitter: poolEmitter, fetch }) => {
       if (!isFetching) return resolve()
       emitter.once('batch', () => resolve())
     })
+
+    queue = []
   }
 
   const next = () => {

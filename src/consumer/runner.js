@@ -224,11 +224,11 @@ module.exports = class Runner extends EventEmitter {
   }
 
   async scheduleConsume() {
+    this.consuming = true
     while (this.running) {
-      this.consuming = true
       await this.consume()
-      this.consuming = false
     }
+    this.consuming = false
   }
 
   async consume() {

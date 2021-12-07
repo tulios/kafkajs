@@ -477,7 +477,7 @@ module.exports = class ConsumerGroup {
   }
 
   async fetch(nodeId) {
-    return this.retrier(async (bail, retryCount, retryTime) => {
+    return this.retrier(async bail => {
       try {
         const startFetch = Date.now()
         this.instrumentationEmitter.emit(FETCH_START, {})
@@ -587,64 +587,22 @@ module.exports = class ConsumerGroup {
             })
         })
       } catch (e) {
-        const { groupId, memberId } = this
-
-        if (isRebalancing(e)) {
-          this.logger.error('The group is rebalancing, re-joining', {
-            groupId,
-            memberId,
-            error: e.message,
-            retryCount,
-            retryTime,
-          })
-
-          this.instrumentationEmitter.emit(REBALANCING, { groupId, memberId })
-
-          await this.joinAndSync()
-          return this.fetch(nodeId)
-        }
-
-        if (e.type === 'UNKNOWN_MEMBER_ID') {
-          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
-            groupId,
-            memberId,
-            error: e.message,
-            retryCount,
-            retryTime,
-          })
-
-          this.memberId = null
-          await this.joinAndSync()
-          return this.fetch(nodeId)
-        }
-
-        if (e.name === 'KafkaJSOffsetOutOfRange') {
-          return this.fetch(nodeId)
-        }
-
-        if (e.name === 'KafkaJSNotImplemented') {
-          return bail(e)
-        }
-
-        this.logger.debug('Error while fetching data, trying again...', {
-          groupId,
-          memberId,
-          error: e.message,
-          stack: e.stack,
-          retryCount,
-          retryTime,
-        })
-
-        throw e
+        await this.recoverFromFetch(e, bail)
       }
     })
   }
 
-  async recoverFromFetch(e) {
+  async recoverFromFetch(e, bail) {
+    const { groupId, memberId } = this
+
+    if (e.name === 'KafkaJSNotImplemented') {
+      return bail(e)
+    }
+
     if (STALE_METADATA_ERRORS.includes(e.type) || e.name === 'KafkaJSTopicMetadataNotLoaded') {
       this.logger.debug('Stale cluster metadata, refreshing...', {
-        groupId: this.groupId,
-        memberId: this.memberId,
+        groupId,
+        memberId,
         error: e.message,
       })
 
@@ -655,8 +613,8 @@ module.exports = class ConsumerGroup {
 
     if (e.name === 'KafkaJSStaleTopicMetadataAssignment') {
       this.logger.warn(`${e.message}, resync group`, {
-        groupId: this.groupId,
-        memberId: this.memberId,
+        groupId,
+        memberId,
         topic: e.topic,
         unknownPartitions: e.unknownPartitions,
       })
@@ -675,6 +633,28 @@ module.exports = class ConsumerGroup {
     if (e.name === 'KafkaJSBrokerNotFound' || e.name === 'KafkaJSConnectionClosedError') {
       this.logger.debug(`${e.message}, refreshing metadata and retrying...`)
       await this.cluster.refreshMetadata()
+    }
+
+    if (isRebalancing(e)) {
+      this.logger.error('The group is rebalancing, re-joining', {
+        groupId,
+        memberId,
+        error: e.message,
+      })
+
+      this.instrumentationEmitter.emit(REBALANCING, { groupId, memberId })
+      await this.joinAndSync()
+    }
+
+    if (e.type === 'UNKNOWN_MEMBER_ID') {
+      this.logger.error('The coordinator is not aware of this member, re-joining the group', {
+        groupId,
+        memberId,
+        error: e.message,
+      })
+
+      this.memberId = null
+      await this.joinAndSync()
     }
 
     throw e

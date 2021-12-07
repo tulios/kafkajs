@@ -11,7 +11,7 @@ const errorCodes = [
   {
     type: 'OFFSET_OUT_OF_RANGE',
     code: 1,
-    retriable: false,
+    retriable: true,
     message: 'The requested offset is not within the range of offsets maintained by the server',
   },
   {
