@@ -49,10 +49,15 @@ const createRunnerPool = ({
           })
       )
 
-    await consumerGroup.connect()
-    await consumerGroup.joinAndSync()
+    try {
+      await consumerGroup.connect()
+      await consumerGroup.joinAndSync()
+    } catch (error) {
+      onCrash(error)
+      return
+    }
 
-    await Promise.all(runners.map(r => r.start()))
+    runners.forEach(r => r.start())
   }
 
   const stop = async () => {

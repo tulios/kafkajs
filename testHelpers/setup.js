@@ -1,4 +1,4 @@
-jest.setTimeout(20000)
+jest.setTimeout(30000)
 
 const retries = process.env.TEST_RETRIES != null ? parseInt(process.env.TEST_RETRIES, 10) : 0
 jest.retryTimes(retries)

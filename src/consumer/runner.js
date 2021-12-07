@@ -74,11 +74,11 @@ module.exports = class Runner extends EventEmitter {
     try {
       await this.consumerGroup.joinAndSync()
     } catch (e) {
-      return this.onCrash(e)
+      this.onCrash(e)
     }
   }
 
-  async start() {
+  start() {
     if (this.running) return
     this.running = true
 
@@ -232,46 +232,51 @@ module.exports = class Runner extends EventEmitter {
   }
 
   async consume() {
-    const batch = await this.consumerGroup.fetcher.next()
+    try {
+      const batch = await this.consumerGroup.fetcher.next()
+      if (!this.running || !batch || batch.isEmpty()) {
+        return
+      }
 
-    if (!this.running || !batch || batch.isEmpty()) {
-      return
+      await this.retrier(async () => {
+        const startBatchProcess = Date.now()
+        const payload = {
+          topic: batch.topic,
+          partition: batch.partition,
+          highWatermark: batch.highWatermark,
+          offsetLag: batch.offsetLag(),
+          /**
+           * @since 2019-06-24 (>= 1.8.0)
+           *
+           * offsetLag returns the lag based on the latest offset in the batch, to
+           * keep the event backward compatible we just introduced "offsetLagLow"
+           * which calculates the lag based on the first offset in the batch
+           */
+          offsetLagLow: batch.offsetLagLow(),
+          batchSize: batch.messages.length,
+          firstOffset: batch.firstOffset(),
+          lastOffset: batch.lastOffset(),
+        }
+
+        this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
+
+        if (this.eachMessage) {
+          await this.processEachMessage(batch)
+        } else if (this.eachBatch) {
+          await this.processEachBatch(batch)
+        }
+
+        this.instrumentationEmitter.emit(END_BATCH_PROCESS, {
+          ...payload,
+          duration: Date.now() - startBatchProcess,
+        })
+
+        await this.autoCommitOffsets() // TODO: For a single batch (topic, partition) maybe?
+        await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+      })
+    } catch (error) {
+      this.onCrash(error)
     }
-
-    const startBatchProcess = Date.now()
-    const payload = {
-      topic: batch.topic,
-      partition: batch.partition,
-      highWatermark: batch.highWatermark,
-      offsetLag: batch.offsetLag(),
-      /**
-       * @since 2019-06-24 (>= 1.8.0)
-       *
-       * offsetLag returns the lag based on the latest offset in the batch, to
-       * keep the event backward compatible we just introduced "offsetLagLow"
-       * which calculates the lag based on the first offset in the batch
-       */
-      offsetLagLow: batch.offsetLagLow(),
-      batchSize: batch.messages.length,
-      firstOffset: batch.firstOffset(),
-      lastOffset: batch.lastOffset(),
-    }
-
-    this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
-
-    if (this.eachMessage) {
-      await this.processEachMessage(batch)
-    } else if (this.eachBatch) {
-      await this.processEachBatch(batch)
-    }
-
-    this.instrumentationEmitter.emit(END_BATCH_PROCESS, {
-      ...payload,
-      duration: Date.now() - startBatchProcess,
-    })
-
-    await this.autoCommitOffsets() // TODO: For a single batch (topic, partition) maybe?
-    await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
   }
 
   autoCommitOffsets() {

@@ -88,6 +88,7 @@ module.exports = ({
     autoCommitInterval,
     autoCommitThreshold,
     partitionsConsumedConcurrently,
+    onCrash,
   }) => {
     return new ConsumerGroup({
       logger: rootLogger,
@@ -111,6 +112,7 @@ module.exports = ({
       rackId,
       metadataMaxAge,
       partitionsConsumedConcurrently,
+      onCrash,
     })
   }
 
@@ -206,15 +208,17 @@ module.exports = ({
       return
     }
 
-    consumerGroup = createConsumerGroup({
-      autoCommit,
-      autoCommitInterval,
-      autoCommitThreshold,
-      partitionsConsumedConcurrently,
-    })
-
     const start = async onCrash => {
       logger.info('Starting', { groupId })
+
+      consumerGroup = createConsumerGroup({
+        autoCommit,
+        autoCommitInterval,
+        autoCommitThreshold,
+        partitionsConsumedConcurrently,
+        onCrash,
+      })
+
       runner = createRunnerPool({
         autoCommit,
         logger: rootLogger,
@@ -230,17 +234,6 @@ module.exports = ({
       })
 
       await runner.start()
-    }
-
-    const restart = onCrash => {
-      consumerGroup = createConsumerGroup({
-        autoCommit,
-        autoCommitInterval,
-        autoCommitThreshold,
-        partitionsConsumedConcurrently,
-      })
-
-      start(onCrash)
     }
 
     const onCrash = async e => {
@@ -274,6 +267,8 @@ module.exports = ({
             return true
           })))
 
+      logger.error('shouldRestart', { shouldRestart, isErrorRetriable, retry })
+
       instrumentationEmitter.emit(CRASH, {
         error: e,
         groupId,
@@ -288,7 +283,7 @@ module.exports = ({
           groupId,
         })
 
-        restartTimeout = setTimeout(() => restart(onCrash), retryTime)
+        restartTimeout = setTimeout(() => start(onCrash), retryTime)
       }
     }
 

@@ -1,6 +1,7 @@
 const { EventEmitter } = require('stream')
 
-const fetcher = ({ nodeId, emitter: poolEmitter, fetch, logger: rootLogger }) => {
+const fetcher = ({ nodeId, emitter: poolEmitter, fetch, logger: rootLogger, onCrash }) => {
+  // eslint-disable-next-line no-unused-vars
   const logger = rootLogger.namespace('Fetcher')
   const emitter = new EventEmitter()
   emitter.on('batch', () => {
@@ -11,7 +12,11 @@ const fetcher = ({ nodeId, emitter: poolEmitter, fetch, logger: rootLogger }) =>
   let isRunning = true
 
   const fetchIfNecessary = async () => {
+    logger.debug('fetchIfNecessary()')
+
     if (isFetching) return
+
+    let error
 
     if (isRunning) {
       isFetching = true
@@ -19,18 +24,24 @@ const fetcher = ({ nodeId, emitter: poolEmitter, fetch, logger: rootLogger }) =>
       try {
         const batches = await fetch(nodeId)
         queue.push(...batches)
-      } catch (error) {
-        logger.error('CRASH', { error })
-        throw error // TODO: Handle onCrash across all workers
+      } catch (e) {
+        error = e
       }
 
       isFetching = false
     }
 
     emitter.emit('batch')
+
+    if (error) {
+      await stop()
+      onCrash(error)
+    }
   }
 
   const stop = async () => {
+    logger.debug('stop()')
+
     isRunning = false
 
     await new Promise(resolve => {
@@ -42,6 +53,8 @@ const fetcher = ({ nodeId, emitter: poolEmitter, fetch, logger: rootLogger }) =>
   }
 
   const next = () => {
+    logger.debug('next()')
+
     const item = queue.shift()
     if (!queue.length) {
       fetchIfNecessary()

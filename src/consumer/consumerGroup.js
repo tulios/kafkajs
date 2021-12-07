@@ -71,6 +71,7 @@ module.exports = class ConsumerGroup {
     isolationLevel,
     rackId,
     metadataMaxAge,
+    onCrash,
   }) {
     /** @type {import("../../types").Cluster} */
     this.cluster = cluster
@@ -94,6 +95,7 @@ module.exports = class ConsumerGroup {
     this.isolationLevel = isolationLevel
     this.rackId = rackId
     this.metadataMaxAge = metadataMaxAge
+    this.onCrash = onCrash
 
     this.seekOffset = new SeekOffsets()
     this.coordinator = null
@@ -320,6 +322,7 @@ module.exports = class ConsumerGroup {
       logger: this.logger,
       nodeIds: this.cluster.getNodeIds(),
       fetch: this.fetch.bind(this),
+      onCrash: this.onCrash,
     })
   }
 

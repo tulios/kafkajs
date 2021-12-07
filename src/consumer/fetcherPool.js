@@ -2,12 +2,12 @@ const sleep = require('../utils/sleep')
 const { EventEmitter } = require('stream')
 const fetcher = require('./fetcher')
 
-const fetcherPool = ({ logger: rootLogger, nodeIds, fetch }) => {
+const fetcherPool = ({ logger: rootLogger, nodeIds, fetch, onCrash }) => {
   const logger = rootLogger.namespace('FetcherPool')
   const emitter = new EventEmitter()
   let isRunning = true
 
-  const fetchers = nodeIds.map(nodeId => fetcher({ nodeId, emitter, fetch, logger }))
+  const fetchers = nodeIds.map(nodeId => fetcher({ nodeId, emitter, fetch, logger, onCrash }))
 
   const stop = async () => {
     isRunning = false
