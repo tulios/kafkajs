@@ -116,7 +116,7 @@ const saslOAuthBearerConnectionOpts = () =>
     sasl: {
       mechanism: 'oauthbearer',
       oauthBearerProvider: () => {
-        const token = jwt.sign({ sub: 'test' }, 'abc', { algorithm: 'none' })
+        const token = jwt.sign({ sub: 'test' }, undefined, { algorithm: 'none', expiresIn: '1h' })
 
         return {
           value: token,
