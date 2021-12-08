@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 jest.setTimeout(30000)
 
 const createAdmin = require('../../admin')

@@ -1,18 +1,31 @@
 const Runner = require('../runner')
 const Batch = require('../batch')
-const { KafkaJSProtocolError, KafkaJSNotImplemented } = require('../../errors')
+const {
+  KafkaJSProtocolError,
+  KafkaJSNotImplemented,
+  KafkaJSNumberOfRetriesExceeded,
+} = require('../../errors')
 const { createErrorFromCode } = require('../../protocol/error')
 const InstrumentationEventEmitter = require('../../instrumentation/emitter')
 const { newLogger, secureRandom } = require('testHelpers')
 const sleep = require('../../utils/sleep')
 const BufferedAsyncIterator = require('../../utils/bufferedAsyncIterator')
+const createRunnerPool = require('../runnerPool')
 
 const UNKNOWN = -1
 const REBALANCE_IN_PROGRESS = 27
 const rebalancingError = () => new KafkaJSProtocolError(createErrorFromCode(REBALANCE_IN_PROGRESS))
 
 describe('Consumer > Runner', () => {
-  let runner, consumerGroup, onCrash, eachBatch, topicName, partition, emptyBatch
+  let runner,
+    runnerPool,
+    consumerGroup,
+    onCrash,
+    eachBatch,
+    topicName,
+    partition,
+    emptyBatch,
+    instrumentationEmitter
 
   beforeEach(() => {
     topicName = `topic-${secureRandom()}`
@@ -31,7 +44,11 @@ describe('Consumer > Runner', () => {
       join: jest.fn(),
       sync: jest.fn(),
       joinAndSync: jest.fn(),
+      leave: jest.fn(),
       fetch: jest.fn(() => BufferedAsyncIterator([Promise.resolve([emptyBatch])])),
+      nextBatch: jest.fn(async () => {
+        await sleep(50)
+      }),
       resolveOffset: jest.fn(),
       commitOffsets: jest.fn(),
       commitOffsetsIfNecessary: jest.fn(),
@@ -40,7 +57,7 @@ describe('Consumer > Runner', () => {
       assigned: jest.fn(() => []),
       isLeader: jest.fn(() => true),
     }
-    const instrumentationEmitter = new InstrumentationEventEmitter()
+    instrumentationEmitter = new InstrumentationEventEmitter()
     runner = new Runner({
       consumerGroup,
       instrumentationEmitter,
@@ -52,6 +69,7 @@ describe('Consumer > Runner', () => {
 
   afterEach(async () => {
     runner && (await runner.stop())
+    runnerPool && (await runnerPool.stop())
   })
 
   describe('when the group is rebalancing before the new consumer has joined', () => {
@@ -79,9 +97,7 @@ describe('Consumer > Runner', () => {
       messages: [{ offset: 4, key: '1', value: '2' }],
     })
 
-    consumerGroup.fetch.mockImplementationOnce(() =>
-      BufferedAsyncIterator([Promise.resolve([batch])])
-    )
+    consumerGroup.nextBatch.mockImplementationOnce(async () => batch)
     runner.scheduleConsume = jest.fn()
     await runner.start()
     await runner.consume() // Manually fetch for test
@@ -98,9 +114,7 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      consumerGroup.fetch.mockImplementationOnce(() =>
-        BufferedAsyncIterator([Promise.resolve([batch])])
-      )
+      consumerGroup.nextBatch.mockImplementationOnce(async () => batch)
       runner.scheduleConsume = jest.fn()
       await runner.start()
       await runner.consume() // Manually fetch for test
@@ -193,9 +207,7 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      consumerGroup.fetch.mockImplementationOnce(() =>
-        BufferedAsyncIterator([Promise.resolve([batch])])
-      )
+      consumerGroup.nextBatch.mockImplementationOnce(async () => batch)
       runner.scheduleConsume = jest.fn()
       await runner.start()
       await runner.consume() // Manually fetch for test
@@ -211,28 +223,22 @@ describe('Consumer > Runner', () => {
 
   it('calls onCrash for any other errors', async () => {
     const unknownError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
-    consumerGroup.joinAndSync
-      .mockImplementationOnce(() => {
-        throw unknownError
-      })
-      .mockImplementationOnce(() => true)
+    consumerGroup.nextBatch.mockImplementation(() => {
+      throw unknownError
+    })
 
-    runner.scheduleConsume = jest.fn()
     await runner.start()
 
     // scheduleConsume in runner#start is async, and we never wait for it,
     // so we have to wait a bit to give the callback a chance of being executed
     await sleep(100)
 
-    expect(runner.scheduleConsume).not.toHaveBeenCalled()
     expect(onCrash).toHaveBeenCalledWith(unknownError)
   })
 
   it('crashes on KafkaJSNotImplemented errors', async () => {
     const notImplementedError = new KafkaJSNotImplemented('not implemented')
-    consumerGroup.fetch.mockImplementationOnce(() =>
-      BufferedAsyncIterator([Promise.reject(notImplementedError)])
-    )
+    consumerGroup.nextBatch.mockImplementationOnce(() => Promise.reject(notImplementedError))
 
     await runner.start()
 
@@ -248,7 +254,6 @@ describe('Consumer > Runner', () => {
 
     beforeEach(async () => {
       offsets = { topics: [{ topic: topicName, partitions: [{ offset: '1', partition }] }] }
-      await runner.start()
 
       consumerGroup.joinAndSync.mockClear()
       consumerGroup.commitOffsetsIfNecessary.mockClear()
@@ -256,6 +261,7 @@ describe('Consumer > Runner', () => {
     })
 
     it('should commit offsets while running', async () => {
+      await runner.start()
       await runner.commitOffsets(offsets)
 
       expect(consumerGroup.commitOffsetsIfNecessary).toHaveBeenCalledTimes(0)
@@ -269,6 +275,8 @@ describe('Consumer > Runner', () => {
         throw error
       })
 
+      await runner.start()
+
       expect(runner.commitOffsets(offsets)).rejects.toThrow(error.message)
       expect(consumerGroup.joinAndSync).toHaveBeenCalledTimes(0)
 
@@ -278,7 +286,7 @@ describe('Consumer > Runner', () => {
     })
 
     it('correctly catch exceptions in parallel "eachBatch" processing', async () => {
-      runner = new Runner({
+      runnerPool = createRunnerPool({
         consumerGroup,
         instrumentationEmitter: new InstrumentationEventEmitter(),
         eachBatchAutoResolve: false,
@@ -288,6 +296,7 @@ describe('Consumer > Runner', () => {
         onCrash,
         logger: newLogger(),
         partitionsConsumedConcurrently: 10,
+        retry: { retries: 0 },
       })
 
       const batch = new Batch(topicName, 0, {
@@ -296,18 +305,18 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      const longRunningRequest = new Promise(resolve => {
-        setTimeout(() => resolve([]), 100)
-      })
+      consumerGroup.nextBatch
+        .mockImplementationOnce(async () => {
+          await sleep(100)
+          return undefined
+        })
+        .mockImplementationOnce(async () => batch)
 
-      consumerGroup.fetch.mockImplementationOnce(() =>
-        BufferedAsyncIterator([longRunningRequest, Promise.resolve([batch])])
-      )
+      await runnerPool.start()
 
-      runner.scheduleConsume = jest.fn()
-      await runner.start()
+      await sleep(100)
 
-      await expect(runner.consume()).rejects.toThrow('Error while processing batches in parallel')
+      await expect(onCrash).toHaveBeenCalledWith(expect.any(KafkaJSNumberOfRetriesExceeded))
     })
 
     it('correctly catch exceptions in parallel "heartbeat" processing', async () => {
@@ -317,17 +326,13 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      const longRunningRequest = new Promise(resolve => {
-        setTimeout(() => resolve([]), 100)
-      })
-
       consumerGroup.heartbeat = async () => {
         throw new Error('Error while processing heartbeats in parallel')
       }
 
-      consumerGroup.fetch.mockImplementationOnce(() =>
-        BufferedAsyncIterator([longRunningRequest, Promise.resolve([batch])])
-      )
+      consumerGroup.nextBatch
+        .mockImplementationOnce(() => sleep(100))
+        .mockImplementationOnce(() => batch)
 
       runner.scheduleConsume = jest.fn()
       await runner.start()
@@ -346,6 +351,7 @@ describe('Consumer > Runner', () => {
         throw rebalancingError()
       })
 
+      await runner.start()
       expect(runner.commitOffsets(offsets)).rejects.toThrow(rebalancingError().message)
 
       await sleep(100)
@@ -353,19 +359,13 @@ describe('Consumer > Runner', () => {
       expect(onCrash).toHaveBeenCalledWith(unknownError)
     })
 
-    it('should ignore request errors from BufferedAsyncIterator on stopped consumer', async () => {
-      const rejectedRequest = () =>
-        new Promise((resolve, reject) => {
-          setTimeout(() => reject(new Error('Failed or manually rejected request')), 10)
+    it('should ignore request errors from nextBatch on stopped consumer', async () => {
+      consumerGroup.nextBatch
+        .mockImplementationOnce(async () => {
+          await sleep(10)
+          throw new Error('Failed or manually rejected request')
         })
-
-      consumerGroup.fetch.mockImplementationOnce(() => {
-        return new Promise(resolve =>
-          setTimeout(() => {
-            resolve(BufferedAsyncIterator([rejectedRequest(), Promise.resolve([])]))
-          }, 10)
-        )
-      })
+        .mockImplementationOnce(() => sleep(10))
 
       runner.scheduleConsume = jest.fn()
       await runner.start()

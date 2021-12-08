@@ -225,8 +225,13 @@ module.exports = class Runner extends EventEmitter {
 
   async scheduleConsume() {
     this.consuming = true
+
     while (this.running) {
-      await this.consume()
+      try {
+        await this.consume()
+      } catch (error) {
+        break
+      }
     }
     this.consuming = false
   }
@@ -237,7 +242,9 @@ module.exports = class Runner extends EventEmitter {
         try {
           const batch = await this.consumerGroup.nextBatch()
 
-          if (!this.running || !batch || batch.isEmpty()) {
+          if (!this.running) return
+
+          if (!batch || batch.isEmpty()) {
             await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
             return
           }
@@ -340,6 +347,7 @@ module.exports = class Runner extends EventEmitter {
       })
     } catch (error) {
       this.onCrash(error)
+      throw error
     }
   }
 
