@@ -206,7 +206,7 @@ const retryProtocol = (errorType, fn) =>
   })
 
 const waitForMessages = (buffer, { number = 1, delay = 50 } = {}) =>
-  waitFor(() => (buffer.length >= number ? buffer : false), { delay, ignoreTimeout: true })
+  waitFor(() => (buffer.length >= number ? buffer : false), { delay, ignoreTimeout: false })
 
 const waitForNextEvent = (consumer, eventName, { maxWait = 10000 } = {}) =>
   new Promise((resolve, reject) => {

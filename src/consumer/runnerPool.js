@@ -69,7 +69,9 @@ const createRunnerPool = ({
     await Promise.all(runners.map(r => r.stop()))
     runners = []
 
-    await consumerGroup.leave()
+    try {
+      await consumerGroup.leave()
+    } catch (e) {}
   }
 
   const commitOffsets = async offsets => {

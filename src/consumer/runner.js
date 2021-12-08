@@ -226,14 +226,23 @@ module.exports = class Runner extends EventEmitter {
   async scheduleConsume() {
     this.consuming = true
 
-    while (this.running) {
+    const loop = async () => {
+      if (!this.running) {
+        this.consuming = false
+        return
+      }
+
       try {
         await this.consume()
       } catch (error) {
-        break
+        this.consuming = false
+        return
       }
+
+      setImmediate(loop)
     }
-    this.consuming = false
+
+    setImmediate(loop)
   }
 
   async consume() {
@@ -308,7 +317,7 @@ module.exports = class Runner extends EventEmitter {
             })
 
             await this.joinAndSync()
-            return this.consume()
+            throw e
           }
 
           if (e.type === 'UNKNOWN_MEMBER_ID') {
@@ -322,11 +331,11 @@ module.exports = class Runner extends EventEmitter {
 
             this.consumerGroup.memberId = null
             await this.joinAndSync()
-            return this.consume()
+            throw e
           }
 
           if (e.name === 'KafkaJSOffsetOutOfRange') {
-            return this.consume()
+            throw e
           }
 
           if (e.name === 'KafkaJSNotImplemented') {
