@@ -148,63 +148,63 @@ describe('Consumer', () => {
     expect(hitConcurrencyLimit).toBeTrue()
   })
 
-  // it('concurrent heartbeats are consolidated and respect heartbeatInterval', async () => {
-  //   const partitionsConsumedConcurrently = 5
-  //   const numberPartitions = 10
-  //   const heartbeatInterval = 50
-  //   consumer = createConsumer({
-  //     cluster,
-  //     groupId,
-  //     maxWaitTimeInMs: 0,
-  //     heartbeatInterval,
-  //     logger: newLogger(),
-  //   })
-  //   topicName = `test-topic-${secureRandom()}`
-  //   await createTopic({
-  //     topic: topicName,
-  //     partitions: numberPartitions,
-  //   })
-  //   await consumer.connect()
-  //   await producer.connect()
+  it('concurrent heartbeats are consolidated and respect heartbeatInterval', async () => {
+    const partitionsConsumedConcurrently = 5
+    const numberPartitions = 10
+    const heartbeatInterval = 50
+    consumer = createConsumer({
+      cluster,
+      groupId,
+      maxWaitTimeInMs: 0,
+      heartbeatInterval,
+      logger: newLogger(),
+    })
+    topicName = `test-topic-${secureRandom()}`
+    await createTopic({
+      topic: topicName,
+      partitions: numberPartitions,
+    })
+    await consumer.connect()
+    await producer.connect()
 
-  //   let then = Date.now()
-  //   const heartbeats = []
-  //   await consumer.subscribe({ topic: topicName, fromBeginning: true })
-  //   consumer.on(consumer.events.HEARTBEAT, () => {
-  //     const now = Date.now()
-  //     heartbeats.push(now - then)
-  //     then = now
-  //   })
+    let then = Date.now()
+    const heartbeats = []
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    consumer.on(consumer.events.HEARTBEAT, () => {
+      const now = Date.now()
+      heartbeats.push(now - then)
+      then = now
+    })
 
-  //   const messagesConsumed = []
-  //   consumer.run({
-  //     partitionsConsumedConcurrently,
-  //     eachBatch: async ({ batch: { messages }, heartbeat }) => {
-  //       for (const event of messages) {
-  //         await Promise.all([heartbeat(), heartbeat()])
-  //         await sleep(1)
-  //         messagesConsumed.push(event)
-  //       }
-  //     },
-  //   })
+    const messagesConsumed = []
+    consumer.run({
+      partitionsConsumedConcurrently,
+      eachBatch: async ({ batch: { messages }, heartbeat }) => {
+        for (const event of messages) {
+          await Promise.all([heartbeat(), heartbeat()])
+          await sleep(1)
+          messagesConsumed.push(event)
+        }
+      },
+    })
 
-  //   await waitForConsumerToJoinGroup(consumer)
+    await waitForConsumerToJoinGroup(consumer)
 
-  //   const messages = Array(200)
-  //     .fill()
-  //     .map(() => {
-  //       const value = secureRandom()
-  //       return { key: `key-${value}`, value: `value-${value}` }
-  //     })
+    const messages = Array(200)
+      .fill()
+      .map(() => {
+        const value = secureRandom()
+        return { key: `key-${value}`, value: `value-${value}` }
+      })
 
-  //   await producer.send({ acks: 1, topic: topicName, messages })
-  //   await waitForMessages(messagesConsumed, { number: messages.length })
+    await producer.send({ acks: 1, topic: topicName, messages })
+    await waitForMessages(messagesConsumed, { number: messages.length })
 
-  //   expect(messagesConsumed.length).toEqual(messages.length)
-  //   for (const deltaTime of heartbeats) {
-  //     expect(deltaTime).toBeGreaterThanOrEqual(heartbeatInterval)
-  //   }
-  // })
+    expect(messagesConsumed.length).toEqual(messages.length)
+    for (const deltaTime of heartbeats) {
+      expect(deltaTime).toBeGreaterThanOrEqual(heartbeatInterval)
+    }
+  })
 
   it('consume GZIP messages', async () => {
     await consumer.connect()
@@ -730,52 +730,52 @@ describe('Consumer', () => {
     })
   })
 
-  // it('discards messages received when pausing while fetch is in-flight', async () => {
-  //   consumer = createConsumer({
-  //     cluster: createCluster(),
-  //     groupId,
-  //     maxWaitTimeInMs: 200,
-  //     logger: newLogger(),
-  //   })
+  it('discards messages received when pausing while fetch is in-flight', async () => {
+    consumer = createConsumer({
+      cluster: createCluster(),
+      groupId,
+      maxWaitTimeInMs: 200,
+      logger: newLogger(),
+    })
 
-  //   const messages = Array(10)
-  //     .fill()
-  //     .map(() => {
-  //       const value = secureRandom()
-  //       return { key: `key-${value}`, value: `value-${value}` }
-  //     })
-  //   await producer.connect()
-  //   await producer.send({ acks: 1, topic: topicName, messages })
+    const messages = Array(10)
+      .fill()
+      .map(() => {
+        const value = secureRandom()
+        return { key: `key-${value}`, value: `value-${value}` }
+      })
+    await producer.connect()
+    await producer.send({ acks: 1, topic: topicName, messages })
 
-  //   await consumer.connect()
+    await consumer.connect()
 
-  //   await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-  //   const offsetsConsumed = []
+    const offsetsConsumed = []
 
-  //   const eachBatch = async ({ batch, heartbeat }) => {
-  //     for (const message of batch.messages) {
-  //       offsetsConsumed.push(message.offset)
-  //     }
+    const eachBatch = async ({ batch, heartbeat }) => {
+      for (const message of batch.messages) {
+        offsetsConsumed.push(message.offset)
+      }
 
-  //     await heartbeat()
-  //   }
+      await heartbeat()
+    }
 
-  //   consumer.run({
-  //     eachBatch,
-  //   })
+    consumer.run({
+      eachBatch,
+    })
 
-  //   await waitForConsumerToJoinGroup(consumer)
-  //   await waitFor(() => offsetsConsumed.length === messages.length, { delay: 50 })
-  //   await waitForNextEvent(consumer, consumer.events.FETCH_START)
+    await waitForConsumerToJoinGroup(consumer)
+    await waitFor(() => offsetsConsumed.length === messages.length, { delay: 50 })
+    await waitForNextEvent(consumer, consumer.events.FETCH_START)
 
-  //   consumer.pause([{ topic: topicName }])
-  //   await producer.send({ acks: 1, topic: topicName, messages }) // trigger completion of fetch
+    consumer.pause([{ topic: topicName }])
+    await producer.send({ acks: 1, topic: topicName, messages }) // trigger completion of fetch
 
-  //   await waitForNextEvent(consumer, consumer.events.FETCH)
+    await waitForNextEvent(consumer, consumer.events.FETCH)
 
-  //   expect(offsetsConsumed.length).toEqual(messages.length)
-  // })
+    expect(offsetsConsumed.length).toEqual(messages.length)
+  })
 
   describe('transactions', () => {
     testIfKafkaAtLeast_0_11('accepts messages from an idempotent producer', async () => {

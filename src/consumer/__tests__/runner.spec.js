@@ -277,39 +277,38 @@ describe('Consumer > Runner', () => {
       expect(consumerGroup.joinAndSync).toHaveBeenCalledTimes(1)
     })
 
-    // TODO: Revise
-    // it('correctly catch exceptions in parallel "eachBatch" processing', async () => {
-    //   runner = new Runner({
-    //     consumerGroup,
-    //     instrumentationEmitter: new InstrumentationEventEmitter(),
-    //     eachBatchAutoResolve: false,
-    //     eachBatch: async () => {
-    //       throw new Error('Error while processing batches in parallel')
-    //     },
-    //     onCrash,
-    //     logger: newLogger(),
-    //     partitionsConsumedConcurrently: 10,
-    //   })
+    it('correctly catch exceptions in parallel "eachBatch" processing', async () => {
+      runner = new Runner({
+        consumerGroup,
+        instrumentationEmitter: new InstrumentationEventEmitter(),
+        eachBatchAutoResolve: false,
+        eachBatch: async () => {
+          throw new Error('Error while processing batches in parallel')
+        },
+        onCrash,
+        logger: newLogger(),
+        partitionsConsumedConcurrently: 10,
+      })
 
-    //   const batch = new Batch(topicName, 0, {
-    //     partition,
-    //     highWatermark: 5,
-    //     messages: [{ offset: 4, key: '1', value: '2' }],
-    //   })
+      const batch = new Batch(topicName, 0, {
+        partition,
+        highWatermark: 5,
+        messages: [{ offset: 4, key: '1', value: '2' }],
+      })
 
-    //   const longRunningRequest = new Promise(resolve => {
-    //     setTimeout(() => resolve([]), 100)
-    //   })
+      const longRunningRequest = new Promise(resolve => {
+        setTimeout(() => resolve([]), 100)
+      })
 
-    //   consumerGroup.fetch.mockImplementationOnce(() =>
-    //     BufferedAsyncIterator([longRunningRequest, Promise.resolve([batch])])
-    //   )
+      consumerGroup.fetch.mockImplementationOnce(() =>
+        BufferedAsyncIterator([longRunningRequest, Promise.resolve([batch])])
+      )
 
-    //   runner.scheduleConsume = jest.fn()
-    //   await runner.start()
+      runner.scheduleConsume = jest.fn()
+      await runner.start()
 
-    //   await expect(runner.consume()).rejects.toThrow('Error while processing batches in parallel')
-    // })
+      await expect(runner.consume()).rejects.toThrow('Error while processing batches in parallel')
+    })
 
     it('correctly catch exceptions in parallel "heartbeat" processing', async () => {
       const batch = new Batch(topicName, 0, {
