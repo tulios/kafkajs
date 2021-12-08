@@ -67,6 +67,14 @@ describe('Utils > Long', () => {
       expect(expectedNumber).toEqual(9223372036854776000)
       expect(typeof expectedNumber).toEqual('number')
     })
+
+    describe('toJSON()', () => {
+      it('should return a string', () => {
+        const serialized = max.toJSON()
+
+        expect(serialized).toEqual('9223372036854775807')
+      })
+    })
   })
 
   describe('Operators', () => {

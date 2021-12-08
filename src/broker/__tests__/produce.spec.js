@@ -342,7 +342,7 @@ describe('Broker > Produce', () => {
         throttleTime: 0,
       })
 
-      // We have to syncronise the sequence number between the producer and the broker
+      // We have to synchronize the sequence number between the producer and the broker
       await expect(
         broker2.produce({
           producerId,
