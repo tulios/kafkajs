@@ -194,19 +194,22 @@ const testWaitFor = async (fn, opts = {}) => waitFor(fn, { ignoreTimeout: true, 
  * @template T
  */
 const retryProtocol = (errorType, fn) =>
-  waitFor(async () => {
-    try {
-      return await fn()
-    } catch (e) {
-      if (e.type !== errorType) {
-        throw e
+  waitFor(
+    async () => {
+      try {
+        return await fn()
+      } catch (e) {
+        if (e.type !== errorType) {
+          throw e
+        }
+        return false
       }
-      return false
-    }
-  })
+    },
+    { ignoreTimeout: true }
+  )
 
 const waitForMessages = (buffer, { number = 1, delay = 50 } = {}) =>
-  waitFor(() => (buffer.length >= number ? buffer : false), { delay, ignoreTimeout: false })
+  waitFor(() => (buffer.length >= number ? buffer : false), { delay, ignoreTimeout: true })
 
 const waitForNextEvent = (consumer, eventName, { maxWait = 10000 } = {}) =>
   new Promise((resolve, reject) => {

@@ -73,9 +73,9 @@ module.exports = ({
   )
 
   const topics = {}
+  let running = false
   let runner = null
   let consumerGroup = null
-  let restartTimeout = null
 
   if (heartbeatInterval >= sessionTimeout) {
     throw new KafkaJSNonRetriableError(
@@ -144,8 +144,7 @@ module.exports = ({
         instrumentationEmitter.emit(STOP)
       }
 
-      clearTimeout(restartTimeout)
-
+      running = false
       logger.info('Stopped', { groupId })
     } catch (e) {}
   }
@@ -203,12 +202,14 @@ module.exports = ({
     eachBatch = null,
     eachMessage = null,
   } = {}) => {
-    if (consumerGroup) {
+    if (running) {
       logger.warn('consumer#run was called, but the consumer is already running', { groupId })
       return
     }
+    running = true
 
     const start = async onCrash => {
+      if (!running) return
       logger.info('Starting', { groupId })
 
       consumerGroup = createConsumerGroup({
@@ -283,7 +284,8 @@ module.exports = ({
           groupId,
         })
 
-        restartTimeout = setTimeout(() => start(onCrash), retryTime)
+        running = true
+        setTimeout(() => start(onCrash), retryTime)
       }
     }
 
