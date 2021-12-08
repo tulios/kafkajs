@@ -1,6 +1,7 @@
 const fetchManager = ({ logger: rootLogger, nodeIds, fetch, onCrash }) => {
   const logger = rootLogger.namespace('FetcherPool')
   const fetchers = {}
+  let error
   const queue = []
 
   const fetchNode = async nodeId => {
@@ -8,9 +9,8 @@ const fetchManager = ({ logger: rootLogger, nodeIds, fetch, onCrash }) => {
       return fetchers[nodeId]
     }
 
-    logger.debug('fetchNode()', { nodeId })
-
     fetchers[nodeId] = (async () => {
+      logger.debug('fetchNode()', { nodeId })
       const batches = await fetch(nodeId)
       const messages = batches.map(batch => ({ batch, nodeId }))
       queue.push(...messages)
@@ -18,8 +18,8 @@ const fetchManager = ({ logger: rootLogger, nodeIds, fetch, onCrash }) => {
 
     try {
       await fetchers[nodeId]
-    } catch (error) {
-      onCrash(error)
+    } catch (e) {
+      error = e
     } finally {
       delete fetchers[nodeId]
     }
@@ -36,6 +36,10 @@ const fetchManager = ({ logger: rootLogger, nodeIds, fetch, onCrash }) => {
   }
 
   const next = async () => {
+    if (error) {
+      throw error
+    }
+
     // TODO: Support concurrency by assigning topics+partitions to different runners (each to max one runner).
     const fetchPromise = fetchEmptyNodes()
 

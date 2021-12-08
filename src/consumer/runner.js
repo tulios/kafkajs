@@ -233,46 +233,110 @@ module.exports = class Runner extends EventEmitter {
 
   async consume() {
     try {
-      const batch = await this.consumerGroup.nextBatch()
-      if (!this.running || !batch || batch.isEmpty()) {
-        return
-      }
+      await this.retrier(async (bail, retryCount, retryTime) => {
+        try {
+          const batch = await this.consumerGroup.nextBatch()
 
-      await this.retrier(async () => {
-        const startBatchProcess = Date.now()
-        const payload = {
-          topic: batch.topic,
-          partition: batch.partition,
-          highWatermark: batch.highWatermark,
-          offsetLag: batch.offsetLag(),
-          /**
-           * @since 2019-06-24 (>= 1.8.0)
-           *
-           * offsetLag returns the lag based on the latest offset in the batch, to
-           * keep the event backward compatible we just introduced "offsetLagLow"
-           * which calculates the lag based on the first offset in the batch
-           */
-          offsetLagLow: batch.offsetLagLow(),
-          batchSize: batch.messages.length,
-          firstOffset: batch.firstOffset(),
-          lastOffset: batch.lastOffset(),
+          if (!this.running || !batch || batch.isEmpty()) {
+            await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+            return
+          }
+
+          const startBatchProcess = Date.now()
+          const payload = {
+            topic: batch.topic,
+            partition: batch.partition,
+            highWatermark: batch.highWatermark,
+            offsetLag: batch.offsetLag(),
+            /**
+             * @since 2019-06-24 (>= 1.8.0)
+             *
+             * offsetLag returns the lag based on the latest offset in the batch, to
+             * keep the event backward compatible we just introduced "offsetLagLow"
+             * which calculates the lag based on the first offset in the batch
+             */
+            offsetLagLow: batch.offsetLagLow(),
+            batchSize: batch.messages.length,
+            firstOffset: batch.firstOffset(),
+            lastOffset: batch.lastOffset(),
+          }
+
+          this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
+
+          if (this.eachMessage) {
+            await this.processEachMessage(batch)
+          } else if (this.eachBatch) {
+            await this.processEachBatch(batch)
+          }
+
+          this.instrumentationEmitter.emit(END_BATCH_PROCESS, {
+            ...payload,
+            duration: Date.now() - startBatchProcess,
+          })
+
+          await this.autoCommitOffsets() // TODO: For a single batch (topic, partition) maybe?
+          await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+        } catch (e) {
+          if (!this.running) {
+            this.logger.debug('consumer not running, exiting', {
+              error: e.message,
+              groupId: this.consumerGroup.groupId,
+              memberId: this.consumerGroup.memberId,
+            })
+            return
+          }
+
+          if (isRebalancing(e)) {
+            this.logger.error('The group is rebalancing, re-joining', {
+              groupId: this.consumerGroup.groupId,
+              memberId: this.consumerGroup.memberId,
+              error: e.message,
+              retryCount,
+              retryTime,
+            })
+
+            this.instrumentationEmitter.emit(REBALANCING, {
+              groupId: this.consumerGroup.groupId,
+              memberId: this.consumerGroup.memberId,
+            })
+
+            await this.joinAndSync()
+            return this.consume()
+          }
+
+          if (e.type === 'UNKNOWN_MEMBER_ID') {
+            this.logger.error('The coordinator is not aware of this member, re-joining the group', {
+              groupId: this.consumerGroup.groupId,
+              memberId: this.consumerGroup.memberId,
+              error: e.message,
+              retryCount,
+              retryTime,
+            })
+
+            this.consumerGroup.memberId = null
+            await this.joinAndSync()
+            return this.consume()
+          }
+
+          if (e.name === 'KafkaJSOffsetOutOfRange') {
+            return this.consume()
+          }
+
+          if (e.name === 'KafkaJSNotImplemented') {
+            return bail(e)
+          }
+
+          this.logger.debug('Error while fetching data, trying again...', {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+            error: e.message,
+            stack: e.stack,
+            retryCount,
+            retryTime,
+          })
+
+          throw e
         }
-
-        this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
-
-        if (this.eachMessage) {
-          await this.processEachMessage(batch)
-        } else if (this.eachBatch) {
-          await this.processEachBatch(batch)
-        }
-
-        this.instrumentationEmitter.emit(END_BATCH_PROCESS, {
-          ...payload,
-          duration: Date.now() - startBatchProcess,
-        })
-
-        await this.autoCommitOffsets() // TODO: For a single batch (topic, partition) maybe?
-        await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
       })
     } catch (error) {
       this.onCrash(error)
