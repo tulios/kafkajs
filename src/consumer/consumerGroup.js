@@ -63,6 +63,7 @@ module.exports = class ConsumerGroup {
     isolationLevel,
     rackId,
     metadataMaxAge,
+    concurrency,
   }) {
     /** @type {import("../../types").Cluster} */
     this.cluster = cluster
@@ -86,6 +87,7 @@ module.exports = class ConsumerGroup {
     this.isolationLevel = isolationLevel
     this.rackId = rackId
     this.metadataMaxAge = metadataMaxAge
+    this.concurrency = concurrency
 
     this.seekOffset = new SeekOffsets()
     this.coordinator = null
@@ -307,9 +309,11 @@ module.exports = class ConsumerGroup {
 
     this.fetchManager = fetchManager({
       logger: this.logger,
+      concurrency: this.concurrency,
       nodeIds: this.cluster.getNodeIds(),
       fetch: this.fetch.bind(this),
     })
+    this.fetchManager.assign(currentMemberAssignment)
   }
 
   joinAndSync() {
@@ -350,8 +354,8 @@ module.exports = class ConsumerGroup {
     })
   }
 
-  async nextBatch() {
-    return this.fetchManager.next()
+  async nextBatch({ runnerId }) {
+    return this.fetchManager.next({ runnerId })
   }
 
   /**

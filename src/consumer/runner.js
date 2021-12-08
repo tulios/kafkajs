@@ -18,6 +18,7 @@ const CONSUMING_STOP = 'consuming-stop'
 module.exports = class Runner extends EventEmitter {
   /**
    * @param {object} options
+   * @param {number} options.runnerId
    * @param {import("../../types").Logger} options.logger
    * @param {import("./consumerGroup")} options.consumerGroup
    * @param {import("../instrumentation/emitter")} options.instrumentationEmitter
@@ -30,6 +31,7 @@ module.exports = class Runner extends EventEmitter {
    * @param {boolean} [options.autoCommit=true]
    */
   constructor({
+    runnerId,
     logger,
     consumerGroup,
     instrumentationEmitter,
@@ -42,6 +44,7 @@ module.exports = class Runner extends EventEmitter {
     autoCommit = true,
   }) {
     super()
+    this.runnerId = runnerId
     this.logger = logger.namespace('Runner')
     this.consumerGroup = consumerGroup
     this.instrumentationEmitter = instrumentationEmitter
@@ -238,9 +241,11 @@ module.exports = class Runner extends EventEmitter {
   }
 
   async consume() {
+    const { runnerId } = this
+
     await this.retrier(async (bail, retryCount, retryTime) => {
       try {
-        const batch = await this.consumerGroup.nextBatch()
+        const batch = await this.consumerGroup.nextBatch({ runnerId })
 
         if (!this.running) return
 

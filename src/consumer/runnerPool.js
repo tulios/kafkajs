@@ -6,7 +6,7 @@ const Runner = require('./runner')
  * @param {object} options
  * @param {import('./consumerGroup')} options.consumerGroup
  * @param {(err: Error) => Promise<void>} options.onCrash
- * @param {number} options.partitionsConsumedConcurrently
+ * @param {number} options.concurrency
  * @returns
  */
 const createRunnerPool = ({
@@ -20,7 +20,7 @@ const createRunnerPool = ({
   heartbeatInterval,
   retry,
   onCrash,
-  partitionsConsumedConcurrently,
+  concurrency,
 }) => {
   const logger = rootLogger.namespace('RunnerPool')
   /** @type {Runner[]} */
@@ -31,23 +31,22 @@ const createRunnerPool = ({
     if (running) return
     running = true
 
-    runners = Array(partitionsConsumedConcurrently)
-      .fill()
-      .map(
-        () =>
-          new Runner({
-            autoCommit,
-            logger,
-            consumerGroup,
-            instrumentationEmitter,
-            eachBatchAutoResolve,
-            eachBatch,
-            eachMessage,
-            heartbeatInterval,
-            retry,
-            onCrash,
-          })
-      )
+    runners = Array.from(Array(concurrency).keys()).map(
+      runnerId =>
+        new Runner({
+          runnerId,
+          autoCommit,
+          logger,
+          consumerGroup,
+          instrumentationEmitter,
+          eachBatchAutoResolve,
+          eachBatch,
+          eachMessage,
+          heartbeatInterval,
+          retry,
+          onCrash,
+        })
+    )
 
     try {
       await consumerGroup.connect()

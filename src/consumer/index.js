@@ -163,7 +163,7 @@ module.exports = ({
     autoCommitInterval = null,
     autoCommitThreshold = null,
     eachBatchAutoResolve = true,
-    partitionsConsumedConcurrently = 1,
+    partitionsConsumedConcurrently: concurrency = 1,
     eachBatch = null,
     eachMessage = null,
   } = {}) => {
@@ -198,7 +198,7 @@ module.exports = ({
         isolationLevel,
         rackId,
         metadataMaxAge,
-        partitionsConsumedConcurrently,
+        concurrency,
       })
 
       runner = createRunnerPool({
@@ -212,7 +212,7 @@ module.exports = ({
         heartbeatInterval,
         retry,
         onCrash,
-        partitionsConsumedConcurrently,
+        concurrency,
       })
 
       await runner.start()
