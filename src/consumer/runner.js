@@ -308,7 +308,7 @@ module.exports = class Runner extends EventEmitter {
           })
 
           await this.joinAndSync()
-          throw e
+          return this.consume()
         }
 
         if (e.type === 'UNKNOWN_MEMBER_ID') {
