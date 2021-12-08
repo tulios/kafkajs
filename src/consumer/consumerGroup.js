@@ -25,7 +25,7 @@ const {
   KafkaJSNonRetriableError,
   KafkaJSStaleTopicMetadataAssignment,
 } = require('../errors')
-const fetcherPool = require('./fetcherPool')
+const fetchManager = require('./fetchManager')
 
 const { keys } = Object
 
@@ -175,8 +175,6 @@ module.exports = class ConsumerGroup {
   async leave() {
     const { groupId, memberId } = this
 
-    this.fetcher && (await this.fetcher.stop())
-
     if (memberId) {
       await this.coordinator.leaveGroup({ groupId, memberId })
       this.memberId = null
@@ -317,8 +315,7 @@ module.exports = class ConsumerGroup {
       memberId,
     })
 
-    this.fetcher && (await this.fetcher.stop())
-    this.fetcher = fetcherPool({
+    this.fetchManager = fetchManager({
       logger: this.logger,
       nodeIds: this.cluster.getNodeIds(),
       fetch: this.fetch.bind(this),
@@ -362,6 +359,10 @@ module.exports = class ConsumerGroup {
         bail(e)
       }
     })
+  }
+
+  async nextBatch() {
+    return this.fetchManager.next()
   }
 
   /**

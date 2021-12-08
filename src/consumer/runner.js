@@ -233,7 +233,7 @@ module.exports = class Runner extends EventEmitter {
 
   async consume() {
     try {
-      const batch = await this.consumerGroup.fetcher.next()
+      const batch = await this.consumerGroup.nextBatch()
       if (!this.running || !batch || batch.isEmpty()) {
         return
       }
