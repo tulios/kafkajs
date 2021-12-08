@@ -1,4 +1,5 @@
-const fetchManager = ({ logger: rootLogger, nodeIds, fetch, onCrash }) => {
+const fetchManager = ({ logger: rootLogger, nodeIds, fetch }) => {
+  // eslint-disable-next-line no-unused-vars
   const logger = rootLogger.namespace('FetcherPool')
   const fetchers = {}
   let error
@@ -10,7 +11,6 @@ const fetchManager = ({ logger: rootLogger, nodeIds, fetch, onCrash }) => {
     }
 
     fetchers[nodeId] = (async () => {
-      logger.debug('fetchNode()', { nodeId })
       const batches = await fetch(nodeId)
       const messages = batches.map(batch => ({ batch, nodeId }))
       queue.push(...messages)

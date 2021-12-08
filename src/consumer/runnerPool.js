@@ -61,8 +61,6 @@ const createRunnerPool = ({
   }
 
   const stop = async () => {
-    logger.debug('stop()')
-
     if (!running) return
     running = false
 

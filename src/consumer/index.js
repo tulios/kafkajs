@@ -66,6 +66,12 @@ module.exports = ({
     throw new KafkaJSNonRetriableError('Consumer groupId must be a non-empty string.')
   }
 
+  if (heartbeatInterval >= sessionTimeout) {
+    throw new KafkaJSNonRetriableError(
+      `Consumer heartbeatInterval (${heartbeatInterval}) must be lower than sessionTimeout (${sessionTimeout}). It is recommended to set heartbeatInterval to approximately a third of the sessionTimeout.`
+    )
+  }
+
   const logger = rootLogger.namespace('Consumer')
   const instrumentationEmitter = rootInstrumentationEmitter || new InstrumentationEventEmitter()
   const assigners = partitionAssigners.map(createAssigner =>
@@ -77,45 +83,6 @@ module.exports = ({
   let runner = null
   let consumerGroup = null
 
-  if (heartbeatInterval >= sessionTimeout) {
-    throw new KafkaJSNonRetriableError(
-      `Consumer heartbeatInterval (${heartbeatInterval}) must be lower than sessionTimeout (${sessionTimeout}). It is recommended to set heartbeatInterval to approximately a third of the sessionTimeout.`
-    )
-  }
-
-  const createConsumerGroup = ({
-    autoCommit,
-    autoCommitInterval,
-    autoCommitThreshold,
-    partitionsConsumedConcurrently,
-    onCrash,
-  }) => {
-    return new ConsumerGroup({
-      logger: rootLogger,
-      topics: keys(topics),
-      topicConfigurations: topics,
-      retry,
-      cluster,
-      groupId,
-      assigners,
-      sessionTimeout,
-      rebalanceTimeout,
-      maxBytesPerPartition,
-      minBytes,
-      maxBytes,
-      maxWaitTimeInMs,
-      instrumentationEmitter,
-      autoCommit,
-      autoCommitInterval,
-      autoCommitThreshold,
-      isolationLevel,
-      rackId,
-      metadataMaxAge,
-      partitionsConsumedConcurrently,
-      onCrash,
-    })
-  }
-
   /** @type {import("../../types").Consumer["connect"]} */
   const connect = async () => {
     await cluster.connect()
@@ -124,7 +91,6 @@ module.exports = ({
 
   /** @type {import("../../types").Consumer["disconnect"]} */
   const disconnect = async () => {
-    logger.debug('disconnect()')
     try {
       await stop()
       logger.debug('consumer has stopped, disconnecting', { groupId })
@@ -135,7 +101,6 @@ module.exports = ({
 
   /** @type {import("../../types").Consumer["stop"]} */
   const stop = async () => {
-    logger.debug('stop()')
     try {
       if (runner) {
         await runner.stop()
@@ -212,12 +177,28 @@ module.exports = ({
       if (!running) return
       logger.info('Starting', { groupId })
 
-      consumerGroup = createConsumerGroup({
+      consumerGroup = new ConsumerGroup({
+        logger: rootLogger,
+        topics: keys(topics),
+        topicConfigurations: topics,
+        retry,
+        cluster,
+        groupId,
+        assigners,
+        sessionTimeout,
+        rebalanceTimeout,
+        maxBytesPerPartition,
+        minBytes,
+        maxBytes,
+        maxWaitTimeInMs,
+        instrumentationEmitter,
         autoCommit,
         autoCommitInterval,
         autoCommitThreshold,
+        isolationLevel,
+        rackId,
+        metadataMaxAge,
         partitionsConsumedConcurrently,
-        onCrash,
       })
 
       runner = createRunnerPool({
@@ -267,8 +248,6 @@ module.exports = ({
 
             return true
           })))
-
-      logger.error('shouldRestart', { shouldRestart, isErrorRetriable, retry })
 
       instrumentationEmitter.emit(CRASH, {
         error: e,
