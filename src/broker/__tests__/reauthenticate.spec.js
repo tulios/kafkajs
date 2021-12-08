@@ -48,10 +48,10 @@ describeIfOauthbearerEnabled('Brokers re-authentication with SASL OAUTHBEARER', 
     broker = new Broker({
       connection,
       logger: newLogger(),
-      reauthenticationThreshold: 2000,
+      reauthenticationThreshold: 14900,
     })
     await broker.connect()
-    await wait(13000)
+    await wait(1000)
     await broker.listGroups()
 
     expect(getAuthCalls(spy).length).toBe(2)
@@ -63,10 +63,10 @@ describeIfOauthbearerEnabled('Brokers re-authentication with SASL OAUTHBEARER', 
     broker = new Broker({
       connection,
       logger: newLogger(),
-      reauthenticationThreshold: 2000,
+      reauthenticationThreshold: 14900,
     })
     await broker.connect()
-    await wait(13000)
+    await wait(1000)
     await Promise.all([
       broker.listGroups(),
       broker.listGroups(),

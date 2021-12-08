@@ -73,19 +73,13 @@ module.exports = class Broker {
     this.sessionLifetime = Long.ZERO
 
     // The lock timeout has twice the connectionTimeout because the same timeout is used
-    // for the first apiVersions call and it has additional little buffer to last little longer
-    // so when {this.authLock} timeouts within connection, the auth timeout error will be created, not generic lock timeout.
-    const lockTimeout = 2 * this.connection.connectionTimeout + this.authenticationTimeout + 50
+    // for the first apiVersions call
+    const lockTimeout = 2 * this.connection.connectionTimeout + this.authenticationTimeout
     this.brokerAddress = `${this.connection.host}:${this.connection.port}`
 
     this.lock = new Lock({
       timeout: lockTimeout,
       description: `connect to broker ${this.brokerAddress}`,
-    })
-
-    this.authLock = new Lock({
-      timeout: this.authenticationTimeout,
-      description: `authentication to broker ${this.brokerAddress}`,
     })
 
     this.lookupRequest = notInitializedLookup
@@ -95,23 +89,17 @@ module.exports = class Broker {
      * @returns {Promise}
      */
     this[PRIVATE.AUTHENTICATE] = sharedPromiseTo(async () => {
-      try {
-        await this.authLock.acquire()
+      if (this.connection.sasl && !this.isAuthenticated()) {
+        const authenticator = new SASLAuthenticator(
+          this.connection,
+          this.rootLogger,
+          this.versions,
+          this.supportAuthenticationProtocol
+        )
 
-        if (this.connection.sasl && !this.isAuthenticated()) {
-          const authenticator = new SASLAuthenticator(
-            this.connection,
-            this.rootLogger,
-            this.versions,
-            this.supportAuthenticationProtocol
-          )
-
-          await authenticator.authenticate()
-          this.authenticatedAt = process.hrtime()
-          this.sessionLifetime = Long.fromValue(authenticator.sessionLifetime)
-        }
-      } finally {
-        await this.authLock.release()
+        await authenticator.authenticate()
+        this.authenticatedAt = process.hrtime()
+        this.sessionLifetime = Long.fromValue(authenticator.sessionLifetime)
       }
     })
   }
