@@ -6,15 +6,26 @@ const { KafkaJSNonRetriableError } = require('../errors')
 const apiKeys = require('../protocol/requests/apiKeys')
 const SASLAuthenticator = require('./saslAuthenticator')
 const shuffle = require('../utils/shuffle')
+const { ApiVersions: apiVersionsApiKey } = require('../protocol/requests/apiKeys')
+const sharedPromiseTo = require('../utils/sharedPromiseTo')
 
 const PRIVATE = {
   SHOULD_REAUTHENTICATE: Symbol('private:Broker:shouldReauthenticate'),
   SEND_REQUEST: Symbol('private:Broker:sendRequest'),
+  AUTHENTICATE: Symbol('private:Broker:authenticate'),
 }
 
 /** @type {import("../protocol/requests").Lookup} */
 const notInitializedLookup = () => {
   throw new Error('Broker not connected')
+}
+
+/**
+ * @param request - request from protocol
+ * @returns {boolean}
+ */
+const isAuthenticatedRequest = request => {
+  return request.apiKey !== apiVersionsApiKey
 }
 
 /**
@@ -72,6 +83,33 @@ module.exports = class Broker {
     })
 
     this.lookupRequest = notInitializedLookup
+
+    /**
+     * @private
+     * @returns {Promise}
+     */
+    this[PRIVATE.AUTHENTICATE] = sharedPromiseTo(async () => {
+      if (this.connection.sasl && !this.isAuthenticated()) {
+        const authenticator = new SASLAuthenticator(
+          this.connection,
+          this.rootLogger,
+          this.versions,
+          this.supportAuthenticationProtocol
+        )
+
+        await authenticator.authenticate()
+        this.authenticatedAt = process.hrtime()
+        this.sessionLifetime = Long.fromValue(authenticator.sessionLifetime)
+      }
+    })
+  }
+
+  /**
+   * @public
+   * @returns {boolean}
+   */
+  isAuthenticated() {
+    return this.authenticatedAt != null && !this[PRIVATE.SHOULD_REAUTHENTICATE]()
   }
 
   /**
@@ -80,8 +118,7 @@ module.exports = class Broker {
    */
   isConnected() {
     const { connected, sasl } = this.connection
-    const isAuthenticated = this.authenticatedAt != null && !this[PRIVATE.SHOULD_REAUTHENTICATE]()
-    return sasl ? connected && isAuthenticated : connected
+    return sasl ? connected && this.isAuthenticated() : connected
   }
 
   /**
@@ -118,18 +155,7 @@ module.exports = class Broker {
         })
       }
 
-      if (this.authenticatedAt == null && this.connection.sasl) {
-        const authenticator = new SASLAuthenticator(
-          this.connection,
-          this.rootLogger,
-          this.versions,
-          this.supportAuthenticationProtocol
-        )
-
-        await authenticator.authenticate()
-        this.authenticatedAt = process.hrtime()
-        this.sessionLifetime = Long.fromValue(authenticator.sessionLifetime)
-      }
+      await this[PRIVATE.AUTHENTICATE]()
     } finally {
       await this.lock.release()
     }
@@ -914,6 +940,9 @@ module.exports = class Broker {
    * @private
    */
   async [PRIVATE.SEND_REQUEST](protocolRequest) {
+    if (!this.isAuthenticated() && isAuthenticatedRequest(protocolRequest.request)) {
+      await this[PRIVATE.AUTHENTICATE]()
+    }
     try {
       return await this.connection.send(protocolRequest)
     } catch (e) {
