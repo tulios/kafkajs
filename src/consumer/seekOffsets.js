@@ -1,15 +1,6 @@
-const { entries, keys } = Object
-
 module.exports = class SeekOffsets {
   constructor() {
     this.data = {}
-  }
-
-  getTopicPartitions() {
-    return entries(this.data).map(([topic, partitions]) => ({
-      topic,
-      partitions: keys(partitions),
-    }))
   }
 
   set(topic, partition, offset) {

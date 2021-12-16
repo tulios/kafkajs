@@ -2,7 +2,7 @@ const {
   events: { FETCH_START, FETCH },
 } = require('./instrumentationEvents')
 
-const { values } = Object
+const { entries } = Object
 
 const fetchManager = ({
   logger: rootLogger,
@@ -11,25 +11,23 @@ const fetchManager = ({
   fetch,
   concurrency = 1,
 }) => {
-  // eslint-disable-next-line no-unused-vars
-  const logger = rootLogger.namespace('FetcherPool')
+  const logger = rootLogger.namespace('FetchManager')
   const fetchers = {}
   let assignments = {}
   let queues = {}
   let error
 
-  const fetchNode = async nodeId => {
-    if (nodeId in fetchers) {
-      return fetchers[nodeId]
-    }
+  const fetchNode = async (runnerId, nodeId) => {
+    if (!(runnerId in fetchers)) fetchers[runnerId] = {}
+    if (nodeId in fetchers[runnerId]) return fetchers[nodeId]
 
-    fetchers[nodeId] = (async () => {
-      logger.error('fetchNode()', { nodeId })
+    fetchers[runnerId][nodeId] = (async () => {
+      logger.error('fetchNode()', { runnerId, nodeId })
 
       const startFetch = Date.now()
       instrumentationEmitter.emit(FETCH_START, {})
 
-      const batches = await fetch(nodeId)
+      const batches = await fetch(nodeId, assignments[runnerId])
 
       instrumentationEmitter.emit(FETCH, {
         /**
@@ -45,31 +43,25 @@ const fetchManager = ({
       })
 
       batches.forEach(batch => {
-        const { topic, partition } = batch
-        const runnerId = assignments[topic][partition]
         queues[runnerId].push({ batch, nodeId })
       })
     })()
 
     try {
-      await fetchers[nodeId]
+      await fetchers[runnerId][nodeId]
     } catch (e) {
       error = e
     } finally {
-      delete fetchers[nodeId]
+      delete fetchers[runnerId][nodeId]
     }
   }
 
-  const fetchEmptyNodes = () => {
-    const nodesInQueues = new Set(
-      values(queues)
-        .flatMap(x => x)
-        .map(({ nodeId }) => nodeId)
-    )
+  const fetchEmptyNodes = runnerId => {
+    const nodesInQueue = new Set(queues[runnerId].map(({ nodeId }) => nodeId))
 
     const promises = nodeIds
-      .filter(nodeId => !nodesInQueues.has(nodeId))
-      .map(nodeId => fetchNode(nodeId))
+      .filter(nodeId => !nodesInQueue.has(nodeId))
+      .map(nodeId => fetchNode(runnerId, nodeId))
 
     return Promise.race(promises)
   }
@@ -80,7 +72,7 @@ const fetchManager = ({
       throw error
     }
 
-    const fetchPromise = fetchEmptyNodes()
+    const fetchPromise = fetchEmptyNodes(runnerId)
 
     const queue = queues[runnerId]
 
@@ -105,11 +97,20 @@ const fetchManager = ({
       .forEach(({ topic, partition }, index) => {
         const runnerId = index % concurrency
 
-        if (!assignments[topic]) assignments[topic] = {}
-        assignments[topic][partition] = runnerId
-
         if (!queues[runnerId]) queues[runnerId] = []
+
+        if (!assignments[runnerId]) assignments[runnerId] = {}
+        if (!assignments[runnerId][topic]) assignments[runnerId][topic] = []
+        assignments[runnerId][topic].push(partition)
       })
+
+    assignments = entries(assignments).reduce(
+      (acc, [runnerId, assignments]) => ({
+        ...acc,
+        [runnerId]: entries(assignments).map(([topic, partitions]) => ({ topic, partitions })),
+      }),
+      {}
+    )
 
     logger.error('assigned', { assignments, queues })
   }

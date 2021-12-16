@@ -422,16 +422,33 @@ module.exports = class ConsumerGroup {
     return this[PRIVATE.SHAREDHEARTBEAT]({ interval })
   }
 
-  async fetch(nodeId) {
+  async fetch(nodeId, topicPartitions) {
     try {
       await this.cluster.refreshMetadataIfNecessary()
       this.checkForStaleAssignment()
-      await this.seekOffsets(nodeId)
 
-      const topicPartitions = this.filterTopicPartitionsByNode(
-        nodeId,
-        this.subscriptionState.active()
+      // TODO: Fugly but works, clean up!
+
+      topicPartitions = this.filterTopicPartitionsByNode(nodeId, topicPartitions)
+
+      await this.seekOffsets(topicPartitions)
+
+      const activePartitionsByTopic = this.subscriptionState.active().reduce(
+        (acc, { topic, partitions }) => ({
+          ...acc,
+          [topic]: partitions.reduce((acc, partition) => ({ ...acc, [partition]: true }), {}),
+        }),
+        {}
       )
+
+      topicPartitions = topicPartitions
+        .map(({ topic, partitions }) => ({
+          topic,
+          partitions: partitions.filter(partition => activePartitionsByTopic[topic][partition]),
+        }))
+        .filter(({ partitions }) => partitions.length)
+
+      // TODO: end
 
       if (!topicPartitions.length) {
         await sleep(this.maxWaitTime)
@@ -648,12 +665,7 @@ module.exports = class ConsumerGroup {
     }
   }
 
-  async seekOffsets(nodeId) {
-    const topicPartitions = this.filterTopicPartitionsByNode(
-      nodeId,
-      this.seekOffset.getTopicPartitions()
-    )
-
+  async seekOffsets(topicPartitions) {
     for (const { topic, partitions } of topicPartitions) {
       for (const partition of partitions) {
         const seekEntry = this.seekOffset.pop(topic, partition)
