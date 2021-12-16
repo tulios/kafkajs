@@ -286,7 +286,7 @@ module.exports = class Runner extends EventEmitter {
           duration: Date.now() - startBatchProcess,
         })
 
-        await this.autoCommitOffsets() // TODO: For a single batch (topic, partition) maybe?
+        await this.autoCommitOffsets()
         await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
       } catch (e) {
         if (!this.running) {
@@ -327,7 +327,7 @@ module.exports = class Runner extends EventEmitter {
 
           this.consumerGroup.memberId = null
           await this.joinAndSync()
-          throw e
+          return this.consume()
         }
 
         if (e.name === 'KafkaJSOffsetOutOfRange') {
