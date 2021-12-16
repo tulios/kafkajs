@@ -9,7 +9,7 @@ const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
 const SubscriptionState = require('./subscriptionState')
 const {
-  events: { GROUP_JOIN, HEARTBEAT, CONNECT, RECEIVED_UNSUBSCRIBED_TOPICS, FETCH_START, FETCH },
+  events: { GROUP_JOIN, HEARTBEAT, CONNECT, RECEIVED_UNSUBSCRIBED_TOPICS },
 } = require('./instrumentationEvents')
 const { MemberAssignment } = require('./assignerProtocol')
 const {
@@ -309,6 +309,7 @@ module.exports = class ConsumerGroup {
 
     this.fetchManager = fetchManager({
       logger: this.logger,
+      instrumentationEmitter: this.instrumentationEmitter,
       concurrency: this.concurrency,
       nodeIds: this.cluster.getNodeIds(),
       fetch: this.fetch.bind(this),
@@ -423,46 +424,27 @@ module.exports = class ConsumerGroup {
 
   async fetch(nodeId) {
     try {
-      const startFetch = Date.now()
-      this.instrumentationEmitter.emit(FETCH_START, {})
-
       await this.cluster.refreshMetadataIfNecessary()
       this.checkForStaleAssignment()
+      await this.seekOffsets(nodeId)
 
-      while (this.seekOffset.size > 0) {
-        const seekEntry = this.seekOffset.pop()
-        this.logger.debug('Seek offset', {
-          groupId: this.groupId,
-          memberId: this.memberId,
-          seek: seekEntry,
-        })
-        await this.offsetManager.seek(seekEntry)
-      }
-
-      /** @type {{topic: string, partitions: { partition: number; fetchOffset: string; maxBytes: number }[]}[]} */
-      const requests = []
-
-      const topicPartitions = this.subscriptionState.active()
+      const topicPartitions = this.filterTopicPartitionsByNode(
+        nodeId,
+        this.subscriptionState.active()
+      )
 
       if (!topicPartitions.length) {
         await sleep(this.maxWaitTime)
         return []
       }
 
-      await this.offsetManager.resolveOffsets() // TODO: For specific partitions?
+      const committedOffsets = this.offsetManager.committedOffsets()
 
-      topicPartitions.forEach(({ topic, partitions: activePartitions }) => {
-        const nodePartitions = this.findReadReplicaForPartitions(topic, activePartitions)
+      /** @type {{topic: string, partitions: { partition: number; fetchOffset: string; maxBytes: number }[]}[]} */
+      const requests = []
 
-        let partitions = nodePartitions[nodeId]
-        if (!partitions) {
-          return
-        }
-
-        const committedOffsets = this.offsetManager.committedOffsets()
-
-        this.logger.debug('before', { topic, partitions, committedOffsets })
-        partitions = partitions
+      topicPartitions.forEach(({ topic, partitions: nodePartitions }) => {
+        const partitions = nodePartitions
           .filter(partition => {
             /**
              * When recovering from OffsetOutOfRange, each partition can recover
@@ -485,7 +467,6 @@ module.exports = class ConsumerGroup {
             fetchOffset: this.offsetManager.nextOffset(topic, partition).toString(),
             maxBytes: this.maxBytesPerPartition,
           }))
-        this.logger.debug('after', { topic, partitions })
 
         if (!partitions.length) {
           return
@@ -503,19 +484,6 @@ module.exports = class ConsumerGroup {
         isolationLevel: this.isolationLevel,
         topics: requests,
         rackId: this.rackId,
-      })
-
-      this.instrumentationEmitter.emit(FETCH, {
-        /**
-         * PR #570 removed support for the number of batches in this instrumentation event;
-         * The new implementation uses an async generation to deliver the batches, which makes
-         * this number impossible to get. The number is set to 0 to keep the event backward
-         * compatible until we bump KafkaJS to version 2, following the end of node 8 LTS.
-         *
-         * @since 2019-11-29
-         */
-        numberOfBatches: 0,
-        duration: Date.now() - startFetch,
       })
 
       return responses.flatMap(({ topicName, partitions }) => {
@@ -680,6 +648,31 @@ module.exports = class ConsumerGroup {
     }
   }
 
+  async seekOffsets(nodeId) {
+    const topicPartitions = this.filterTopicPartitionsByNode(
+      nodeId,
+      this.seekOffset.getTopicPartitions()
+    )
+
+    for (const { topic, partitions } of topicPartitions) {
+      for (const partition of partitions) {
+        const seekEntry = this.seekOffset.pop(topic, partition)
+        if (!seekEntry) {
+          continue
+        }
+
+        this.logger.debug('Seek offset', {
+          groupId: this.groupId,
+          memberId: this.memberId,
+          seek: seekEntry,
+        })
+        await this.offsetManager.seek(seekEntry)
+      }
+    }
+
+    await this.offsetManager.resolveOffsets()
+  }
+
   hasSeekOffset({ topic, partition }) {
     return this.seekOffset.has(topic, partition)
   }
@@ -743,5 +736,14 @@ module.exports = class ConsumerGroup {
       const current = result[nodeId] || []
       return { ...result, [nodeId]: [...current, partitionId] }
     }, {})
+  }
+
+  filterTopicPartitionsByNode(nodeId, topicPartitions) {
+    return topicPartitions
+      .map(({ topic, partitions }) => {
+        const nodePartitions = this.findReadReplicaForPartitions(topic, partitions)
+        return { topic, partitions: nodePartitions[nodeId] || [] }
+      })
+      .filter(({ partitions }) => partitions.length)
   }
 }

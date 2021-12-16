@@ -11,6 +11,7 @@ const { newLogger, secureRandom } = require('testHelpers')
 const sleep = require('../../utils/sleep')
 const BufferedAsyncIterator = require('../../utils/bufferedAsyncIterator')
 const createRunnerPool = require('../runnerPool')
+const waitFor = require('../../utils/waitFor')
 
 const UNKNOWN = -1
 const REBALANCE_IN_PROGRESS = 27
@@ -314,7 +315,7 @@ describe('Consumer > Runner', () => {
 
       await runnerPool.start()
 
-      await sleep(100)
+      await waitFor(() => onCrash.mock.calls.length > 0)
 
       await expect(onCrash).toHaveBeenCalledWith(expect.any(KafkaJSNumberOfRetriesExceeded))
     })
