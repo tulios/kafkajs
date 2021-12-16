@@ -427,28 +427,11 @@ module.exports = class ConsumerGroup {
       await this.cluster.refreshMetadataIfNecessary()
       this.checkForStaleAssignment()
 
-      // TODO: Fugly but works, clean up!
-
-      topicPartitions = this.filterTopicPartitionsByNode(nodeId, topicPartitions)
+      topicPartitions = this.filterPartitionsByNode(nodeId, topicPartitions)
 
       await this.seekOffsets(topicPartitions)
 
-      const activePartitionsByTopic = this.subscriptionState.active().reduce(
-        (acc, { topic, partitions }) => ({
-          ...acc,
-          [topic]: partitions.reduce((acc, partition) => ({ ...acc, [partition]: true }), {}),
-        }),
-        {}
-      )
-
-      topicPartitions = topicPartitions
-        .map(({ topic, partitions }) => ({
-          topic,
-          partitions: partitions.filter(partition => activePartitionsByTopic[topic][partition]),
-        }))
-        .filter(({ partitions }) => partitions.length)
-
-      // TODO: end
+      topicPartitions = this.filterActivePartitions(topicPartitions)
 
       if (!topicPartitions.length) {
         await sleep(this.maxWaitTime)
@@ -750,12 +733,22 @@ module.exports = class ConsumerGroup {
     }, {})
   }
 
-  filterTopicPartitionsByNode(nodeId, topicPartitions) {
+  filterPartitionsByNode(nodeId, topicPartitions) {
+    return topicPartitions.map(({ topic, partitions }) => ({
+      topic,
+      partitions: this.findReadReplicaForPartitions(topic, partitions)[nodeId] || [],
+    }))
+  }
+
+  filterActivePartitions(topicPartitions) {
+    const activeTopicPartitions = this.subscriptionState
+      .active()
+      .reduce((acc, { topic, partitions }) => ({ ...acc, [topic]: new Set(partitions) }), {})
+
+    const isActive = topic => partition => activeTopicPartitions[topic].has(partition)
+
     return topicPartitions
-      .map(({ topic, partitions }) => {
-        const nodePartitions = this.findReadReplicaForPartitions(topic, partitions)
-        return { topic, partitions: nodePartitions[nodeId] || [] }
-      })
+      .map(({ topic, partitions }) => ({ topic, partitions: partitions.filter(isActive(topic)) }))
       .filter(({ partitions }) => partitions.length)
   }
 }
