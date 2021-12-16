@@ -13,19 +13,14 @@ const socketFactory = defaultSocketFactory()
 
 const {
   createLogger,
-  LEVELS: { NOTHING, DEBUG },
+  LEVELS: { NOTHING },
 } = require('../src/loggers')
 
 const LoggerConsole = require('../src/loggers/console')
 const { Kafka } = require('../index')
 
 const newLogger = (opts = {}) =>
-  createLogger(
-    Object.assign(
-      { level: process.env.TEST_DEBUG ? DEBUG : NOTHING, logCreator: LoggerConsole },
-      opts
-    )
-  )
+  createLogger(Object.assign({ level: NOTHING, logCreator: LoggerConsole }, opts))
 
 const getHost = () => 'localhost'
 const secureRandom = (length = 10) =>

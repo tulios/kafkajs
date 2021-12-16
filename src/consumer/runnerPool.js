@@ -1,14 +1,5 @@
 const Runner = require('./runner')
 
-/**
- * Pool of runners that consume batches concurrently.
- *
- * @param {object} options
- * @param {import('./consumerGroup')} options.consumerGroup
- * @param {(err: Error) => Promise<void>} options.onCrash
- * @param {number} options.concurrency
- * @returns
- */
 const createRunnerPool = ({
   autoCommit,
   logger: rootLogger,
@@ -23,7 +14,7 @@ const createRunnerPool = ({
   concurrency,
 }) => {
   const logger = rootLogger.namespace('RunnerPool')
-  /** @type {Runner[]} */
+
   let runners = []
   let running = false
 
@@ -71,8 +62,16 @@ const createRunnerPool = ({
     } catch (e) {}
   }
 
-  const commitOffsets = async offsets => {
-    await Promise.all(runners.map(r => r.commitOffsets(offsets)))
+  const commitOffsets = offsets => {
+    const { groupId, memberId } = consumerGroup
+
+    const [runner] = runners
+    if (!runner) {
+      logger.debug('consumer not running, exiting', { groupId, memberId, offsets })
+      return
+    }
+
+    return runner.commitOffsets(offsets)
   }
 
   return { start, stop, commitOffsets }

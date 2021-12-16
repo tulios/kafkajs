@@ -428,52 +428,46 @@ module.exports = class ConsumerGroup {
       this.checkForStaleAssignment()
 
       topicPartitions = this.filterPartitionsByNode(nodeId, topicPartitions)
-
       await this.seekOffsets(topicPartitions)
 
-      topicPartitions = this.filterActivePartitions(topicPartitions)
+      const committedOffsets = this.offsetManager.committedOffsets()
+      const activeTopicPartitions = this.getActiveTopicPartitions()
 
-      if (!topicPartitions.length) {
+      const requests = topicPartitions
+        .map(({ topic, partitions }) => ({
+          topic,
+          partitions: partitions
+            .filter(
+              partition =>
+                /**
+                 * When recovering from OffsetOutOfRange, each partition can recover
+                 * concurrently, which invalidates resolved and committed offsets as part
+                 * of the recovery mechanism (see OffsetManager.clearOffsets). In concurrent
+                 * scenarios this can initiate a new fetch with invalid offsets.
+                 *
+                 * This was further highlighted by https://github.com/tulios/kafkajs/pull/570,
+                 * which increased concurrency, making this more likely to happen.
+                 *
+                 * This is solved by only making requests for partitions with initialized offsets.
+                 *
+                 * See the following pull request which explains the context of the problem:
+                 * @issue https://github.com/tulios/kafkajs/pull/578
+                 */
+                committedOffsets[topic][partition] != null &&
+                activeTopicPartitions[topic].has(partition)
+            )
+            .map(partition => ({
+              partition,
+              fetchOffset: this.offsetManager.nextOffset(topic, partition).toString(),
+              maxBytes: this.maxBytesPerPartition,
+            })),
+        }))
+        .filter(({ partitions }) => partitions.length)
+
+      if (!requests.length) {
         await sleep(this.maxWaitTime)
         return []
       }
-
-      const committedOffsets = this.offsetManager.committedOffsets()
-
-      /** @type {{topic: string, partitions: { partition: number; fetchOffset: string; maxBytes: number }[]}[]} */
-      const requests = []
-
-      topicPartitions.forEach(({ topic, partitions: nodePartitions }) => {
-        const partitions = nodePartitions
-          .filter(partition => {
-            /**
-             * When recovering from OffsetOutOfRange, each partition can recover
-             * concurrently, which invalidates resolved and committed offsets as part
-             * of the recovery mechanism (see OffsetManager.clearOffsets). In concurrent
-             * scenarios this can initiate a new fetch with invalid offsets.
-             *
-             * This was further highlighted by https://github.com/tulios/kafkajs/pull/570,
-             * which increased concurrency, making this more likely to happen.
-             *
-             * This is solved by only making requests for partitions with initialized offsets.
-             *
-             * See the following pull request which explains the context of the problem:
-             * @issue https://github.com/tulios/kafkajs/pull/578
-             */
-            return committedOffsets[topic][partition] != null
-          })
-          .map(partition => ({
-            partition,
-            fetchOffset: this.offsetManager.nextOffset(topic, partition).toString(),
-            maxBytes: this.maxBytesPerPartition,
-          }))
-
-        if (!partitions.length) {
-          return
-        }
-
-        requests.push({ topic, partitions })
-      })
 
       const broker = await this.cluster.findBroker({ nodeId })
 
@@ -740,15 +734,9 @@ module.exports = class ConsumerGroup {
     }))
   }
 
-  filterActivePartitions(topicPartitions) {
-    const activeTopicPartitions = this.subscriptionState
+  getActiveTopicPartitions() {
+    return this.subscriptionState
       .active()
       .reduce((acc, { topic, partitions }) => ({ ...acc, [topic]: new Set(partitions) }), {})
-
-    const isActive = topic => partition => activeTopicPartitions[topic].has(partition)
-
-    return topicPartitions
-      .map(({ topic, partitions }) => ({ topic, partitions: partitions.filter(isActive(topic)) }))
-      .filter(({ partitions }) => partitions.length)
   }
 }

@@ -9,7 +9,6 @@ const { createErrorFromCode } = require('../../protocol/error')
 const InstrumentationEventEmitter = require('../../instrumentation/emitter')
 const { newLogger, secureRandom } = require('testHelpers')
 const sleep = require('../../utils/sleep')
-const BufferedAsyncIterator = require('../../utils/bufferedAsyncIterator')
 const createRunnerPool = require('../runnerPool')
 const waitFor = require('../../utils/waitFor')
 
@@ -46,9 +45,9 @@ describe('Consumer > Runner', () => {
       sync: jest.fn(),
       joinAndSync: jest.fn(),
       leave: jest.fn(),
-      fetch: jest.fn(() => BufferedAsyncIterator([Promise.resolve([emptyBatch])])),
       nextBatch: jest.fn(async () => {
         await sleep(50)
+        return emptyBatch
       }),
       resolveOffset: jest.fn(),
       commitOffsets: jest.fn(),
@@ -173,9 +172,7 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      consumerGroup.fetch.mockImplementationOnce(() =>
-        BufferedAsyncIterator([Promise.resolve([batch])])
-      )
+      consumerGroup.nextBatch.mockImplementationOnce(async () => batch)
       await runner.start()
       expect(onCrash).not.toHaveBeenCalled()
       expect(consumerGroup.resolveOffset).not.toHaveBeenCalled()

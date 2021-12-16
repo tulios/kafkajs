@@ -4,14 +4,7 @@ const {
 
 const { entries } = Object
 
-const fetchManager = ({
-  logger: rootLogger,
-  instrumentationEmitter,
-  nodeIds,
-  fetch,
-  concurrency = 1,
-}) => {
-  const logger = rootLogger.namespace('FetchManager')
+const fetchManager = ({ instrumentationEmitter, nodeIds, fetch, concurrency = 1 }) => {
   const fetchers = {}
   let assignments = {}
   let queues = {}
@@ -22,8 +15,6 @@ const fetchManager = ({
     if (nodeId in fetchers[runnerId]) return fetchers[nodeId]
 
     fetchers[runnerId][nodeId] = (async () => {
-      logger.error('fetchNode()', { runnerId, nodeId })
-
       const startFetch = Date.now()
       instrumentationEmitter.emit(FETCH_START, {})
 
@@ -67,7 +58,6 @@ const fetchManager = ({
   }
 
   const next = async ({ runnerId }) => {
-    logger.error('next()', { runnerId })
     if (error) {
       throw error
     }
@@ -87,8 +77,6 @@ const fetchManager = ({
   }
 
   const assign = topicPartitions => {
-    logger.error('assign()', { topicPartitions })
-
     assignments = {}
     queues = {}
 
@@ -111,8 +99,6 @@ const fetchManager = ({
       }),
       {}
     )
-
-    logger.error('assigned', { assignments, queues })
   }
 
   return { next, assign }
