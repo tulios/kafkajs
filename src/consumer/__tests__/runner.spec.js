@@ -45,9 +45,9 @@ describe('Consumer > Runner', () => {
       sync: jest.fn(),
       joinAndSync: jest.fn(),
       leave: jest.fn(),
-      nextBatch: jest.fn(async () => {
+      nextBatch: jest.fn(async (_, callback) => {
         await sleep(50)
-        return emptyBatch
+        return callback(emptyBatch)
       }),
       resolveOffset: jest.fn(),
       commitOffsets: jest.fn(),
@@ -97,7 +97,7 @@ describe('Consumer > Runner', () => {
       messages: [{ offset: 4, key: '1', value: '2' }],
     })
 
-    consumerGroup.nextBatch.mockImplementationOnce(async () => batch)
+    consumerGroup.nextBatch.mockImplementationOnce((_, callback) => callback(batch))
     runner.scheduleConsume = jest.fn()
     await runner.start()
     await runner.consume() // Manually fetch for test
@@ -114,7 +114,7 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      consumerGroup.nextBatch.mockImplementationOnce(async () => batch)
+      consumerGroup.nextBatch.mockImplementationOnce((_, callback) => callback(batch))
       runner.scheduleConsume = jest.fn()
       await runner.start()
       await runner.consume() // Manually fetch for test
@@ -172,7 +172,7 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      consumerGroup.nextBatch.mockImplementationOnce(async () => batch)
+      consumerGroup.nextBatch.mockImplementationOnce((_, callback) => callback(batch))
       await runner.start()
       expect(onCrash).not.toHaveBeenCalled()
       expect(consumerGroup.resolveOffset).not.toHaveBeenCalled()
@@ -205,7 +205,7 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      consumerGroup.nextBatch.mockImplementationOnce(async () => batch)
+      consumerGroup.nextBatch.mockImplementationOnce((_, callback) => callback(batch))
       runner.scheduleConsume = jest.fn()
       await runner.start()
       await runner.consume() // Manually fetch for test
@@ -299,8 +299,8 @@ describe('Consumer > Runner', () => {
       })
 
       consumerGroup.nextBatch
-        .mockImplementationOnce(async () => sleep(100))
-        .mockImplementationOnce(async () => batch)
+        .mockImplementationOnce(async (_, callback) => callback(await sleep(100)))
+        .mockImplementationOnce(async (_, callback) => callback(batch))
 
       await runnerPool.start()
 
@@ -320,8 +320,8 @@ describe('Consumer > Runner', () => {
       }
 
       consumerGroup.nextBatch
-        .mockImplementationOnce(async () => sleep(100))
-        .mockImplementationOnce(async () => batch)
+        .mockImplementationOnce(async (_, callback) => callback(await sleep(100)))
+        .mockImplementationOnce(async (_, callback) => callback(batch))
 
       runner.scheduleConsume = jest.fn()
       await runner.start()
@@ -353,7 +353,7 @@ describe('Consumer > Runner', () => {
           await sleep(10)
           throw new Error('Failed or manually rejected request')
         })
-        .mockImplementationOnce(async () => sleep(10))
+        .mockImplementationOnce(async (_, callback) => callback(await sleep(10)))
 
       runner.scheduleConsume = jest.fn()
       await runner.start()

@@ -354,8 +354,8 @@ module.exports = class ConsumerGroup {
     })
   }
 
-  async nextBatch({ runnerId }) {
-    return this.fetchManager.next({ runnerId })
+  async nextBatch(runnerId, callback) {
+    return this.fetchManager.next({ runnerId, callback })
   }
 
   /**
@@ -421,12 +421,14 @@ module.exports = class ConsumerGroup {
     return this[PRIVATE.SHAREDHEARTBEAT]({ interval })
   }
 
-  async fetch(nodeId, topicPartitions) {
+  async fetch(nodeId) {
     try {
       await this.cluster.refreshMetadataIfNecessary()
       this.checkForStaleAssignment()
 
+      let topicPartitions = this.subscriptionState.assigned()
       topicPartitions = this.filterPartitionsByNode(nodeId, topicPartitions)
+
       await this.seekOffsets(topicPartitions)
 
       const committedOffsets = this.offsetManager.committedOffsets()

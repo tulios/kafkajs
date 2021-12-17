@@ -84,13 +84,14 @@ describe('Network > Connection', () => {
 
     test('trigger "end" and "unref" function on not active connection', async () => {
       expect(connection.connected).toEqual(false)
-      connection.socket = {
+      const socket = {
         end: jest.fn(),
         unref: jest.fn(),
       }
+      connection.sockets.default.socket = socket
       await expect(connection.disconnect()).resolves.toEqual(true)
-      expect(connection.socket.end).toHaveBeenCalled()
-      expect(connection.socket.unref).toHaveBeenCalled()
+      expect(socket.end).toHaveBeenCalled()
+      expect(socket.unref).toHaveBeenCalled()
     })
   })
 
@@ -133,9 +134,9 @@ describe('Network > Connection', () => {
       connection = new Connection(connectionOpts({ maxInFlightRequests: 2 }))
       const originalProcessData = connection.processData
 
-      connection.processData = async data => {
+      connection.processData = async (...args) => {
         await sleep(100)
-        originalProcessData.apply(connection, [data])
+        originalProcessData.apply(connection, args)
       }
 
       await connection.connect()
@@ -167,9 +168,9 @@ describe('Network > Connection', () => {
       )
       const originalProcessData = connection.processData
 
-      connection.processData = async data => {
+      connection.processData = async (...args) => {
         await sleep(100)
-        originalProcessData.apply(connection, [data])
+        originalProcessData.apply(connection, args)
       }
 
       await connection.connect()
@@ -196,7 +197,7 @@ describe('Network > Connection', () => {
       const correlationId = 383
       connection.nextCorrelationId = () => correlationId
       connection.connectionStatus = CONNECTION_STATUS.CONNECTED
-      connection.socket = {
+      connection.sockets.default.socket = {
         write() {
           // Simulate a happy response
           setImmediate(() => {
@@ -361,27 +362,27 @@ describe('Network > Connection', () => {
       const correlationIdPart3 = Buffer.from([1])
 
       // write half of the expected size and expect to keep buffering
-      expect(connection.processData(sizePart1)).toBeUndefined()
+      expect(connection.processData('default', sizePart1)).toBeUndefined()
       expect(resolve).not.toHaveBeenCalled()
 
       // Write the rest of the size, but without any response
-      expect(connection.processData(sizePart2)).toBeUndefined()
+      expect(connection.processData('default', sizePart2)).toBeUndefined()
       expect(resolve).not.toHaveBeenCalled()
 
       // Response consists of correlation id + payload
       // Writing 1/3 of the correlation id
-      expect(connection.processData(correlationIdPart1)).toBeUndefined()
+      expect(connection.processData('default', correlationIdPart1)).toBeUndefined()
       expect(resolve).not.toHaveBeenCalled()
 
       // At this point, we will write N bytes, where N == size,
       // but we should keep buffering because the size field should
       // not be considered as part of the response payload
-      expect(connection.processData(correlationIdPart2)).toBeUndefined()
+      expect(connection.processData('default', correlationIdPart2)).toBeUndefined()
       expect(resolve).not.toHaveBeenCalled()
 
       // write full payload size
       const buffer = Buffer.concat([correlationIdPart3, payload])
-      connection.processData(buffer)
+      connection.processData('default', buffer)
 
       expect(resolve).toHaveBeenCalledWith({
         correlationId,
