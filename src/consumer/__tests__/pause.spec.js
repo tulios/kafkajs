@@ -95,27 +95,27 @@ describe('Consumer', () => {
       const consumedMessages = await waitForMessages(messagesConsumed, { number: 3 })
 
       expect(consumedMessages.filter(({ topic }) => topic === pausedTopic)).toEqual([
-        {
+        expect.objectContaining({
           topic: pausedTopic,
           partition: expect.any(Number),
           message: expect.objectContaining({ offset: '0' }),
-        },
+        }),
       ])
 
       const byPartition = (a, b) => a.partition - b.partition
       expect(
         consumedMessages.filter(({ topic }) => topic === activeTopic).sort(byPartition)
       ).toEqual([
-        {
+        expect.objectContaining({
           topic: activeTopic,
           partition: 0,
           message: expect.objectContaining({ offset: '0' }),
-        },
-        {
+        }),
+        expect.objectContaining({
           topic: activeTopic,
           partition: 1,
           message: expect.objectContaining({ offset: '0' }),
-        },
+        }),
       ])
 
       expect(consumer.paused()).toEqual([
@@ -165,19 +165,23 @@ describe('Consumer', () => {
       })
 
       expect(consumedMessages.filter(({ partition }) => partition === pausedPartition)).toEqual(
-        messages.map((message, i) => ({
-          topic,
-          partition: pausedPartition,
-          message: expect.objectContaining({ offset: `${i}` }),
-        }))
+        messages.map((message, i) =>
+          expect.objectContaining({
+            topic,
+            partition: pausedPartition,
+            message: expect.objectContaining({ offset: `${i}` }),
+          })
+        )
       )
 
       expect(consumedMessages.filter(({ partition }) => partition !== pausedPartition)).toEqual(
-        messages.concat(messages).map((message, i) => ({
-          topic,
-          partition: activePartition,
-          message: expect.objectContaining({ offset: `${i}` }),
-        }))
+        messages.concat(messages).map((message, i) =>
+          expect.objectContaining({
+            topic,
+            partition: activePartition,
+            message: expect.objectContaining({ offset: `${i}` }),
+          })
+        )
       )
 
       expect(consumer.paused()).toEqual([
@@ -266,16 +270,16 @@ describe('Consumer', () => {
       consumer.resume([{ topic: pausedTopic }])
 
       await expect(waitForMessages(messagesConsumed, { number: 2 })).resolves.toEqual([
-        {
+        expect.objectContaining({
           topic: activeTopic,
           partition: 0,
           message: expect.objectContaining({ offset: '0' }),
-        },
-        {
+        }),
+        expect.objectContaining({
           topic: pausedTopic,
           partition: 0,
           message: expect.objectContaining({ offset: '0' }),
-        },
+        }),
       ])
 
       expect(consumer.paused()).toEqual([])
@@ -325,19 +329,23 @@ describe('Consumer', () => {
       })
 
       expect(consumedMessages.filter(({ partition }) => partition === pausedPartition)).toEqual(
-        messages.concat(messages).map((message, i) => ({
-          topic,
-          partition: pausedPartition,
-          message: expect.objectContaining({ offset: `${i}` }),
-        }))
+        messages.concat(messages).map((message, i) =>
+          expect.objectContaining({
+            topic,
+            partition: pausedPartition,
+            message: expect.objectContaining({ offset: `${i}` }),
+          })
+        )
       )
 
       expect(consumedMessages.filter(({ partition }) => partition !== pausedPartition)).toEqual(
-        messages.concat(messages).map((message, i) => ({
-          topic,
-          partition: activePartition,
-          message: expect.objectContaining({ offset: `${i}` }),
-        }))
+        messages.concat(messages).map((message, i) =>
+          expect.objectContaining({
+            topic,
+            partition: activePartition,
+            message: expect.objectContaining({ offset: `${i}` }),
+          })
+        )
       )
 
       expect(consumer.paused()).toEqual([])

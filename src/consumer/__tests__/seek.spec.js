@@ -98,16 +98,16 @@ describe('Consumer', () => {
 
       await waitForConsumerToJoinGroup(consumer)
       await expect(waitForMessages(messagesConsumed, { number: 2 })).resolves.toEqual([
-        {
+        expect.objectContaining({
           topic: topicName,
           partition: 0,
           message: expect.objectContaining({ offset: '1' }),
-        },
-        {
+        }),
+        expect.objectContaining({
           topic: topicName,
           partition: 0,
           message: expect.objectContaining({ offset: '2' }),
-        },
+        }),
       ])
     })
 
@@ -133,11 +133,11 @@ describe('Consumer', () => {
 
       await waitForConsumerToJoinGroup(consumer)
       await expect(waitForMessages(messagesConsumed, { number: 1 })).resolves.toEqual([
-        {
+        expect.objectContaining({
           topic: topicName,
           partition: 0,
           message: expect.objectContaining({ offset: '2' }),
-        },
+        }),
       ])
     })
 
@@ -157,11 +157,11 @@ describe('Consumer', () => {
 
       await waitForConsumerToJoinGroup(consumer)
       await expect(waitForMessages(messagesConsumed, { number: 1 })).resolves.toEqual([
-        {
+        expect.objectContaining({
           topic: topicName,
           partition: 0,
           message: expect.objectContaining({ offset: '0' }),
-        },
+        }),
       ])
     })
 
@@ -195,11 +195,11 @@ describe('Consumer', () => {
 
         await waitForConsumerToJoinGroup(consumer)
         await expect(waitForMessages(messagesConsumed, { number: 1 })).resolves.toEqual([
-          {
+          expect.objectContaining({
             topic: topicName,
             partition: 0,
             message: expect.objectContaining({ offset: '2' }),
-          },
+          }),
         ])
 
         await expect(admin.fetchOffsets({ groupId, topic: topicName })).resolves.toEqual([
@@ -213,16 +213,16 @@ describe('Consumer', () => {
         consumer.seek({ topic: topicName, partition: 0, offset: 1 })
 
         await expect(waitForMessages(messagesConsumed, { number: 2 })).resolves.toEqual([
-          {
+          expect.objectContaining({
             topic: topicName,
             partition: 0,
             message: expect.objectContaining({ offset: '1' }),
-          },
-          {
+          }),
+          expect.objectContaining({
             topic: topicName,
             partition: 0,
             message: expect.objectContaining({ offset: '2' }),
-          },
+          }),
         ])
       })
     })
