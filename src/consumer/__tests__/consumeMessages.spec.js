@@ -209,6 +209,54 @@ describe('Consumer', () => {
     }
   })
 
+  it('heartbeats are exposed in the eachMessage handler', async () => {
+    consumer = createConsumer({
+      cluster,
+      groupId,
+      heartbeatInterval: 50,
+      logger: newLogger(),
+    })
+
+    topicName = `test-topic-${secureRandom()}`
+    await createTopic({
+      topic: topicName,
+      partitions: 1,
+    })
+
+    await consumer.connect()
+    await producer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    const messagesConsumed = []
+
+    let heartbeats = 0
+    consumer.on(consumer.events.HEARTBEAT, () => {
+      heartbeats++
+    })
+
+    consumer.run({
+      eachMessage: async payload => {
+        await new Promise(resolve => {
+          setTimeout(resolve, 100)
+        })
+
+        await payload.heartbeat()
+        messagesConsumed.push(payload.message)
+
+        await new Promise(resolve => {
+          setTimeout(resolve, 100)
+        })
+      },
+    })
+
+    await waitForConsumerToJoinGroup(consumer)
+
+    await producer.send({ acks: 1, topic: topicName, messages: [{ key: 'value', value: 'value' }] })
+    await waitForMessages(messagesConsumed, { number: 1 })
+
+    expect(heartbeats).toBe(1)
+  })
+
   it('consume GZIP messages', async () => {
     await consumer.connect()
     await producer.connect()
