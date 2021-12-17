@@ -11,26 +11,19 @@ const fetchManager = ({ instrumentationEmitter, nodeIds, fetch, concurrency = 1 
   let error
 
   const fetchNode = async (runnerId, nodeId) => {
-    if (!(runnerId in fetchers)) fetchers[runnerId] = {}
-    if (nodeId in fetchers[runnerId]) return fetchers[nodeId]
+    if (!fetchers[runnerId]) fetchers[runnerId] = {}
+    if (fetchers[runnerId][nodeId]) return fetchers[runnerId][nodeId]
 
     fetchers[runnerId][nodeId] = (async () => {
       const startFetch = Date.now()
-      instrumentationEmitter.emit(FETCH_START, {})
+      instrumentationEmitter.emit(FETCH_START, { nodeId })
 
       const batches = await fetch(nodeId, assignments[runnerId])
 
       instrumentationEmitter.emit(FETCH, {
-        /**
-         * PR #570 removed support for the number of batches in this instrumentation event;
-         * The new implementation uses an async generation to deliver the batches, which makes
-         * this number impossible to get. The number is set to 0 to keep the event backward
-         * compatible until we bump KafkaJS to version 2, following the end of node 8 LTS.
-         *
-         * @since 2019-11-29
-         */
-        numberOfBatches: 0,
+        numberOfBatches: batches.length,
         duration: Date.now() - startFetch,
+        nodeId,
       })
 
       batches.forEach(batch => {

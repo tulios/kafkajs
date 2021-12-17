@@ -308,7 +308,6 @@ module.exports = class ConsumerGroup {
     })
 
     this.fetchManager = fetchManager({
-      logger: this.logger,
       instrumentationEmitter: this.instrumentationEmitter,
       concurrency: this.concurrency,
       nodeIds: this.cluster.getNodeIds(),
