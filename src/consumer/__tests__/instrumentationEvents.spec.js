@@ -280,6 +280,90 @@ describe('Consumer > Instrumentation Events', () => {
     })
   })
 
+  fit('emits start and end batch process when reading empty control batches', async () => {
+    const onStartBatchProcess = jest.fn()
+    const onEndBatchProcess = jest.fn()
+    let startBatchProcess = 0
+    let endBatchProcess = 0
+
+    consumer = createTestConsumer()
+    consumer.on(consumer.events.START_BATCH_PROCESS, event => {
+      onStartBatchProcess(event)
+      startBatchProcess++
+    })
+    consumer.on(consumer.events.END_BATCH_PROCESS, event => {
+      onEndBatchProcess(event)
+      endBatchProcess++
+    })
+
+    await consumer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.run({ eachMessage: async () => true })
+
+    producer = createProducer({
+      cluster,
+      createPartitioner: createModPartitioner,
+      logger: newLogger(),
+      transactionalId: `test-producer-${secureRandom()}`,
+      maxInFlightRequests: 1,
+      idempotent: true,
+    })
+
+    await producer.connect()
+    const transaction = await producer.transaction()
+
+    await transaction.send({
+      topic: topicName,
+      acks: -1,
+      messages: [
+        {
+          key: 'test',
+          value: 'test',
+        },
+      ],
+    })
+    await transaction.abort()
+
+    await waitFor(() => startBatchProcess > 0)
+    await waitFor(() => endBatchProcess > 0)
+
+    expect(startBatchProcess).toBe(1)
+    expect(endBatchProcess).toBe(1)
+
+    expect(onStartBatchProcess).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.start_batch_process',
+      payload: {
+        topic: topicName,
+        partition: 0,
+        highWatermark: '2',
+        offsetLag: expect.any(String),
+        offsetLagLow: expect.any(String),
+        batchSize: 0,
+        firstOffset: '0',
+        lastOffset: '1',
+      },
+    })
+
+    expect(onEndBatchProcess).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.end_batch_process',
+      payload: {
+        topic: topicName,
+        partition: 0,
+        highWatermark: '2',
+        offsetLag: expect.any(String),
+        offsetLagLow: expect.any(String),
+        batchSize: 0,
+        firstOffset: '0',
+        lastOffset: '1',
+        duration: 0,
+      },
+    })
+  })
+
   it('emits connection events', async () => {
     const connectListener = jest.fn().mockName('connect')
     const disconnectListener = jest.fn().mockName('disconnect')
