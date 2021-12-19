@@ -281,6 +281,20 @@ module.exports = class Runner extends EventEmitter {
         lastOffset: batch.lastOffset(),
       }
 
+      /**
+       * If the batch contained control records but no otherwise processable records then we
+       * still need to emit START|END batch instrumentation events to allow any listeners
+       * keeping track of offsets to know about the latest point of consumption
+       */
+      if (batch.isEmptyControlRecord()) {
+        this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
+        this.instrumentationEmitter.emit(END_BATCH_PROCESS, { ...payload, duration: 0 })
+      }
+
+      if (batch.isEmpty()) {
+        return
+      }
+
       this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
 
       if (this.eachMessage) {
@@ -293,6 +307,8 @@ module.exports = class Runner extends EventEmitter {
         ...payload,
         duration: Date.now() - startBatchProcess,
       })
+
+      await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
     }
 
     const { lock, unlock, unlockWithError } = barrier()
@@ -332,12 +348,7 @@ module.exports = class Runner extends EventEmitter {
                 return
               }
 
-              if (batch.isEmpty()) {
-                return
-              }
-
               await onBatch(batch)
-              await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
             } catch (e) {
               unlockWithError(e)
             } finally {
