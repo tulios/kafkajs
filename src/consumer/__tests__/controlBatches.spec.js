@@ -1,6 +1,7 @@
 jest.setTimeout(15000)
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
+const crypto = require('crypto')
 
 const {
   secureRandom,
@@ -10,6 +11,7 @@ const {
   newLogger,
   testIfKafkaAtLeast_0_11,
   waitForMessages,
+  waitFor,
   generateMessages,
   waitForConsumerToJoinGroup,
 } = require('testHelpers')
@@ -83,5 +85,43 @@ describe('Consumer', () => {
 
     producer.send({ topic: topicName, messages: generateMessages({ number: 2 }) })
     await waitForMessages(messagesConsumed, { number: 22 })
+  })
+
+  it('can process transactions across multiple batches', async () => {
+    await consumer.connect()
+    await producer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    let offset = '0'
+    consumer.on(consumer.events.END_BATCH_PROCESS, event => {
+      console.log(event.payload.firstOffset)
+      offset = event.payload.lastOffset
+    })
+
+    consumer.run({
+      eachMessage: async payload => {},
+    })
+
+    const range = [1, 2]
+    const message = {
+      key: 'test',
+      // half size of consumer maxBytes
+      value: crypto.randomBytes(130),
+    }
+
+    const transaction = await producer.transaction()
+    await transaction.send({
+      topic: topicName,
+      acks: -1,
+      messages: range.map(() => message),
+    })
+    await transaction.abort()
+
+    const done = waitFor(() => offset === '2', {
+      delay: 50,
+      maxWait: 5000,
+    })
+
+    await expect(done).resolves.toBe(true)
   })
 })
