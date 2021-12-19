@@ -359,7 +359,7 @@ describe('Consumer > Instrumentation Events', () => {
         batchSize: 0,
         firstOffset: '0',
         lastOffset: '1',
-        duration: 0,
+        duration: expect.any(Number),
       },
     })
   })

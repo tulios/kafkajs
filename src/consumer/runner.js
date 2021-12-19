@@ -289,13 +289,27 @@ module.exports = class Runner extends EventEmitter {
       }
 
       /**
-       * If the batch contained control records but no otherwise processable records then we
-       * still need to emit START|END batch instrumentation events to allow any listeners
-       * keeping track of offsets to know about the latest point of consumption
+       * If the batch contained only control records or only aborted messages then we still
+       * need to resolve and auto-commit to ensure the consumer can move forward.
+       *
+       * We also need to emit batch instrumentation events to allow any listeners keeping
+       * track of offsets to know about the latest point of consumption.
        */
-      if (batch.isEmptyControlRecord()) {
+      if (batch.isEmpty() && !batch.isEmptyIncludingFiltered()) {
         this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
-        this.instrumentationEmitter.emit(END_BATCH_PROCESS, { ...payload, duration: 0 })
+
+        this.consumerGroup.resolveOffset({
+          topic: batch.topic,
+          partition: batch.partition,
+          offset: batch.lastOffset(),
+        })
+        await this.autoCommitOffsetsIfNecessary()
+
+        this.instrumentationEmitter.emit(END_BATCH_PROCESS, {
+          ...payload,
+          duration: Date.now() - startBatchProcess,
+        })
+        return
       }
 
       if (batch.isEmpty()) {
