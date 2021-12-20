@@ -25,7 +25,8 @@ describe('Consumer > Runner', () => {
     topicName,
     partition,
     emptyBatch,
-    instrumentationEmitter
+    instrumentationEmitter,
+    recover
 
   beforeEach(() => {
     topicName = `topic-${secureRandom()}`
@@ -39,6 +40,7 @@ describe('Consumer > Runner', () => {
 
     eachBatch = jest.fn()
     onCrash = jest.fn()
+    recover = jest.fn()
     consumerGroup = {
       connect: jest.fn(),
       join: jest.fn(),
@@ -56,6 +58,12 @@ describe('Consumer > Runner', () => {
     }
     instrumentationEmitter = new InstrumentationEventEmitter()
     runner = new Runner({
+      consumerGroup,
+      instrumentationEmitter,
+      logger: newLogger(),
+      eachBatch,
+    })
+    runnerPool = createRunnerPool({
       consumerGroup,
       instrumentationEmitter,
       onCrash,
@@ -81,7 +89,7 @@ describe('Consumer > Runner', () => {
         .mockImplementationOnce(() => true)
 
       runner.scheduleConsume = jest.fn()
-      await runner.start()
+      await runner.start({ recover })
       expect(runner.scheduleConsume).toHaveBeenCalled()
       expect(onCrash).not.toHaveBeenCalled()
     })
@@ -96,7 +104,7 @@ describe('Consumer > Runner', () => {
 
     consumerGroup.nextBatch.mockImplementationOnce((_, callback) => callback(batch))
     runner.scheduleConsume = jest.fn()
-    await runner.start()
+    await runner.start({ recover })
     await runner.consume() // Manually fetch for test
     expect(eachBatch).toHaveBeenCalled()
     expect(consumerGroup.commitOffsets).toHaveBeenCalled()
@@ -113,7 +121,7 @@ describe('Consumer > Runner', () => {
 
       consumerGroup.nextBatch.mockImplementationOnce((_, callback) => callback(batch))
       runner.scheduleConsume = jest.fn()
-      await runner.start()
+      await runner.start({ recover })
       await runner.consume() // Manually fetch for test
 
       expect(eachBatch).toHaveBeenCalledWith(
@@ -170,7 +178,7 @@ describe('Consumer > Runner', () => {
       })
 
       consumerGroup.nextBatch.mockImplementationOnce((_, callback) => callback(batch))
-      await runner.start()
+      await runner.start({ recover })
       expect(onCrash).not.toHaveBeenCalled()
       expect(consumerGroup.resolveOffset).not.toHaveBeenCalled()
     })
@@ -204,7 +212,7 @@ describe('Consumer > Runner', () => {
 
       consumerGroup.nextBatch.mockImplementationOnce((_, callback) => callback(batch))
       runner.scheduleConsume = jest.fn()
-      await runner.start()
+      await runner.start({ recover })
       await runner.consume() // Manually fetch for test
 
       expect(consumerGroup.commitOffsets).not.toHaveBeenCalled()
@@ -222,7 +230,7 @@ describe('Consumer > Runner', () => {
       throw unknownError
     })
 
-    await runner.start()
+    await runnerPool.start()
 
     await waitFor(() => onCrash.mock.calls.length > 0)
     expect(onCrash).toHaveBeenCalledWith(unknownError)
@@ -234,7 +242,7 @@ describe('Consumer > Runner', () => {
       throw notImplementedError
     })
 
-    await runner.start()
+    await runnerPool.start()
 
     await waitFor(() => onCrash.mock.calls.length > 0)
     expect(onCrash).toHaveBeenCalledWith(notImplementedError)
@@ -252,7 +260,7 @@ describe('Consumer > Runner', () => {
     })
 
     it('should commit offsets while running', async () => {
-      await runner.start()
+      await runner.start({ recover })
       await runner.commitOffsets(offsets)
 
       expect(consumerGroup.commitOffsetsIfNecessary).toHaveBeenCalledTimes(0)
@@ -266,9 +274,11 @@ describe('Consumer > Runner', () => {
         throw error
       })
 
-      await runner.start()
+      await runnerPool.start()
 
-      expect(runner.commitOffsets(offsets)).rejects.toThrow(error.message)
+      consumerGroup.joinAndSync.mockClear()
+
+      expect(runnerPool.commitOffsets(offsets)).rejects.toThrow(error.message)
       expect(consumerGroup.joinAndSync).toHaveBeenCalledTimes(0)
 
       await waitFor(() => consumerGroup.joinAndSync.mock.calls.length > 0)
@@ -299,7 +309,7 @@ describe('Consumer > Runner', () => {
         .mockImplementationOnce(async (_, callback) => callback(await sleep(100)))
         .mockImplementationOnce(async (_, callback) => callback(batch))
 
-      await runnerPool.start()
+      await runnerPool.start({ recover })
 
       await waitFor(() => onCrash.mock.calls.length > 0)
       await expect(onCrash).toHaveBeenCalledWith(expect.any(KafkaJSNumberOfRetriesExceeded))
@@ -321,7 +331,7 @@ describe('Consumer > Runner', () => {
         .mockImplementationOnce(async (_, callback) => callback(batch))
 
       runner.scheduleConsume = jest.fn()
-      await runner.start()
+      await runner.start({ recover })
 
       await expect(runner.consume()).rejects.toThrow(
         'Error while processing heartbeats in parallel'
@@ -329,6 +339,8 @@ describe('Consumer > Runner', () => {
     })
 
     it('a triggered rejoin failing should cause a crash', async () => {
+      await runnerPool.start()
+
       const unknownError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
       consumerGroup.joinAndSync.mockImplementationOnce(() => {
         throw unknownError
@@ -337,8 +349,7 @@ describe('Consumer > Runner', () => {
         throw rebalancingError()
       })
 
-      await runner.start()
-      expect(runner.commitOffsets(offsets)).rejects.toThrow(rebalancingError().message)
+      expect(runnerPool.commitOffsets(offsets)).rejects.toThrow(rebalancingError().message)
 
       await waitFor(() => onCrash.mock.calls.length > 0)
       expect(onCrash).toHaveBeenCalledWith(unknownError)
@@ -353,7 +364,7 @@ describe('Consumer > Runner', () => {
         .mockImplementationOnce(async (_, callback) => callback(await sleep(10)))
 
       runner.scheduleConsume = jest.fn()
-      await runner.start()
+      await runner.start({ recover })
       runner.running = false
 
       runner.consume()

@@ -17,6 +17,7 @@ const {
   KafkaJSError,
   KafkaJSNonRetriableError,
   KafkaJSStaleTopicMetadataAssignment,
+  isRebalancing,
 } = require('../errors')
 const fetchManager = require('./fetchManager')
 
@@ -31,9 +32,6 @@ const STALE_METADATA_ERRORS = [
   'UNKNOWN_LEADER_EPOCH',
   'UNKNOWN_TOPIC_OR_PARTITION',
 ]
-
-const isRebalancing = e =>
-  e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
 
 const PRIVATE = {
   JOIN: Symbol('private:ConsumerGroup:join'),

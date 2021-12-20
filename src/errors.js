@@ -240,6 +240,11 @@ class KafkaJSAggregateError extends Error {
   }
 }
 
+const isRebalancing = e =>
+  e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
+
+const isKafkaJSError = e => e instanceof KafkaJSError
+
 module.exports = {
   KafkaJSError,
   KafkaJSNonRetriableError,
@@ -269,4 +274,6 @@ module.exports = {
   KafkaJSInvalidLongError,
   KafkaJSCreateTopicError,
   KafkaJSAggregateError,
+  isRebalancing,
+  isKafkaJSError,
 }

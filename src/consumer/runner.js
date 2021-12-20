@@ -1,16 +1,12 @@
 const { EventEmitter } = require('events')
 const Long = require('../utils/long')
 const createRetry = require('../retry')
-const { KafkaJSError } = require('../errors')
+const { isRebalancing, isKafkaJSError } = require('../errors')
 
 const {
-  events: { START_BATCH_PROCESS, END_BATCH_PROCESS, REBALANCING },
+  events: { START_BATCH_PROCESS, END_BATCH_PROCESS },
 } = require('./instrumentationEvents')
 
-const isRebalancing = e =>
-  e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
-
-const isKafkaJSError = e => e instanceof KafkaJSError
 const isSameOffset = (offsetA, offsetB) => Long.fromValue(offsetA).equals(Long.fromValue(offsetB))
 const CONSUMING_START = 'consuming-start'
 const CONSUMING_STOP = 'consuming-stop'
@@ -26,7 +22,6 @@ module.exports = class Runner extends EventEmitter {
    * @param {(payload: import("../../types").EachBatchPayload) => Promise<void>} options.eachBatch
    * @param {(payload: import("../../types").EachMessagePayload) => Promise<void>} options.eachMessage
    * @param {number} [options.heartbeatInterval]
-   * @param {(reason: Error) => void} options.onCrash
    * @param {import("../../types").RetryOptions} [options.retry]
    * @param {boolean} [options.autoCommit=true]
    */
@@ -39,7 +34,6 @@ module.exports = class Runner extends EventEmitter {
     eachBatch,
     eachMessage,
     heartbeatInterval,
-    onCrash,
     retry,
     autoCommit = true,
   }) {
@@ -53,7 +47,6 @@ module.exports = class Runner extends EventEmitter {
     this.eachMessage = eachMessage
     this.heartbeatInterval = heartbeatInterval
     this.retrier = createRetry(Object.assign({}, retry))
-    this.onCrash = onCrash
     this.autoCommit = autoCommit
 
     this.running = false
@@ -71,21 +64,9 @@ module.exports = class Runner extends EventEmitter {
     }
   }
 
-  async joinAndSync() {
-    if (!this.running) return
-
-    try {
-      await this.consumerGroup.joinAndSync()
-    } catch (e) {
-      this.onCrash(e)
-    }
-  }
-
-  start() {
-    if (this.running) return
+  start({ recover }) {
     this.running = true
-
-    this.scheduleConsume()
+    this.scheduleConsume({ recover })
   }
 
   async stop() {
@@ -217,7 +198,7 @@ module.exports = class Runner extends EventEmitter {
     }
   }
 
-  async scheduleConsume() {
+  scheduleConsume({ recover }) {
     this.consuming = true
 
     const loop = async () => {
@@ -230,14 +211,13 @@ module.exports = class Runner extends EventEmitter {
         await this.consume()
       } catch (error) {
         this.consuming = false
-        this.onCrash(error)
-        return
+        return recover(error)
       }
 
-      setImmediate(loop)
+      return setImmediate(() => loop())
     }
 
-    setImmediate(loop)
+    return setImmediate(() => loop())
   }
 
   async consume() {
@@ -298,44 +278,15 @@ module.exports = class Runner extends EventEmitter {
           return
         }
 
-        if (isRebalancing(e)) {
-          this.logger.error('The group is rebalancing, re-joining', {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            error: e.message,
-            retryCount,
-            retryTime,
-          })
-
-          this.instrumentationEmitter.emit(REBALANCING, {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-          })
-
-          await this.joinAndSync()
-          return this.consume()
-        }
-
-        if (e.type === 'UNKNOWN_MEMBER_ID') {
-          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            error: e.message,
-            retryCount,
-            retryTime,
-          })
-
-          this.consumerGroup.memberId = null
-          await this.joinAndSync()
-          return this.consume()
-        }
+        if (
+          isRebalancing(e) ||
+          e.type === 'UNKNOWN_MEMBER_ID' ||
+          e.name === 'KafkaJSNotImplemented'
+        )
+          return bail(e)
 
         if (e.name === 'KafkaJSOffsetOutOfRange') {
           throw e
-        }
-
-        if (e.name === 'KafkaJSNotImplemented') {
-          return bail(e)
         }
 
         this.logger.debug('Error while fetching data, trying again...', {
@@ -388,43 +339,12 @@ module.exports = class Runner extends EventEmitter {
           return
         }
 
-        if (isRebalancing(e)) {
-          this.logger.error('The group is rebalancing, re-joining', {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            error: e.message,
-            retryCount,
-            retryTime,
-          })
-
-          this.instrumentationEmitter.emit(REBALANCING, {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-          })
-
-          setImmediate(() => this.joinAndSync())
-
-          bail(new KafkaJSError(e))
-        }
-
-        if (e.type === 'UNKNOWN_MEMBER_ID') {
-          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            error: e.message,
-            retryCount,
-            retryTime,
-          })
-
-          this.consumerGroup.memberId = null
-          setImmediate(() => this.joinAndSync())
-
-          bail(new KafkaJSError(e))
-        }
-
-        if (e.name === 'KafkaJSNotImplemented') {
+        if (
+          isRebalancing(e) ||
+          e.type === 'UNKNOWN_MEMBER_ID' ||
+          e.name === 'KafkaJSNotImplemented'
+        )
           return bail(e)
-        }
 
         this.logger.debug('Error while committing offsets, trying again...', {
           groupId: this.consumerGroup.groupId,
