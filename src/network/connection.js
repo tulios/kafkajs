@@ -315,8 +315,7 @@ module.exports = class Connection {
         size: Buffer.byteLength(requestPayload.buffer),
       })
 
-      const type = apiName === 'Fetch' ? 'fetch' : 'default'
-      const { socket } = this.sockets[type]
+      const socket = this.socketByApiName(apiName)
 
       return new Promise((resolve, reject) => {
         try {
@@ -463,5 +462,14 @@ module.exports = class Connection {
    */
   rejectRequests(error) {
     this.requestQueue.rejectAll(error)
+  }
+
+  /**
+   * @private
+   */
+  socketByApiName(apiName) {
+    const type = apiName === 'Fetch' ? 'fetch' : 'default'
+    const { socket } = this.sockets[type]
+    return socket
   }
 }

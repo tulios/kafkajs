@@ -6,7 +6,7 @@ const { values } = Object
 
 const fetchManager = ({ instrumentationEmitter, nodeIds, fetch, concurrency = 1 }) => {
   const fetchers = {}
-  const inflight = {}
+  const inProgress = {}
   const queues = Array(concurrency)
     .fill()
     .reduce((acc, _, runnerId) => ({ ...acc, [runnerId]: [] }), {})
@@ -52,7 +52,7 @@ const fetchManager = ({ instrumentationEmitter, nodeIds, fetch, concurrency = 1 
     )
 
     const promises = nodeIds
-      .filter(nodeId => !inflight[nodeId] && !nodesInQueue.has(nodeId))
+      .filter(nodeId => !inProgress[nodeId] && !nodesInQueue.has(nodeId))
       .map(nodeId => fetchNode(nodeId))
 
     if (promises.length) {
@@ -78,13 +78,13 @@ const fetchManager = ({ instrumentationEmitter, nodeIds, fetch, concurrency = 1 
     if (!message) return callback()
     const { nodeId, batch } = message
 
-    if (!(nodeId in inflight)) inflight[nodeId] = 0
+    if (!(nodeId in inProgress)) inProgress[nodeId] = 0
 
-    inflight[nodeId]++
+    inProgress[nodeId]++
     try {
       await callback(batch)
     } finally {
-      inflight[nodeId]--
+      inProgress[nodeId]--
     }
   }
 

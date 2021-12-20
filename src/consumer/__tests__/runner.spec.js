@@ -45,10 +45,7 @@ describe('Consumer > Runner', () => {
       sync: jest.fn(),
       joinAndSync: jest.fn(),
       leave: jest.fn(),
-      nextBatch: jest.fn(async (_, callback) => {
-        await sleep(50)
-        return callback(emptyBatch)
-      }),
+      nextBatch: jest.fn((_, callback) => callback(emptyBatch)),
       resolveOffset: jest.fn(),
       commitOffsets: jest.fn(),
       commitOffsetsIfNecessary: jest.fn(),
