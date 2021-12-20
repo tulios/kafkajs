@@ -1,3 +1,5 @@
+const flatten = require('../utils/flatten')
+const flatMap = require('../utils/flatMap')
 const {
   events: { FETCH_START, FETCH },
 } = require('./instrumentationEvents')
@@ -45,11 +47,7 @@ const fetchManager = ({ instrumentationEmitter, nodeIds, fetch, concurrency = 1 
   }
 
   const fetchEmptyNodes = () => {
-    const nodesInQueue = new Set(
-      values(queues)
-        .flatMap(x => x)
-        .map(({ nodeId }) => nodeId)
-    )
+    const nodesInQueue = new Set(flatten(values(queues)).map(({ nodeId }) => nodeId))
 
     const promises = nodeIds
       .filter(nodeId => !inProgress[nodeId] && !nodesInQueue.has(nodeId))
@@ -91,14 +89,14 @@ const fetchManager = ({ instrumentationEmitter, nodeIds, fetch, concurrency = 1 
   const assign = topicPartitions => {
     assignments = {}
 
-    topicPartitions
-      .flatMap(({ topic, partitions }) => partitions.map(partition => ({ topic, partition })))
-      .forEach(({ topic, partition }, index) => {
-        const runnerId = index % concurrency
+    flatMap(topicPartitions, ({ topic, partitions }) =>
+      partitions.map(partition => ({ topic, partition }))
+    ).forEach(({ topic, partition }, index) => {
+      const runnerId = index % concurrency
 
-        if (!assignments[topic]) assignments[topic] = {}
-        assignments[topic][partition] = runnerId
-      })
+      if (!assignments[topic]) assignments[topic] = {}
+      assignments[topic][partition] = runnerId
+    })
 
     return assignments
   }
