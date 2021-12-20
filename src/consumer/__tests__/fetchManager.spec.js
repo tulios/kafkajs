@@ -14,8 +14,6 @@ describe('FetchManager', () => {
   let manager
 
   const createManager = overrides => {
-    fetch.mockReset()
-
     return fetchManager({
       instrumentationEmitter: new InstrumentationEmitter(),
       concurrency: 2,
