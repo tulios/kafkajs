@@ -99,6 +99,8 @@ const fetchManager = ({ instrumentationEmitter, nodeIds, fetch, concurrency = 1 
         if (!assignments[topic]) assignments[topic] = {}
         assignments[topic][partition] = runnerId
       })
+
+    return assignments
   }
 
   return { next, assign }
