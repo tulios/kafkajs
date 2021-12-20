@@ -1,6 +1,4 @@
-const flatten = require('../utils/flatten')
 const sleep = require('../utils/sleep')
-const BufferedAsyncIterator = require('../utils/bufferedAsyncIterator')
 const websiteUrl = require('../utils/websiteUrl')
 const arrayDiff = require('../utils/arrayDiff')
 const createRetry = require('../retry')
@@ -19,6 +17,7 @@ const {
   KafkaJSNonRetriableError,
   KafkaJSStaleTopicMetadataAssignment,
 } = require('../errors')
+const fetchManager = require('./fetchManager')
 
 const { keys } = Object
 
@@ -64,6 +63,7 @@ module.exports = class ConsumerGroup {
     isolationLevel,
     rackId,
     metadataMaxAge,
+    concurrency,
   }) {
     /** @type {import("../../types").Cluster} */
     this.cluster = cluster
@@ -87,6 +87,7 @@ module.exports = class ConsumerGroup {
     this.isolationLevel = isolationLevel
     this.rackId = rackId
     this.metadataMaxAge = metadataMaxAge
+    this.concurrency = concurrency
 
     this.seekOffset = new SeekOffsets()
     this.coordinator = null
@@ -165,6 +166,7 @@ module.exports = class ConsumerGroup {
 
   async leave() {
     const { groupId, memberId } = this
+
     if (memberId) {
       await this.coordinator.leaveGroup({ groupId, memberId })
       this.memberId = null
@@ -304,6 +306,14 @@ module.exports = class ConsumerGroup {
       generationId,
       memberId,
     })
+
+    this.fetchManager = fetchManager({
+      instrumentationEmitter: this.instrumentationEmitter,
+      concurrency: this.concurrency,
+      nodeIds: this.cluster.getNodeIds(),
+      fetch: this.fetch.bind(this),
+    })
+    this.fetchManager.assign(currentMemberAssignment)
   }
 
   joinAndSync() {
@@ -342,6 +352,10 @@ module.exports = class ConsumerGroup {
         bail(e)
       }
     })
+  }
+
+  async nextBatch(runnerId, callback) {
+    return this.fetchManager.next({ runnerId, callback })
   }
 
   /**
@@ -407,176 +421,123 @@ module.exports = class ConsumerGroup {
     return this[PRIVATE.SHAREDHEARTBEAT]({ interval })
   }
 
-  async fetch() {
+  async fetch(nodeId) {
     try {
-      const { topics, maxBytesPerPartition, maxWaitTime, minBytes, maxBytes } = this
-      /** @type {{[nodeId: string]: {topic: string, partitions: { partition: number; fetchOffset: string; maxBytes: number }[]}[]}} */
-      const requestsPerNode = {}
-
       await this.cluster.refreshMetadataIfNecessary()
       this.checkForStaleAssignment()
 
-      while (this.seekOffset.size > 0) {
-        const seekEntry = this.seekOffset.pop()
-        this.logger.debug('Seek offset', {
-          groupId: this.groupId,
-          memberId: this.memberId,
-          seek: seekEntry,
-        })
-        await this.offsetManager.seek(seekEntry)
-      }
+      let topicPartitions = this.subscriptionState.assigned()
+      topicPartitions = this.filterPartitionsByNode(nodeId, topicPartitions)
 
-      const pausedTopicPartitions = this.subscriptionState.paused()
-      const activeTopicPartitions = this.subscriptionState.active()
+      await this.seekOffsets(topicPartitions)
 
-      const activePartitions = flatten(activeTopicPartitions.map(({ partitions }) => partitions))
-      const activeTopics = activeTopicPartitions
-        .filter(({ partitions }) => partitions.length > 0)
-        .map(({ topic }) => topic)
+      const committedOffsets = this.offsetManager.committedOffsets()
+      const activeTopicPartitions = this.getActiveTopicPartitions()
 
-      if (activePartitions.length === 0) {
-        this.logger.debug(`No active topic partitions, sleeping for ${this.maxWaitTime}ms`, {
-          topics,
-          activeTopicPartitions,
-          pausedTopicPartitions,
-        })
-
-        await sleep(this.maxWaitTime)
-        return BufferedAsyncIterator([])
-      }
-
-      await this.offsetManager.resolveOffsets()
-
-      this.logger.debug(
-        `Fetching from ${activePartitions.length} partitions for ${activeTopics.length} out of ${topics.length} topics`,
-        {
-          topics,
-          activeTopicPartitions,
-          pausedTopicPartitions,
-        }
-      )
-
-      for (const topicPartition of activeTopicPartitions) {
-        const partitionsPerNode = this.findReadReplicaForPartitions(
-          topicPartition.topic,
-          topicPartition.partitions
-        )
-
-        const nodeIds = keys(partitionsPerNode)
-        const committedOffsets = this.offsetManager.committedOffsets()
-
-        for (const nodeId of nodeIds) {
-          const partitions = partitionsPerNode[nodeId]
-            .filter(partition => {
-              /**
-               * When recovering from OffsetOutOfRange, each partition can recover
-               * concurrently, which invalidates resolved and committed offsets as part
-               * of the recovery mechanism (see OffsetManager.clearOffsets). In concurrent
-               * scenarios this can initiate a new fetch with invalid offsets.
-               *
-               * This was further highlighted by https://github.com/tulios/kafkajs/pull/570,
-               * which increased concurrency, making this more likely to happen.
-               *
-               * This is solved by only making requests for partitions with initialized offsets.
-               *
-               * See the following pull request which explains the context of the problem:
-               * @issue https://github.com/tulios/kafkajs/pull/578
-               */
-              return committedOffsets[topicPartition.topic][partition] != null
-            })
+      const requests = topicPartitions
+        .map(({ topic, partitions }) => ({
+          topic,
+          partitions: partitions
+            .filter(
+              partition =>
+                /**
+                 * When recovering from OffsetOutOfRange, each partition can recover
+                 * concurrently, which invalidates resolved and committed offsets as part
+                 * of the recovery mechanism (see OffsetManager.clearOffsets). In concurrent
+                 * scenarios this can initiate a new fetch with invalid offsets.
+                 *
+                 * This was further highlighted by https://github.com/tulios/kafkajs/pull/570,
+                 * which increased concurrency, making this more likely to happen.
+                 *
+                 * This is solved by only making requests for partitions with initialized offsets.
+                 *
+                 * See the following pull request which explains the context of the problem:
+                 * @issue https://github.com/tulios/kafkajs/pull/578
+                 */
+                committedOffsets[topic][partition] != null &&
+                activeTopicPartitions[topic].has(partition)
+            )
             .map(partition => ({
               partition,
-              fetchOffset: this.offsetManager
-                .nextOffset(topicPartition.topic, partition)
-                .toString(),
-              maxBytes: maxBytesPerPartition,
-            }))
+              fetchOffset: this.offsetManager.nextOffset(topic, partition).toString(),
+              maxBytes: this.maxBytesPerPartition,
+            })),
+        }))
+        .filter(({ partitions }) => partitions.length)
 
-          requestsPerNode[nodeId] = requestsPerNode[nodeId] || []
-          requestsPerNode[nodeId].push({ topic: topicPartition.topic, partitions })
-        }
+      if (!requests.length) {
+        await sleep(this.maxWaitTime)
+        return []
       }
 
-      const requests = keys(requestsPerNode).map(async nodeId => {
-        const broker = await this.cluster.findBroker({ nodeId })
-        const { responses } = await broker.fetch({
-          maxWaitTime,
-          minBytes,
-          maxBytes,
-          isolationLevel: this.isolationLevel,
-          topics: requestsPerNode[nodeId],
-          rackId: this.rackId,
-        })
+      const broker = await this.cluster.findBroker({ nodeId })
 
-        const batchesPerPartition = responses.map(({ topicName, partitions }) => {
-          const topicRequestData = requestsPerNode[nodeId].find(({ topic }) => topic === topicName)
-          let preferredReadReplicas = this.preferredReadReplicasPerTopicPartition[topicName]
-          if (!preferredReadReplicas) {
-            this.preferredReadReplicasPerTopicPartition[topicName] = preferredReadReplicas = {}
-          }
-
-          return partitions
-            .filter(
-              partitionData =>
-                !this.seekOffset.has(topicName, partitionData.partition) &&
-                !this.subscriptionState.isPaused(topicName, partitionData.partition)
-            )
-            .map(partitionData => {
-              const { partition, preferredReadReplica } = partitionData
-              if (preferredReadReplica != null && preferredReadReplica !== -1) {
-                const { nodeId: currentPreferredReadReplica } =
-                  preferredReadReplicas[partition] || {}
-                if (currentPreferredReadReplica !== preferredReadReplica) {
-                  this.logger.info(`Preferred read replica is now ${preferredReadReplica}`, {
-                    groupId: this.groupId,
-                    memberId: this.memberId,
-                    topic: topicName,
-                    partition,
-                  })
-                }
-                preferredReadReplicas[partition] = {
-                  nodeId: preferredReadReplica,
-                  expireAt: Date.now() + this.metadataMaxAge,
-                }
-              }
-
-              const partitionRequestData = topicRequestData.partitions.find(
-                ({ partition }) => partition === partitionData.partition
-              )
-
-              const fetchedOffset = partitionRequestData.fetchOffset
-              const batch = new Batch(topicName, fetchedOffset, partitionData)
-
-              /**
-               * Resolve the offset to skip the control batch since `eachBatch` or `eachMessage` callbacks
-               * won't process empty batches
-               *
-               * @see https://github.com/apache/kafka/blob/9aa660786e46c1efbf5605a6a69136a1dac6edb9/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L1499-L1505
-               */
-              if (batch.isEmptyControlRecord() || batch.isEmptyDueToLogCompactedMessages()) {
-                this.resolveOffset({
-                  topic: batch.topic,
-                  partition: batch.partition,
-                  offset: batch.lastOffset(),
-                })
-              }
-
-              return batch
-            })
-        })
-
-        return flatten(batchesPerPartition)
+      const { responses } = await broker.fetch({
+        maxWaitTime: this.maxWaitTime,
+        minBytes: this.minBytes,
+        maxBytes: this.maxBytes,
+        isolationLevel: this.isolationLevel,
+        topics: requests,
+        rackId: this.rackId,
       })
 
-      // fetch can generate empty requests when the consumer group receives an assignment
-      // with more topics than the subscribed, so to prevent a busy loop we wait the
-      // configured max wait time
-      if (requests.length === 0) {
-        await sleep(this.maxWaitTime)
-        return BufferedAsyncIterator([])
-      }
+      return responses.flatMap(({ topicName, partitions }) => {
+        const topicRequestData = requests.find(({ topic }) => topic === topicName)
 
-      return BufferedAsyncIterator(requests, e => this.recoverFromFetch(e))
+        let preferredReadReplicas = this.preferredReadReplicasPerTopicPartition[topicName]
+        if (!preferredReadReplicas) {
+          this.preferredReadReplicasPerTopicPartition[topicName] = preferredReadReplicas = {}
+        }
+
+        return partitions
+          .filter(
+            ({ partition }) =>
+              !this.seekOffset.has(topicName, partition) &&
+              !this.subscriptionState.isPaused(topicName, partition)
+          )
+          .map(partitionData => {
+            const { partition, preferredReadReplica } = partitionData
+
+            if (preferredReadReplica != null && preferredReadReplica !== -1) {
+              const { nodeId: currentPreferredReadReplica } = preferredReadReplicas[partition] || {}
+              if (currentPreferredReadReplica !== preferredReadReplica) {
+                this.logger.info(`Preferred read replica is now ${preferredReadReplica}`, {
+                  groupId: this.groupId,
+                  memberId: this.memberId,
+                  topic: topicName,
+                  partition,
+                })
+              }
+              preferredReadReplicas[partition] = {
+                nodeId: preferredReadReplica,
+                expireAt: Date.now() + this.metadataMaxAge,
+              }
+            }
+
+            const partitionRequestData = topicRequestData.partitions.find(
+              ({ partition }) => partition === partitionData.partition
+            )
+
+            const fetchedOffset = partitionRequestData.fetchOffset
+            const batch = new Batch(topicName, fetchedOffset, partitionData)
+
+            /**
+             * Resolve the offset to skip the control batch since `eachBatch` or `eachMessage` callbacks
+             * won't process empty batches
+             *
+             * @see https://github.com/apache/kafka/blob/9aa660786e46c1efbf5605a6a69136a1dac6edb9/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L1499-L1505
+             */
+            if (batch.isEmptyControlRecord() || batch.isEmptyDueToLogCompactedMessages()) {
+              this.resolveOffset({
+                topic: batch.topic,
+                partition: batch.partition,
+                offset: batch.lastOffset(),
+              })
+            }
+
+            return batch
+          })
+      })
     } catch (e) {
       await this.recoverFromFetch(e)
     }
@@ -682,6 +643,26 @@ module.exports = class ConsumerGroup {
     }
   }
 
+  async seekOffsets(topicPartitions) {
+    for (const { topic, partitions } of topicPartitions) {
+      for (const partition of partitions) {
+        const seekEntry = this.seekOffset.pop(topic, partition)
+        if (!seekEntry) {
+          continue
+        }
+
+        this.logger.debug('Seek offset', {
+          groupId: this.groupId,
+          memberId: this.memberId,
+          seek: seekEntry,
+        })
+        await this.offsetManager.seek(seekEntry)
+      }
+    }
+
+    await this.offsetManager.resolveOffsets()
+  }
+
   hasSeekOffset({ topic, partition }) {
     return this.seekOffset.has(topic, partition)
   }
@@ -745,5 +726,18 @@ module.exports = class ConsumerGroup {
       const current = result[nodeId] || []
       return { ...result, [nodeId]: [...current, partitionId] }
     }, {})
+  }
+
+  filterPartitionsByNode(nodeId, topicPartitions) {
+    return topicPartitions.map(({ topic, partitions }) => ({
+      topic,
+      partitions: this.findReadReplicaForPartitions(topic, partitions)[nodeId] || [],
+    }))
+  }
+
+  getActiveTopicPartitions() {
+    return this.subscriptionState
+      .active()
+      .reduce((acc, { topic, partitions }) => ({ ...acc, [topic]: new Set(partitions) }), {})
   }
 }

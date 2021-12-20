@@ -204,6 +204,10 @@ module.exports = class Cluster {
     }
   }
 
+  getNodeIds() {
+    return this.brokerPool.getNodeIds()
+  }
+
   /**
    * @public
    * @param {object} options

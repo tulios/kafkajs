@@ -240,6 +240,10 @@ module.exports = class BrokerPool {
     }
   }
 
+  getNodeIds() {
+    return keys(this.brokers)
+  }
+
   /**
    * @public
    * @param {object} options
