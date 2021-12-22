@@ -410,6 +410,29 @@ describe('Producer', () => {
       await expect(producer.send({ acks, topic: topicName, messages: [] })).toResolve()
     })
 
+    test('It should allow sending a string as value', async () => {
+      const cluster = createCluster({
+        createPartitioner: createModPartitioner,
+      })
+
+      await createTopic({ topic: topicName })
+
+      producer = createProducer({ cluster, logger: newLogger(), idempotent })
+      await producer.connect()
+
+      await expect(
+        producer.send({
+          topic: topicName,
+          messages: [
+            {
+              key: 'key-1',
+              value: JSON.stringify({ some: 3 }),
+            },
+          ],
+        })
+      ).toResolve()
+    })
+
     test('produce messages to multiple topics', async () => {
       const topics = [`test-topic-${secureRandom()}`, `test-topic-${secureRandom()}`]
 
