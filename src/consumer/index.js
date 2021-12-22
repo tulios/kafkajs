@@ -79,9 +79,9 @@ module.exports = ({
   )
 
   const topics = {}
-  let running = false
   let runner = null
   let consumerGroup = null
+  let restartTimeout = null
 
   /** @type {import("../../types").Consumer["connect"]} */
   const connect = async () => {
@@ -109,7 +109,7 @@ module.exports = ({
         instrumentationEmitter.emit(STOP)
       }
 
-      running = false
+      clearTimeout(restartTimeout)
       logger.info('Stopped', { groupId })
     } catch (e) {}
   }
@@ -167,14 +167,12 @@ module.exports = ({
     eachBatch = null,
     eachMessage = null,
   } = {}) => {
-    if (running) {
+    if (consumerGroup) {
       logger.warn('consumer#run was called, but the consumer is already running', { groupId })
       return
     }
-    running = true
 
     const start = async onCrash => {
-      if (!running) return
       logger.info('Starting', { groupId })
 
       consumerGroup = new ConsumerGroup({
@@ -263,8 +261,7 @@ module.exports = ({
           groupId,
         })
 
-        running = true
-        setTimeout(() => start(onCrash), retryTime)
+        restartTimeout = setTimeout(() => start(onCrash), retryTime)
       }
     }
 
