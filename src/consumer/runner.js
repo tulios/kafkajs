@@ -294,8 +294,12 @@ module.exports = class Runner extends EventEmitter {
        *
        * We also need to emit batch instrumentation events to allow any listeners keeping
        * track of offsets to know about the latest point of consumption.
+       *
+       * Added in #1256
+       *
+       * @see https://github.com/apache/kafka/blob/9aa660786e46c1efbf5605a6a69136a1dac6edb9/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L1499-L1505
        */
-      if (batch.isEmpty() && !batch.isEmptyIncludingFiltered()) {
+      if (batch.isEmptyDueToFiltering()) {
         this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
 
         this.consumerGroup.resolveOffset({
