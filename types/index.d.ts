@@ -858,6 +858,7 @@ export interface EachMessagePayload {
   topic: string
   partition: number
   message: KafkaMessage
+  heartbeat(): Promise<void>
 }
 
 export interface EachBatchPayload {
@@ -882,14 +883,17 @@ export type ConsumerEachMessagePayload = EachMessagePayload
  */
 export type ConsumerEachBatchPayload = EachBatchPayload
 
+export type EachBatchHandler = (payload: EachBatchPayload) => Promise<void>
+export type EachMessageHandler = (payload: EachMessagePayload) => Promise<void>
+
 export type ConsumerRunConfig = {
   autoCommit?: boolean
   autoCommitInterval?: number | null
   autoCommitThreshold?: number | null
   eachBatchAutoResolve?: boolean
   partitionsConsumedConcurrently?: number
-  eachBatch?: (payload: EachBatchPayload) => Promise<void>
-  eachMessage?: (payload: EachMessagePayload) => Promise<void>
+  eachBatch?: EachBatchHandler
+  eachMessage?: EachMessageHandler
 }
 
 export type ConsumerSubscribeTopic = { topic: string | RegExp; fromBeginning?: boolean }
