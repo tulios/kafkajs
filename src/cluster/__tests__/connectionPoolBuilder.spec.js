@@ -1,6 +1,6 @@
 const { newLogger } = require('testHelpers')
-const connectionBuilder = require('../connectionBuilder')
-const Connection = require('../../network/connection')
+const connectionPoolBuilder = require('../connectionPoolBuilder')
+const ConnectionPool = require('../../network/connectionPool')
 const { KafkaJSConnectionError, KafkaJSNonRetriableError } = require('../../errors')
 
 describe('Cluster > ConnectionBuilder', () => {
@@ -15,7 +15,7 @@ describe('Cluster > ConnectionBuilder', () => {
   const socketFactory = jest.fn()
 
   beforeEach(() => {
-    builder = connectionBuilder({
+    builder = connectionPoolBuilder({
       socketFactory,
       brokers,
       ssl,
@@ -27,16 +27,16 @@ describe('Cluster > ConnectionBuilder', () => {
   })
 
   test('creates a new connection using a random broker', async () => {
-    const connection = await builder.build()
-    expect(connection).toBeInstanceOf(Connection)
-    expect(connection.host).toBeOneOf(['host.test', 'host2.test', 'host3.test'])
-    expect(connection.port).toBeOneOf([7777, 7778, 7779])
-    expect(connection.ssl).toEqual(ssl)
-    expect(connection.sasl).toEqual(sasl)
-    expect(connection.clientId).toEqual(clientId)
-    expect(connection.connectionTimeout).toEqual(connectionTimeout)
-    expect(connection.logger).not.toBeFalsy()
-    expect(connection.socketFactory).toBe(socketFactory)
+    const connectionPool = await builder.build()
+    expect(connectionPool).toBeInstanceOf(ConnectionPool)
+    expect(connectionPool.host).toBeOneOf(['host.test', 'host2.test', 'host3.test'])
+    expect(connectionPool.port).toBeOneOf([7777, 7778, 7779])
+    expect(connectionPool.ssl).toEqual(ssl)
+    expect(connectionPool.sasl).toEqual(sasl)
+    expect(connectionPool.clientId).toEqual(clientId)
+    expect(connectionPool.connectionTimeout).toEqual(connectionTimeout)
+    expect(connectionPool.logger).not.toBeFalsy()
+    expect(connectionPool.socketFactory).toBe(socketFactory)
   })
 
   test('when called without host and port iterates throught the seed brokers', async () => {
@@ -50,19 +50,19 @@ describe('Cluster > ConnectionBuilder', () => {
   })
 
   test('accepts overrides for host, port and rack', async () => {
-    const connection = await builder.build({
+    const connectionPool = await builder.build({
       host: 'host.another',
       port: 8888,
       rack: 'rack',
     })
-    expect(connection.host).toEqual('host.another')
-    expect(connection.port).toEqual(8888)
-    expect(connection.rack).toEqual('rack')
+    expect(connectionPool.host).toEqual('host.another')
+    expect(connectionPool.port).toEqual(8888)
+    expect(connectionPool.rack).toEqual('rack')
   })
 
   it('throws an exception if brokers list is empty', async () => {
     await expect(
-      connectionBuilder({
+      connectionPoolBuilder({
         socketFactory,
         brokers: [],
         ssl,
@@ -76,7 +76,7 @@ describe('Cluster > ConnectionBuilder', () => {
 
   it('throws an exception if brokers is null', async () => {
     await expect(
-      connectionBuilder({
+      connectionPoolBuilder({
         socketFactory,
         brokers: null,
         ssl,
@@ -92,7 +92,7 @@ describe('Cluster > ConnectionBuilder', () => {
 
   it('throws an KafkaJSConnectionError if brokers is function and returning null', async () => {
     await expect(
-      connectionBuilder({
+      connectionPoolBuilder({
         socketFactory,
         brokers: () => null,
         ssl,
@@ -108,7 +108,7 @@ describe('Cluster > ConnectionBuilder', () => {
 
   it('throws an KafkaJSConnectionError if brokers is function crashes', async () => {
     await expect(
-      connectionBuilder({
+      connectionPoolBuilder({
         socketFactory,
         brokers: () => {
           throw new Error('oh a crash!')
@@ -125,7 +125,7 @@ describe('Cluster > ConnectionBuilder', () => {
   })
 
   it('brokers can be function that returns array of host:port strings', async () => {
-    const builder = connectionBuilder({
+    const builder = connectionPoolBuilder({
       socketFactory,
       brokers: () => ['host.test:7777'],
       ssl,
@@ -135,14 +135,14 @@ describe('Cluster > ConnectionBuilder', () => {
       logger,
     })
 
-    const connection = await builder.build()
-    expect(connection).toBeInstanceOf(Connection)
-    expect(connection.host).toBe('host.test')
-    expect(connection.port).toBe(7777)
+    const connectionPool = await builder.build()
+    expect(connectionPool).toBeInstanceOf(ConnectionPool)
+    expect(connectionPool.host).toBe('host.test')
+    expect(connectionPool.port).toBe(7777)
   })
 
   it('brokers can be async function that returns array of host:port strings', async () => {
-    const builder = connectionBuilder({
+    const builder = connectionPoolBuilder({
       socketFactory,
       brokers: async () => ['host.test:7777'],
       ssl,
@@ -152,9 +152,9 @@ describe('Cluster > ConnectionBuilder', () => {
       logger,
     })
 
-    const connection = await builder.build()
-    expect(connection).toBeInstanceOf(Connection)
-    expect(connection.host).toBe('host.test')
-    expect(connection.port).toBe(7777)
+    const connectionPool = await builder.build()
+    expect(connectionPool).toBeInstanceOf(ConnectionPool)
+    expect(connectionPool.host).toBe('host.test')
+    expect(connectionPool.port).toBe(7777)
   })
 })

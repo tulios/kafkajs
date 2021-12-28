@@ -1,6 +1,6 @@
 const Broker = require('../index')
 const { MemberMetadata } = require('../../consumer/assignerProtocol')
-const { secureRandom, createConnection, newLogger, retryProtocol } = require('testHelpers')
+const { secureRandom, createConnectionPool, newLogger, retryProtocol } = require('testHelpers')
 
 describe('Broker > JoinGroup', () => {
   let groupId, topicName, seedBroker, broker
@@ -9,7 +9,7 @@ describe('Broker > JoinGroup', () => {
     groupId = `consumer-group-id-${secureRandom()}`
     topicName = `test-topic-${secureRandom()}`
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -22,7 +22,7 @@ describe('Broker > JoinGroup', () => {
     )
 
     broker = new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
     await broker.connect()

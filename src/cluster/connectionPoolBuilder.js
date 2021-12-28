@@ -1,9 +1,9 @@
-const Connection = require('../network/connection')
 const { KafkaJSConnectionError, KafkaJSNonRetriableError } = require('../errors')
+const ConnectionPool = require('../network/connectionPool')
 
 /**
- * @typedef {Object} ConnectionBuilder
- * @property {(destination?: { host?: string, port?: number, rack?: string }) => Promise<Connection>} build
+ * @typedef {Object} ConnectionPoolBuilder
+ * @property {(destination?: { host?: string, port?: number, rack?: string }) => Promise<ConnectionPool>} build
  */
 
 /**
@@ -20,7 +20,7 @@ const { KafkaJSConnectionError, KafkaJSNonRetriableError } = require('../errors'
  * @param {import("../../types").RetryOptions} [options.retry]
  * @param {import("../../types").Logger} options.logger
  * @param {import("../instrumentation/emitter")} [options.instrumentationEmitter]
- * @returns {ConnectionBuilder}
+ * @returns {ConnectionPoolBuilder}
  */
 module.exports = ({
   socketFactory,
@@ -81,7 +81,7 @@ module.exports = ({
         port = Number(randomBroker.split(':')[1])
       }
 
-      return new Connection({
+      return new ConnectionPool({
         host,
         port,
         rack,

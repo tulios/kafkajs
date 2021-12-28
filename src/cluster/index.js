@@ -1,7 +1,7 @@
 const BrokerPool = require('./brokerPool')
 const Lock = require('../utils/lock')
 const createRetry = require('../retry')
-const connectionBuilder = require('./connectionBuilder')
+const connectionPoolBuilder = require('./connectionPoolBuilder')
 const flatten = require('../utils/flatten')
 const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
 const {
@@ -65,7 +65,7 @@ module.exports = class Cluster {
     this.rootLogger = rootLogger
     this.logger = rootLogger.namespace('Cluster')
     this.retrier = createRetry(retry)
-    this.connectionBuilder = connectionBuilder({
+    this.connectionPoolBuilder = connectionPoolBuilder({
       logger: rootLogger,
       instrumentationEmitter,
       socketFactory,
@@ -86,7 +86,7 @@ module.exports = class Cluster {
     })
     this.isolationLevel = isolationLevel
     this.brokerPool = new BrokerPool({
-      connectionBuilder: this.connectionBuilder,
+      connectionPoolBuilder: this.connectionPoolBuilder,
       logger: this.rootLogger,
       retry,
       allowAutoTopicCreation,

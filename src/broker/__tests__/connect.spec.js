@@ -1,5 +1,5 @@
 const {
-  createConnection,
+  createConnectionPool,
   connectionOpts,
   saslSCRAM256ConnectionOpts,
   newLogger,
@@ -16,7 +16,7 @@ describe('Broker > connect', () => {
 
   beforeEach(() => {
     broker = new Broker({
-      connection: createConnection(connectionOpts()),
+      connectionPool: createConnectionPool(connectionOpts()),
       logger: newLogger(),
     })
   })
@@ -27,7 +27,7 @@ describe('Broker > connect', () => {
 
   test('establish the connection', async () => {
     await broker.connect()
-    expect(broker.connection.connected).toEqual(true)
+    expect(broker.connectionPool.connected).toEqual(true)
   })
 
   test('load api versions if not provided', async () => {
@@ -39,7 +39,7 @@ describe('Broker > connect', () => {
   for (const e of saslEntries) {
     test(`authenticate with SASL ${e.name} if configured`, async () => {
       broker = new Broker({
-        connection: createConnection(e.opts()),
+        connectionPool: createConnectionPool(e.opts()),
         logger: newLogger(),
       })
       expect(broker.isConnected()).toEqual(false)
@@ -51,7 +51,7 @@ describe('Broker > connect', () => {
   describeIfOauthbearerDisabled('when SASL SCRAM is configured', () => {
     test('parallel calls to connect using SCRAM', async () => {
       broker = new Broker({
-        connection: createConnection(saslSCRAM256ConnectionOpts()),
+        connectionPool: createConnectionPool(saslSCRAM256ConnectionOpts()),
         logger: newLogger(),
       })
 
@@ -73,7 +73,7 @@ describe('Broker > connect', () => {
     const error = new Error('not connected')
     const timer = process.hrtime()
     broker.authenticatedAt = timer
-    broker.connection.connect = jest.fn(() => {
+    broker.connectionPool.connect = jest.fn(() => {
       throw error
     })
 
@@ -90,11 +90,11 @@ describe('Broker > connect', () => {
     for (const e of saslEntries) {
       test(`returns false when connected but not authenticated on connections with SASL ${e.name}`, async () => {
         broker = new Broker({
-          connection: createConnection(e.opts()),
+          connectionPool: createConnectionPool(e.opts()),
           logger: newLogger(),
         })
         expect(broker.isConnected()).toEqual(false)
-        await broker.connection.connect()
+        await broker.connectionPool.connect()
         expect(broker.isConnected()).toEqual(false)
       })
     }
@@ -108,7 +108,7 @@ describe('Broker > connect', () => {
       for (const e of saslEntries) {
         test(`returns true when connected and authenticated on connections with SASL ${e.name}`, async () => {
           broker = new Broker({
-            connection: createConnection(e.opts()),
+            connectionPool: createConnectionPool(e.opts()),
             logger: newLogger(),
           })
           await broker.connect()
@@ -119,7 +119,7 @@ describe('Broker > connect', () => {
           const sessionLifetime = 15000
           const reauthenticationThreshold = 10000
           broker = new Broker({
-            connection: createConnection(e.opts()),
+            connectionPool: createConnectionPool(e.opts()),
             logger: newLogger(),
             reauthenticationThreshold,
           })
@@ -136,7 +136,7 @@ describe('Broker > connect', () => {
 
         test('returns true when the session lifetime is 0', async () => {
           broker = new Broker({
-            connection: createConnection(e.opts()),
+            connectionPool: createConnectionPool(e.opts()),
             logger: newLogger(),
           })
 
@@ -151,7 +151,7 @@ describe('Broker > connect', () => {
 
         testIfKafkaAtLeast_1_1_0(`authenticate with SASL ${e.name} if configured`, async () => {
           broker = new Broker({
-            connection: createConnection(e.opts()),
+            connectionPool: createConnectionPool(e.opts()),
             logger: newLogger(),
           })
           expect(broker.isConnected()).toEqual(false)
@@ -165,7 +165,7 @@ describe('Broker > connect', () => {
     describeIfOauthbearerDisabled('when SASL SCRAM is configured', () => {
       testIfKafkaAtLeast_1_1_0('parallel calls to connect using SCRAM', async () => {
         broker = new Broker({
-          connection: createConnection(saslSCRAM256ConnectionOpts()),
+          connectionPool: createConnectionPool(saslSCRAM256ConnectionOpts()),
           logger: newLogger(),
         })
 

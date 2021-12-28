@@ -1,5 +1,5 @@
 const Broker = require('../index')
-const { secureRandom, createConnection, newLogger, retryProtocol } = require('testHelpers')
+const { secureRandom, createConnectionPool, newLogger, retryProtocol } = require('testHelpers')
 
 describe('Broker > FindGroupCoordinator', () => {
   let groupId, seedBroker
@@ -7,7 +7,7 @@ describe('Broker > FindGroupCoordinator', () => {
   beforeEach(async () => {
     groupId = `consumer-group-id-${secureRandom()}`
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await seedBroker.connect()

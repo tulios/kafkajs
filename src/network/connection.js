@@ -6,9 +6,6 @@ const { INT_32_MAX_VALUE } = require('../constants')
 const getEnv = require('../env')
 const RequestQueue = require('./requestQueue')
 const { CONNECTION_STATUS, CONNECTED_STATUS } = require('./connectionStatus')
-const mapValues = require('../utils/mapValues.js')
-
-const { values } = Object
 
 const requestInfo = ({ apiName, apiKey, apiVersion }) =>
   `${apiName}(key: ${apiKey}, version: ${apiVersion})`
@@ -65,15 +62,9 @@ module.exports = class Connection {
     this.requestTimeout = requestTimeout
     this.connectionTimeout = connectionTimeout
 
-    this.sockets = { default: {}, fetch: {} }
-    this.sockets = mapValues(this.sockets, () => ({
-      socket: null,
-      state: {
-        bytesBuffered: 0,
-        bytesNeeded: Decoder.int32Size(),
-        chunks: [],
-      },
-    }))
+    this.bytesBuffered = 0
+    this.bytesNeeded = Decoder.int32Size()
+    this.chunks = []
 
     this.connectionStatus = CONNECTION_STATUS.DISCONNECTED
     this.correlationId = 0
@@ -122,17 +113,14 @@ module.exports = class Connection {
       let timeoutId
 
       const onConnect = () => {
-        const hasPendingSockets = values(this.sockets).some(({ socket }) => socket.pending)
-        if (hasPendingSockets) return
-
         clearTimeout(timeoutId)
         this.connectionStatus = CONNECTION_STATUS.CONNECTED
         this.requestQueue.scheduleRequestTimeoutCheck()
         resolve(true)
       }
 
-      const onData = type => data => {
-        this.processData(type, data)
+      const onData = data => {
+        this.processData(data)
       }
 
       const onEnd = async () => {
@@ -188,20 +176,17 @@ module.exports = class Connection {
 
       try {
         timeoutId = setTimeout(onTimeout, this.connectionTimeout)
-        this.sockets = mapValues(this.sockets, (rest, type) => ({
-          ...rest,
-          socket: createSocket({
-            socketFactory: this.socketFactory,
-            host: this.host,
-            port: this.port,
-            ssl: this.ssl,
-            onConnect,
-            onData: onData(type),
-            onEnd,
-            onError,
-            onTimeout,
-          }),
-        }))
+        this.socket = createSocket({
+          socketFactory: this.socketFactory,
+          host: this.host,
+          port: this.port,
+          ssl: this.ssl,
+          onConnect,
+          onData,
+          onEnd,
+          onError,
+          onTimeout,
+        })
       } catch (e) {
         clearTimeout(timeoutId)
         reject(
@@ -224,12 +209,10 @@ module.exports = class Connection {
     await this.requestQueue.waitForPendingRequests()
     this.requestQueue.destroy()
 
-    values(this.sockets)
-      .filter(({ socket }) => socket)
-      .forEach(({ socket }) => {
-        socket.end()
-        socket.unref()
-      })
+    if (this.socket) {
+      this.socket.end()
+      this.socket.unref()
+    }
 
     this.connectionStatus = CONNECTION_STATUS.DISCONNECTED
     this.logDebug('disconnected')
@@ -276,9 +259,7 @@ module.exports = class Connection {
         const requestPayload = await request.encode()
 
         this.failIfNotConnected()
-
-        const { socket } = this.sockets.default
-        socket.write(requestPayload.buffer, 'binary')
+        this.socket.write(requestPayload.buffer, 'binary')
       } catch (e) {
         reject(e)
       }
@@ -315,8 +296,6 @@ module.exports = class Connection {
         size: Buffer.byteLength(requestPayload.buffer),
       })
 
-      const socket = this.socketByApiName(apiName)
-
       return new Promise((resolve, reject) => {
         try {
           this.failIfNotConnected()
@@ -327,7 +306,7 @@ module.exports = class Connection {
             expectResponse,
             requestTimeout,
             sendRequest: () => {
-              socket.write(requestPayload.buffer, 'binary')
+              this.socket.write(requestPayload.buffer, 'binary')
             },
           })
         } catch (e) {
@@ -406,29 +385,27 @@ module.exports = class Connection {
   /**
    * @private
    */
-  processData(type, rawData) {
+  processData(rawData) {
     if (this.authHandlers && !this.authExpectResponse) {
       return this.authHandlers.onSuccess(rawData)
     }
 
-    const { state } = this.sockets[type]
-
     // Accumulate the new chunk
-    state.chunks.push(rawData)
-    state.bytesBuffered += Buffer.byteLength(rawData)
+    this.chunks.push(rawData)
+    this.bytesBuffered += Buffer.byteLength(rawData)
 
     // Process data if there are enough bytes to read the expected response size,
     // otherwise keep buffering
-    while (state.bytesNeeded <= state.bytesBuffered) {
-      const buffer = state.chunks.length > 1 ? Buffer.concat(state.chunks) : state.chunks[0]
+    while (this.bytesNeeded <= this.bytesBuffered) {
+      const buffer = this.chunks.length > 1 ? Buffer.concat(this.chunks) : this.chunks[0]
       const decoder = new Decoder(buffer)
       const expectedResponseSize = decoder.readInt32()
 
       // Return early if not enough bytes to read the full response
       if (!decoder.canReadBytes(expectedResponseSize)) {
-        state.chunks = [buffer]
-        state.bytesBuffered = Buffer.byteLength(buffer)
-        state.bytesNeeded = Decoder.int32Size() + expectedResponseSize
+        this.chunks = [buffer]
+        this.bytesBuffered = Buffer.byteLength(buffer)
+        this.bytesNeeded = Decoder.int32Size() + expectedResponseSize
         return
       }
 
@@ -436,9 +413,9 @@ module.exports = class Connection {
 
       // Reset the buffered chunks as the rest of the bytes
       const remainderBuffer = decoder.readAll()
-      state.chunks = [remainderBuffer]
-      state.bytesBuffered = Buffer.byteLength(remainderBuffer)
-      state.bytesNeeded = Decoder.int32Size()
+      this.chunks = [remainderBuffer]
+      this.bytesBuffered = Buffer.byteLength(remainderBuffer)
+      this.bytesNeeded = Decoder.int32Size()
 
       if (this.authHandlers) {
         const rawResponseSize = Decoder.int32Size() + expectedResponseSize
@@ -462,14 +439,5 @@ module.exports = class Connection {
    */
   rejectRequests(error) {
     this.requestQueue.rejectAll(error)
-  }
-
-  /**
-   * @private
-   */
-  socketByApiName(apiName) {
-    const type = apiName === 'Fetch' ? 'fetch' : 'default'
-    const { socket } = this.sockets[type]
-    return socket
   }
 }

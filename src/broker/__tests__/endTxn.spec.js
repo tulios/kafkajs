@@ -2,7 +2,7 @@ const Broker = require('../index')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 const {
   secureRandom,
-  createConnection,
+  createConnectionPool,
   newLogger,
   retryProtocol,
   createTopic,
@@ -26,7 +26,7 @@ describe('Broker > EndTxn', () => {
     topicName = `test-topic-${secureRandom()}`
 
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
 
@@ -45,7 +45,7 @@ describe('Broker > EndTxn', () => {
     )
 
     transactionBroker = new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
 

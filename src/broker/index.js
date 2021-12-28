@@ -37,7 +37,7 @@ const isAuthenticatedRequest = request => {
 module.exports = class Broker {
   /**
    * @param {Object} options
-   * @param {import("../network/connection")} options.connection
+   * @param {import("../network/connectionPool")} options.connectionPool
    * @param {import("../../types").Logger} options.logger
    * @param {number} [options.nodeId]
    * @param {import("../../types").ApiVersions} [options.versions=null] The object with all available versions and APIs
@@ -50,7 +50,7 @@ module.exports = class Broker {
    * @param {boolean} [options.supportAuthenticationProtocol=null] If the server supports the SASLAuthenticate protocol
    */
   constructor({
-    connection,
+    connectionPool,
     logger,
     nodeId = null,
     versions = null,
@@ -59,7 +59,7 @@ module.exports = class Broker {
     allowAutoTopicCreation = true,
     supportAuthenticationProtocol = null,
   }) {
-    this.connection = connection
+    this.connectionPool = connectionPool
     this.nodeId = nodeId
     this.rootLogger = logger
     this.logger = logger.namespace('Broker')
@@ -74,8 +74,8 @@ module.exports = class Broker {
 
     // The lock timeout has twice the connectionTimeout because the same timeout is used
     // for the first apiVersions call
-    const lockTimeout = 2 * this.connection.connectionTimeout + this.authenticationTimeout
-    this.brokerAddress = `${this.connection.host}:${this.connection.port}`
+    const lockTimeout = 2 * this.connectionPool.connectionTimeout + this.authenticationTimeout
+    this.brokerAddress = `${this.connectionPool.host}:${this.connectionPool.port}`
 
     this.lock = new Lock({
       timeout: lockTimeout,
@@ -89,9 +89,9 @@ module.exports = class Broker {
      * @returns {Promise}
      */
     this[PRIVATE.AUTHENTICATE] = sharedPromiseTo(async () => {
-      if (this.connection.sasl && !this.isAuthenticated()) {
+      if (this.connectionPool.sasl && !this.isAuthenticated()) {
         const authenticator = new SASLAuthenticator(
-          this.connection,
+          this.connectionPool,
           this.rootLogger,
           this.versions,
           this.supportAuthenticationProtocol
@@ -117,7 +117,7 @@ module.exports = class Broker {
    * @returns {boolean}
    */
   isConnected() {
-    const { connected, sasl } = this.connection
+    const { connected, sasl } = this.connectionPool
     return sasl ? connected && this.isAuthenticated() : connected
   }
 
@@ -133,7 +133,7 @@ module.exports = class Broker {
       }
 
       this.authenticatedAt = null
-      await this.connection.connect()
+      await this.connectionPool.connect()
 
       if (!this.versions) {
         this.versions = await this.apiVersions()
@@ -167,7 +167,7 @@ module.exports = class Broker {
    */
   async disconnect() {
     this.authenticatedAt = null
-    await this.connection.disconnect()
+    await this.connectionPool.disconnect()
   }
 
   /**
@@ -187,7 +187,7 @@ module.exports = class Broker {
         const apiVersions = requests.ApiVersions.protocol({ version: candidateVersion })
         response = await this[PRIVATE.SEND_REQUEST]({
           ...apiVersions(),
-          requestTimeout: this.connection.connectionTimeout,
+          requestTimeout: this.connectionPool.connectionTimeout,
         })
         break
       } catch (e) {
@@ -944,7 +944,7 @@ module.exports = class Broker {
       await this[PRIVATE.AUTHENTICATE]()
     }
     try {
-      return await this.connection.send(protocolRequest)
+      return await this.connectionPool.send(protocolRequest)
     } catch (e) {
       if (e.name === 'KafkaJSConnectionClosedError') {
         await this.disconnect()

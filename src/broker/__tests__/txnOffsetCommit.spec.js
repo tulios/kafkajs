@@ -3,7 +3,7 @@ const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 const {
   secureRandom,
   createTopic,
-  createConnection,
+  createConnectionPool,
   newLogger,
   retryProtocol,
 } = require('testHelpers')
@@ -31,7 +31,7 @@ describe('Broker > TxnOffsetCommit', () => {
     )
 
     return new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
   }
@@ -42,7 +42,7 @@ describe('Broker > TxnOffsetCommit', () => {
     topicName = `test-topic-${secureRandom()}`
 
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
 
