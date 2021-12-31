@@ -27,7 +27,7 @@ module.exports = class Connection {
    * @param {Object} [options.sasl=null] Attributes used for SASL authentication. Options based on the
    *                             key "mechanism". Connection is not actively using the SASL attributes
    *                             but acting as a data object for this information
-   * @param {number} [options.connectionTimeout=1000] The connection timeout, in milliseconds
+   * @param {number} options.connectionTimeout The connection timeout, in milliseconds
    * @param {boolean} [options.enforceRequestTimeout]
    * @param {number} [options.maxInFlightRequests=null] The maximum number of unacknowledged requests on a connection before
    *                                            enqueuing
@@ -43,7 +43,7 @@ module.exports = class Connection {
     ssl = null,
     sasl = null,
     clientId = 'kafkajs',
-    connectionTimeout = 1000,
+    connectionTimeout,
     enforceRequestTimeout = false,
     maxInFlightRequests = null,
     instrumentationEmitter = null,
