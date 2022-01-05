@@ -899,6 +899,7 @@ export type ConsumerRunConfig = {
 export type ConsumerSubscribeTopic = { topic: string | RegExp; fromBeginning?: boolean }
 
 export type Consumer = {
+  assigned(): Promise<Assignment[]>
   connect(): Promise<void>
   disconnect(): Promise<void>
   subscribe(topic: ConsumerSubscribeTopic): Promise<void>

@@ -494,11 +494,24 @@ module.exports = ({
   }
 
   /**
+   * Returns the list assignment for the consumer
+   *
+   * @type {import("../../types").Consumer["assigned"]}
+   */
+  const assigned = () => {
+    if (!consumerGroup) {
+      return []
+    }
+    return consumerGroup.assigned()
+  }
+
+  /**
    * @return {Object} logger
    */
   const getLogger = () => logger
 
   return {
+    assigned,
     connect,
     disconnect,
     subscribe,
