@@ -132,7 +132,77 @@ The OAuth bearer token must be an object with properties value and
 request.
 
 The implementation of the oauthBearerProvider must take care that tokens are
-reused and refreshed when appropriate.
+reused and refreshed when appropriate. An example implementation using
+[`simple-oauth2`](https://github.com/lelylan/simple-oauth2) would look something
+like the following:
+
+```ts
+import { AccessToken, ClientCredentials } from 'simple-oauth2'
+interface OauthBearerProviderOptions {
+  clientId: string;
+  clientSecret: string;
+  host: string;
+  path: string;
+  refreshThreshold: number;
+}
+
+const oauthBearerProvider = (options: OauthBearerProviderOptions) => {
+  const client = new ClientCredentials({
+    client: {
+      id: options.clientId,
+      secret: options.clientSecret
+    },
+    auth: {
+      tokenHost: options.host,
+      tokenPath: options.path
+    }
+  });
+
+  let tokenPromise: Promise<string>;
+  let accessToken: AccessToken;
+
+  async function refreshToken() {
+    if (accessToken == null) {
+      accessToken = await client.getToken({})
+    }
+
+    if (accessToken.expired()) {
+      accessToken = await accessToken.refresh()
+    } else {
+      const refreshIn = accessToken.token.expires_in * 1000 - options.refreshThreshold;
+
+      setTimeout(() => {
+        tokenPromise = refreshToken()
+      }, refreshIn);
+    }
+
+    return accessToken.token.access_token;
+  }
+
+  tokenPromise = refreshToken();
+
+  return async function () {
+    return {
+      value: await tokenPromise
+    }
+  }
+};
+
+const kafka = new Kafka({
+  // ... other required options
+  sasl: {
+    mechanism: 'oauthbearer',
+    oauthBearerProvider: oauthBearerProvider({
+      clientId: 'oauth-client-id',
+      clientSecret: 'oauth-client-secret',
+      host: 'https://my-oauth-server.com',
+      path: '/oauth/token',
+      // Refresh the token 15 seconds before it expires
+      refreshThreshold: 15000,
+    }),
+  },
+})
+```
 
 ### AWS IAM Example
 
