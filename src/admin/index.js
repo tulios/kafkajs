@@ -1078,7 +1078,7 @@ module.exports = ({
         low: undefined,
       }
       // warn in case of offset below low watermark
-      if (parseInt(offset) < parseInt(low)) {
+      if (parseInt(offset) < parseInt(low) && parseInt(offset)!==-1) {
         logger.warn(
           'The requested offset is before the earliest offset maintained on the partition - no records will be deleted from this partition',
           {
