@@ -143,7 +143,7 @@ interface OauthBearerProviderOptions {
   clientSecret: string;
   host: string;
   path: string;
-  refreshThreshold: number;
+  refreshThresholdMs: number;
 }
 
 const oauthBearerProvider = (options: OauthBearerProviderOptions) => {
@@ -162,21 +162,25 @@ const oauthBearerProvider = (options: OauthBearerProviderOptions) => {
   let accessToken: AccessToken;
 
   async function refreshToken() {
-    if (accessToken == null) {
-      accessToken = await client.getToken({})
-    }
+    try {
+      if (accessToken == null) {
+        accessToken = await client.getToken({})
+      }
 
-    if (accessToken.expired()) {
-      accessToken = await accessToken.refresh()
-    } else {
-      const refreshIn = accessToken.token.expires_in * 1000 - options.refreshThreshold;
+      if (accessToken.expired(options.refreshThresholdMs / 1000)) {
+        accessToken = await accessToken.refresh()
+      }
 
+      const nextRefresh = accessToken.token.expires_in * 1000 - options.refreshThresholdMs;
       setTimeout(() => {
         tokenPromise = refreshToken()
-      }, refreshIn);
-    }
+      }, nextRefresh);
 
-    return accessToken.token.access_token;
+      return accessToken.token.access_token;
+    } catch (error) {
+      accessToken = null;
+      throw error;
+    }
   }
 
   tokenPromise = refreshToken();
