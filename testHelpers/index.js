@@ -22,13 +22,29 @@ const { Kafka } = require('../index')
 const newLogger = (opts = {}) =>
   createLogger(Object.assign({ level: NOTHING, logCreator: LoggerConsole }, opts))
 
-const getHost = () => 'localhost'
+const defaultReplicationFactor = process.env.DEFAULT_REPLICATION_FACTOR || 1
+
+const bootstrapBrokersPlain =
+  process.env.BOOTSTRAP_BROKERS_PLAIN || 'localhost:9092,localhost:9095,localhost:9098'
+const bootstrapBrokersSsl =
+  process.env.BOOTSTRAP_BROKERS_SSL || 'localhost:9093,localhost:9096,localhost:9099'
+const bootstrapBrokersSasl =
+  process.env.BOOTSTRAP_BROKERS_SASL || 'localhost:9094,localhost:9097,localhost:9100'
+
+const getHost = () => bootstrapBrokersPlain.split(',')[0].split(':')[0]
 const secureRandom = (length = 10) =>
   `${crypto.randomBytes(length).toString('hex')}-${process.pid}-${uuid()}`
 
-const plainTextBrokers = (host = getHost()) => [`${host}:9092`, `${host}:9095`, `${host}:9098`]
-const sslBrokers = (host = getHost()) => [`${host}:9093`, `${host}:9096`, `${host}:9099`]
-const saslBrokers = (host = getHost()) => [`${host}:9094`, `${host}:9097`, `${host}:9100`]
+const plainTextBrokers = () => bootstrapBrokersPlain.split(',')
+const sslBrokers = () => bootstrapBrokersSsl.split(',')
+const saslBrokers = () => bootstrapBrokersSasl.split(',')
+
+const saslPlainUsername = process.env.SASL_PLAIN_USERNAME || 'test'
+const saslPlainPassword = process.env.SASL_PLAIN_PASSWORD || 'testtest'
+
+const brokerPlainPort = plainTextBrokers()[0].split(':')[1]
+const brokerSslPort = sslBrokers()[0].split(':')[1]
+const brokerSaslPort = saslBrokers()[0].split(':')[1]
 
 const connectionOpts = (opts = {}) => ({
   socketFactory,
@@ -36,15 +52,15 @@ const connectionOpts = (opts = {}) => ({
   connectionTimeout: 3000,
   logger: newLogger(),
   host: getHost(),
-  port: 9092,
+  port: brokerPlainPort,
   ...opts,
 })
 
 const sslConnectionOpts = () =>
   Object.assign(connectionOpts(), {
-    port: 9093,
+    port: brokerSslPort,
     ssl: {
-      servername: 'localhost',
+      servername: getHost(),
       rejectUnauthorized: false,
       ca: [fs.readFileSync('./testHelpers/certs/cert-signed', 'utf-8')],
     },
@@ -52,17 +68,17 @@ const sslConnectionOpts = () =>
 
 const saslConnectionOpts = () =>
   Object.assign(sslConnectionOpts(), {
-    port: 9094,
+    port: brokerSaslPort,
     sasl: {
       mechanism: 'plain',
-      username: 'test',
-      password: 'testtest',
+      username: saslPlainUsername,
+      password: saslPlainPassword,
     },
   })
 
 const saslWrongConnectionOpts = () =>
   Object.assign(sslConnectionOpts(), {
-    port: 9094,
+    port: brokerSaslPort,
     sasl: {
       mechanism: 'plain',
       username: 'wrong',
@@ -72,7 +88,7 @@ const saslWrongConnectionOpts = () =>
 
 const saslSCRAM256ConnectionOpts = () =>
   Object.assign(sslConnectionOpts(), {
-    port: 9094,
+    port: brokerSaslPort,
     sasl: {
       mechanism: 'scram-sha-256',
       username: 'testscram',
@@ -82,7 +98,7 @@ const saslSCRAM256ConnectionOpts = () =>
 
 const saslSCRAM256WrongConnectionOpts = () =>
   Object.assign(sslConnectionOpts(), {
-    port: 9094,
+    port: brokerSaslPort,
     sasl: {
       mechanism: 'scram-sha-256',
       username: 'wrong',
@@ -92,7 +108,7 @@ const saslSCRAM256WrongConnectionOpts = () =>
 
 const saslSCRAM512ConnectionOpts = () =>
   Object.assign(sslConnectionOpts(), {
-    port: 9094,
+    port: brokerSaslPort,
     sasl: {
       mechanism: 'scram-sha-512',
       username: 'testscram',
@@ -102,7 +118,7 @@ const saslSCRAM512ConnectionOpts = () =>
 
 const saslSCRAM512WrongConnectionOpts = () =>
   Object.assign(sslConnectionOpts(), {
-    port: 9094,
+    port: brokerSaslPort,
     sasl: {
       mechanism: 'scram-sha-512',
       username: 'wrong',
@@ -112,7 +128,7 @@ const saslSCRAM512WrongConnectionOpts = () =>
 
 const saslOAuthBearerConnectionOpts = () =>
   Object.assign(sslConnectionOpts(), {
-    port: 9094,
+    port: brokerSaslPort,
     sasl: {
       mechanism: 'oauthbearer',
       oauthBearerProvider: () => {
@@ -241,8 +257,13 @@ const waitForConsumerToJoinGroup = (consumer, { maxWait = 10000, label = '' } = 
     })
   })
 
-const createTopic = async ({ topic, partitions = 1, replicas = 1, config = [] }) => {
-  const kafka = new Kafka({ clientId: 'testHelpers', brokers: [`${getHost()}:9092`] })
+const createTopic = async ({
+  topic,
+  partitions = 1,
+  replicas = defaultReplicationFactor,
+  config = [],
+}) => {
+  const kafka = new Kafka({ clientId: 'testHelpers', brokers: [`${getHost()}:${brokerPlainPort}`] })
   const admin = kafka.admin()
 
   try {
