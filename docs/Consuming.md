@@ -43,7 +43,7 @@ The `eachMessage` handler provides a convenient and easy to use API, feeding you
 
 ```javascript
 await consumer.run({
-    eachMessage: async ({ topic, partition, message }) => {
+    eachMessage: async ({ topic, partition, message, heartbeat }) => {
         console.log({
             key: message.key.toString(),
             value: message.value.toString(),
@@ -52,6 +52,8 @@ await consumer.run({
     },
 })
 ```
+
+Be aware that the `eachMessage` handler should not block for longer than the configured [session timeout](#options) or else the consumer will be removed from the group. If your workload involves very slow processing times for individual messages then you should either increase the session timeout or make periodic use of the `heartbeat` function exposed in the handler payload.
 
 ## <a name="each-batch"></a> eachBatch
 
