@@ -46,7 +46,7 @@ KafkaJS is a modern [Apache Kafka](https://kafka.apache.org/) client for Node.js
   <table>
     <tr>
       <td>
-        <img src="https://raw.githubusercontent.com/tulios/kafkajs/master/logo/sponsors/upstash.png" width="190" height="172" align="left" />
+        <img src="logo/sponsors/upstash.png" width="190" height="170" align="left" />
         <h3>Upstash: Serverless Kafka</h3>
         <ul>
           <li>True Serverless Kafka with per-request-pricing</li>
@@ -59,7 +59,7 @@ KafkaJS is a modern [Apache Kafka](https://kafka.apache.org/) client for Node.js
     </tr>
     <tr>
       <td>
-        <img src="https://raw.githubusercontent.com/tulios/kafkajs/master/logo/sponsors/kafkajs-devs.png" alt="Logo" width="190" height="172" align="left" />
+        <img src="logo/sponsors/kafkajs-devs.png" alt="Logo" width="190" height="170" align="left" />
         <h3>Get help directly from a KafkaJS developer</h3>
         <ul>
           <li>Become a Github Sponsor to have a video call with a KafkaJS developer</li>
