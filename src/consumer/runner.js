@@ -148,7 +148,14 @@ module.exports = class Runner extends EventEmitter {
       }
 
       try {
-        await this.eachMessage({ topic, partition, message })
+        await this.eachMessage({
+          topic,
+          partition,
+          message,
+          heartbeat: async () => {
+            await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+          },
+        })
       } catch (e) {
         if (!isKafkaJSError(e)) {
           this.logger.error(`Error when calling eachMessage`, {
