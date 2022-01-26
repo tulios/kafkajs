@@ -16,6 +16,8 @@ const kafka = new Kafka({
 ```
 
 ## Client Id
+A logical identifier of an application. Can be used by brokers to apply quotas or trace requests to a specific application. Example: `booking-events-processor`.
+
 The [kafka documentation](https://kafka.apache.org/documentation/#design_quotasgroups) describes the `clientId` as:
 
 > Client-id is a logical grouping of clients with a meaningful name chosen by the client application. The tuple (user, client-id) defines a secure logical group of clients that share both user principal and client-id. Quotas can be applied to (user, client-id), user or client-id groups.
@@ -26,7 +28,7 @@ It [also says](https://kafka.apache.org/documentation/#producerconfigs_client.id
 >
 > An id string to pass to the server when making requests. The purpose of this is to be able to track the source of requests beyond just ip/port by allowing a logical application name to be included in server-side request logging.
 
-Therefore the `clientId` should be shared across multiple instances in a cluster or horizontally scaled application, but distinct for each application. Consumer group instances will also have [`clientHost`](../types/index.d.ts#L715) and [`memberId`](../types/index.d.ts#L717) fields which can be used to distinguish between instances with the same [`clientId`](../types/index.d.ts#L715).
+Therefore the `clientId` should be shared across multiple instances in a cluster or horizontally scaled application, but distinct for each application.
 
 ## Broker discovery
 
