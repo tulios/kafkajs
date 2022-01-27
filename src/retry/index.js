@@ -1,4 +1,4 @@
-const { KafkaJSNumberOfRetriesExceeded } = require('../errors')
+const { KafkaJSNumberOfRetriesExceeded, KafkaJSNonRetriableError } = require('../errors')
 
 const isTestMode = process.env.NODE_ENV === 'test'
 const RETRY_DEFAULT = isTestMode ? require('./defaults.test') : require('./defaults')
@@ -43,10 +43,14 @@ const createRetriable = (configs, resolve, reject, fn) => {
     fn(bail, retryCount, retryTime)
       .then(resolve)
       .catch(e => {
-        if (shouldRetry && isErrorRetriable(e)) {
-          scheduleRetry()
+        if (isErrorRetriable(e)) {
+          if (shouldRetry) {
+            scheduleRetry()
+          } else {
+            reject(new KafkaJSNumberOfRetriesExceeded(e, { retryCount, retryTime }))
+          }
         } else {
-          reject(new KafkaJSNumberOfRetriesExceeded(e, { retryCount, retryTime }))
+          reject(new KafkaJSNonRetriableError(e))
         }
       })
   }
