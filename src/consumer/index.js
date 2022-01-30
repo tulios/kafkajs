@@ -254,32 +254,46 @@ module.exports = ({
         stack: e.stack,
       })
 
-      if (e.name === 'KafkaJSConnectionClosedError') {
-        cluster.removeBroker({ host: e.host, port: e.port })
-      }
+      const originalError = e.name === 'KafkaJSNumberOfRetriesExceeded' ? e.originalError : e
+      const originalErrors =
+        originalError === 'KafkaJSAggregateError' ? originalError.errors : [originalError]
+      originalErrors
+        .filter(({ name }) => name === 'KafkaJSConnectionClosedError')
+        .forEach(e => cluster.removeBroker({ host: e.host, port: e.port }))
 
       await disconnect()
 
-      const isErrorRetriable = e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true
-      const shouldRestart =
-        isErrorRetriable &&
-        (!retry ||
-          !retry.restartOnFailure ||
-          (await retry.restartOnFailure(e).catch(error => {
-            logger.error(
-              'Caught error when invoking user-provided "restartOnFailure" callback. Defaulting to restarting.',
-              {
-                error: error.message || error,
-                originalError: e.message || e,
-                groupId,
-              }
-            )
+      const backwardsCompatibleError =
+        e.name === 'KafkaJSNumberOfRetriesExceeded' &&
+        e.originalError.name === 'KafkaJSAggregateError' &&
+        e.originalError.errors.length === 1
+          ? Object.assign(e, {
+              originalError: e.originalError.errors[0],
+              message: e.originalError.errors[0].message,
+            })
+          : e
 
-            return true
-          })))
+      const isErrorRetriable = e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true
+      let shouldRestart = true
+      try {
+        shouldRestart =
+          isErrorRetriable &&
+          (!retry ||
+            !retry.restartOnFailure ||
+            (await retry.restartOnFailure(backwardsCompatibleError)))
+      } catch (error) {
+        logger.error(
+          'Caught error when invoking user-provided "restartOnFailure" callback. Defaulting to restarting.',
+          {
+            error: error.message || error,
+            originalError: backwardsCompatibleError.message || backwardsCompatibleError,
+            groupId,
+          }
+        )
+      }
 
       instrumentationEmitter.emit(CRASH, {
-        error: e,
+        error: backwardsCompatibleError,
         groupId,
         restart: shouldRestart,
       })

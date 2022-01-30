@@ -2,15 +2,16 @@ const { EventEmitter } = require('events')
 const Long = require('../utils/long')
 const createRetry = require('../retry')
 const limitConcurrency = require('../utils/concurrency')
-const { KafkaJSError } = require('../errors')
-const barrier = require('./barrier')
+const { KafkaJSError, KafkaJSAggregateError, KafkaJSPreviousErrorError } = require('../errors')
 
 const {
   events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS, REBALANCING },
 } = require('./instrumentationEvents')
 
-const isRebalancing = e =>
-  e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
+const rejoinRequired = e =>
+  e.type === 'REBALANCE_IN_PROGRESS' ||
+  e.type === 'NOT_COORDINATOR_FOR_GROUP' ||
+  e.type === 'UNKNOWN_MEMBER_ID'
 
 const isKafkaJSError = e => e instanceof KafkaJSError
 const isSameOffset = (offsetA, offsetB) => Long.fromValue(offsetA).equals(Long.fromValue(offsetB))
@@ -253,7 +254,12 @@ module.exports = class Runner extends EventEmitter {
 
     this.instrumentationEmitter.emit(FETCH_START, {})
 
-    const iterator = await this.consumerGroup.fetch()
+    let fetchIterator
+    try {
+      fetchIterator = await this.consumerGroup.fetch()
+    } catch (e) {
+      throw KafkaJSAggregateError('Errors while fetching', [e])
+    }
 
     this.instrumentationEmitter.emit(FETCH, {
       /**
@@ -302,76 +308,60 @@ module.exports = class Runner extends EventEmitter {
       })
     }
 
-    const { lock, unlock, unlockWithError } = barrier()
     const concurrently = limitConcurrency({ limit: this.partitionsConsumedConcurrently })
 
-    let requestsCompleted = false
-    let numberOfExecutions = 0
-    let expectedNumberOfExecutions = 0
-    const enqueuedTasks = []
+    const addToQueuePromises = []
+    const processQueuePromises = []
+    let proccessingError = false
 
-    while (true) {
-      const result = iterator.next()
+    for (const fetch of fetchIterator) {
+      addToQueuePromises.push(
+        fetch
+          .then(batches => {
+            batches.forEach(batch =>
+              processQueuePromises.push(
+                concurrently(async () => {
+                  try {
+                    if (proccessingError)
+                      throw new KafkaJSPreviousErrorError(
+                        'Batch processing aborted due to previous batch processing error'
+                      )
+                    if (!this.running) return { status: 'resolved' }
 
-      if (result.done) {
-        break
-      }
+                    if (!batch.isEmpty()) await onBatch(batch)
 
-      if (!this.running) {
-        result.value.catch(error => {
-          this.logger.debug('Ignoring error in fetch request while stopping runner', {
-            error: error.message || error,
-            stack: error.stack,
+                    await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+                    return { status: 'resolved' }
+                  } catch (e) {
+                    proccessingError = true
+                    return { status: 'rejected', reason: e }
+                  }
+                })
+              )
+            )
+            return { status: 'resolved' }
           })
-        })
-
-        continue
-      }
-
-      enqueuedTasks.push(async () => {
-        const batches = await result.value
-        expectedNumberOfExecutions += batches.length
-
-        batches.map(batch =>
-          concurrently(async () => {
-            try {
-              if (!this.running) {
-                return
-              }
-
-              if (batch.isEmpty()) {
-                return
-              }
-
-              await onBatch(batch)
-              await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
-            } catch (e) {
-              unlockWithError(e)
-            } finally {
-              numberOfExecutions++
-              if (requestsCompleted && numberOfExecutions === expectedNumberOfExecutions) {
-                unlock()
-              }
-            }
-          }).catch(unlockWithError)
-        )
-      })
+          .catch(e => {
+            return { status: 'rejected', reason: e }
+          })
+      )
     }
 
-    await Promise.all(enqueuedTasks.map(fn => fn()))
-    requestsCompleted = true
+    const fetchResults = await Promise.all(addToQueuePromises)
+    const processingResults = await Promise.all(processQueuePromises)
+    const errors = [...fetchResults, ...processingResults]
+      .filter(({ status }) => status === 'rejected')
+      .filter(({ reason }) => !(reason instanceof KafkaJSPreviousErrorError))
+      .map(({ reason }) => reason)
 
-    if (expectedNumberOfExecutions === numberOfExecutions) {
-      unlock()
+    if (errors.length) throw new KafkaJSAggregateError('Errors while fetching', errors)
+
+    try {
+      await this.autoCommitOffsets()
+      await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+    } catch (e) {
+      throw new KafkaJSAggregateError('Errors while fetching', [e])
     }
-
-    const error = await lock
-    if (error) {
-      throw error
-    }
-
-    await this.autoCommitOffsets()
-    await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
   }
 
   async scheduleFetch() {
@@ -386,11 +376,11 @@ module.exports = class Runner extends EventEmitter {
 
     return this.retrier(async (bail, retryCount, retryTime) => {
       try {
-        this.consuming = true
-        await this.fetch()
-        this.consuming = false
-
         if (this.running) {
+          this.consuming = true
+          await this.fetch()
+          this.consuming = false
+
           setImmediate(() => this.scheduleFetch())
         }
       } catch (e) {
@@ -403,47 +393,43 @@ module.exports = class Runner extends EventEmitter {
           return
         }
 
-        if (isRebalancing(e)) {
-          this.logger.error('The group is rebalancing, re-joining', {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            error: e.message,
-            retryCount,
-            retryTime,
-          })
+        if (e.errors.some(e => !e.retriable && !rejoinRequired(e))) {
+          throw e
+        }
 
-          this.instrumentationEmitter.emit(REBALANCING, {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-          })
+        if (e.errors.some(e => rejoinRequired(e))) {
+          const unknownMember = e.errors.some(({ type }) => type === 'UNKNOWN_MEMBER_ID')
+
+          this.logger.error(
+            unknownMember
+              ? 'The coordinator is not aware of this member, re-joining the group'
+              : 'The group is rebalancing, re-joining',
+            {
+              groupId: this.consumerGroup.groupId,
+              memberId: this.consumerGroup.memberId,
+              error: e.message,
+              retryCount,
+              retryTime,
+            }
+          )
+
+          if (unknownMember) {
+            this.consumerGroup.memberId = null
+          } else {
+            this.instrumentationEmitter.emit(REBALANCING, {
+              groupId: this.consumerGroup.groupId,
+              memberId: this.consumerGroup.memberId,
+            })
+          }
 
           await this.join()
           setImmediate(() => this.scheduleFetch())
           return
         }
 
-        if (e.type === 'UNKNOWN_MEMBER_ID') {
-          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            error: e.message,
-            retryCount,
-            retryTime,
-          })
-
-          this.consumerGroup.memberId = null
-          await this.join()
+        if (e.errors.some(e => e.name === 'KafkaJSOffsetOutOfRange')) {
           setImmediate(() => this.scheduleFetch())
           return
-        }
-
-        if (e.name === 'KafkaJSOffsetOutOfRange') {
-          setImmediate(() => this.scheduleFetch())
-          return
-        }
-
-        if (e.name === 'KafkaJSNotImplemented') {
-          return bail(e)
         }
 
         this.logger.debug('Error while fetching data, trying again...', {
@@ -498,35 +484,31 @@ module.exports = class Runner extends EventEmitter {
           return
         }
 
-        if (isRebalancing(e)) {
-          this.logger.error('The group is rebalancing, re-joining', {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            error: e.message,
-            retryCount,
-            retryTime,
-          })
+        if (rejoinRequired(e)) {
+          const unknownMember = e.type === 'UNKNOWN_MEMBER_ID'
 
-          this.instrumentationEmitter.emit(REBALANCING, {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-          })
+          this.logger.error(
+            unknownMember
+              ? 'The coordinator is not aware of this member, re-joining the group'
+              : 'The group is rebalancing, re-joining',
+            {
+              groupId: this.consumerGroup.groupId,
+              memberId: this.consumerGroup.memberId,
+              error: e.message,
+              retryCount,
+              retryTime,
+            }
+          )
 
-          setImmediate(() => this.scheduleJoin())
+          if (unknownMember) {
+            this.consumerGroup.memberId = null
+          } else {
+            this.instrumentationEmitter.emit(REBALANCING, {
+              groupId: this.consumerGroup.groupId,
+              memberId: this.consumerGroup.memberId,
+            })
+          }
 
-          bail(new KafkaJSError(e))
-        }
-
-        if (e.type === 'UNKNOWN_MEMBER_ID') {
-          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            error: e.message,
-            retryCount,
-            retryTime,
-          })
-
-          this.consumerGroup.memberId = null
           setImmediate(() => this.scheduleJoin())
 
           bail(new KafkaJSError(e))

@@ -84,7 +84,7 @@ describe('Admin > deleteTopicRecords', () => {
     })
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-    // validate the modulus partitioner allocates 20 messages 13:7
+    // validate the modulus partitioner allocates 20 messages 10:10
     expect(
       await cluster.fetchTopicsOffset([
         {
@@ -97,8 +97,8 @@ describe('Admin > deleteTopicRecords', () => {
       {
         topic: topicName,
         partitions: expect.arrayContaining([
-          { partition: 0, offset: '13' },
-          { partition: 1, offset: '7' },
+          { partition: 0, offset: '10' },
+          { partition: 1, offset: '10' },
         ]),
       },
     ])
@@ -168,9 +168,9 @@ describe('Admin > deleteTopicRecords', () => {
         messagesConsumed.push(event)
       },
     })
-    await waitForMessages(messagesConsumed, { number: 13 })
+    await waitForMessages(messagesConsumed, { number: 3 })
 
-    expect(messagesConsumed.filter(({ partition }) => partition === 0)).toHaveLength(6) // 13 original minus 7 deleted
+    expect(messagesConsumed.filter(({ partition }) => partition === 0)).toHaveLength(3) // 10 original minus 7 deleted
     expect(messagesConsumed.find(({ partition }) => partition === 0)).toEqual(
       expect.objectContaining({
         message: expect.objectContaining({ offset: '7' }), // first message is offset 7
@@ -183,11 +183,11 @@ describe('Admin > deleteTopicRecords', () => {
         .find(({ partition }) => partition === 0)
     ).toEqual(
       expect.objectContaining({
-        message: expect.objectContaining({ offset: '12' }), // last message is offset 12
+        message: expect.objectContaining({ offset: '9' }), // last message is offset 12
       })
     )
 
-    expect(messagesConsumed.filter(({ partition }) => partition === 1)).toHaveLength(7) // original number of messages
+    expect(messagesConsumed.filter(({ partition }) => partition === 1)).toHaveLength(10) // original number of messages
   })
 
   test('deletes all records when provided the -1 offset', async () => {
@@ -206,7 +206,7 @@ describe('Admin > deleteTopicRecords', () => {
     ).toEqual([
       {
         topic: topicName,
-        partitions: [{ partition: 0, offset: '13' }],
+        partitions: [{ partition: 0, offset: '10' }],
       },
     ])
   })
