@@ -1,6 +1,7 @@
 jest.setTimeout(15000)
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
+const crypto = require('crypto')
 
 const {
   secureRandom,
@@ -10,12 +11,14 @@ const {
   newLogger,
   testIfKafkaAtLeast_0_11,
   waitForMessages,
+  waitFor,
   generateMessages,
   waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
 describe('Consumer', () => {
   let topicName, groupId, transactionalId, cluster, producer, consumer
+  const maxBytes = 170
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
@@ -40,7 +43,8 @@ describe('Consumer', () => {
       cluster,
       groupId,
       maxWaitTimeInMs: 100,
-      maxBytes: 170,
+      maxBytes,
+      maxBytesPerPartition: maxBytes,
       logger: newLogger(),
     })
   })
@@ -83,5 +87,39 @@ describe('Consumer', () => {
 
     producer.send({ topic: topicName, messages: generateMessages({ number: 2 }) })
     await waitForMessages(messagesConsumed, { number: 22 })
+  })
+
+  testIfKafkaAtLeast_0_11('can process transactions across multiple batches', async () => {
+    await consumer.connect()
+    await producer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    const endBatchProcessSpy = jest.fn()
+    consumer.on(consumer.events.END_BATCH_PROCESS, endBatchProcessSpy)
+
+    consumer.run({
+      eachMessage: async () => {},
+    })
+
+    const message = {
+      key: 'test',
+      value: crypto.randomBytes(maxBytes),
+    }
+
+    const transaction = await producer.transaction()
+    await transaction.send({
+      topic: topicName,
+      messages: [message, message],
+    })
+    await transaction.abort()
+
+    await waitFor(
+      () => endBatchProcessSpy.mock.calls.some(([event]) => event.payload.lastOffset === '2'),
+      {
+        delay: 50,
+        maxWait: 5000,
+      }
+    )
+
+    expect(endBatchProcessSpy).toHaveBeenCalledTimes(2)
   })
 })
