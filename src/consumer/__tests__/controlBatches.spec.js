@@ -18,6 +18,7 @@ const {
 
 describe('Consumer', () => {
   let topicName, groupId, transactionalId, cluster, producer, consumer
+  const maxBytes = 170
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
@@ -42,7 +43,8 @@ describe('Consumer', () => {
       cluster,
       groupId,
       maxWaitTimeInMs: 100,
-      maxBytes: 170,
+      maxBytes,
+      maxBytesPerPartition: maxBytes,
       logger: newLogger(),
     })
   })
@@ -87,41 +89,37 @@ describe('Consumer', () => {
     await waitForMessages(messagesConsumed, { number: 22 })
   })
 
-  it('can process transactions across multiple batches', async () => {
+  testIfKafkaAtLeast_0_11('can process transactions across multiple batches', async () => {
     await consumer.connect()
     await producer.connect()
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
-
-    let offset = '0'
-    consumer.on(consumer.events.END_BATCH_PROCESS, event => {
-      console.log(event.payload.firstOffset)
-      offset = event.payload.lastOffset
-    })
+    const endBatchProcessSpy = jest.fn()
+    consumer.on(consumer.events.END_BATCH_PROCESS, endBatchProcessSpy)
 
     consumer.run({
-      eachMessage: async payload => {},
+      eachMessage: async () => {},
     })
 
-    const range = [1, 2]
     const message = {
       key: 'test',
-      // half size of consumer maxBytes
-      value: crypto.randomBytes(130),
+      value: crypto.randomBytes(maxBytes),
     }
 
     const transaction = await producer.transaction()
     await transaction.send({
       topic: topicName,
-      acks: -1,
-      messages: range.map(() => message),
+      messages: [message, message],
     })
     await transaction.abort()
 
-    const done = waitFor(() => offset === '2', {
-      delay: 50,
-      maxWait: 5000,
-    })
+    await waitFor(
+      () => endBatchProcessSpy.mock.calls.some(([event]) => event.payload.lastOffset === '2'),
+      {
+        delay: 50,
+        maxWait: 5000,
+      }
+    )
 
-    await expect(done).resolves.toBe(true)
+    expect(endBatchProcessSpy).toHaveBeenCalledTimes(2)
   })
 })
