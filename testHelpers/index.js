@@ -1,3 +1,6 @@
+/* eslint-disable jest/valid-describe-callback */
+// Disabled to allow for higher order test functions where
+// `callback` is parameterized instead of a static function
 const fs = require('fs')
 const execa = require('execa')
 const uuid = require('uuid/v4')

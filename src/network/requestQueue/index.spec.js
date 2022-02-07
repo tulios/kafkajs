@@ -196,7 +196,7 @@ describe('Network > RequestQueue', () => {
         }
       })
 
-      expect(requestQueue.canSendSocketRequestImmediately())
+      expect(requestQueue.canSendSocketRequestImmediately()).toBe(true)
 
       const before = Date.now()
       const throttledUntilBefore = requestQueue.throttledUntil

@@ -268,7 +268,7 @@ describe('Consumer > Runner', () => {
         throw error
       })
 
-      expect(runner.commitOffsets(offsets)).rejects.toThrow(error.message)
+      await expect(runner.commitOffsets(offsets)).rejects.toThrow(error.message)
       expect(consumerGroup.joinAndSync).toHaveBeenCalledTimes(0)
 
       await sleep(100)
@@ -336,14 +336,14 @@ describe('Consumer > Runner', () => {
 
     it('a triggered rejoin failing should cause a crash', async () => {
       const unknownError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
-      consumerGroup.joinAndSync.mockImplementationOnce(() => {
+      consumerGroup.joinAndSync.mockImplementationOnce(async () => {
         throw unknownError
       })
-      consumerGroup.commitOffsets.mockImplementationOnce(() => {
+      consumerGroup.commitOffsets.mockImplementationOnce(async () => {
         throw rebalancingError()
       })
 
-      expect(runner.commitOffsets(offsets)).rejects.toThrow(rebalancingError().message)
+      await expect(runner.commitOffsets(offsets)).rejects.toThrow(rebalancingError().message)
 
       await sleep(100)
 
