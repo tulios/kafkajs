@@ -281,24 +281,16 @@ describe('Consumer > Instrumentation Events', () => {
   })
 
   fit('emits start and end batch process when reading empty control batches', async () => {
-    const onStartBatchProcess = jest.fn()
-    const onEndBatchProcess = jest.fn()
-    let startBatchProcess = 0
-    let endBatchProcess = 0
+    const startBatchProcessSpy = jest.fn()
+    const endBatchProcessSpy = jest.fn()
 
     consumer = createTestConsumer()
-    consumer.on(consumer.events.START_BATCH_PROCESS, event => {
-      onStartBatchProcess(event)
-      startBatchProcess++
-    })
-    consumer.on(consumer.events.END_BATCH_PROCESS, event => {
-      onEndBatchProcess(event)
-      endBatchProcess++
-    })
+    consumer.on(consumer.events.START_BATCH_PROCESS, startBatchProcessSpy)
+    consumer.on(consumer.events.END_BATCH_PROCESS, endBatchProcessSpy)
 
     await consumer.connect()
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
-    await consumer.run({ eachMessage: async () => true })
+    await consumer.run({ eachMessage: async () => {} })
 
     producer = createProducer({
       cluster,
@@ -324,13 +316,11 @@ describe('Consumer > Instrumentation Events', () => {
     })
     await transaction.abort()
 
-    await waitFor(() => startBatchProcess > 0)
-    await waitFor(() => endBatchProcess > 0)
+    await waitFor(
+      () => startBatchProcessSpy.mock.calls.length > 0 && endBatchProcessSpy.mock.calls.length > 0
+    )
 
-    expect(startBatchProcess).toBe(1)
-    expect(endBatchProcess).toBe(1)
-
-    expect(onStartBatchProcess).toHaveBeenCalledWith({
+    expect(startBatchProcessSpy).toHaveBeenCalledWith({
       id: expect.any(Number),
       timestamp: expect.any(Number),
       type: 'consumer.start_batch_process',
@@ -345,8 +335,9 @@ describe('Consumer > Instrumentation Events', () => {
         lastOffset: '1',
       },
     })
+    expect(startBatchProcessSpy).toHaveBeenCalledTimes(1)
 
-    expect(onEndBatchProcess).toHaveBeenCalledWith({
+    expect(endBatchProcessSpy).toHaveBeenCalledWith({
       id: expect.any(Number),
       timestamp: expect.any(Number),
       type: 'consumer.end_batch_process',
@@ -362,6 +353,7 @@ describe('Consumer > Instrumentation Events', () => {
         duration: expect.any(Number),
       },
     })
+    expect(endBatchProcessSpy).toHaveBeenCalledTimes(1)
   })
 
   it('emits connection events', async () => {
