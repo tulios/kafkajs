@@ -433,7 +433,7 @@ module.exports = class Runner extends EventEmitter {
         }
 
         if (isRebalancing(e)) {
-          this.logger.error('The group is rebalancing, re-joining', {
+          this.logger.warn('The group is rebalancing, re-joining', {
             groupId: this.consumerGroup.groupId,
             memberId: this.consumerGroup.memberId,
             error: e.message,
@@ -528,7 +528,7 @@ module.exports = class Runner extends EventEmitter {
         }
 
         if (isRebalancing(e)) {
-          this.logger.error('The group is rebalancing, re-joining', {
+          this.logger.warn('The group is rebalancing, re-joining', {
             groupId: this.consumerGroup.groupId,
             memberId: this.consumerGroup.memberId,
             error: e.message,
