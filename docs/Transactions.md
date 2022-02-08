@@ -53,7 +53,7 @@ The simplest way to achieve this is to encode the topic and partition in the `tr
 
 [This article from Confluent](https://www.confluent.io/blog/transactions-apache-kafka/) goes into much greater detail on how transactions work and is a recommended read before deciding on a `transactionalId`.
 
-#### <a name="offsets"></a> Sending Offsets
+## <a name="offsets"></a> Sending Offsets
 
 To send offsets as part of a transaction, meaning they will be committed only if the transaction succeeds, use the `transaction.sendOffsets()` method. This is necessary whenever we want a transaction to produce messages derived from a consumer, in a "consume-transform-produce" loop.
 
