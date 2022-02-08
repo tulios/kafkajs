@@ -83,7 +83,7 @@ const findApiName = apiKey => names[keys.indexOf(apiKey)]
 const lookup = versions => (apiKey, definition) => {
   const version = versions[apiKey]
   const availableVersions = definition.versions.map(Number)
-  const bestImplementedVersion = Math.max.apply(this, availableVersions)
+  const bestImplementedVersion = Math.max(...availableVersions)
 
   if (!version || version.maxVersion == null) {
     throw new KafkaJSServerDoesNotSupportApiKey(

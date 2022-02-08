@@ -41,6 +41,14 @@ module.exports = class Batch {
     return this.messagesWithinOffset.length === 0
   }
 
+  /**
+   * If the batch contained raw messages (i.e was not truely empty) but all messages were filtered out due to
+   * log compaction, control records or other reasons
+   */
+  isEmptyDueToFiltering() {
+    return this.isEmpty() && this.rawMessages.length > 0
+  }
+
   isEmptyControlRecord() {
     return (
       this.isEmpty() && this.messagesWithinOffset.some(({ isControlRecord }) => isControlRecord)

@@ -36,7 +36,7 @@
     "test:group:producer": "yarn jest --forceExit --testPathPattern 'src/producer/.*'",
     "test:group:consumer": "yarn jest --forceExit --testPathPattern 'src/consumer/.*.spec.js'",
     "test:group:others": "yarn jest --forceExit --testPathPattern 'src/(?!(broker|admin|producer|consumer)/).*'",
-    "test:group:oauthbearer": "OAUTHBEARER_ENABLED=1 yarn jest --forceExit src/producer/index.spec.js src/broker/__tests__/connect.spec.js src/consumer/__tests__/connection.spec.js src/broker/__tests__/disconnect.spec.js src/admin/__tests__/connection.spec.js",
+    "test:group:oauthbearer": "OAUTHBEARER_ENABLED=1 yarn jest --forceExit src/producer/index.spec.js src/broker/__tests__/connect.spec.js src/consumer/__tests__/connection.spec.js src/broker/__tests__/disconnect.spec.js src/admin/__tests__/connection.spec.js src/broker/__tests__/reauthenticate.spec.js",
     "test:group:broker:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:broker --ci --maxWorkers=4 --no-watchman\"",
     "test:group:admin:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:admin --ci --maxWorkers=4 --no-watchman\"",
     "test:group:producer:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:producer --ci --maxWorkers=4 --no-watchman\"",

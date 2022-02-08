@@ -9,6 +9,15 @@ To publish messages to Kafka you have to create a producer. Simply call the `pro
 const producer = kafka.producer()
 ```
 
+or with options
+
+```javascript
+const producer = kafka.producer({
+    allowAutoTopicCreation: false,
+    transactionTimeout: 30000
+})
+```
+
 ## Options
 
 | option                 | description                                                                                                                                                                                  | default              |

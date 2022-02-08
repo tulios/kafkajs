@@ -73,6 +73,28 @@ describe('Network > RequestQueue', () => {
       expect(requestQueue.pending.length).toEqual(0)
       expect(requestQueue.inflight.size).toEqual(0)
     })
+
+    it('blocks until the inflight request is timed out', async () => {
+      const emitter = new InstrumentationEventEmitter()
+      const requestTimeout = 1
+      requestQueue = createRequestQueue({
+        instrumentationEmitter: emitter,
+        enforceRequestTimeout: true,
+        requestTimeout: requestTimeout,
+      })
+      requestQueue.scheduleRequestTimeoutCheck()
+      requestQueue.push(request)
+
+      expect(requestQueue.pending.length).toEqual(0)
+      expect(requestQueue.inflight.size).toEqual(1)
+
+      await sleep(requestTimeout + 10)
+
+      await requestQueue.waitForPendingRequests()
+
+      expect(requestQueue.pending.length).toEqual(0)
+      expect(requestQueue.inflight.size).toEqual(0)
+    })
   })
 
   describe('#push', () => {
