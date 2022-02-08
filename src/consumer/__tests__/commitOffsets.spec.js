@@ -48,7 +48,7 @@ describe('Consumer', () => {
       )
     })
 
-    it('throws an error if anyof the partitions is not a number', async () => {
+    it('throws an error if any of the partitions is not a number', async () => {
       expect(consumer.commitOffsets([{ topic: topicName, partition: 'ABC' }])).rejects.toThrow(
         KafkaJSNonRetriableError,
         'Invalid partition, expected a number received ABC'
