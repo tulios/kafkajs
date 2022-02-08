@@ -144,8 +144,8 @@ module.exports = ({
       await cluster.disconnect()
       instrumentationEmitter.emit(DISCONNECT)
     } catch (e) {
-      logger.error(`Caught error when disconnecting the consumer.`, {
-        error: e.message || e,
+      logger.error(`Caught error when disconnecting the consumer: ${e.message}`, {
+        stack: e.stack,
         groupId,
       })
       throw e
@@ -164,8 +164,8 @@ module.exports = ({
 
       logger.info('Stopped', { groupId })
     } catch (e) {
-      logger.error(`Caught error when stopping the consumer.`, {
-        error: e.message || e,
+      logger.error(`Caught error when stopping the consumer: ${e.message}`, {
+        stack: e.stack,
         groupId,
       })
 
