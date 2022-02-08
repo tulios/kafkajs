@@ -65,7 +65,7 @@ describe('Broker > Fetch', () => {
       flattened[2],
       flattened[4],
     ])
-    fetchRequestMock = jest.fn()
+    fetchRequestMock = jest.fn().mockReturnValue({ request: {} })
 
     await broker.fetch({ maxWaitTime, minBytes, maxBytes, topics })
 
