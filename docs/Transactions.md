@@ -17,7 +17,7 @@ You initialize a transaction by making an async call to `producer.transaction()`
 > - The producer must wait for acknowledgement from all replicas (acks=-1)
 > - The producer must have unlimited retries
 
-Configure the producer client with `maxInFlightRequests: 1`, `idempotent: true` and a `transactionalId: 'name'` to guarantee EOS. Configuring the options will enable the settings mentioned above.
+Configure the producer client with `maxInFlightRequests: 1`, `idempotent: true` and a `transactionalId: 'my-transactional-producer'` to guarantee EOS. Configuring the options will enable the settings mentioned above.
 
 ```javascript
 const client = new Kafka({
@@ -25,7 +25,7 @@ const client = new Kafka({
   brokers: ['kafka1:9092', 'kafka2:9092'],
 })
 const producer = client.producer({
-  transactionalId: 'transactional-producer',
+  transactionalId: 'my-transactional-producer',
   maxInFlightRequests: 1,
   idempotent: true
 })
@@ -44,6 +44,14 @@ try {
   await transaction.abort()
 }
 ```
+
+### Choosing a `transactionalId`
+
+The `transactionalId` allows Kafka to fence out zombie instances by rejecting writes from producers with the same `transactionalId`, allowing only writes from the most recently registered producer. To ensure EoS semantics in a stream processing application, it is important that the `transactionalId` is always the same for a given input topic and partition in the read-process-write cycle.
+
+The simplest way to achieve this is to encode the topic and partition in the `transactionalId` itself such as the scheme: `"myapp-producer-" + topic + "-" + partition`.
+
+[This article from Confluent](https://www.confluent.io/blog/transactions-apache-kafka/) goes into much greater detail on how transactions work and is a recommended read before deciding on a `transactionalId`.
 
 #### <a name="offsets"></a> Sending Offsets
 
