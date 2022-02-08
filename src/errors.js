@@ -16,6 +16,7 @@ class KafkaJSNonRetriableError extends KafkaJSError {
   constructor(e) {
     super(e, { retriable: false })
     this.name = 'KafkaJSNonRetriableError'
+    this.originalError = e
   }
 }
 
@@ -211,6 +212,35 @@ class KafkaJSInvariantViolation extends KafkaJSNonRetriableError {
   }
 }
 
+class KafkaJSInvalidVarIntError extends KafkaJSNonRetriableError {
+  constructor() {
+    super(...arguments)
+    this.name = 'KafkaJSNonRetriableError'
+  }
+}
+
+class KafkaJSInvalidLongError extends KafkaJSNonRetriableError {
+  constructor() {
+    super(...arguments)
+    this.name = 'KafkaJSNonRetriableError'
+  }
+}
+
+class KafkaJSCreateTopicError extends KafkaJSProtocolError {
+  constructor(e, topicName) {
+    super(e)
+    this.topic = topicName
+    this.name = 'KafkaJSCreateTopicError'
+  }
+}
+class KafkaJSAggregateError extends Error {
+  constructor(message, errors) {
+    super(message)
+    this.errors = errors
+    this.name = 'KafkaJSAggregateError'
+  }
+}
+
 module.exports = {
   KafkaJSError,
   KafkaJSNonRetriableError,
@@ -236,4 +266,8 @@ module.exports = {
   KafkaJSUnsupportedMagicByteInMessageSet,
   KafkaJSDeleteTopicRecordsError,
   KafkaJSInvariantViolation,
+  KafkaJSInvalidVarIntError,
+  KafkaJSInvalidLongError,
+  KafkaJSCreateTopicError,
+  KafkaJSAggregateError,
 }

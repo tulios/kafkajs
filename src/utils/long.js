@@ -94,7 +94,7 @@ class Long {
   }
 
   /**
-   * Converts the Long to a string written in the specified radix.
+   * Converts the Long to a string.
    * @returns {string}
    * @override
    */
@@ -117,6 +117,15 @@ class Long {
    */
   toInt() {
     return Number(BigInt.asIntN(32, this.value))
+  }
+
+  /**
+   * Converts the Long to JSON
+   * @returns {string}
+   * @override
+   */
+  toJSON() {
+    return this.toString()
   }
 
   /**

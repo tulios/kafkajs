@@ -1,8 +1,16 @@
-const requestV0 = require('../v0/request')
+const Encoder = require('../../../encoder')
+const { Metadata: apiKey } = require('../../apiKeys')
 
 /**
  * Metadata Request (Version: 1) => [topics]
  *   topics => STRING
  */
 
-module.exports = ({ topics }) => Object.assign(requestV0({ topics }), { apiVersion: 1 })
+module.exports = ({ topics }) => ({
+  apiKey,
+  apiVersion: 1,
+  apiName: 'Metadata',
+  encode: async () => {
+    return new Encoder().writeNullableArray(topics)
+  },
+})

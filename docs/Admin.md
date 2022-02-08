@@ -127,7 +127,7 @@ await admin.fetchTopicMetadata({ topics: <Array<String>> })
 
 ```javascript
 {
-    topic: <String>,
+    name: <String>,
     partitions: <Array<PartitionMetadata>> // default: 1
 }
 ```
@@ -180,17 +180,31 @@ await admin.fetchTopicOffsetsByTimestamp(topic, timestamp)
 
 ## <a name="fetch-offsets"></a> Fetch consumer group offsets
 
-`fetchOffsets` returns the consumer group offset for a topic.
+`fetchOffsets` returns the consumer group offset for a list of topics.
 
 ```javascript
-await admin.fetchOffsets({ groupId, topic, })
+await admin.fetchOffsets({ groupId, topics: ['topic1', 'topic2'] })
 // [
-//   { partition: 0, offset: '31004' },
-//   { partition: 1, offset: '54312' },
-//   { partition: 2, offset: '32103' },
-//   { partition: 3, offset: '28' },
+//   {
+//     topic: 'topic1',
+//     partitions: [
+//       { partition: 0, offset: '31004' },
+//       { partition: 1, offset: '54312' },
+//       { partition: 2, offset: '32103' },
+//       { partition: 3, offset: '28' },
+//     ],
+//   },
+//   {
+//     topic: 'topic2',
+//     partitions: [
+//       { partition: 0, offset: '1234' },
+//       { partition: 1, offset: '4567' },
+//     ],
+//   },
 // ]
 ```
+
+Omit `topics` altogether if you want to get the consumer group offsets for all topics with committed offsets.
 
 Include the optional `resolveOffsets` flag to resolve the offsets without having to start a consumer, useful when fetching directly after calling [resetOffets](#a-name-reset-offsets-a-reset-consumer-group-offsets):
 
@@ -349,6 +363,7 @@ Example response:
                 configName: 'cleanup.policy',
                 configValue: 'delete',
                 isDefault: true,
+                configSource: 5,
                 isSensitive: false,
                 readOnly: false
             }],
@@ -470,6 +485,14 @@ await admin.describeGroups([ 'testgroup' ])
 //   }]
 // }
 ```
+Helper function to decode `memeberMetadata` and `memberAssignment` is available in `AssignerProtocol`
+
+Example: 
+
+`const memberMetadata = AssignerProtocol.MemberMetadata.decode(memberMetadata)`
+
+`const memberAssignment = AssignerProtocol.MemberAssignment.decode(memberAssignment)`
+
 
 ## <a name="delete-groups"></a> Delete groups
 

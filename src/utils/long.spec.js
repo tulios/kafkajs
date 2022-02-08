@@ -46,16 +46,34 @@ describe('Utils > Long', () => {
       expect(typeof output.value).toEqual('bigint')
     })
 
-    it('toInt()', () => {
-      const expectedInt = max.toInt()
-      expect(expectedInt).toEqual(4294967295)
-      expect(typeof expectedInt).toEqual('number')
+    describe('toInt()', () => {
+      it('should return an int', () => {
+        const maxInt32 = 2 ** 31 - 1
+        const expectedInt = new Long(BigInt(maxInt32)).toInt()
+        expect(expectedInt).toEqual(2147483647)
+        expect(typeof expectedInt).toEqual('number')
+      })
+
+      it('should wrap around if the number is too big to be represented as an int32', () => {
+        const maxInt32 = 2 ** 31 - 1
+        const expectedInt = new Long(BigInt(maxInt32 + 1)).toInt()
+        expect(expectedInt).toEqual(-2147483648)
+        expect(typeof expectedInt).toEqual('number')
+      })
     })
 
     it('toNumber()', () => {
       const expectedNumber = max.toNumber()
       expect(expectedNumber).toEqual(9223372036854776000)
       expect(typeof expectedNumber).toEqual('number')
+    })
+
+    describe('toJSON()', () => {
+      it('should return a string', () => {
+        const serialized = max.toJSON()
+
+        expect(serialized).toEqual('9223372036854775807')
+      })
     })
   })
 
@@ -144,7 +162,7 @@ describe('Utils > Long', () => {
       input2 = new Long(BigInt(13))
     })
 
-    it.only('getHighBits() & getLowBits()', () => {
+    it('getHighBits() & getLowBits()', () => {
       expect(input1.getHighBits()).toEqual(0)
       expect(input1.getLowBits()).toEqual(5)
 

@@ -43,7 +43,9 @@ const kafka = new Kafka({
     username: 'test',
     password: 'testtest',
   },
-  logCreator: (logLevel: logLevel) => (entry: LogEntry) => {},
+  logCreator: (logLevel: logLevel) => (entry: LogEntry) => {
+    Date.parse(entry.log.timestamp);
+  },
 })
 
 kafka.logger().error('Instantiated KafkaJS')
@@ -180,6 +182,10 @@ const runAdmin = async () => {
 
   await admin.listTopics()
 
+  await admin.fetchOffsets({ groupId: 'test-group' })
+  await admin.fetchOffsets({ groupId: 'test-group', topic: 'topic1' })
+  await admin.fetchOffsets({ groupId: 'test-group', topics: ['topic1', 'topic2'] })
+
   await admin.createTopics({
     topics: [{ topic, numPartitions: 10, replicationFactor: 1 }],
     timeout: 30000,
@@ -220,7 +226,7 @@ const runAdmin = async () => {
       resourceType: r.resourceType,
       resourceName: r.resourceName,
       resourcePatternType: r.resourcePatternType,
-      acls: r.acl,
+      acls: r.acls,
     })),
   })
 

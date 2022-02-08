@@ -273,6 +273,18 @@
       },
       "version-1.14.0/version-1.14.0-configuration": {
         "title": "Client Configuration"
+      },
+      "version-1.15.0/version-1.15.0-admin": {
+        "title": "Admin Client"
+      },
+      "version-1.15.0/version-1.15.0-faq": {
+        "title": "FAQ"
+      },
+      "version-1.15.0/version-1.15.0-instrumentation-events": {
+        "title": "Instrumentation Events"
+      },
+      "version-1.15.0/version-1.15.0-producing": {
+        "title": "Producing Messages"
       }
     },
     "links": {

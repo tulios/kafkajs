@@ -1,11 +1,16 @@
 const createAdmin = require('../index')
-const { KafkaJSProtocolError } = require('../../errors')
+const {
+  KafkaJSProtocolError,
+  KafkaJSAggregateError,
+  KafkaJSCreateTopicError,
+} = require('../../errors')
 const { createErrorFromCode } = require('../../protocol/error')
 
 const { secureRandom, createCluster, newLogger } = require('testHelpers')
 
 const NOT_CONTROLLER = 41
 const TOPIC_ALREADY_EXISTS = 36
+const INVALID_TOPIC_EXCEPTION = 17
 
 describe('Admin', () => {
   let topicName, admin
@@ -93,7 +98,9 @@ describe('Admin', () => {
       cluster.refreshMetadata = jest.fn()
       cluster.findControllerBroker = jest.fn(() => broker)
       broker.createTopics.mockImplementationOnce(() => {
-        throw new KafkaJSProtocolError(createErrorFromCode(TOPIC_ALREADY_EXISTS))
+        throw new KafkaJSAggregateError('error', [
+          new KafkaJSCreateTopicError(createErrorFromCode(TOPIC_ALREADY_EXISTS), topicName),
+        ])
       })
 
       admin = createAdmin({ cluster, logger: newLogger() })
@@ -131,6 +138,32 @@ describe('Admin', () => {
 
       expect(broker.metadata).toHaveBeenCalledTimes(1)
       expect(broker.metadata).toHaveBeenCalledWith([topicName, topic2, topic3])
+    })
+
+    test('forward non ignorable errors with topic name metadata', async () => {
+      const cluster = createCluster()
+      const broker = { createTopics: jest.fn(), metadata: jest.fn(() => true) }
+
+      cluster.refreshMetadata = jest.fn()
+      cluster.findControllerBroker = jest.fn(() => broker)
+
+      broker.createTopics.mockImplementationOnce(() => {
+        throw new KafkaJSAggregateError('error', [
+          new KafkaJSCreateTopicError(createErrorFromCode(INVALID_TOPIC_EXCEPTION), topicName),
+        ])
+      })
+      admin = createAdmin({ cluster, logger: newLogger() })
+
+      await expect(
+        admin.createTopics({
+          waitForLeaders: true,
+          topics: [{ topic: topicName }],
+        })
+      ).rejects.toBeInstanceOf(KafkaJSAggregateError)
+
+      expect(cluster.refreshMetadata).toHaveBeenCalledTimes(1)
+      expect(cluster.findControllerBroker).toHaveBeenCalledTimes(1)
+      expect(broker.createTopics).toHaveBeenCalledTimes(1)
     })
   })
 })

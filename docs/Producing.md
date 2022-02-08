@@ -9,6 +9,15 @@ To publish messages to Kafka you have to create a producer. Simply call the `pro
 const producer = kafka.producer()
 ```
 
+or with options
+
+```javascript
+const producer = kafka.producer({
+    allowAutoTopicCreation: false,
+    transactionTimeout: 30000
+})
+```
+
 ## Options
 
 | option                 | description                                                                                                                                                                                  | default              |
@@ -287,11 +296,11 @@ const MyCustomSnappyCodec = {
 }
 ```
 
-Now that we have the codec object, we can add it to the implementation:
+Now that we have the codec object, we can wrap it in a function and add it to the implementation:
 
 ```javascript
 const { CompressionTypes, CompressionCodecs } = require('kafkajs')
-CompressionCodecs[CompressionTypes.Snappy] = MyCustomSnappyCodec
+CompressionCodecs[CompressionTypes.Snappy] = () => MyCustomSnappyCodec
 ```
 
 The new codec can now be used with the `send` method, example:

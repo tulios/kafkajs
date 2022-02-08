@@ -11,6 +11,7 @@ const {
   KafkaJSDeleteGroupsError,
   KafkaJSBrokerNotFound,
   KafkaJSDeleteTopicRecordsError,
+  KafkaJSAggregateError,
 } = require('../errors')
 const { staleMetadata } = require('../protocol/error')
 const CONFIG_RESOURCE_TYPES = require('../protocol/configResourceTypes')
@@ -65,7 +66,7 @@ const indexByPartition = array =>
  *
  * @param {Object} params
  * @param {import("../../types").Logger} params.logger
- * @param {import('../instrumentation/emitter')} [params.instrumentationEmitter]
+ * @param {InstrumentationEventEmitter} [params.instrumentationEmitter]
  * @param {import('../../types').RetryOptions} params.retry
  * @param {import("../../types").Cluster} params.cluster
  *
@@ -106,10 +107,11 @@ module.exports = ({
   }
 
   /**
-   * @param {array} topics
-   * @param {boolean} [validateOnly=false]
-   * @param {number} [timeout=5000]
-   * @param {boolean} [waitForLeaders=true]
+   * @param {Object} request
+   * @param {array} request.topics
+   * @param {boolean} [request.validateOnly=false]
+   * @param {number} [request.timeout=5000]
+   * @param {boolean} [request.waitForLeaders=true]
    * @return {Promise}
    */
   const createTopics = async ({ topics, validateOnly, timeout, waitForLeaders = true }) => {
@@ -154,8 +156,10 @@ module.exports = ({
           throw e
         }
 
-        if (e.type === 'TOPIC_ALREADY_EXISTS') {
-          return false
+        if (e instanceof KafkaJSAggregateError) {
+          if (e.errors.every(error => error.type === 'TOPIC_ALREADY_EXISTS')) {
+            return false
+          }
         }
 
         bail(e)
@@ -368,62 +372,94 @@ module.exports = ({
   }
 
   /**
+   * Fetch offsets for a topic or multiple topics
+   *
+   * Note: set either topic or topics but not both.
+   *
    * @param {string} groupId
-   * @param {string} topic
+   * @param {string} topic - deprecated, use the `topics` parameter. Topic to fetch offsets for.
+   * @param {string[]} topics - list of topics to fetch offsets for, defaults to `[]` which fetches all topics for `groupId`.
    * @param {boolean} [resolveOffsets=false]
    * @return {Promise}
    */
-  const fetchOffsets = async ({ groupId, topic, resolveOffsets = false }) => {
+  const fetchOffsets = async ({ groupId, topic, topics, resolveOffsets = false }) => {
     if (!groupId) {
       throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
     }
 
-    if (!topic) {
-      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    if (!topic && !topics) {
+      topics = []
     }
 
-    const partitions = await findTopicPartitions(cluster, topic)
-    const coordinator = await cluster.findGroupCoordinator({ groupId })
-    const partitionsToFetch = partitions.map(partition => ({ partition }))
+    if (!topic && !Array.isArray(topics)) {
+      throw new KafkaJSNonRetriableError(`Expected topic or topics array to be set`)
+    }
 
+    if (topic && topics) {
+      throw new KafkaJSNonRetriableError(`Either topic or topics must be set, not both`)
+    }
+
+    if (topic) {
+      topics = [topic]
+    }
+
+    const coordinator = await cluster.findGroupCoordinator({ groupId })
+    const topicsToFetch = await Promise.all(
+      topics.map(async topic => {
+        const partitions = await findTopicPartitions(cluster, topic)
+        const partitionsToFetch = partitions.map(partition => ({ partition }))
+        return { topic, partitions: partitionsToFetch }
+      })
+    )
     let { responses: consumerOffsets } = await coordinator.offsetFetch({
       groupId,
-      topics: [{ topic, partitions: partitionsToFetch }],
+      topics: topicsToFetch,
     })
 
     if (resolveOffsets) {
-      const indexedOffsets = indexByPartition(await fetchTopicOffsets(topic))
-      consumerOffsets = consumerOffsets.map(({ topic, partitions }) => ({
-        topic,
-        partitions: partitions.map(({ offset, partition, ...props }) => {
-          let resolvedOffset = offset
-          if (Number(offset) === EARLIEST_OFFSET) {
-            resolvedOffset = indexedOffsets[partition].low
-          }
-          if (Number(offset) === LATEST_OFFSET) {
-            resolvedOffset = indexedOffsets[partition].high
-          }
+      consumerOffsets = await Promise.all(
+        consumerOffsets.map(async ({ topic, partitions }) => {
+          const indexedOffsets = indexByPartition(await fetchTopicOffsets(topic))
+          const recalculatedPartitions = partitions.map(({ offset, partition, ...props }) => {
+            let resolvedOffset = offset
+            if (Number(offset) === EARLIEST_OFFSET) {
+              resolvedOffset = indexedOffsets[partition].low
+            }
+            if (Number(offset) === LATEST_OFFSET) {
+              resolvedOffset = indexedOffsets[partition].high
+            }
+            return {
+              partition,
+              offset: resolvedOffset,
+              ...props,
+            }
+          })
+
+          await setOffsets({ groupId, topic, partitions: recalculatedPartitions })
+
           return {
-            partition,
-            offset: resolvedOffset,
-            ...props,
+            topic,
+            partitions: recalculatedPartitions,
           }
-        }),
-      }))
-      const [{ partitions }] = consumerOffsets
-      await setOffsets({ groupId, topic, partitions })
+        })
+      )
     }
 
-    return consumerOffsets
-      .filter(response => response.topic === topic)
-      .map(({ partitions }) =>
-        partitions.map(({ partition, offset, metadata }) => ({
-          partition,
-          offset,
-          metadata: metadata || null,
-        }))
-      )
-      .pop()
+    const result = consumerOffsets.map(({ topic, partitions }) => {
+      const completePartitions = partitions.map(({ partition, offset, metadata }) => ({
+        partition,
+        offset,
+        metadata: metadata || null,
+      }))
+
+      return { topic, partitions: completePartitions }
+    })
+
+    if (topic) {
+      return result.pop().partitions
+    } else {
+      return result
+    }
   }
 
   /**
@@ -1042,7 +1078,7 @@ module.exports = ({
         low: undefined,
       }
       // warn in case of offset below low watermark
-      if (parseInt(offset) < parseInt(low)) {
+      if (parseInt(offset) < parseInt(low) && parseInt(offset) !== -1) {
         logger.warn(
           'The requested offset is before the earliest offset maintained on the partition - no records will be deleted from this partition',
           {
@@ -1421,11 +1457,7 @@ module.exports = ({
     })
   }
 
-  /**
-   * @param {string} eventName
-   * @param {Function} listener
-   * @return {Function}
-   */
+  /** @type {import("../../types").Admin["on"]} */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {
       throw new KafkaJSNonRetriableError(`Event name should be one of ${eventKeys}`)

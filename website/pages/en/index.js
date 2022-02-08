@@ -69,6 +69,9 @@ class HomeSplash extends React.Component {
             <Button href={docUrl('getting-started')}>Documentation</Button>
             <Button href={siteConfig.repoUrl}>Github</Button>
           </PromoSection>
+          <Container className="trademark-notice">
+          <small>KAFKA is a registered trademark of The Apache Software Foundation and has been licensed for use by KafkaJS. KafkaJS has no affiliation with and is not endorsed by The Apache Software Foundation.</small>
+      </Container>
         </div>
       </SplashContainer>
     )

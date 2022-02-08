@@ -1,4 +1,4 @@
-const EventEmitter = require('events')
+const { EventEmitter } = require('events')
 const Long = require('../utils/long')
 const createRetry = require('../retry')
 const limitConcurrency = require('../utils/concurrency')
@@ -6,7 +6,7 @@ const { KafkaJSError } = require('../errors')
 const barrier = require('./barrier')
 
 const {
-  events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS },
+  events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS, REBALANCING },
 } = require('./instrumentationEvents')
 
 const isRebalancing = e =>
@@ -148,7 +148,14 @@ module.exports = class Runner extends EventEmitter {
       }
 
       try {
-        await this.eachMessage({ topic, partition, message })
+        await this.eachMessage({
+          topic,
+          partition,
+          message,
+          heartbeat: async () => {
+            await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+          },
+        })
       } catch (e) {
         if (!isKafkaJSError(e)) {
           this.logger.error(`Error when calling eachMessage`, {
@@ -167,7 +174,7 @@ module.exports = class Runner extends EventEmitter {
 
       this.consumerGroup.resolveOffset({ topic, partition, offset: message.offset })
       await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
-      await this.consumerGroup.commitOffsetsIfNecessary()
+      await this.autoCommitOffsetsIfNecessary()
     }
   }
 
@@ -281,6 +288,38 @@ module.exports = class Runner extends EventEmitter {
         lastOffset: batch.lastOffset(),
       }
 
+      /**
+       * If the batch contained only control records or only aborted messages then we still
+       * need to resolve and auto-commit to ensure the consumer can move forward.
+       *
+       * We also need to emit batch instrumentation events to allow any listeners keeping
+       * track of offsets to know about the latest point of consumption.
+       *
+       * Added in #1256
+       *
+       * @see https://github.com/apache/kafka/blob/9aa660786e46c1efbf5605a6a69136a1dac6edb9/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L1499-L1505
+       */
+      if (batch.isEmptyDueToFiltering()) {
+        this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
+
+        this.consumerGroup.resolveOffset({
+          topic: batch.topic,
+          partition: batch.partition,
+          offset: batch.lastOffset(),
+        })
+        await this.autoCommitOffsetsIfNecessary()
+
+        this.instrumentationEmitter.emit(END_BATCH_PROCESS, {
+          ...payload,
+          duration: Date.now() - startBatchProcess,
+        })
+        return
+      }
+
+      if (batch.isEmpty()) {
+        return
+      }
+
       this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
 
       if (this.eachMessage) {
@@ -293,6 +332,8 @@ module.exports = class Runner extends EventEmitter {
         ...payload,
         duration: Date.now() - startBatchProcess,
       })
+
+      await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
     }
 
     const { lock, unlock, unlockWithError } = barrier()
@@ -332,12 +373,7 @@ module.exports = class Runner extends EventEmitter {
                 return
               }
 
-              if (batch.isEmpty()) {
-                return
-              }
-
               await onBatch(batch)
-              await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
             } catch (e) {
               unlockWithError(e)
             } finally {
@@ -397,12 +433,17 @@ module.exports = class Runner extends EventEmitter {
         }
 
         if (isRebalancing(e)) {
-          this.logger.error('The group is rebalancing, re-joining', {
+          this.logger.warn('The group is rebalancing, re-joining', {
             groupId: this.consumerGroup.groupId,
             memberId: this.consumerGroup.memberId,
             error: e.message,
             retryCount,
             retryTime,
+          })
+
+          this.instrumentationEmitter.emit(REBALANCING, {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
           })
 
           await this.join()
@@ -487,12 +528,17 @@ module.exports = class Runner extends EventEmitter {
         }
 
         if (isRebalancing(e)) {
-          this.logger.error('The group is rebalancing, re-joining', {
+          this.logger.warn('The group is rebalancing, re-joining', {
             groupId: this.consumerGroup.groupId,
             memberId: this.consumerGroup.memberId,
             error: e.message,
             retryCount,
             retryTime,
+          })
+
+          this.instrumentationEmitter.emit(REBALANCING, {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
           })
 
           setImmediate(() => this.scheduleJoin())

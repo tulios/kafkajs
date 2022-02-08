@@ -4,6 +4,7 @@ const BufferedAsyncIterator = require('../utils/bufferedAsyncIterator')
 const websiteUrl = require('../utils/websiteUrl')
 const arrayDiff = require('../utils/arrayDiff')
 const createRetry = require('../retry')
+const sharedPromiseTo = require('../utils/sharedPromiseTo')
 
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
@@ -37,6 +38,8 @@ const isRebalancing = e =>
 const PRIVATE = {
   JOIN: Symbol('private:ConsumerGroup:join'),
   SYNC: Symbol('private:ConsumerGroup:sync'),
+  HEARTBEAT: Symbol('private:ConsumerGroup:heartbeat'),
+  SHAREDHEARTBEAT: Symbol('private:ConsumerGroup:sharedHeartbeat'),
 }
 
 module.exports = class ConsumerGroup {
@@ -55,6 +58,7 @@ module.exports = class ConsumerGroup {
     minBytes,
     maxBytes,
     maxWaitTimeInMs,
+    autoCommit,
     autoCommitInterval,
     autoCommitThreshold,
     isolationLevel,
@@ -77,6 +81,7 @@ module.exports = class ConsumerGroup {
     this.minBytes = minBytes
     this.maxBytes = maxBytes
     this.maxWaitTime = maxWaitTimeInMs
+    this.autoCommit = autoCommit
     this.autoCommitInterval = autoCommitInterval
     this.autoCommitThreshold = autoCommitThreshold
     this.isolationLevel = isolationLevel
@@ -105,6 +110,23 @@ module.exports = class ConsumerGroup {
     this.subscriptionState = new SubscriptionState()
 
     this.lastRequest = Date.now()
+
+    this[PRIVATE.SHAREDHEARTBEAT] = sharedPromiseTo(async ({ interval }) => {
+      const { groupId, generationId, memberId } = this
+      const now = Date.now()
+
+      if (memberId && now >= this.lastRequest + interval) {
+        const payload = {
+          groupId,
+          memberId,
+          groupGenerationId: generationId,
+        }
+
+        await this.coordinator.heartbeat(payload)
+        this.instrumentationEmitter.emit(HEARTBEAT, payload)
+        this.lastRequest = Date.now()
+      }
+    })
   }
 
   isLeader() {
@@ -274,6 +296,7 @@ module.exports = class ConsumerGroup {
         }),
         {}
       ),
+      autoCommit: this.autoCommit,
       autoCommitInterval: this.autoCommitInterval,
       autoCommitThreshold: this.autoCommitThreshold,
       coordinator,
@@ -321,10 +344,16 @@ module.exports = class ConsumerGroup {
     })
   }
 
+  /**
+   * @param {import("../../types").TopicPartition} topicPartition
+   */
   resetOffset({ topic, partition }) {
     this.offsetManager.resetOffset({ topic, partition })
   }
 
+  /**
+   * @param {import("../../types").TopicPartitionOffset} topicPartitionOffset
+   */
   resolveOffset({ topic, partition, offset }) {
     this.offsetManager.resolveOffset({ topic, partition, offset })
   }
@@ -334,9 +363,7 @@ module.exports = class ConsumerGroup {
    * on the next fetch. If this API is invoked for the same topic/partition more
    * than once, the latest offset will be used on the next fetch.
    *
-   * @param {string} topic
-   * @param {number} partition
-   * @param {string} offset
+   * @param {import("../../types").TopicPartitionOffset} topicPartitionOffset
    */
   seek({ topic, partition, offset }) {
     this.seekOffset.set(topic, partition, offset)
@@ -377,20 +404,7 @@ module.exports = class ConsumerGroup {
   }
 
   async heartbeat({ interval }) {
-    const { groupId, generationId, memberId } = this
-    const now = Date.now()
-
-    if (memberId && now >= this.lastRequest + interval) {
-      const payload = {
-        groupId,
-        memberId,
-        groupGenerationId: generationId,
-      }
-
-      await this.coordinator.heartbeat(payload)
-      this.instrumentationEmitter.emit(HEARTBEAT, payload)
-      this.lastRequest = Date.now()
-    }
+    return this[PRIVATE.SHAREDHEARTBEAT]({ interval })
   }
 
   async fetch() {
@@ -531,23 +545,7 @@ module.exports = class ConsumerGroup {
               )
 
               const fetchedOffset = partitionRequestData.fetchOffset
-              const batch = new Batch(topicName, fetchedOffset, partitionData)
-
-              /**
-               * Resolve the offset to skip the control batch since `eachBatch` or `eachMessage` callbacks
-               * won't process empty batches
-               *
-               * @see https://github.com/apache/kafka/blob/9aa660786e46c1efbf5605a6a69136a1dac6edb9/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L1499-L1505
-               */
-              if (batch.isEmptyControlRecord() || batch.isEmptyDueToLogCompactedMessages()) {
-                this.resolveOffset({
-                  topic: batch.topic,
-                  partition: batch.partition,
-                  offset: batch.lastOffset(),
-                })
-              }
-
-              return batch
+              return new Batch(topicName, fetchedOffset, partitionData)
             })
         })
 

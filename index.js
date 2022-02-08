@@ -5,10 +5,12 @@ const Partitioners = require('./src/producer/partitioners')
 const Compression = require('./src/protocol/message/compression')
 const ResourceTypes = require('./src/protocol/resourceTypes')
 const ConfigResourceTypes = require('./src/protocol/configResourceTypes')
+const ConfigSource = require('./src/protocol/configSource')
 const AclResourceTypes = require('./src/protocol/aclResourceTypes')
 const AclOperationTypes = require('./src/protocol/aclOperationTypes')
 const AclPermissionTypes = require('./src/protocol/aclPermissionTypes')
 const ResourcePatternTypes = require('./src/protocol/resourcePatternTypes')
+const Errors = require('./src/errors')
 const { LEVELS } = require('./src/loggers')
 
 module.exports = {
@@ -31,4 +33,6 @@ module.exports = {
   AclOperationTypes,
   AclPermissionTypes,
   ResourcePatternTypes,
+  ConfigSource,
+  ...Errors,
 }

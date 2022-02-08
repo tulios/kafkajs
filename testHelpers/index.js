@@ -116,7 +116,7 @@ const saslOAuthBearerConnectionOpts = () =>
     sasl: {
       mechanism: 'oauthbearer',
       oauthBearerProvider: () => {
-        const token = jwt.sign({ sub: 'test' }, 'abc', { algorithm: 'none' })
+        const token = jwt.sign({ sub: 'test' }, undefined, { algorithm: 'none', expiresIn: '1h' })
 
         return {
           value: token,
@@ -161,16 +161,13 @@ if (process.env['OAUTHBEARER_ENABLED'] !== '1') {
 const createConnection = (opts = {}) => new Connection(Object.assign(connectionOpts(), opts))
 
 const createConnectionBuilder = (opts = {}, brokers = plainTextBrokers()) => {
-  const { ssl, sasl, clientId } = Object.assign(connectionOpts(), opts)
   return connectionBuilder({
     socketFactory,
     logger: newLogger(),
     brokers,
-    ssl,
-    sasl,
-    clientId,
     connectionTimeout: 1000,
-    retry: null,
+    ...connectionOpts(),
+    ...opts,
   })
 }
 

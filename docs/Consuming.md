@@ -43,7 +43,7 @@ The `eachMessage` handler provides a convenient and easy to use API, feeding you
 
 ```javascript
 await consumer.run({
-    eachMessage: async ({ topic, partition, message }) => {
+    eachMessage: async ({ topic, partition, message, heartbeat }) => {
         console.log({
             key: message.key.toString(),
             value: message.value.toString(),
@@ -52,6 +52,8 @@ await consumer.run({
     },
 })
 ```
+
+Be aware that the `eachMessage` handler should not block for longer than the configured [session timeout](#options) or else the consumer will be removed from the group. If your workload involves very slow processing times for individual messages then you should either increase the session timeout or make periodic use of the `heartbeat` function exposed in the handler payload.
 
 ## <a name="each-batch"></a> eachBatch
 
@@ -173,7 +175,7 @@ When disabling [`autoCommit`](#auto-commit) you can still manually commit messag
 - By [sending message offsets in a transaction](Transactions.md#offsets).
 - By using the `commitOffsets` method of the consumer (see below).
 
-The `consumer.commitOffsets` is the lowest-level option and will ignore all other auto commit settings, but in doing so allows the committed offset to be set to any offset and committing various offsets at once. This can be useful, for example, for building an processing reset tool. It can only be called after `consumer.run`. Committing offsets does not change what message we'll consume next once we've started consuming, but instead is only used to determine **from which place to start**. To immediately change from what offset you're consuming messages, you'll want to [seek](#seek), instead.
+The `consumer.commitOffsets` is the lowest-level option and will ignore all other auto commit settings, but in doing so allows the committed offset to be set to any offset and committing various offsets at once. This can be useful, for example, for building a processing reset tool. It can only be called after `consumer.run`. Committing offsets does not change what message we'll consume next once we've started consuming, but instead is only used to determine **from which place to start**. To immediately change from what offset you're consuming messages, you'll want to [seek](#seek), instead.
 
 ```javascript
 consumer.run({
@@ -328,6 +330,17 @@ consumer.seek({ topic: 'example', partition: 0, offset: 12384 })
 ```
 
 Upon seeking to an offset, any messages in active batches are marked as stale and discarded, making sure the next message read for the partition is from the offset sought to. Make sure to check `isStale()` before processing a message using [the `eachBatch` interface](#each-batch) of `consumer.run`.
+
+By default, the consumer will commit the offset seeked. To disable this, set the [`autoCommit`](#auto-commit) option to `false` on the consumer.
+
+```javascript
+consumer.run({
+    autoCommit: false,
+    eachMessage: async ({ topic, message }) => true
+})
+// This will now only resolve the previous offset, not commit it
+consumer.seek({ topic: 'example', partition: 0, offset: "12384" })
+```
 
 ## <a name="custom-partition-assigner"></a> Custom partition assigner
 
