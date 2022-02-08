@@ -10,6 +10,7 @@ const {
   newLogger,
   waitFor,
   waitForConsumerToJoinGroup,
+  testIfKafkaAtLeast_0_11,
 } = require('testHelpers')
 
 describe('Consumer > Instrumentation Events', () => {
@@ -280,6 +281,85 @@ describe('Consumer > Instrumentation Events', () => {
     })
   })
 
+  testIfKafkaAtLeast_0_11(
+    'emits start and end batch process when reading empty control batches',
+    async () => {
+      const startBatchProcessSpy = jest.fn()
+      const endBatchProcessSpy = jest.fn()
+
+      consumer = createTestConsumer()
+      consumer.on(consumer.events.START_BATCH_PROCESS, startBatchProcessSpy)
+      consumer.on(consumer.events.END_BATCH_PROCESS, endBatchProcessSpy)
+
+      await consumer.connect()
+      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.run({ eachMessage: async () => {} })
+
+      producer = createProducer({
+        cluster,
+        createPartitioner: createModPartitioner,
+        logger: newLogger(),
+        transactionalId: `test-producer-${secureRandom()}`,
+        maxInFlightRequests: 1,
+        idempotent: true,
+      })
+
+      await producer.connect()
+      const transaction = await producer.transaction()
+
+      await transaction.send({
+        topic: topicName,
+        acks: -1,
+        messages: [
+          {
+            key: 'test',
+            value: 'test',
+          },
+        ],
+      })
+      await transaction.abort()
+
+      await waitFor(
+        () => startBatchProcessSpy.mock.calls.length > 0 && endBatchProcessSpy.mock.calls.length > 0
+      )
+
+      expect(startBatchProcessSpy).toHaveBeenCalledWith({
+        id: expect.any(Number),
+        timestamp: expect.any(Number),
+        type: 'consumer.start_batch_process',
+        payload: {
+          topic: topicName,
+          partition: 0,
+          highWatermark: '2',
+          offsetLag: expect.any(String),
+          offsetLagLow: expect.any(String),
+          batchSize: 0,
+          firstOffset: '0',
+          lastOffset: '1',
+        },
+      })
+      expect(startBatchProcessSpy).toHaveBeenCalledTimes(1)
+
+      expect(endBatchProcessSpy).toHaveBeenCalledWith({
+        id: expect.any(Number),
+        timestamp: expect.any(Number),
+        type: 'consumer.end_batch_process',
+        payload: {
+          topic: topicName,
+          partition: 0,
+          highWatermark: '2',
+          offsetLag: expect.any(String),
+          offsetLagLow: expect.any(String),
+          batchSize: 0,
+          firstOffset: '0',
+          lastOffset: '1',
+          duration: expect.any(Number),
+        },
+      })
+      expect(endBatchProcessSpy).toHaveBeenCalledTimes(1)
+    }
+  )
+
   it('emits connection events', async () => {
     const connectListener = jest.fn().mockName('connect')
     const disconnectListener = jest.fn().mockName('disconnect')
@@ -351,6 +431,61 @@ describe('Consumer > Instrumentation Events', () => {
       timestamp: expect.any(Number),
       type: 'consumer.crash',
       payload: { error, groupId, restart: false },
+    })
+  })
+
+  it('emits rebalancing', async () => {
+    const onRebalancing = jest.fn()
+
+    const groupId = `consumer-group-id-${secureRandom()}`
+
+    consumer = createTestConsumer({
+      groupId,
+      cluster: createCluster({
+        instrumentationEmitter: new InstrumentationEventEmitter(),
+        metadataMaxAge: 50,
+      }),
+    })
+
+    consumer2 = createTestConsumer({
+      groupId,
+      cluster: createCluster({
+        instrumentationEmitter: new InstrumentationEventEmitter(),
+        metadataMaxAge: 50,
+      }),
+    })
+
+    let memberId
+    consumer.on(consumer.events.GROUP_JOIN, async event => {
+      memberId = memberId || event.payload.memberId
+    })
+
+    consumer.on(consumer.events.REBALANCING, async event => {
+      onRebalancing(event)
+    })
+
+    await consumer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    consumer.run({ eachMessage: () => true })
+
+    await waitForConsumerToJoinGroup(consumer, { label: 'consumer1' })
+
+    await consumer2.connect()
+    await consumer2.subscribe({ topic: topicName, fromBeginning: true })
+
+    consumer2.run({ eachMessage: () => true })
+
+    await waitForConsumerToJoinGroup(consumer2, { label: 'consumer2' })
+
+    expect(onRebalancing).toBeCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.rebalancing',
+      payload: {
+        groupId: groupId,
+        memberId: memberId,
+      },
     })
   })
 

@@ -69,6 +69,7 @@ describe('Broker > AddPartitionsToTxn', () => {
     })
 
     expect(result).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       errors: [
         {

@@ -62,8 +62,8 @@ describe('Broker > LeaveGroup', () => {
 
     const response = await groupCoordinator.leaveGroup({ groupId, memberId })
     expect(response).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
-      clientSideThrottleTime: 0,
       errorCode: 0,
       members: [{ errorCode: 0, memberId, groupInstanceId: null }],
     })

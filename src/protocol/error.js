@@ -266,7 +266,7 @@ const errorCodes = [
     code: 42,
     retriable: false,
     message:
-      "This most likely occurs because of a request being malformed by the client library or the message was sen't to an incompatible broker. See the broker logs for more details",
+      'This most likely occurs because of a request being malformed by the client library or the message was sent to an incompatible broker. See the broker logs for more details',
   },
   {
     type: 'UNSUPPORTED_FOR_MESSAGE_FORMAT',
@@ -587,9 +587,15 @@ const failIfVersionNotSupported = code => {
   }
 }
 
+const staleMetadata = e =>
+  ['UNKNOWN_TOPIC_OR_PARTITION', 'LEADER_NOT_AVAILABLE', 'NOT_LEADER_FOR_PARTITION'].includes(
+    e.type
+  )
+
 module.exports = {
   failure,
   errorCodes,
   createErrorFromCode,
   failIfVersionNotSupported,
+  staleMetadata,
 }

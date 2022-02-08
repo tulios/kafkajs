@@ -4,6 +4,7 @@ const INT8_SIZE = 1
 const INT16_SIZE = 2
 const INT32_SIZE = 4
 const INT64_SIZE = 8
+const DOUBLE_SIZE = 8
 
 const MOST_SIGNIFICANT_BIT = 0x80 // 128
 const OTHER_BITS = 0x7f // 127
@@ -128,6 +129,13 @@ module.exports = class Encoder {
     return this
   }
 
+  writeDouble(value) {
+    this.ensureAvailable(DOUBLE_SIZE)
+    this.buf.writeDoubleBE(value, this.offset)
+    this.offset += DOUBLE_SIZE
+    return this
+  }
+
   writeBoolean(value) {
     value ? this.writeInt8(1) : this.writeInt8(0)
     return this
@@ -155,6 +163,20 @@ module.exports = class Encoder {
 
     const byteLength = Buffer.byteLength(value, 'utf8')
     this.writeVarInt(byteLength)
+    this.ensureAvailable(byteLength)
+    this.buf.write(value, this.offset, byteLength, 'utf8')
+    this.offset += byteLength
+    return this
+  }
+
+  writeUVarIntString(value) {
+    if (value == null) {
+      this.writeUVarInt(0)
+      return this
+    }
+
+    const byteLength = Buffer.byteLength(value, 'utf8')
+    this.writeUVarInt(byteLength + 1)
     this.ensureAvailable(byteLength)
     this.buf.write(value, this.offset, byteLength, 'utf8')
     this.offset += byteLength
@@ -198,6 +220,28 @@ module.exports = class Encoder {
       const valueToWrite = String(value)
       const byteLength = Buffer.byteLength(valueToWrite, 'utf8')
       this.writeVarInt(byteLength)
+      this.ensureAvailable(byteLength)
+      this.buf.write(valueToWrite, this.offset, byteLength, 'utf8')
+      this.offset += byteLength
+    }
+
+    return this
+  }
+
+  writeUVarIntBytes(value) {
+    if (value == null) {
+      this.writeVarInt(0)
+      return this
+    }
+
+    if (Buffer.isBuffer(value)) {
+      // raw bytes
+      this.writeUVarInt(value.length + 1)
+      this.writeBufferInternal(value)
+    } else {
+      const valueToWrite = String(value)
+      const byteLength = Buffer.byteLength(valueToWrite, 'utf8')
+      this.writeUVarInt(byteLength + 1)
       this.ensureAvailable(byteLength)
       this.buf.write(valueToWrite, this.offset, byteLength, 'utf8')
       this.offset += byteLength
@@ -298,18 +342,32 @@ module.exports = class Encoder {
     return this
   }
 
+  writeUVarIntArray(array, type) {
+    if (type === 'object') {
+      this.writeUVarInt(array.length + 1)
+      this.writeEncoderArray(array)
+    } else {
+      const objectArray = array.filter(v => typeof v === 'object')
+      this.writeUVarInt(objectArray.length + 1)
+      this.writeEncoderArray(objectArray)
+    }
+    return this
+  }
+
   // Based on:
+  // https://en.wikipedia.org/wiki/LEB128 Using LEB128 format similar to VLQ.
   // https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/util/Varint.java#L106
   writeVarInt(value) {
+    return this.writeUVarInt(Encoder.encodeZigZag(value))
+  }
+
+  writeUVarInt(value) {
     const byteArray = []
-    let encodedValue = Encoder.encodeZigZag(value)
-
-    while ((encodedValue & UNSIGNED_INT32_MAX_NUMBER) !== 0) {
-      byteArray.push((encodedValue & OTHER_BITS) | MOST_SIGNIFICANT_BIT)
-      encodedValue >>>= 7
+    while ((value & UNSIGNED_INT32_MAX_NUMBER) !== 0) {
+      byteArray.push((value & OTHER_BITS) | MOST_SIGNIFICANT_BIT)
+      value >>>= 7
     }
-
-    byteArray.push(encodedValue & OTHER_BITS)
+    byteArray.push(value & OTHER_BITS)
     this.writeBufferInternal(Buffer.from(byteArray))
     return this
   }

@@ -3,13 +3,15 @@ const sleep = require('../utils/sleep')
 const BufferedAsyncIterator = require('../utils/bufferedAsyncIterator')
 const websiteUrl = require('../utils/websiteUrl')
 const arrayDiff = require('../utils/arrayDiff')
+const createRetry = require('../retry')
+const sharedPromiseTo = require('../utils/sharedPromiseTo')
 
 const OffsetManager = require('./offsetManager')
 const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
 const SubscriptionState = require('./subscriptionState')
 const {
-  events: { HEARTBEAT, CONNECT, RECEIVED_UNSUBSCRIBED_TOPICS },
+  events: { GROUP_JOIN, HEARTBEAT, CONNECT, RECEIVED_UNSUBSCRIBED_TOPICS },
 } = require('./instrumentationEvents')
 const { MemberAssignment } = require('./assignerProtocol')
 const {
@@ -30,8 +32,19 @@ const STALE_METADATA_ERRORS = [
   'UNKNOWN_TOPIC_OR_PARTITION',
 ]
 
+const isRebalancing = e =>
+  e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
+
+const PRIVATE = {
+  JOIN: Symbol('private:ConsumerGroup:join'),
+  SYNC: Symbol('private:ConsumerGroup:sync'),
+  HEARTBEAT: Symbol('private:ConsumerGroup:heartbeat'),
+  SHAREDHEARTBEAT: Symbol('private:ConsumerGroup:sharedHeartbeat'),
+}
+
 module.exports = class ConsumerGroup {
   constructor({
+    retry,
     cluster,
     groupId,
     topics,
@@ -45,6 +58,7 @@ module.exports = class ConsumerGroup {
     minBytes,
     maxBytes,
     maxWaitTimeInMs,
+    autoCommit,
     autoCommitInterval,
     autoCommitThreshold,
     isolationLevel,
@@ -59,6 +73,7 @@ module.exports = class ConsumerGroup {
     this.topicConfigurations = topicConfigurations
     this.logger = logger.namespace('ConsumerGroup')
     this.instrumentationEmitter = instrumentationEmitter
+    this.retrier = createRetry(Object.assign({}, retry))
     this.assigners = assigners
     this.sessionTimeout = sessionTimeout
     this.rebalanceTimeout = rebalanceTimeout
@@ -66,6 +81,7 @@ module.exports = class ConsumerGroup {
     this.minBytes = minBytes
     this.maxBytes = maxBytes
     this.maxWaitTime = maxWaitTimeInMs
+    this.autoCommit = autoCommit
     this.autoCommitInterval = autoCommitInterval
     this.autoCommitThreshold = autoCommitThreshold
     this.isolationLevel = isolationLevel
@@ -87,13 +103,30 @@ module.exports = class ConsumerGroup {
      * Each of the partitions tracks the preferred read replica (`nodeId`) and a timestamp
      * until when that preference is valid.
      *
-     * @type {{[topicName: string]: {[partition: number]: {nodeId: number, expireAt: number}}}
+     * @type {{[topicName: string]: {[partition: number]: {nodeId: number, expireAt: number}}}}
      */
     this.preferredReadReplicasPerTopicPartition = {}
     this.offsetManager = null
     this.subscriptionState = new SubscriptionState()
 
     this.lastRequest = Date.now()
+
+    this[PRIVATE.SHAREDHEARTBEAT] = sharedPromiseTo(async ({ interval }) => {
+      const { groupId, generationId, memberId } = this
+      const now = Date.now()
+
+      if (memberId && now >= this.lastRequest + interval) {
+        const payload = {
+          groupId,
+          memberId,
+          groupGenerationId: generationId,
+        }
+
+        await this.coordinator.heartbeat(payload)
+        this.instrumentationEmitter.emit(HEARTBEAT, payload)
+        this.lastRequest = Date.now()
+      }
+    })
   }
 
   isLeader() {
@@ -106,7 +139,7 @@ module.exports = class ConsumerGroup {
     await this.cluster.refreshMetadataIfNecessary()
   }
 
-  async join() {
+  async [PRIVATE.JOIN]() {
     const { groupId, sessionTimeout, rebalanceTimeout } = this
 
     this.coordinator = await this.cluster.findGroupCoordinator({ groupId })
@@ -138,7 +171,7 @@ module.exports = class ConsumerGroup {
     }
   }
 
-  async sync() {
+  async [PRIVATE.SYNC]() {
     let assignment = []
     const {
       groupId,
@@ -263,6 +296,7 @@ module.exports = class ConsumerGroup {
         }),
         {}
       ),
+      autoCommit: this.autoCommit,
       autoCommitInterval: this.autoCommitInterval,
       autoCommitThreshold: this.autoCommitThreshold,
       coordinator,
@@ -272,10 +306,54 @@ module.exports = class ConsumerGroup {
     })
   }
 
+  joinAndSync() {
+    const startJoin = Date.now()
+    return this.retrier(async bail => {
+      try {
+        await this[PRIVATE.JOIN]()
+        await this[PRIVATE.SYNC]()
+
+        const memberAssignment = this.assigned().reduce(
+          (result, { topic, partitions }) => ({ ...result, [topic]: partitions }),
+          {}
+        )
+
+        const payload = {
+          groupId: this.groupId,
+          memberId: this.memberId,
+          leaderId: this.leaderId,
+          isLeader: this.isLeader(),
+          memberAssignment,
+          groupProtocol: this.groupProtocol,
+          duration: Date.now() - startJoin,
+        }
+
+        this.instrumentationEmitter.emit(GROUP_JOIN, payload)
+        this.logger.info('Consumer has joined the group', payload)
+      } catch (e) {
+        if (isRebalancing(e)) {
+          // Rebalance in progress isn't a retriable protocol error since the consumer
+          // has to go through find coordinator and join again before it can
+          // actually retry the operation. We wrap the original error in a retriable error
+          // here instead in order to restart the join + sync sequence using the retrier.
+          throw new KafkaJSError(e)
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
+   * @param {import("../../types").TopicPartition} topicPartition
+   */
   resetOffset({ topic, partition }) {
     this.offsetManager.resetOffset({ topic, partition })
   }
 
+  /**
+   * @param {import("../../types").TopicPartitionOffset} topicPartitionOffset
+   */
   resolveOffset({ topic, partition, offset }) {
     this.offsetManager.resolveOffset({ topic, partition, offset })
   }
@@ -285,9 +363,7 @@ module.exports = class ConsumerGroup {
    * on the next fetch. If this API is invoked for the same topic/partition more
    * than once, the latest offset will be used on the next fetch.
    *
-   * @param {string} topic
-   * @param {number} partition
-   * @param {string} offset
+   * @param {import("../../types").TopicPartitionOffset} topicPartitionOffset
    */
   seek({ topic, partition, offset }) {
     this.seekOffset.set(topic, partition, offset)
@@ -328,20 +404,7 @@ module.exports = class ConsumerGroup {
   }
 
   async heartbeat({ interval }) {
-    const { groupId, generationId, memberId } = this
-    const now = Date.now()
-
-    if (memberId && now >= this.lastRequest + interval) {
-      const payload = {
-        groupId,
-        memberId,
-        groupGenerationId: generationId,
-      }
-
-      await this.coordinator.heartbeat(payload)
-      this.instrumentationEmitter.emit(HEARTBEAT, payload)
-      this.lastRequest = Date.now()
-    }
+    return this[PRIVATE.SHAREDHEARTBEAT]({ interval })
   }
 
   async fetch() {
@@ -482,23 +545,7 @@ module.exports = class ConsumerGroup {
               )
 
               const fetchedOffset = partitionRequestData.fetchOffset
-              const batch = new Batch(topicName, fetchedOffset, partitionData)
-
-              /**
-               * Resolve the offset to skip the control batch since `eachBatch` or `eachMessage` callbacks
-               * won't process empty batches
-               *
-               * @see https://github.com/apache/kafka/blob/9aa660786e46c1efbf5605a6a69136a1dac6edb9/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L1499-L1505
-               */
-              if (batch.isEmptyControlRecord() || batch.isEmptyDueToLogCompactedMessages()) {
-                this.resolveOffset({
-                  topic: batch.topic,
-                  partition: batch.partition,
-                  offset: batch.lastOffset(),
-                })
-              }
-
-              return batch
+              return new Batch(topicName, fetchedOffset, partitionData)
             })
         })
 
@@ -528,8 +575,7 @@ module.exports = class ConsumerGroup {
       })
 
       await this.cluster.refreshMetadata()
-      await this.join()
-      await this.sync()
+      await this.joinAndSync()
       throw new KafkaJSError(e.message)
     }
 
@@ -541,8 +587,7 @@ module.exports = class ConsumerGroup {
         unknownPartitions: e.unknownPartitions,
       })
 
-      await this.join()
-      await this.sync()
+      await this.joinAndSync()
     }
 
     if (e.name === 'KafkaJSOffsetOutOfRange') {

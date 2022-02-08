@@ -8,6 +8,10 @@ import {
   CompressionCodecs,
   ResourceTypes,
   ConfigResourceTypes,
+  AclResourceTypes,
+  AclOperationTypes,
+  AclPermissionTypes,
+  ResourcePatternTypes,
   LogEntry,
   KafkaJSError,
   KafkaJSOffsetOutOfRange,
@@ -39,7 +43,9 @@ const kafka = new Kafka({
     username: 'test',
     password: 'testtest',
   },
-  logCreator: (logLevel: logLevel) => (entry: LogEntry) => {},
+  logCreator: (logLevel: logLevel) => (entry: LogEntry) => {
+    Date.parse(entry.log.timestamp);
+  },
 })
 
 kafka.logger().error('Instantiated KafkaJS')
@@ -176,6 +182,10 @@ const runAdmin = async () => {
 
   await admin.listTopics()
 
+  await admin.fetchOffsets({ groupId: 'test-group' })
+  await admin.fetchOffsets({ groupId: 'test-group', topic: 'topic1' })
+  await admin.fetchOffsets({ groupId: 'test-group', topics: ['topic1', 'topic2'] })
+
   await admin.createTopics({
     topics: [{ topic, numPartitions: 10, replicationFactor: 1 }],
     timeout: 30000,
@@ -201,6 +211,70 @@ const runAdmin = async () => {
         name: topic,
       },
     ],
+  })
+
+  const describeAcls = await admin.describeAcls({
+    resourceName: 'topic-name',
+    resourceType: AclResourceTypes.TOPIC,
+    host: '*',
+    permissionType: AclPermissionTypes.ALLOW,
+    operation: AclOperationTypes.ANY,
+    resourcePatternType: ResourcePatternTypes.LITERAL,
+  })
+  admin.logger().debug('Describe ACls', {
+    resources: describeAcls.resources.map(r => ({
+      resourceType: r.resourceType,
+      resourceName: r.resourceName,
+      resourcePatternType: r.resourcePatternType,
+      acls: r.acls,
+    })),
+  })
+
+  const createAcls = await admin.createAcls({
+    acl: [
+      {
+        resourceType: AclResourceTypes.TOPIC,
+        resourceName: 'topic-name',
+        resourcePatternType: ResourcePatternTypes.LITERAL,
+        principal: 'User:bob',
+        host: '*',
+        operation: AclOperationTypes.ALL,
+        permissionType: AclPermissionTypes.DENY,
+      },
+    ],
+  })
+  admin.logger().debug('Create ACls', {
+    created: createAcls === true,
+  })
+
+  const deleteAcls = await admin.deleteAcls({
+    filters: [
+      {
+        resourceName: 'topic-name',
+        resourceType: AclResourceTypes.TOPIC,
+        host: '*',
+        permissionType: AclPermissionTypes.ALLOW,
+        operation: AclOperationTypes.ANY,
+        resourcePatternType: ResourcePatternTypes.LITERAL,
+      },
+    ],
+  })
+  admin.logger().debug('Delete ACls', {
+    filterResponses: deleteAcls.filterResponses.map(f => ({
+      errorCode: f.errorCode,
+      errorMessage: f.errorMessage,
+      machingAcls: f.matchingAcls.map(m => ({
+        errorCode: m.errorCode,
+        errorMessage: m.errorMessage,
+        resourceType: m.resourceType,
+        resourceName: m.resourceName,
+        resourcePatternType: m.resourcePatternType,
+        principal: m.principal,
+        host: m.host,
+        operation: m.operation,
+        permissionType: m.permissionType,
+      })),
+    })),
   })
 
   const { groups } = await admin.listGroups()

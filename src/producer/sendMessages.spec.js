@@ -1,5 +1,7 @@
 jest.mock('./groupMessagesPerPartition')
 const { newLogger } = require('testHelpers')
+const { errorCodes, createErrorFromCode } = require('../protocol/error')
+const retry = require('../retry')
 const createSendMessages = require('./sendMessages')
 
 const createProducerResponse = (topicName, partition) => ({
@@ -33,7 +35,8 @@ describe('Producer > sendMessages', () => {
     cluster,
     messagesPerPartition,
     topicPartitionMetadata,
-    eosManager
+    eosManager,
+    retrier
 
   beforeEach(() => {
     messages = []
@@ -53,6 +56,7 @@ describe('Producer > sendMessages', () => {
         replicas: [2],
       },
     ]
+
     cluster = {
       addMultipleTargetTopics: jest.fn(),
       refreshMetadata: jest.fn(),
@@ -61,6 +65,7 @@ describe('Producer > sendMessages', () => {
       findLeaderForPartitions: jest.fn(() => partitionsPerLeader),
       findBroker: jest.fn(({ nodeId }) => brokers[nodeId]),
       targetTopics: new Set(),
+      isConnected: jest.fn(() => true),
     }
     messagesPerPartition = {
       '0': [{ key: '3' }, { key: '6' }, { key: '9' }],
@@ -82,11 +87,14 @@ describe('Producer > sendMessages', () => {
       addPartitionsToTransaction: jest.fn(),
     }
 
+    retrier = retry({ retries: 5 })
+
     require('./groupMessagesPerPartition').mockImplementation(() => messagesPerPartition)
   })
 
   test('only retry failed brokers', async () => {
     const sendMessages = createSendMessages({
+      retrier,
       logger: newLogger(),
       cluster,
       partitioner,
@@ -95,16 +103,16 @@ describe('Producer > sendMessages', () => {
 
     brokers[1].produce
       .mockImplementationOnce(() => {
-        throw new Error('Some error broker 1')
+        throw createErrorFromCode(5)
       })
       .mockImplementationOnce(() => createProducerResponse(topic, 0))
 
     brokers[3].produce
       .mockImplementationOnce(() => {
-        throw new Error('Some error broker 3 one')
+        throw createErrorFromCode(5)
       })
       .mockImplementationOnce(() => {
-        throw new Error('Some error broker 3 two')
+        throw createErrorFromCode(5)
       })
       .mockImplementationOnce(() => createProducerResponse(topic, 2))
 
@@ -131,14 +139,8 @@ describe('Producer > sendMessages', () => {
 
   for (const errorType of PRODUCE_ERRORS) {
     test(`refresh stale metadata on ${errorType}`, async () => {
-      class FakeError extends Error {
-        constructor() {
-          super('Fake Error')
-          this.type = errorType
-        }
-      }
-
       const sendMessages = createSendMessages({
+        retrier,
         logger: newLogger(),
         cluster,
         partitioner,
@@ -146,7 +148,7 @@ describe('Producer > sendMessages', () => {
       })
       brokers[1].produce
         .mockImplementationOnce(() => {
-          throw new FakeError()
+          throw createErrorFromCode(errorCodes.find(({ type }) => type === errorType).code)
         })
         .mockImplementationOnce(() => createProducerResponse(topic, 0))
 
@@ -158,6 +160,7 @@ describe('Producer > sendMessages', () => {
 
   test('does not re-produce messages to brokers that are no longer leaders after metadata refresh', async () => {
     const sendMessages = createSendMessages({
+      retrier,
       logger: newLogger(),
       cluster,
       partitioner,
@@ -166,9 +169,9 @@ describe('Producer > sendMessages', () => {
 
     brokers[2].produce
       .mockImplementationOnce(() => {
-        const e = new Error('Some error broker 1')
-        e.type = 'NOT_LEADER_FOR_PARTITION'
-        throw e
+        throw createErrorFromCode(
+          errorCodes.find(({ type }) => type === 'NOT_LEADER_FOR_PARTITION').code
+        )
       })
       .mockImplementationOnce(() => createProducerResponse(topic, 0))
     cluster.findLeaderForPartitions
@@ -190,6 +193,7 @@ describe('Producer > sendMessages', () => {
 
   test('refreshes metadata if partition metadata is empty', async () => {
     const sendMessages = createSendMessages({
+      retrier,
       logger: newLogger(),
       cluster,
       partitioner,
@@ -207,6 +211,7 @@ describe('Producer > sendMessages', () => {
 
   test('retrieves sequence information from the transaction manager and updates', async () => {
     const sendMessages = createSendMessages({
+      retrier,
       logger: newLogger(),
       cluster,
       partitioner,
@@ -255,6 +260,7 @@ describe('Producer > sendMessages', () => {
 
   test('adds partitions to the transaction if transactional', async () => {
     const sendMessages = createSendMessages({
+      retrier,
       logger: newLogger(),
       cluster,
       partitioner,
@@ -295,6 +301,7 @@ describe('Producer > sendMessages', () => {
 
   test('if transactional produces with the transactional id and producer id & epoch', async () => {
     const sendMessages = createSendMessages({
+      retrier,
       logger: newLogger(),
       cluster,
       partitioner,
@@ -340,6 +347,7 @@ describe('Producer > sendMessages', () => {
 
   test('if idempotent produces with the producer id & epoch without the transactional id', async () => {
     const sendMessages = createSendMessages({
+      retrier,
       logger: newLogger(),
       cluster,
       partitioner,

@@ -1,6 +1,7 @@
-const EventEmitter = require('events')
+const { EventEmitter } = require('events')
 const SocketRequest = require('./socketRequest')
 const events = require('../instrumentationEvents')
+const { KafkaJSInvariantViolation } = require('../../errors')
 
 const PRIVATE = {
   EMIT_QUEUE_SIZE_EVENT: Symbol('private:RequestQueue:emitQueueSizeEvent'),
@@ -11,12 +12,15 @@ const REQUEST_QUEUE_EMPTY = 'requestQueueEmpty'
 
 module.exports = class RequestQueue extends EventEmitter {
   /**
-   * @param {number} maxInFlightRequests
-   * @param {number} requestTimeout
-   * @param {string} clientId
-   * @param {string} broker
-   * @param {Logger} logger
-   * @param {InstrumentationEventEmitter} [instrumentationEmitter=null]
+   * @param {Object} options
+   * @param {number} options.maxInFlightRequests
+   * @param {number} options.requestTimeout
+   * @param {boolean} options.enforceRequestTimeout
+   * @param {string} options.clientId
+   * @param {string} options.broker
+   * @param {import("../../../types").Logger} options.logger
+   * @param {import("../../instrumentation/emitter")} [options.instrumentationEmitter=null]
+   * @param {() => boolean} [options.isConnected]
    */
   constructor({
     instrumentationEmitter = null,
@@ -106,7 +110,7 @@ module.exports = class RequestQueue extends EventEmitter {
 
   /**
    * @typedef {Object} PushedRequest
-   * @property {RequestEntry} entry
+   * @property {import("./socketRequest").RequestEntry} entry
    * @property {boolean} expectResponse
    * @property {Function} sendRequest
    * @property {number} [requestTimeout]
@@ -131,12 +135,17 @@ module.exports = class RequestQueue extends EventEmitter {
       instrumentationEmitter: this.instrumentationEmitter,
       requestTimeout,
       send: () => {
+        if (this.inflight.has(correlationId)) {
+          throw new KafkaJSInvariantViolation('Correlation id already exists')
+        }
         this.inflight.set(correlationId, socketRequest)
         pushedRequest.sendRequest()
       },
       timeout: () => {
         this.inflight.delete(correlationId)
         this.checkPendingRequests()
+        // Try to emit REQUEST_QUEUE_EMPTY. Otherwise, waitForPendingRequests may stuck forever
+        this[PRIVATE.EMIT_REQUEST_QUEUE_EMPTY]()
       },
     })
 
@@ -177,9 +186,10 @@ module.exports = class RequestQueue extends EventEmitter {
 
   /**
    * @public
-   * @param {number} correlationId
-   * @param {Buffer} payload
-   * @param {number} size
+   * @param {object} response
+   * @param {number} response.correlationId
+   * @param {Buffer} response.payload
+   * @param {number} response.size
    */
   fulfillRequest({ correlationId, payload, size }) {
     const socketRequest = this.inflight.get(correlationId)

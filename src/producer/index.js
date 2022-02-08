@@ -19,13 +19,13 @@ const { CONNECT, DISCONNECT } = events
  *
  * @param {Object} params
  * @param {import('../../types').Cluster} params.cluster
- * @param {import('../../types').Logger} params.Logger
+ * @param {import('../../types').Logger} params.logger
  * @param {import('../../types').ICustomPartitioner} [params.createPartitioner]
- * @param {import('../../types').RetryOptions} params.retry
+ * @param {import('../../types').RetryOptions} [params.retry]
  * @param {boolean} [params.idempotent]
  * @param {string} [params.transactionalId]
  * @param {number} [params.transactionTimeout]
- * @param {import('../instrumentation/emitter')} [params.instrumentationEmitter]
+ * @param {InstrumentationEventEmitter} [params.instrumentationEmitter]
  *
  * @returns {import('../../types').Producer}
  */
@@ -77,11 +77,7 @@ module.exports = ({
 
   let transactionalEosManager
 
-  /**
-   * @param {string} eventName
-   * @param {AsyncFunction} listener
-   * @return {Function} removeListener
-   */
+  /** @type {import("../../types").Producer["on"]} */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {
       throw new KafkaJSNonRetriableError(`Event name should be one of ${eventKeys}`)
@@ -234,7 +230,7 @@ module.exports = ({
     disconnect: async () => {
       connectionStatus = CONNECTION_STATUS.DISCONNECTING
       await cluster.disconnect()
-      connectionStatus = CONNECTION_STATUS.DISCONNECT
+      connectionStatus = CONNECTION_STATUS.DISCONNECTED
       instrumentationEmitter.emit(DISCONNECT)
     },
     isIdempotent: () => {

@@ -27,7 +27,7 @@ const specialOffsets = [
  * @param {Object} params
  * @param {import("../../types").Cluster} params.cluster
  * @param {String} params.groupId
- * @param {import('../../types').RetryOptions} params.retry
+ * @param {import('../../types').RetryOptions} [params.retry]
  * @param {import('../../types').Logger} params.logger
  * @param {import('../../types').PartitionAssigner[]} [params.partitionAssigners]
  * @param {number} [params.sessionTimeout]
@@ -39,7 +39,7 @@ const specialOffsets = [
  * @param {number} [params.maxWaitTimeInMs]
  * @param {number} [params.isolationLevel]
  * @param {string} [params.rackId]
- * @param {import('../instrumentation/emitter')} [params.instrumentationEmitter]
+ * @param {InstrumentationEventEmitter} [params.instrumentationEmitter]
  * @param {number} params.metadataMaxAge
  *
  * @returns {import("../../types").Consumer}
@@ -82,11 +82,12 @@ module.exports = ({
     )
   }
 
-  const createConsumerGroup = ({ autoCommitInterval, autoCommitThreshold }) => {
+  const createConsumerGroup = ({ autoCommit, autoCommitInterval, autoCommitThreshold }) => {
     return new ConsumerGroup({
       logger: rootLogger,
       topics: keys(topics),
       topicConfigurations: topics,
+      retry,
       cluster,
       groupId,
       assigners,
@@ -97,6 +98,7 @@ module.exports = ({
       maxBytes,
       maxWaitTimeInMs,
       instrumentationEmitter,
+      autoCommit,
       autoCommitInterval,
       autoCommitThreshold,
       isolationLevel,
@@ -217,6 +219,7 @@ module.exports = ({
     }
 
     consumerGroup = createConsumerGroup({
+      autoCommit,
       autoCommitInterval,
       autoCommitThreshold,
     })

@@ -69,6 +69,9 @@ class HomeSplash extends React.Component {
             <Button href={docUrl('getting-started')}>Documentation</Button>
             <Button href={siteConfig.repoUrl}>Github</Button>
           </PromoSection>
+          <Container className="trademark-notice">
+          <small>KAFKA is a registered trademark of The Apache Software Foundation and has been licensed for use by KafkaJS. KafkaJS has no affiliation with and is not endorsed by The Apache Software Foundation.</small>
+      </Container>
         </div>
       </SplashContainer>
     )
@@ -110,53 +113,11 @@ class Index extends React.Component {
       </div>
     )
 
-    const SupportSection = props => (
-      <Container className="support" id="support" padding={['top', 'bottom']} background="light">
-        <h2>Commercial support available!</h2>
-        <p>
-          Resolve issues faster with support directly from a <b>KafkaJS expert</b>. We can help you
-          with architectural consultations, issue triage &amp; bug fixing, developer training and
-          custom development.
-        </p>
-
-        <form
-          action={props.siteConfig.contactFormUrl}
-          method="POST"
-          acceptCharset="UTF-8"
-          className="contact-form"
-        >
-          <label htmlFor="email" className="email-label">
-            Email
-          </label>
-          <input type="email" name="email" placeholder="foo@example.com" />
-
-          <label htmlFor="message">What can we help you with?</label>
-          <textarea name="message" placeholder="I would like help with ..." rows={3}></textarea>
-
-          <input type="hidden" name="_gotcha" />
-          <button type="submit" className="button">
-            Submit
-          </button>
-        </form>
-
-        <small>
-          No up-front payment required, but a minimum charge at an agreed upon hourly rate may
-          apply. Commercial support is subject to availability. For community support, direct your
-          questions at the{' '}
-          <a href="https://stackoverflow.com/questions/tagged/kafkajs">
-            #kafkajs tag on StackOverflow
-          </a>{' '}
-          or our <a href={props.siteConfig.slackUrl}>Slack community</a>.
-        </small>
-      </Container>
-    )
-
     return (
       <div>
         <HomeSplash siteConfig={siteConfig} language={language} />
         <div className="mainContainer">
           <Features />
-          {siteConfig.contactFormUrl && <SupportSection siteConfig={siteConfig} />}
         </div>
       </div>
     )

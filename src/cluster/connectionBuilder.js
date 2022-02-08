@@ -1,6 +1,27 @@
 const Connection = require('../network/connection')
 const { KafkaJSConnectionError, KafkaJSNonRetriableError } = require('../errors')
 
+/**
+ * @typedef {Object} ConnectionBuilder
+ * @property {(destination?: { host?: string, port?: number, rack?: string }) => Promise<Connection>} build
+ */
+
+/**
+ * @param {Object} options
+ * @param {import("../../types").ISocketFactory} [options.socketFactory]
+ * @param {string[]|(() => string[])} options.brokers
+ * @param {Object} [options.ssl]
+ * @param {Object} [options.sasl]
+ * @param {string} options.clientId
+ * @param {number} options.requestTimeout
+ * @param {boolean} [options.enforceRequestTimeout]
+ * @param {number} [options.connectionTimeout]
+ * @param {number} [options.maxInFlightRequests]
+ * @param {import("../../types").RetryOptions} [options.retry]
+ * @param {import("../../types").Logger} options.logger
+ * @param {import("../instrumentation/emitter")} [options.instrumentationEmitter]
+ * @returns {ConnectionBuilder}
+ */
 module.exports = ({
   socketFactory,
   brokers,
@@ -11,42 +32,54 @@ module.exports = ({
   enforceRequestTimeout,
   connectionTimeout,
   maxInFlightRequests,
-  retry,
   logger,
   instrumentationEmitter = null,
 }) => {
   let index = 0
 
-  const getBrokers = async () => {
+  const isValidBroker = broker => {
+    return broker && typeof broker === 'string' && broker.length > 0
+  }
+
+  const validateBrokers = brokers => {
     if (!brokers) {
-      throw new KafkaJSNonRetriableError(`Failed to connect: brokers parameter should not be null`)
+      throw new KafkaJSNonRetriableError(`Failed to connect: brokers should not be null`)
     }
 
-    // static list
     if (Array.isArray(brokers)) {
       if (!brokers.length) {
         throw new KafkaJSNonRetriableError(`Failed to connect: brokers array is empty`)
       }
-      return brokers
-    }
 
-    // dynamic brokers
+      brokers.forEach((broker, index) => {
+        if (!isValidBroker(broker)) {
+          throw new KafkaJSNonRetriableError(
+            `Failed to connect: broker at index ${index} is invalid "${typeof broker}"`
+          )
+        }
+      })
+    }
+  }
+
+  const getBrokers = async () => {
     let list
-    try {
-      list = await brokers()
-    } catch (e) {
-      const wrappedError = new KafkaJSConnectionError(
-        `Failed to connect: "config.brokers" threw: ${e.message}`
-      )
-      wrappedError.stack = `${wrappedError.name}\n  Caused by: ${e.stack}`
-      throw wrappedError
+
+    if (typeof brokers === 'function') {
+      try {
+        list = await brokers()
+      } catch (e) {
+        const wrappedError = new KafkaJSConnectionError(
+          `Failed to connect: "config.brokers" threw: ${e.message}`
+        )
+        wrappedError.stack = `${wrappedError.name}\n  Caused by: ${e.stack}`
+        throw wrappedError
+      }
+    } else {
+      list = brokers
     }
 
-    if (!list || list.length === 0) {
-      throw new KafkaJSConnectionError(
-        `Failed to connect: "config.brokers" returned void or empty array`
-      )
-    }
+    validateBrokers(list)
+
     return list
   }
 
@@ -74,7 +107,6 @@ module.exports = ({
         enforceRequestTimeout,
         maxInFlightRequests,
         instrumentationEmitter,
-        retry,
         logger,
       })
     },

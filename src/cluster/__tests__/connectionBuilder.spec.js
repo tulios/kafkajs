@@ -11,7 +11,6 @@ describe('Cluster > ConnectionBuilder', () => {
   const sasl = { sasl: true }
   const clientId = 'test-client-id'
   const connectionTimeout = 30000
-  const retry = { retry: true }
   const logger = newLogger()
   const socketFactory = jest.fn()
 
@@ -23,7 +22,6 @@ describe('Cluster > ConnectionBuilder', () => {
       sasl,
       clientId,
       connectionTimeout,
-      retry,
       logger,
     })
   })
@@ -37,7 +35,6 @@ describe('Cluster > ConnectionBuilder', () => {
     expect(connection.sasl).toEqual(sasl)
     expect(connection.clientId).toEqual(clientId)
     expect(connection.connectionTimeout).toEqual(connectionTimeout)
-    expect(connection.retry).toEqual(retry)
     expect(connection.logger).not.toBeFalsy()
     expect(connection.socketFactory).toBe(socketFactory)
   })
@@ -72,7 +69,6 @@ describe('Cluster > ConnectionBuilder', () => {
         sasl,
         clientId,
         connectionTimeout,
-        retry,
         logger,
       }).build()
     ).rejects.toEqual(new KafkaJSNonRetriableError('Failed to connect: brokers array is empty'))
@@ -87,11 +83,24 @@ describe('Cluster > ConnectionBuilder', () => {
         sasl,
         clientId,
         connectionTimeout,
-        retry,
+        logger,
+      }).build()
+    ).rejects.toEqual(new KafkaJSNonRetriableError('Failed to connect: brokers should not be null'))
+  })
+
+  it('throws an exception if one of the brokers is not a string', async () => {
+    await expect(
+      connectionBuilder({
+        socketFactory,
+        brokers: ['localhost:1234', undefined],
+        ssl,
+        sasl,
+        clientId,
+        connectionTimeout,
         logger,
       }).build()
     ).rejects.toEqual(
-      new KafkaJSNonRetriableError('Failed to connect: brokers parameter should not be null')
+      new KafkaJSNonRetriableError('Failed to connect: broker at index 1 is invalid "undefined"')
     )
   })
 
@@ -104,12 +113,9 @@ describe('Cluster > ConnectionBuilder', () => {
         sasl,
         clientId,
         connectionTimeout,
-        retry,
         logger,
       }).build()
-    ).rejects.toEqual(
-      new KafkaJSConnectionError('Failed to connect: "config.brokers" returned void or empty array')
-    )
+    ).rejects.toEqual(new KafkaJSConnectionError('Failed to connect: brokers should not be null'))
   })
 
   it('throws an KafkaJSConnectionError if brokers is function crashes', async () => {
@@ -123,7 +129,6 @@ describe('Cluster > ConnectionBuilder', () => {
         sasl,
         clientId,
         connectionTimeout,
-        retry,
         logger,
       }).build()
     ).rejects.toEqual(
@@ -139,7 +144,6 @@ describe('Cluster > ConnectionBuilder', () => {
       sasl,
       clientId,
       connectionTimeout,
-      retry,
       logger,
     })
 
@@ -157,7 +161,6 @@ describe('Cluster > ConnectionBuilder', () => {
       sasl,
       clientId,
       connectionTimeout,
-      retry,
       logger,
     })
 

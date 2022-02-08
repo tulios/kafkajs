@@ -41,6 +41,7 @@ describe('Broker > Metadata', () => {
     // setting separately.
     const rackValues = response.brokers.some(({ rack }) => Boolean(rack))
     expect(response).toMatchObject({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       brokers: expect.arrayContaining([
         {
@@ -71,7 +72,7 @@ describe('Broker > Metadata', () => {
     })
   })
 
-  test('can fetch metatada for all topics', async () => {
+  test('can fetch metadata for all topics', async () => {
     await broker.connect()
     await createTopic({ topic: topicName })
     await createTopic({ topic: `test-topic-${secureRandom()}` })

@@ -30,6 +30,7 @@ describe('Consumer > Runner', () => {
       connect: jest.fn(),
       join: jest.fn(),
       sync: jest.fn(),
+      joinAndSync: jest.fn(),
       fetch: jest.fn(() => BufferedAsyncIterator([Promise.resolve([emptyBatch])])),
       resolveOffset: jest.fn(),
       commitOffsets: jest.fn(),
@@ -209,7 +210,7 @@ describe('Consumer > Runner', () => {
 
   it('calls onCrash for any other errors', async () => {
     const unknownError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
-    consumerGroup.join
+    consumerGroup.joinAndSync
       .mockImplementationOnce(() => {
         throw unknownError
       })
@@ -248,7 +249,7 @@ describe('Consumer > Runner', () => {
       offsets = { topics: [{ topic: topicName, partitions: [{ offset: '1', partition }] }] }
       await runner.start()
 
-      consumerGroup.join.mockClear()
+      consumerGroup.joinAndSync.mockClear()
       consumerGroup.commitOffsetsIfNecessary.mockClear()
       consumerGroup.commitOffsets.mockClear()
     })
@@ -262,16 +263,17 @@ describe('Consumer > Runner', () => {
     })
 
     it('should throw when group is rebalancing, while triggering another join', async () => {
+      const error = rebalancingError()
       consumerGroup.commitOffsets.mockImplementationOnce(() => {
-        throw rebalancingError()
+        throw error
       })
 
-      expect(runner.commitOffsets(offsets)).rejects.toThrow('The group is rebalancing')
-      expect(consumerGroup.join).toHaveBeenCalledTimes(0)
+      expect(runner.commitOffsets(offsets)).rejects.toThrow(error.message)
+      expect(consumerGroup.joinAndSync).toHaveBeenCalledTimes(0)
 
       await sleep(100)
 
-      expect(consumerGroup.join).toHaveBeenCalledTimes(1)
+      expect(consumerGroup.joinAndSync).toHaveBeenCalledTimes(1)
     })
 
     it('correctly catch exceptions in parallel "eachBatch" processing', async () => {
@@ -334,14 +336,14 @@ describe('Consumer > Runner', () => {
 
     it('a triggered rejoin failing should cause a crash', async () => {
       const unknownError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
-      consumerGroup.join.mockImplementationOnce(() => {
+      consumerGroup.joinAndSync.mockImplementationOnce(() => {
         throw unknownError
       })
       consumerGroup.commitOffsets.mockImplementationOnce(() => {
         throw rebalancingError()
       })
 
-      expect(runner.commitOffsets(offsets)).rejects.toThrow('The group is rebalancing')
+      expect(runner.commitOffsets(offsets)).rejects.toThrow(rebalancingError().message)
 
       await sleep(100)
 

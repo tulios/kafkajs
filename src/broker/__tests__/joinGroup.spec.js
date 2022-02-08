@@ -47,8 +47,8 @@ describe('Broker > JoinGroup', () => {
     })
 
     expect(response).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
-      clientSideThrottleTime: 0,
       errorCode: 0,
       generationId: expect.any(Number),
       groupProtocol: 'AssignerName',

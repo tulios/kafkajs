@@ -1,15 +1,40 @@
 const apiKeys = require('./apiKeys')
-const { KafkaJSServerDoesNotSupportApiKey } = require('../../errors')
+const { KafkaJSServerDoesNotSupportApiKey, KafkaJSNotImplemented } = require('../../errors')
 
+/**
+ * @typedef {(options?: Object) => { request: any, response: any, logResponseErrors?: boolean }} Request
+ */
+
+/**
+ * @typedef {Object} RequestDefinitions
+ * @property {string[]} versions
+ * @property {({ version: number }) => Request} protocol
+ */
+
+/**
+ * @typedef {(apiKey: number, definitions: RequestDefinitions) => Request} Lookup
+ */
+
+/** @type {RequestDefinitions} */
+const noImplementedRequestDefinitions = {
+  versions: [],
+  protocol: () => {
+    throw new KafkaJSNotImplemented()
+  },
+}
+
+/**
+ * @type {{[apiName: string]: RequestDefinitions}}
+ */
 const requests = {
   Produce: require('./produce'),
   Fetch: require('./fetch'),
   ListOffsets: require('./listOffsets'),
   Metadata: require('./metadata'),
-  LeaderAndIsr: {},
-  StopReplica: {},
-  UpdateMetadata: {},
-  ControlledShutdown: {},
+  LeaderAndIsr: noImplementedRequestDefinitions,
+  StopReplica: noImplementedRequestDefinitions,
+  UpdateMetadata: noImplementedRequestDefinitions,
+  ControlledShutdown: noImplementedRequestDefinitions,
   OffsetCommit: require('./offsetCommit'),
   OffsetFetch: require('./offsetFetch'),
   GroupCoordinator: require('./findCoordinator'),
@@ -23,27 +48,27 @@ const requests = {
   ApiVersions: require('./apiVersions'),
   CreateTopics: require('./createTopics'),
   DeleteTopics: require('./deleteTopics'),
-  DeleteRecords: {},
+  DeleteRecords: require('./deleteRecords'),
   InitProducerId: require('./initProducerId'),
-  OffsetForLeaderEpoch: {},
+  OffsetForLeaderEpoch: noImplementedRequestDefinitions,
   AddPartitionsToTxn: require('./addPartitionsToTxn'),
   AddOffsetsToTxn: require('./addOffsetsToTxn'),
   EndTxn: require('./endTxn'),
-  WriteTxnMarkers: {},
+  WriteTxnMarkers: noImplementedRequestDefinitions,
   TxnOffsetCommit: require('./txnOffsetCommit'),
-  DescribeAcls: {},
-  CreateAcls: {},
-  DeleteAcls: {},
+  DescribeAcls: require('./describeAcls'),
+  CreateAcls: require('./createAcls'),
+  DeleteAcls: require('./deleteAcls'),
   DescribeConfigs: require('./describeConfigs'),
   AlterConfigs: require('./alterConfigs'),
-  AlterReplicaLogDirs: {},
-  DescribeLogDirs: {},
+  AlterReplicaLogDirs: noImplementedRequestDefinitions,
+  DescribeLogDirs: noImplementedRequestDefinitions,
   SaslAuthenticate: require('./saslAuthenticate'),
   CreatePartitions: require('./createPartitions'),
-  CreateDelegationToken: {},
-  RenewDelegationToken: {},
-  ExpireDelegationToken: {},
-  DescribeDelegationToken: {},
+  CreateDelegationToken: noImplementedRequestDefinitions,
+  RenewDelegationToken: noImplementedRequestDefinitions,
+  ExpireDelegationToken: noImplementedRequestDefinitions,
+  DescribeDelegationToken: noImplementedRequestDefinitions,
   DeleteGroups: require('./deleteGroups'),
 }
 
@@ -51,10 +76,14 @@ const names = Object.keys(apiKeys)
 const keys = Object.values(apiKeys)
 const findApiName = apiKey => names[keys.indexOf(apiKey)]
 
+/**
+ * @param {import("../../../types").ApiVersions} versions
+ * @returns {Lookup}
+ */
 const lookup = versions => (apiKey, definition) => {
   const version = versions[apiKey]
   const availableVersions = definition.versions.map(Number)
-  const bestImplementedVersion = Math.max.apply(this, availableVersions)
+  const bestImplementedVersion = Math.max(...availableVersions)
 
   if (!version || version.maxVersion == null) {
     throw new KafkaJSServerDoesNotSupportApiKey(

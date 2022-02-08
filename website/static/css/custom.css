@@ -15,8 +15,6 @@
 @media only screen and (min-width: 1500px) {
 }
 
-textarea, input, button, select { font-family: inherit; font-size: inherit; }
-
 body .hljs {
   display: block;
   overflow-x: auto;
@@ -102,64 +100,8 @@ input#search_input_react {
   font-weight: normal;
 }
 
-.support .wrapper {
-  text-align: center;
-  max-width: 700px;
-}
-
-.contact-form button {
-  cursor: pointer;
-  margin-top: 1rem;
-  text-align: left;
-}
-
-.contact-form img {
-  width: 24px;
-  height: 24px;
-}
-
-.contact-form {
-  position: relative;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  box-sizing: border-box;
-  margin-bottom: 1rem;
-}
-
-.contact-form label {
-  position:absolute;
-  left:-10000px;
-  top:auto;
-  width:1px;
-  height:1px;
-  overflow:hidden;
-}
-
-.contact-form input, .contact-form textarea {
-  flex: 1;
-  font-size: 15px;
-  font-weight: 300;
-  color: #000;
-  background: transparent;
-  outline: none;
-  border: 0;
-  border-bottom: 1px solid #4d6894;
-  line-height: 35px;
-  width: 100%;
-  margin-top: 1rem;
-}
-
-.support small {
-  font-size: .75rem;
-}
-
-.mainContainer {
-  padding-bottom: 0;
-}
-
-input::placeholder, textarea::placeholder {
-  color: #a0a0a0;
+.trademark-notice {
+  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: .8rem;
 }

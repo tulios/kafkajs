@@ -1,3 +1,6 @@
+const pkgJson = require('../package.json')
+const { bugs } = pkgJson
+
 class KafkaJSError extends Error {
   constructor(e, { retriable = true } = {}) {
     super(e)
@@ -13,12 +16,13 @@ class KafkaJSNonRetriableError extends KafkaJSError {
   constructor(e) {
     super(e, { retriable: false })
     this.name = 'KafkaJSNonRetriableError'
+    this.originalError = e
   }
 }
 
 class KafkaJSProtocolError extends KafkaJSError {
-  constructor(e) {
-    super(e, { retriable: e.retriable })
+  constructor(e, { retriable = e.retriable } = {}) {
+    super(e, { retriable })
     this.type = e.type
     this.code = e.code
     this.name = 'KafkaJSProtocolError'
@@ -178,6 +182,65 @@ class KafkaJSUnsupportedMagicByteInMessageSet extends KafkaJSNonRetriableError {
   }
 }
 
+class KafkaJSDeleteTopicRecordsError extends KafkaJSError {
+  constructor({ partitions }) {
+    /*
+     * This error is retriable if all the errors were retriable
+     */
+    const retriable = partitions
+      .filter(({ error }) => error != null)
+      .every(({ error }) => error.retriable === true)
+
+    super('Error while deleting records', { retriable })
+    this.name = 'KafkaJSDeleteTopicRecordsError'
+    this.partitions = partitions
+  }
+}
+
+const issueUrl = bugs ? bugs.url : null
+
+class KafkaJSInvariantViolation extends KafkaJSNonRetriableError {
+  constructor(e) {
+    const message = e.message || e
+    super(`Invariant violated: ${message}. This is likely a bug and should be reported.`)
+    this.name = 'KafkaJSInvariantViolation'
+
+    if (issueUrl !== null) {
+      const issueTitle = encodeURIComponent(`Invariant violation: ${message}`)
+      this.helpUrl = `${issueUrl}/new?assignees=&labels=bug&template=bug_report.md&title=${issueTitle}`
+    }
+  }
+}
+
+class KafkaJSInvalidVarIntError extends KafkaJSNonRetriableError {
+  constructor() {
+    super(...arguments)
+    this.name = 'KafkaJSNonRetriableError'
+  }
+}
+
+class KafkaJSInvalidLongError extends KafkaJSNonRetriableError {
+  constructor() {
+    super(...arguments)
+    this.name = 'KafkaJSNonRetriableError'
+  }
+}
+
+class KafkaJSCreateTopicError extends KafkaJSProtocolError {
+  constructor(e, topicName) {
+    super(e)
+    this.topic = topicName
+    this.name = 'KafkaJSCreateTopicError'
+  }
+}
+class KafkaJSAggregateError extends Error {
+  constructor(message, errors) {
+    super(message)
+    this.errors = errors
+    this.name = 'KafkaJSAggregateError'
+  }
+}
+
 module.exports = {
   KafkaJSError,
   KafkaJSNonRetriableError,
@@ -201,4 +264,10 @@ module.exports = {
   KafkaJSLockTimeout,
   KafkaJSServerDoesNotSupportApiKey,
   KafkaJSUnsupportedMagicByteInMessageSet,
+  KafkaJSDeleteTopicRecordsError,
+  KafkaJSInvariantViolation,
+  KafkaJSInvalidVarIntError,
+  KafkaJSInvalidLongError,
+  KafkaJSCreateTopicError,
+  KafkaJSAggregateError,
 }

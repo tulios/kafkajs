@@ -21,27 +21,59 @@
   </p>
 </p>
 
-<hr />
-<p align="center">
-<b>Commercial support available!</b><br /><a href="https://kafka.js.org/#support">Resolve issues faster by getting help directly from a <b>KafkaJS developer</b></a>
-</p>
-
 ## Table of Contents
 
 - [About the project](#about)
+  - [Sponsors](#sponsorship)
   - [Features](#features)
   - [Getting Started](#getting-started)
     - [Usage](#usage)
 - [Contributing](#contributing)
   - [Help Wanted](#help-wanted)
   - [Contact](#contact)
-- [Sponsors](#sponsors)
 - [License](#license)
   - [Acknowledgements](#acknowledgements)
 
 ## <a name="about"></a> About the Project
 
 KafkaJS is a modern [Apache Kafka](https://kafka.apache.org/) client for Node.js. It is compatible with Kafka 0.10+ and offers native support for 0.11 features.
+
+<small>KAFKA is a registered trademark of The Apache Software Foundation and has been licensed for use by KafkaJS. KafkaJS has no affiliation with and is not endorsed by The Apache Software Foundation.</small>
+
+## <a name="sponsorship"></a> Sponsors ❤️
+
+<p id="banner" align="center">
+  <table>
+    <tr>
+      <td>
+        <img src="https://raw.githubusercontent.com/tulios/kafkajs/master/logo/sponsors/upstash.png" width="220" height="185" align="left" />
+        <h3>Upstash: Serverless Kafka</h3>
+        <ul>
+          <li>True Serverless Kafka with per-request-pricing</li>
+          <li>Managed Apache Kafka, works with all Kafka clients</li>
+          <li>Built-in REST API designed for serverless and edge functions</li>
+          <li><b><a href="https://upstash.com/?utm_source=kafkajs">Start for free in 30 seconds!</a></b></li>
+        </ul>
+        <img width="1000" height="0">
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="https://raw.githubusercontent.com/tulios/kafkajs/master/logo/sponsors/kafkajs-devs.png" alt="Logo" width="220" height="185" align="left" />
+        <h3>Get help directly from a KafkaJS developer</h3>
+        <ul>
+          <li>Become a Github Sponsor to have a video call with a KafkaJS developer</li>
+          <li>Receive personalized support, validate ideas or accelerate your learning</li>
+          <li>Save time and get productive sooner, while supporting KafkaJS!</li>
+          <li><b><a href="https://github.com/sponsors/Nevon?frequency=one-time&sponsor=Nevon">See support options!</a></b></li>
+        </ul>
+        <img width="1000" height="0">
+      </td>
+    </tr>
+  </table>
+</p>
+
+*To become a sponsor, [reach out in our Slack community](https://kafkajs-slackin.herokuapp.com/) to get in touch with one of the maintainers. Also consider becoming a Github Sponsor by following any of the links under "[Sponsor this project](https://github.com/tulios/kafkajs#sponsors)" in the sidebar.*
 
 ### <a name="features"></a> Features
 
@@ -133,14 +165,6 @@ Here are some projects that we would like to build, but haven't yet been able to
 ### <a name="contact"></a> Contact 💬
 
 [Join our Slack community](https://kafkajs-slackin.herokuapp.com/)
-
-## <a name="sponsors"></a> Sponsors ❤️
-
-*To become a sponsor, [reach out in our Slack community](https://kafkajs-slackin.herokuapp.com/) to get in touch with one of the maintainers. Also consider becoming a Github Sponsor by following any of the links under "Sponsor this project" in the sidebar.*
-
-<a href="https://www.confluent.io/confluent-cloud/?utm_source=kafkajs&utm_medium=opensource&utm_campaign=referral">
-  <img src="https://raw.githubusercontent.com/tulios/kafkajs/master/logo/confluent/logo.png" width="830px">
-</a>
 
 ## <a name="license"></a> License
 

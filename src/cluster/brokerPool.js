@@ -2,7 +2,7 @@ const Broker = require('../broker')
 const createRetry = require('../retry')
 const shuffle = require('../utils/shuffle')
 const arrayDiff = require('../utils/arrayDiff')
-const { KafkaJSBrokerNotFound } = require('../errors')
+const { KafkaJSBrokerNotFound, KafkaJSProtocolError } = require('../errors')
 
 const { keys, assign, values } = Object
 const hasBrokerBeenReplaced = (broker, { host, port, rack }) =>
@@ -12,12 +12,14 @@ const hasBrokerBeenReplaced = (broker, { host, port, rack }) =>
 
 module.exports = class BrokerPool {
   /**
-   * @param {ConnectionBuilder} connectionBuilder
-   * @param {Logger} logger
-   * @param {Object} retry
-   * @param {number} authenticationTimeout
-   * @param {number} reauthenticationThreshold
-   * @param {number} metadataMaxAge
+   * @param {object} options
+   * @param {import("./connectionBuilder").ConnectionBuilder} options.connectionBuilder
+   * @param {import("../../types").Logger} options.logger
+   * @param {import("../../types").RetryOptions} [options.retry]
+   * @param {boolean} [options.allowAutoTopicCreation]
+   * @param {number} [options.authenticationTimeout]
+   * @param {number} [options.reauthenticationThreshold]
+   * @param {number} [options.metadataMaxAge]
    */
   constructor({
     connectionBuilder,
@@ -43,6 +45,9 @@ module.exports = class BrokerPool {
       })
 
     this.brokers = {}
+    /** @type {Broker | undefined} */
+    this.seedBroker = undefined
+    /** @type {import("../../types").BrokerMetadata | null} */
     this.metadata = null
     this.metadataExpireAt = null
     this.versions = null
@@ -74,7 +79,7 @@ module.exports = class BrokerPool {
 
   /**
    * @public
-   * @returns {Promise<null>}
+   * @returns {Promise<void>}
    */
   async connect() {
     if (this.hasConnectedBrokers()) {
@@ -123,8 +128,9 @@ module.exports = class BrokerPool {
 
   /**
    * @public
-   * @param {String} host
-   * @param {Number} port
+   * @param {Object} destination
+   * @param {string} destination.host
+   * @param {number} destination.port
    */
   removeBroker({ host, port }) {
     const removedBroker = values(this.brokers).find(
@@ -214,7 +220,7 @@ module.exports = class BrokerPool {
   }
 
   /**
-   * Only refreshes metadata if the data is stale according to the `metadataMaxAge` param
+   * Only refreshes metadata if the data is stale according to the `metadataMaxAge` param or does not contain information about the provided topics
    *
    * @public
    * @param {Array<String>} topics
@@ -236,7 +242,8 @@ module.exports = class BrokerPool {
 
   /**
    * @public
-   * @param {string} nodeId
+   * @param {object} options
+   * @param {string} options.nodeId
    * @returns {Promise<Broker>}
    */
   async findBroker({ nodeId }) {
@@ -252,8 +259,9 @@ module.exports = class BrokerPool {
 
   /**
    * @public
-   * @param {Promise<{ nodeId<String>, broker<Broker> }>} callback
-   * @returns {Promise<null>}
+   * @param {(params: { nodeId: string, broker: Broker }) => Promise<T>} callback
+   * @returns {Promise<T>}
+   * @template T
    */
   async withBroker(callback) {
     const brokers = shuffle(keys(this.brokers))
@@ -311,13 +319,15 @@ module.exports = class BrokerPool {
       } catch (e) {
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
           await broker.disconnect()
+        }
 
-          // Connection refused means this node is down, or the cluster is restarting,
-          // which requires metadata refresh to discover the new nodes
-          if (e.code === 'ECONNREFUSED') {
-            return bail(e)
-          }
+        // To avoid reconnecting to an unavailable host, we bail on connection errors
+        // and refresh metadata on a higher level before reconnecting
+        if (e.name === 'KafkaJSConnectionError') {
+          return bail(e)
+        }
 
+        if (e.type === 'ILLEGAL_SASL_STATE') {
           // Rebuild the connection since it can't recover from illegal SASL state
           broker.connection = await this.connectionBuilder.build({
             host: broker.connection.host,
@@ -326,6 +336,7 @@ module.exports = class BrokerPool {
           })
 
           this.logger.error(`Failed to connect to broker, reconnecting`, { retryCount, retryTime })
+          throw new KafkaJSProtocolError(e, { retriable: true })
         }
 
         if (e.retriable) throw e

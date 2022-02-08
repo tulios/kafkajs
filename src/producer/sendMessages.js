@@ -1,26 +1,26 @@
-const createRetry = require('../retry')
 const flatten = require('../utils/flatten')
 const { KafkaJSMetadataNotLoaded } = require('../errors')
+const { staleMetadata } = require('../protocol/error')
 const groupMessagesPerPartition = require('./groupMessagesPerPartition')
 const createTopicData = require('./createTopicData')
 const responseSerializer = require('./responseSerializer')
 
 const { keys } = Object
-const TOTAL_INDIVIDUAL_ATTEMPTS = 5
-const staleMetadata = e =>
-  ['UNKNOWN_TOPIC_OR_PARTITION', 'LEADER_NOT_AVAILABLE', 'NOT_LEADER_FOR_PARTITION'].includes(
-    e.type
-  )
 
-module.exports = ({ logger, cluster, partitioner, eosManager }) => {
-  const retrier = createRetry({ retries: TOTAL_INDIVIDUAL_ATTEMPTS })
-
+/**
+ * @param {Object} options
+ * @param {import("../../types").Logger} options.logger
+ * @param {import("../../types").Cluster} options.cluster
+ * @param {ReturnType<import("../../types").ICustomPartitioner>} options.partitioner
+ * @param {import("./eosManager").EosManager} options.eosManager
+ * @param {import("../retry").Retrier} options.retrier
+ */
+module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
   return async ({ acks, timeout, compression, topicMessages }) => {
+    /** @type {Map<import("../../types").Broker, any[]>} */
     const responsePerBroker = new Map()
 
-    const topics = topicMessages.map(({ topic }) => topic)
-    await cluster.addMultipleTargetTopics(topics)
-
+    /** @param {Map<import("../../types").Broker, any[]>} responsePerBroker */
     const createProducerRequests = async responsePerBroker => {
       const topicMetadata = new Map()
 
@@ -118,23 +118,48 @@ module.exports = ({ logger, cluster, partitioner, eosManager }) => {
       })
     }
 
-    const makeRequests = async (bail, retryCount, retryTime) => {
+    return retrier(async (bail, retryCount, retryTime) => {
+      const topics = topicMessages.map(({ topic }) => topic)
+      await cluster.addMultipleTargetTopics(topics)
+
       try {
         const requests = await createProducerRequests(responsePerBroker)
         await Promise.all(requests)
         const responses = Array.from(responsePerBroker.values())
         return flatten(responses)
       } catch (e) {
-        if (staleMetadata(e) || e.name === 'KafkaJSMetadataNotLoaded') {
-          await cluster.refreshMetadata()
+        if (e.name === 'KafkaJSConnectionClosedError') {
+          cluster.removeBroker({ host: e.host, port: e.port })
         }
 
-        throw e
-      }
-    }
+        if (!cluster.isConnected()) {
+          logger.debug(`Cluster has disconnected, reconnecting: ${e.message}`, {
+            retryCount,
+            retryTime,
+          })
+          await cluster.connect()
+          await cluster.refreshMetadata()
+          throw e
+        }
 
-    return retrier(makeRequests).catch(e => {
-      throw e.originalError || e
+        // This is necessary in case the metadata is stale and the number of partitions
+        // for this topic has increased in the meantime
+        if (
+          staleMetadata(e) ||
+          e.name === 'KafkaJSMetadataNotLoaded' ||
+          e.name === 'KafkaJSConnectionError' ||
+          e.name === 'KafkaJSConnectionClosedError' ||
+          (e.name === 'KafkaJSProtocolError' && e.retriable)
+        ) {
+          logger.error(`Failed to send messages: ${e.message}`, { retryCount, retryTime })
+          await cluster.refreshMetadata()
+          throw e
+        }
+
+        logger.error(`${e.message}`, { retryCount, retryTime })
+        if (e.retriable) throw e
+        bail(e)
+      }
     })
   }
 }

@@ -3,7 +3,7 @@ id: transactions
 title: Transactions
 ---
 
-KafkaJS provides a a simple interface to support Kafka transactions.
+KafkaJS provides a simple interface to support Kafka transactions.
 
 > Note: Transactions require Kafka version >= v0.11.
 
