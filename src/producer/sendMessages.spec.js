@@ -85,6 +85,8 @@ describe('Producer > sendMessages', () => {
       updateSequence: jest.fn(),
       isTransactional: jest.fn().mockReturnValue(false),
       addPartitionsToTransaction: jest.fn(),
+      acquireBrokerLock: jest.fn(),
+      releaseBrokerLock: jest.fn(),
     }
 
     retrier = retry({ retries: 5 })
