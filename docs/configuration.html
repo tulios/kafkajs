@@ -1,9 +1,9 @@
-<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Client Configuration · KafkaJS</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="The client must be configured with at least one broker. The brokers on the list are considered seed brokers and are only used to bootstrap the client and load initial metadata."/><meta name="docsearch:version" content="1.15.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Client Configuration · KafkaJS"/><meta property="og:type" content="website"/><meta property="og:url" content="https://kafka.js.org/"/><meta property="og:description" content="The client must be configured with at least one broker. The brokers on the list are considered seed brokers and are only used to bootstrap the client and load initial metadata."/><meta property="og:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"/><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-133751873-1"></script><script>
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Client Configuration · KafkaJS</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="The client must be configured with at least one broker. The brokers on the list are considered seed brokers and are only used to bootstrap the client and load initial metadata."/><meta name="docsearch:version" content="1.16.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Client Configuration · KafkaJS"/><meta property="og:type" content="website"/><meta property="og:url" content="https://kafka.js.org/"/><meta property="og:description" content="The client must be configured with at least one broker. The brokers on the list are considered seed brokers and are only used to bootstrap the client and load initial metadata."/><meta property="og:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"/><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-133751873-1"></script><script>
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments); }
               gtag('js', new Date());
               gtag('config', 'UA-133751873-1');
-            </script><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/kafkajs-logoV2.svg" alt="KafkaJS"/><h2 class="headerTitleWithLogo">KafkaJS</h2></a><a href="/versions"><h3>1.15.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/getting-started" target="_self">Docs</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class=""><a href="https://github.com/tulios/kafkajs" target="_self">GitHub</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Usage</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Usage</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/introduction">Intro to Kafka</a></li><li class="navListItem"><a class="navItem" href="/docs/getting-started">Getting Started</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/configuration">Client Configuration</a></li><li class="navListItem"><a class="navItem" href="/docs/producing">Producing Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/transactions">Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/consuming">Consuming Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/admin">Admin Client</a></li><li class="navListItem"><a class="navItem" href="/docs/instrumentation-events">Instrumentation Events</a></li><li class="navListItem"><a class="navItem" href="/docs/custom-logger">Custom Logger</a></li><li class="navListItem"><a class="navItem" href="/docs/retry-detailed">Retry Mechanism Explained</a></li><li class="navListItem"><a class="navItem" href="/docs/faq">FAQ</a></li><li class="navListItem"><a class="navItem" href="/docs/pre-releases">Pre-releases</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Examples</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/running-kafka-in-development">Running Kafka in Development</a></li><li class="navListItem"><a class="navItem" href="/docs/producer-example">Producer</a></li><li class="navListItem"><a class="navItem" href="/docs/consumer-example">Consumer</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Developing KafkaJS</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/contribution-guide">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/development-environment">Development Environment</a></li><li class="navListItem"><a class="navItem" href="/docs/testing">Testing</a></li><li class="navListItem"><a class="navItem" href="/docs/development-resources">Resources</a></li></ul></div></div></section></div><script>
+            </script><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/kafkajs-logoV2.svg" alt="KafkaJS"/><h2 class="headerTitleWithLogo">KafkaJS</h2></a><a href="/versions"><h3>1.16.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/getting-started" target="_self">Docs</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class=""><a href="https://github.com/tulios/kafkajs" target="_self">GitHub</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Usage</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Usage</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/introduction">Intro to Kafka</a></li><li class="navListItem"><a class="navItem" href="/docs/getting-started">Getting Started</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/configuration">Client Configuration</a></li><li class="navListItem"><a class="navItem" href="/docs/producing">Producing Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/transactions">Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/consuming">Consuming Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/admin">Admin Client</a></li><li class="navListItem"><a class="navItem" href="/docs/instrumentation-events">Instrumentation Events</a></li><li class="navListItem"><a class="navItem" href="/docs/custom-logger">Custom Logger</a></li><li class="navListItem"><a class="navItem" href="/docs/retry-detailed">Retry Mechanism Explained</a></li><li class="navListItem"><a class="navItem" href="/docs/faq">FAQ</a></li><li class="navListItem"><a class="navItem" href="/docs/pre-releases">Pre-releases</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Examples</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/running-kafka-in-development">Running Kafka in Development</a></li><li class="navListItem"><a class="navItem" href="/docs/producer-example">Producer</a></li><li class="navListItem"><a class="navItem" href="/docs/consumer-example">Consumer</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Developing KafkaJS</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/contribution-guide">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/development-environment">Development Environment</a></li><li class="navListItem"><a class="navItem" href="/docs/testing">Testing</a></li><li class="navListItem"><a class="navItem" href="/docs/development-resources">Resources</a></li></ul></div></div></section></div><script>
             var coll = document.getElementsByClassName('collapsible');
             var checkActiveCategory = true;
             for (var i = 0; i < coll.length; i++) {
@@ -68,6 +68,18 @@
   <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>]
 })
 </code></pre>
+<h2><a class="anchor" aria-hidden="true" id="client-id"></a><a href="#client-id" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Client Id</h2>
+<p>A logical identifier of an application. Can be used by brokers to apply quotas or trace requests to a specific application. Example: <code>booking-events-processor</code>.</p>
+<p>The <a href="https://kafka.apache.org/documentation/#design_quotasgroups">kafka documentation</a> describes the <code>clientId</code> as:</p>
+<blockquote>
+<p>Client-id is a logical grouping of clients with a meaningful name chosen by the client application. The tuple (user, client-id) defines a secure logical group of clients that share both user principal and client-id. Quotas can be applied to (user, client-id), user or client-id groups.</p>
+</blockquote>
+<p>It <a href="https://kafka.apache.org/documentation/#producerconfigs_client.id">also says</a>:</p>
+<blockquote>
+<p><code>client.id</code></p>
+<p>An id string to pass to the server when making requests. The purpose of this is to be able to track the source of requests beyond just ip/port by allowing a logical application name to be included in server-side request logging.</p>
+</blockquote>
+<p>Therefore the <code>clientId</code> should be shared across multiple instances in a cluster or horizontally scaled application, but distinct for each application.</p>
 <h2><a class="anchor" aria-hidden="true" id="broker-discovery"></a><a href="#broker-discovery" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Broker discovery</h2>
 <p>Normally KafkaJS will notice and react to broker cluster topology changes automatically, but in some circumstances you may want to be able to dynamically
 fetch the seed brokers instead of using a statically configured list. In that case, <code>brokers</code> can be set to an async function that resolves to
@@ -112,7 +124,7 @@ a broker in this list, Kafka has its own mechanism for discovering the rest of t
 })
 </code></pre>
 <p>Refer to <a href="https://nodejs.org/dist/latest-v8.x/docs/api/tls.html#tls_tls_createsecurecontext_options">TLS create secure context</a> for more information. <code>NODE_EXTRA_CA_CERTS</code> can be used to add custom CAs. Use <code>ssl: true</code> if you don't have any extra configurations and want to enable SSL.</p>
-<h2><a class="anchor" aria-hidden="true" id="a-name-sasl-a-sasl"></a><a href="#a-name-sasl-a-sasl" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="sasl"></a> SASL</h2>
+<h2><a class="anchor" aria-hidden="true" id="sasl"></a><a href="#sasl" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>SASL</h2>
 <p>Kafka has support for using SASL to authenticate clients. The <code>sasl</code> option can be used to configure the authentication mechanism. Currently, KafkaJS supports <code>PLAIN</code>, <code>SCRAM-SHA-256</code>, <code>SCRAM-SHA-512</code>, and <code>AWS</code> mechanisms.</p>
 <p>Note that the broker may be configured to reject your authentication attempt if you are not using TLS, even if the credentials themselves are valid. In particular, never authenticate without TLS when using <code>PLAIN</code> as your authentication mechanism, as that will transmit your credentials unencrypted in plain text. See <a href="#ssl">SSL</a> for more information on how to enable TLS.</p>
 <h3><a class="anchor" aria-hidden="true" id="options"></a><a href="#options" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Options</h3>
@@ -167,7 +179,79 @@ async function that is used to return the OAuth bearer token.</p>
 (optionally) extensions, that will be sent during the SASL/OAUTHBEARER
 request.</p>
 <p>The implementation of the oauthBearerProvider must take care that tokens are
-reused and refreshed when appropriate.</p>
+reused and refreshed when appropriate. An example implementation using
+<a href="https://github.com/lelylan/simple-oauth2"><code>simple-oauth2</code></a> would look something
+like the following:</p>
+<pre><code class="hljs css language-ts"><span class="hljs-keyword">import</span> { AccessToken, ClientCredentials } <span class="hljs-keyword">from</span> <span class="hljs-string">'simple-oauth2'</span>
+<span class="hljs-keyword">interface</span> OauthBearerProviderOptions {
+  clientId: <span class="hljs-built_in">string</span>;
+  clientSecret: <span class="hljs-built_in">string</span>;
+  host: <span class="hljs-built_in">string</span>;
+  path: <span class="hljs-built_in">string</span>;
+  refreshThresholdMs: <span class="hljs-built_in">number</span>;
+}
+
+<span class="hljs-keyword">const</span> oauthBearerProvider = <span class="hljs-function">(<span class="hljs-params">options: OauthBearerProviderOptions</span>) =&gt;</span> {
+  <span class="hljs-keyword">const</span> client = <span class="hljs-keyword">new</span> ClientCredentials({
+    client: {
+      id: options.clientId,
+      secret: options.clientSecret
+    },
+    auth: {
+      tokenHost: options.host,
+      tokenPath: options.path
+    }
+  });
+
+  <span class="hljs-keyword">let</span> tokenPromise: <span class="hljs-built_in">Promise</span>&lt;<span class="hljs-built_in">string</span>&gt;;
+  <span class="hljs-keyword">let</span> accessToken: AccessToken;
+
+  <span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">refreshToken</span>(<span class="hljs-params"></span>) </span>{
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-keyword">if</span> (accessToken == <span class="hljs-literal">null</span>) {
+        accessToken = <span class="hljs-keyword">await</span> client.getToken({})
+      }
+
+      <span class="hljs-keyword">if</span> (accessToken.expired(options.refreshThresholdMs / <span class="hljs-number">1000</span>)) {
+        accessToken = <span class="hljs-keyword">await</span> accessToken.refresh()
+      }
+
+      <span class="hljs-keyword">const</span> nextRefresh = accessToken.token.expires_in * <span class="hljs-number">1000</span> - options.refreshThresholdMs;
+      setTimeout(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+        tokenPromise = refreshToken()
+      }, nextRefresh);
+
+      <span class="hljs-keyword">return</span> accessToken.token.access_token;
+    } <span class="hljs-keyword">catch</span> (error) {
+      accessToken = <span class="hljs-literal">null</span>;
+      <span class="hljs-keyword">throw</span> error;
+    }
+  }
+
+  tokenPromise = refreshToken();
+
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+    <span class="hljs-keyword">return</span> {
+      value: <span class="hljs-keyword">await</span> tokenPromise
+    }
+  }
+};
+
+<span class="hljs-keyword">const</span> kafka = <span class="hljs-keyword">new</span> Kafka({
+  <span class="hljs-comment">// ... other required options</span>
+  sasl: {
+    mechanism: <span class="hljs-string">'oauthbearer'</span>,
+    oauthBearerProvider: oauthBearerProvider({
+      clientId: <span class="hljs-string">'oauth-client-id'</span>,
+      clientSecret: <span class="hljs-string">'oauth-client-secret'</span>,
+      host: <span class="hljs-string">'https://my-oauth-server.com'</span>,
+      path: <span class="hljs-string">'/oauth/token'</span>,
+      <span class="hljs-comment">// Refresh the token 15 seconds before it expires</span>
+      refreshThreshold: <span class="hljs-number">15000</span>,
+    }),
+  },
+})
+</code></pre>
 <h3><a class="anchor" aria-hidden="true" id="aws-iam-example"></a><a href="#aws-iam-example" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>AWS IAM Example</h3>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">new</span> Kafka({
   <span class="hljs-attr">clientId</span>: <span class="hljs-string">'my-app'</span>,
@@ -216,7 +300,7 @@ otherwise credentials will be transmitted in cleartext!</p>
   <span class="hljs-attr">requestTimeout</span>: <span class="hljs-number">25000</span>
 })
 </code></pre>
-<h2><a class="anchor" aria-hidden="true" id="a-name-retry-a-default-retry"></a><a href="#a-name-retry-a-default-retry" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="retry"></a> Default Retry</h2>
+<h2><a class="anchor" aria-hidden="true" id="default-retry"></a><a href="#default-retry" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Default Retry</h2>
 <p>The <code>retry</code> option can be used to set the configuration of the retry mechanism, which is used to retry connections and API calls to Kafka (when using producers or consumers).</p>
 <p>The retry mechanism uses a randomization function that grows exponentially.
 <a href="/docs/retry-detailed">Detailed example</a></p>
@@ -232,7 +316,7 @@ otherwise credentials will be transmitted in cleartext!</p>
 <tr><td>factor</td><td>Randomization factor</td><td><code>0.2</code></td></tr>
 <tr><td>multiplier</td><td>Exponential factor</td><td><code>2</code></td></tr>
 <tr><td>retries</td><td>Max number of retries per call</td><td><code>5</code></td></tr>
-<tr><td>restartOnFailure</td><td>Only used in consumer. See <a href="#restart-on-failure"><code>restartOnFailure</code></a></td><td><code>async () =&gt; true</code></td></tr>
+<tr><td>restartOnFailure</td><td>Only used in consumer. See <a href="#restartonfailure"><code>restartOnFailure</code></a></td><td><code>async () =&gt; true</code></td></tr>
 </tbody>
 </table>
 <p>Example:</p>
@@ -245,7 +329,7 @@ otherwise credentials will be transmitted in cleartext!</p>
   }
 })
 </code></pre>
-<h3><a class="anchor" aria-hidden="true" id="a-name-restart-on-failure-a-restartonfailure"></a><a href="#a-name-restart-on-failure-a-restartonfailure" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="restart-on-failure"></a> <code>restartOnFailure</code></h3>
+<h3><a class="anchor" aria-hidden="true" id="restartonfailure"></a><a href="#restartonfailure" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><code>restartOnFailure</code></h3>
 <p>An async function that will be invoked after the consumer exhausts all retries, to decide whether or not to restart the consumer (essentially resetting <code>consumer.run</code>). This can be used to, for example, cleanly shut down resources before crashing, if that is preferred. The function will be passed the error, which allows it to decide based on the type of error whether or not to exit the application or allow it to restart.</p>
 <p>The function has the following signature: <code>(error: Error) =&gt; Promise&lt;boolean&gt;</code></p>
 <ul>
@@ -323,7 +407,7 @@ any socket.</p>
   <span class="hljs-attr">socketFactory</span>: myCustomSocketFactory,
 })
 </code></pre>
-</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/getting-started"><span class="arrow-prev">← </span><span>Getting Started</span></a><a class="docs-next button" href="/docs/producing"><span>Producing Messages</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#broker-discovery">Broker discovery</a></li><li><a href="#ssl">SSL</a></li><li><a href="#sasl">SASL</a><ul class="toc-headings"><li><a href="#options">Options</a></li><li><a href="#plain-scram-example">PLAIN/SCRAM Example</a></li><li><a href="#oauthbearer-example">OAUTHBEARER Example</a></li><li><a href="#aws-iam-example">AWS IAM Example</a></li><li><a href="#use-encrypted-protocols">Use Encrypted Protocols</a></li></ul></li><li><a href="#connection-timeout">Connection Timeout</a></li><li><a href="#request-timeout">Request Timeout</a></li><li><a href="#default-retry">Default Retry</a><ul class="toc-headings"><li><a href="#restartonfailure"><code>restartOnFailure</code></a></li></ul></li><li><a href="#logging">Logging</a></li><li><a href="#custom-socket-factory">Custom socket factory</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/kafkajs-logoV2.svg" alt="KafkaJS" width="52" height="84"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Usage</a></div><div><h5>Community</h5><a href="https://kafkajs-slackin.herokuapp.com">Slack</a></div><div><h5>More</h5><a href="https://github.com/tulios/kafkajs">GitHub</a><a class="github-button" href="https://github.com/tulios/kafkajs" data-icon="octicon-star" data-count-href="/tulios/kafkajs/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><a href="https://badge.fury.io/js/kafkajs"><img src="https://badge.fury.io/js/kafkajs.svg" alt="npm version" height="18"/></a></div></section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/getting-started"><span class="arrow-prev">← </span><span>Getting Started</span></a><a class="docs-next button" href="/docs/producing"><span>Producing Messages</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#client-id">Client Id</a></li><li><a href="#broker-discovery">Broker discovery</a></li><li><a href="#ssl">SSL</a></li><li><a href="#sasl">SASL</a><ul class="toc-headings"><li><a href="#options">Options</a></li><li><a href="#plain-scram-example">PLAIN/SCRAM Example</a></li><li><a href="#oauthbearer-example">OAUTHBEARER Example</a></li><li><a href="#aws-iam-example">AWS IAM Example</a></li><li><a href="#use-encrypted-protocols">Use Encrypted Protocols</a></li></ul></li><li><a href="#connection-timeout">Connection Timeout</a></li><li><a href="#request-timeout">Request Timeout</a></li><li><a href="#default-retry">Default Retry</a><ul class="toc-headings"><li><a href="#restartonfailure"><code>restartOnFailure</code></a></li></ul></li><li><a href="#logging">Logging</a></li><li><a href="#custom-socket-factory">Custom socket factory</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/kafkajs-logoV2.svg" alt="KafkaJS" width="52" height="84"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Usage</a></div><div><h5>Community</h5><a href="https://kafkajs-slackin.herokuapp.com">Slack</a></div><div><h5>More</h5><a href="https://github.com/tulios/kafkajs">GitHub</a><a class="github-button" href="https://github.com/tulios/kafkajs" data-icon="octicon-star" data-count-href="/tulios/kafkajs/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><a href="https://badge.fury.io/js/kafkajs"><img src="https://badge.fury.io/js/kafkajs.svg" alt="npm version" height="18"/></a></div></section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
                   if (e.target !== document.body) {
                     return;
