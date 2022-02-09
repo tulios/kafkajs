@@ -77,6 +77,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
 
         const topicData = createTopicData(topicDataForBroker)
 
+        await eosManager.acquireBrokerLock(broker)
         try {
           if (eosManager.isTransactional()) {
             await eosManager.addPartitionsToTransaction(topicData)
@@ -118,6 +119,8 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
         } catch (e) {
           responsePerBroker.delete(broker)
           throw e
+        } finally {
+          await eosManager.releaseBrokerLock(broker)
         }
       })
     }
