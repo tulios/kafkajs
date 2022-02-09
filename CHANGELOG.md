@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2022-02-09
+
+### Added
+  - Allow manual heartbeating from inside `eachMessage` handler #1255
+  - Add `rebalancing` consumer event #1067 #1079
+  - Add overload typings for all event types #1202
+  - Return `configSource` in `admin.decribeConfigs` #1023
+  - Add `topics` property to `admin.fetchOffsets` to fetch offsets for multiple topics #992 #998
+  - Improve error output from `admin.createTopic` #1104
+  - Export Error classes #1254
+  - Validate `brokers` list contains strings #1284
+  - Throw error when failing to stop or disconnect consumer #960
+
+### Changed
+  
+  - Don't commit offsets from `consumer.seek` when `autoCommit` is `false` #1012
+  - Do not restart the consumer on non-retriable errors #1274
+  - Downgrade consumer rebalance error log to `warn` #1279
+  - Make default round-robin partitioner topic-aware #1112
+
+### Fixed
+  - Fix `offset` type of `consumer.seek` #981
+  - Fix crash when used in Electron app built with electron-builder #984
+  - Improve performance of Fetch requests #985
+  - Fix crash when using topics with name of built-in Javascript functions #995
+  - Fix type of consumer constructor to require config object #1002
+  - Fix message type to allow `null` key #1037
+  - Respect `heartbeatInterval` when invoking `heartbeat` concurrently #1026
+  - Fix type of `timestamp` of `LoggerEntryContent` to be string #1082
+  - Fix return type of `admin.describeAcls` #1118
+  - Fix consumer getting stuck in `DISCONNECTING` state if in-flight requests time out during disconnect #1208
+  - Fix failed serialization of BigInts when logging #1234
+  - Fix crash when committing offsets for a topic before consumer initialization #1235
+  - Reauthenticate to all brokers on demand #1241
+  - Remove unnecessary warn log when calling `admin.deleteTopicRecords` with offset `-1` #1265
+  - Handle empty control batches #1256
+  - Send empty topic array as null when fetching metadata #1184
+
 ## [1.15.0] - 2020-11-24
 ### Added
   - Initial work for static membership #888

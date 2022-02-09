@@ -51,6 +51,30 @@ describe('Producer > Partitioner > Default', () => {
     expect(partitionCount[2]).toEqual(10)
   })
 
+  test('messages are partitioned in a round-robin fashion for each topic', () => {
+    const partitionMetadata = [
+      { partitionId: 1, leader: 1 },
+      { partitionId: 2, leader: 2 },
+    ]
+    const topics = [
+      { topic: 'topic-a', partitionMetadata, partitionCount: {} },
+      { topic: 'topic-b', partitionMetadata, partitionCount: {} },
+    ]
+
+    for (let i = 0; i < 30; ++i) {
+      for (const { topic, partitionMetadata, partitionCount } of topics) {
+        const partition = partitioner({ topic, partitionMetadata, message: {} })
+        const count = partitionCount[partition] || 0
+        partitionCount[partition] = count + 1
+      }
+    }
+
+    expect(topics[0].partitionCount[1]).toEqual(15)
+    expect(topics[0].partitionCount[2]).toEqual(15)
+    expect(topics[1].partitionCount[1]).toEqual(15)
+    expect(topics[1].partitionCount[2]).toEqual(15)
+  })
+
   test('returns the configured partition if it exists', () => {
     const partition = partitioner({
       topic,
