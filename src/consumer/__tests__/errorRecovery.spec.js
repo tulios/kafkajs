@@ -160,50 +160,6 @@ describe('Consumer', () => {
     await expect(waitFor(() => eachMessage.mock.calls.length)).resolves.toBe(1)
   })
 
-  it('does not recover from crashes due to not retriable errors', async () => {
-    const groupId = `consumer-group-id-${secureRandom()}`
-    consumer2 = createConsumer({
-      cluster,
-      groupId,
-      logger: newLogger(),
-      heartbeatInterval: 100,
-      maxWaitTimeInMs: 1,
-      maxBytesPerPartition: 180,
-      retry: {
-        retries: 0,
-      },
-    })
-    const crashListener = jest.fn()
-    consumer2.on(consumer.events.CRASH, crashListener)
-
-    const error = new KafkaJSError(new Error('💣'), { retriable: false })
-
-    await consumer2.connect()
-    await consumer2.subscribe({ topic: topicName, fromBeginning: true })
-
-    const coordinator = await cluster.findGroupCoordinator({ groupId })
-    const original = coordinator.joinGroup
-    coordinator.joinGroup = async () => {
-      coordinator.joinGroup = original
-      throw error
-    }
-
-    const eachMessage = jest.fn()
-    await consumer2.run({ eachMessage })
-
-    const key = secureRandom()
-    const message = { key: `key-${key}`, value: `value-${key}` }
-    await producer.send({ acks: 1, topic: topicName, messages: [message] })
-
-    await waitFor(() => crashListener.mock.calls.length > 0)
-    expect(crashListener).toHaveBeenCalledWith({
-      id: expect.any(Number),
-      timestamp: expect.any(Number),
-      type: 'consumer.crash',
-      payload: { error, groupId, restart: false },
-    })
-  })
-
   it('recovers from retriable failures when "restartOnFailure" returns true', async () => {
     const errorMessage = '💣'
     let receivedErrorMessage

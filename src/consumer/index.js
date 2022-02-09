@@ -96,13 +96,7 @@ module.exports = ({
       logger.debug('consumer has stopped, disconnecting', { groupId })
       await cluster.disconnect()
       instrumentationEmitter.emit(DISCONNECT)
-    } catch (e) {
-      logger.error(`Caught error when disconnecting the consumer: ${e.message}`, {
-        stack: e.stack,
-        groupId,
-      })
-      throw e
-    }
+    } catch (e) {}
   }
 
   /** @type {import("../../types").Consumer["stop"]} */
@@ -117,14 +111,7 @@ module.exports = ({
 
       clearTimeout(restartTimeout)
       logger.info('Stopped', { groupId })
-    } catch (e) {
-      logger.error(`Caught error when stopping the consumer: ${e.message}`, {
-        stack: e.stack,
-        groupId,
-      })
-
-      throw e
-    }
+    } catch (e) {}
   }
 
   /** @type {import("../../types").Consumer["subscribe"]} */

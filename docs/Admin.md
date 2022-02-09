@@ -127,7 +127,7 @@ await admin.fetchTopicMetadata({ topics: <Array<String>> })
 
 ```javascript
 {
-    name: <String>,
+    topic: <String>,
     partitions: <Array<PartitionMetadata>> // default: 1
 }
 ```

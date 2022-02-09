@@ -37,49 +37,36 @@ module.exports = ({
 }) => {
   let index = 0
 
-  const isValidBroker = broker => {
-    return broker && typeof broker === 'string' && broker.length > 0
-  }
-
-  const validateBrokers = brokers => {
+  const getBrokers = async () => {
     if (!brokers) {
-      throw new KafkaJSNonRetriableError(`Failed to connect: brokers should not be null`)
+      throw new KafkaJSNonRetriableError(`Failed to connect: brokers parameter should not be null`)
     }
 
+    // static list
     if (Array.isArray(brokers)) {
       if (!brokers.length) {
         throw new KafkaJSNonRetriableError(`Failed to connect: brokers array is empty`)
       }
-
-      brokers.forEach((broker, index) => {
-        if (!isValidBroker(broker)) {
-          throw new KafkaJSNonRetriableError(
-            `Failed to connect: broker at index ${index} is invalid "${typeof broker}"`
-          )
-        }
-      })
+      return brokers
     }
-  }
 
-  const getBrokers = async () => {
+    // dynamic brokers
     let list
-
-    if (typeof brokers === 'function') {
-      try {
-        list = await brokers()
-      } catch (e) {
-        const wrappedError = new KafkaJSConnectionError(
-          `Failed to connect: "config.brokers" threw: ${e.message}`
-        )
-        wrappedError.stack = `${wrappedError.name}\n  Caused by: ${e.stack}`
-        throw wrappedError
-      }
-    } else {
-      list = brokers
+    try {
+      list = await brokers()
+    } catch (e) {
+      const wrappedError = new KafkaJSConnectionError(
+        `Failed to connect: "config.brokers" threw: ${e.message}`
+      )
+      wrappedError.stack = `${wrappedError.name}\n  Caused by: ${e.stack}`
+      throw wrappedError
     }
 
-    validateBrokers(list)
-
+    if (!list || list.length === 0) {
+      throw new KafkaJSConnectionError(
+        `Failed to connect: "config.brokers" returned void or empty array`
+      )
+    }
     return list
   }
 

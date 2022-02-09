@@ -85,22 +85,8 @@ describe('Cluster > ConnectionBuilder', () => {
         connectionTimeout,
         logger,
       }).build()
-    ).rejects.toEqual(new KafkaJSNonRetriableError('Failed to connect: brokers should not be null'))
-  })
-
-  it('throws an exception if one of the brokers is not a string', async () => {
-    await expect(
-      connectionBuilder({
-        socketFactory,
-        brokers: ['localhost:1234', undefined],
-        ssl,
-        sasl,
-        clientId,
-        connectionTimeout,
-        logger,
-      }).build()
     ).rejects.toEqual(
-      new KafkaJSNonRetriableError('Failed to connect: broker at index 1 is invalid "undefined"')
+      new KafkaJSNonRetriableError('Failed to connect: brokers parameter should not be null')
     )
   })
 
@@ -115,7 +101,9 @@ describe('Cluster > ConnectionBuilder', () => {
         connectionTimeout,
         logger,
       }).build()
-    ).rejects.toEqual(new KafkaJSConnectionError('Failed to connect: brokers should not be null'))
+    ).rejects.toEqual(
+      new KafkaJSConnectionError('Failed to connect: "config.brokers" returned void or empty array')
+    )
   })
 
   it('throws an KafkaJSConnectionError if brokers is function crashes', async () => {
