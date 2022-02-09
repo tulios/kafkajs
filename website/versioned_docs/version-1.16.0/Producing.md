@@ -1,6 +1,7 @@
 ---
-id: producing
+id: version-1.16.0-producing
 title: Producing Messages
+original_id: producing
 ---
 
 To publish messages to Kafka you have to create a producer. Simply call the `producer` function of the client to create it:

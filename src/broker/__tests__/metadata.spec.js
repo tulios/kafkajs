@@ -72,7 +72,7 @@ describe('Broker > Metadata', () => {
     })
   })
 
-  test('can fetch metatada for all topics', async () => {
+  test('can fetch metadata for all topics', async () => {
     await broker.connect()
     await createTopic({ topic: topicName })
     await createTopic({ topic: `test-topic-${secureRandom()}` })

@@ -1,6 +1,7 @@
 ---
-id: transactions
+id: version-1.16.0-transactions
 title: Transactions
+original_id: transactions
 ---
 
 KafkaJS provides a simple interface to support Kafka transactions.

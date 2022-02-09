@@ -26,7 +26,7 @@ jobs:
   - job: lint
     displayName: Lint
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
     - task: NodeTool@0
       inputs:
@@ -41,7 +41,7 @@ jobs:
   - job: typescript_types
     displayName: Typescript types
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
     - task: NodeTool@0
       inputs:
@@ -60,7 +60,7 @@ jobs:
     variables:
       test_retries: 2
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
@@ -85,7 +85,7 @@ jobs:
     variables:
       test_retries: 2
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
@@ -110,7 +110,7 @@ jobs:
     variables:
       test_retries: 2
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
@@ -135,7 +135,7 @@ jobs:
     variables:
       test_retries: 2
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
@@ -162,7 +162,7 @@ jobs:
     variables:
       test_retries: 2
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
@@ -190,7 +190,7 @@ jobs:
       - name: COMPOSE_FILE
         value: docker-compose.2_4_oauthbearer.yml
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
@@ -221,7 +221,7 @@ jobs:
       - test_consumer
       - test_others
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
@@ -241,7 +241,7 @@ jobs:
     dependsOn:
       - npm_release
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
@@ -263,7 +263,7 @@ jobs:
           git add .
           DOC_VERSION=$(echo "$VERSION" | sed -e "s/^refs\/tags\/v//")
           git commit -m "Versioned docs for $DOC_VERSION"
-          git push origin master
+          git push origin HEAD:master
         displayName: commit
         env:
           VERSION: $(Build.SourceBranch)
@@ -280,7 +280,7 @@ jobs:
       - test_consumer
       - test_others
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
@@ -308,7 +308,7 @@ jobs:
       - test_others
       - beta_release_check
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
@@ -355,7 +355,7 @@ jobs:
       - test_consumer
       - test_others
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:

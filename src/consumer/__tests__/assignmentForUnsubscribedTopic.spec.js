@@ -58,7 +58,7 @@ describe('Consumer', () => {
     consumer2.run({ eachMessage: () => {} })
     const event = await waitForConsumerToJoinGroup(consumer2, { label: 'consumer2' })
 
-    // verify that the assigment does not contain the unsubscribed topic
+    // verify that the assignment does not contain the unsubscribed topic
     expect(event.payload.memberAssignment[topicNames[1]]).toBeUndefined()
   })
 

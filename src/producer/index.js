@@ -77,11 +77,7 @@ module.exports = ({
 
   let transactionalEosManager
 
-  /**
-   * @param {string} eventName
-   * @param {AsyncFunction} listener
-   * @return {Function} removeListener
-   */
+  /** @type {import("../../types").Producer["on"]} */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {
       throw new KafkaJSNonRetriableError(`Event name should be one of ${eventKeys}`)

@@ -1,6 +1,7 @@
 ---
-id: configuration
+id: version-1.16.0-configuration
 title: Client Configuration
+original_id: configuration
 ---
 
 The client must be configured with at least one broker. The brokers on the list are considered seed brokers and are only used to bootstrap the client and load initial metadata.

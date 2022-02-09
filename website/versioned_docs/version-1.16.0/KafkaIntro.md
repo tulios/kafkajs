@@ -1,7 +1,8 @@
 ---
-id: introduction
+id: version-1.16.0-introduction
 title: A Brief Intro to Kafka
 sidebar_label: Intro to Kafka
+original_id: introduction
 ---
 
 Kafka is a messaging system that safely moves data between systems. Depending on how each component is
