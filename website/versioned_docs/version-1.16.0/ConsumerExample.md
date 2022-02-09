@@ -1,6 +1,7 @@
 ---
-id: consumer-example
+id: version-1.16.0-consumer-example
 title: Consumer
+original_id: consumer-example
 ---
 
 The following example assumes that you are using the local Kafka configuration described in [Running Kafka in Development](DockerLocal.md).

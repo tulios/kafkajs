@@ -144,6 +144,8 @@ module.exports = class RequestQueue extends EventEmitter {
       timeout: () => {
         this.inflight.delete(correlationId)
         this.checkPendingRequests()
+        // Try to emit REQUEST_QUEUE_EMPTY. Otherwise, waitForPendingRequests may stuck forever
+        this[PRIVATE.EMIT_REQUEST_QUEUE_EMPTY]()
       },
     })
 

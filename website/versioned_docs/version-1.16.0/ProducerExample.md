@@ -1,6 +1,7 @@
 ---
-id: producer-example
+id: version-1.16.0-producer-example
 title: Producer
+original_id: producer-example
 ---
 
 The following example assumes that you are using the local Kafka configuration described in [Running Kafka in Development](DockerLocal.md).
