@@ -23,9 +23,9 @@ const mergeTopics = (obj, { topic, partitions }) => ({
 
 const PRIVATE = {
   CONNECT: Symbol('private:Cluster:connect'),
-  REFRESHMETADATA: Symbol('private:Cluster:refreshMetadata'),
-  REFRESHMETADATAIFNECESSARY: Symbol('private:Cluster:refreshMetadataIfNecessary'),
-  FINDCONTROLBROKER: Symbol('private:Cluster:findControllerBroker'),
+  REFRESH_METADATA: Symbol('private:Cluster:refreshMetadata'),
+  REFRESH_METADATA_IF_NECESSARY: Symbol('private:Cluster:refreshMetadataIfNecessary'),
+  FIND_CONTROLLER_BROKER: Symbol('private:Cluster:findControllerBroker'),
 }
 
 module.exports = class Cluster {
@@ -108,15 +108,15 @@ module.exports = class Cluster {
       return await this.brokerPool.connect()
     })
 
-    this[PRIVATE.REFRESHMETADATA] = sharedPromiseTo(async () => {
+    this[PRIVATE.REFRESH_METADATA] = sharedPromiseTo(async () => {
       return await this.brokerPool.refreshMetadata(Array.from(this.targetTopics))
     })
 
-    this[PRIVATE.REFRESHMETADATAIFNECESSARY] = sharedPromiseTo(async () => {
+    this[PRIVATE.REFRESH_METADATA_IF_NECESSARY] = sharedPromiseTo(async () => {
       return await this.brokerPool.refreshMetadataIfNecessary(Array.from(this.targetTopics))
     })
 
-    this[PRIVATE.FINDCONTROLBROKER] = sharedPromiseTo(async () => {
+    this[PRIVATE.FIND_CONTROLLER_BROKER] = sharedPromiseTo(async () => {
       const { metadata } = this.brokerPool
 
       if (!metadata || metadata.controllerId == null) {
@@ -144,7 +144,7 @@ module.exports = class Cluster {
    * @returns {Promise<void>}
    */
   async connect() {
-    return await this[PRIVATE.CONNECT]()
+    await this[PRIVATE.CONNECT]()
   }
 
   /**
@@ -170,7 +170,7 @@ module.exports = class Cluster {
    * @returns {Promise<void>}
    */
   async refreshMetadata() {
-    return await this[PRIVATE.REFRESHMETADATA]()
+    await this[PRIVATE.REFRESH_METADATA]()
   }
 
   /**
@@ -178,7 +178,7 @@ module.exports = class Cluster {
    * @returns {Promise<void>}
    */
   async refreshMetadataIfNecessary() {
-    return await this[PRIVATE.REFRESHMETADATAIFNECESSARY]()
+    await this[PRIVATE.REFRESH_METADATA_IF_NECESSARY]()
   }
 
   /**
@@ -270,7 +270,7 @@ module.exports = class Cluster {
    * @returns {Promise<import("../../types").Broker>}
    */
   async findControllerBroker() {
-    return await this[PRIVATE.FINDCONTROLBROKER]()
+    return await this[PRIVATE.FIND_CONTROLLER_BROKER]()
   }
 
   /**

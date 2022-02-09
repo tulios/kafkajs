@@ -67,7 +67,6 @@ module.exports = ({
 
   /**
    * Idempotent production requires a mutex lock per broker to serialize requests with sequence number handling
-   *
    */
   let brokerMutexLocks = {}
 
