@@ -135,10 +135,7 @@ describe('Producer > Idempotent producer', () => {
     await consumer.run({ eachMessage: async message => messagesConsumed.push(message) })
 
     await waitForMessages(messagesConsumed, { number: messages.length })
-
-    expect(arrayUnique(messagesConsumed.map(({ message: { value } }) => value))).toHaveLength(
-      messages.length
-    )
+    expect(messagesConsumed).toHaveLength(messages.length)
   })
 
   it('concurrent produce() calls > where produce() throws a retriable error on the first call, all messages are written to the partition once', async () => {
