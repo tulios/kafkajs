@@ -64,24 +64,24 @@
 <p>Save the following file as <code>docker-compose.yml</code> in the root of your project.</p>
 <pre><code class="hljs css language-yml"><span class="hljs-attr">version:</span> <span class="hljs-string">'2'</span>
 <span class="hljs-attr">services:</span>
-<span class="hljs-attr">  zookeeper:</span>
-<span class="hljs-attr">    image:</span> <span class="hljs-string">wurstmeister/zookeeper:latest</span>
-<span class="hljs-attr">    ports:</span>
-<span class="hljs-bullet">      -</span> <span class="hljs-string">"2181:2181"</span>
-<span class="hljs-attr">  kafka:</span>
-<span class="hljs-attr">    image:</span> <span class="hljs-string">wurstmeister/kafka:2.11-1.1.1</span>
-<span class="hljs-attr">    ports:</span>
-<span class="hljs-bullet">      -</span> <span class="hljs-string">"9092:9092"</span>
-<span class="hljs-attr">    links:</span>
-<span class="hljs-bullet">      -</span> <span class="hljs-string">zookeeper</span>
-<span class="hljs-attr">    environment:</span>
-<span class="hljs-attr">      KAFKA_ADVERTISED_HOST_NAME:</span> <span class="hljs-string">${HOST_IP}</span>
-<span class="hljs-attr">      KAFKA_ZOOKEEPER_CONNECT:</span> <span class="hljs-attr">zookeeper:2181</span>
-<span class="hljs-attr">      KAFKA_AUTO_CREATE_TOPICS_ENABLE:</span> <span class="hljs-string">'true'</span>
-<span class="hljs-attr">      KAFKA_DELETE_TOPIC_ENABLE:</span> <span class="hljs-string">'true'</span>
-<span class="hljs-attr">      KAFKA_CREATE_TOPICS:</span> <span class="hljs-string">"topic-test:1:1"</span>
-<span class="hljs-attr">    volumes:</span>
-<span class="hljs-bullet">      -</span> <span class="hljs-string">/var/run/docker.sock:/var/run/docker.sock</span>
+  <span class="hljs-attr">zookeeper:</span>
+    <span class="hljs-attr">image:</span> <span class="hljs-string">wurstmeister/zookeeper:latest</span>
+    <span class="hljs-attr">ports:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-string">"2181:2181"</span>
+  <span class="hljs-attr">kafka:</span>
+    <span class="hljs-attr">image:</span> <span class="hljs-string">wurstmeister/kafka:2.11-1.1.1</span>
+    <span class="hljs-attr">ports:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-string">"9092:9092"</span>
+    <span class="hljs-attr">links:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-string">zookeeper</span>
+    <span class="hljs-attr">environment:</span>
+      <span class="hljs-attr">KAFKA_ADVERTISED_HOST_NAME:</span> <span class="hljs-string">${HOST_IP}</span>
+      <span class="hljs-attr">KAFKA_ZOOKEEPER_CONNECT:</span> <span class="hljs-string">zookeeper:2181</span>
+      <span class="hljs-attr">KAFKA_AUTO_CREATE_TOPICS_ENABLE:</span> <span class="hljs-string">'true'</span>
+      <span class="hljs-attr">KAFKA_DELETE_TOPIC_ENABLE:</span> <span class="hljs-string">'true'</span>
+      <span class="hljs-attr">KAFKA_CREATE_TOPICS:</span> <span class="hljs-string">"topic-test:1:1"</span>
+    <span class="hljs-attr">volumes:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-string">/var/run/docker.sock:/var/run/docker.sock</span>
 </code></pre>
 <p>Now run:</p>
 <pre><code class="hljs css language-sh"><span class="hljs-built_in">export</span> HOST_IP=$(ifconfig | grep -E <span class="hljs-string">"([0-9]{1,3}\.){3}[0-9]{1,3}"</span> | grep -v 127.0.0.1 | awk <span class="hljs-string">'{ print $2 }'</span> | cut -f2 -d: | head -n1)

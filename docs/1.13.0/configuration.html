@@ -103,10 +103,10 @@
   <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
   <span class="hljs-comment">// authenticationTimeout: 1000,</span>
   <span class="hljs-comment">// reauthenticationThreshold: 10000,</span>
-  ssl: <span class="hljs-literal">true</span>,
+  <span class="hljs-attr">ssl</span>: <span class="hljs-literal">true</span>,
   <span class="hljs-attr">sasl</span>: {
     <span class="hljs-attr">mechanism</span>: <span class="hljs-string">'plain'</span>, <span class="hljs-comment">// scram-sha-256 or scram-sha-512</span>
-    username: <span class="hljs-string">'my-username'</span>,
+    <span class="hljs-attr">username</span>: <span class="hljs-string">'my-username'</span>,
     <span class="hljs-attr">password</span>: <span class="hljs-string">'my-password'</span>
   },
 })
@@ -117,7 +117,7 @@
   <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
   <span class="hljs-comment">// authenticationTimeout: 1000,</span>
   <span class="hljs-comment">// reauthenticationThreshold: 10000,</span>
-  ssl: <span class="hljs-literal">true</span>,
+  <span class="hljs-attr">ssl</span>: <span class="hljs-literal">true</span>,
   <span class="hljs-attr">sasl</span>: {
     <span class="hljs-attr">mechanism</span>: <span class="hljs-string">'oauthbearer'</span>,
     <span class="hljs-attr">oauthBearerProvider</span>: <span class="hljs-keyword">async</span> () =&gt; {
@@ -146,11 +146,11 @@ reused and refreshed when appropriate.</p>
   <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
   <span class="hljs-comment">// authenticationTimeout: 1000,</span>
   <span class="hljs-comment">// reauthenticationThreshold: 10000,</span>
-  ssl: <span class="hljs-literal">true</span>,
+  <span class="hljs-attr">ssl</span>: <span class="hljs-literal">true</span>,
   <span class="hljs-attr">sasl</span>: {
     <span class="hljs-attr">mechanism</span>: <span class="hljs-string">'aws'</span>,
     <span class="hljs-attr">authorizationIdentity</span>: <span class="hljs-string">'AIDAIOSFODNN7EXAMPLE'</span>, <span class="hljs-comment">// UserId or RoleId</span>
-    accessKeyId: <span class="hljs-string">'AKIAIOSFODNN7EXAMPLE'</span>,
+    <span class="hljs-attr">accessKeyId</span>: <span class="hljs-string">'AKIAIOSFODNN7EXAMPLE'</span>,
     <span class="hljs-attr">secretAccessKey</span>: <span class="hljs-string">'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'</span>,
     <span class="hljs-attr">sessionToken</span>: <span class="hljs-string">'WHArYt8i5vfQUrIU5ZbMLCbjcAiv/Eww6eL9tgQMJp6QFNEXAMPLETOKEN'</span> <span class="hljs-comment">// Optional</span>
   },

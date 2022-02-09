@@ -83,7 +83,7 @@
     <span class="hljs-comment">// eachBatch: async ({ batch }) =&gt; {</span>
     <span class="hljs-comment">//   console.log(batch)</span>
     <span class="hljs-comment">// },</span>
-    eachMessage: <span class="hljs-keyword">async</span> ({ topic, partition, message }) =&gt; {
+    <span class="hljs-attr">eachMessage</span>: <span class="hljs-keyword">async</span> ({ topic, partition, message }) =&gt; {
       <span class="hljs-keyword">const</span> prefix = <span class="hljs-string">`<span class="hljs-subst">${topic}</span>[<span class="hljs-subst">${partition}</span> | <span class="hljs-subst">${message.offset}</span>] / <span class="hljs-subst">${message.timestamp}</span>`</span>
       <span class="hljs-built_in">console</span>.log(<span class="hljs-string">`- <span class="hljs-subst">${prefix}</span> <span class="hljs-subst">${message.key}</span>#<span class="hljs-subst">${message.value}</span>`</span>)
     },
@@ -151,7 +151,7 @@ signalTraps.map(<span class="hljs-function"><span class="hljs-params">type</span
     <span class="hljs-comment">// eachBatch: async ({ batch }) =&gt; {</span>
     <span class="hljs-comment">//   console.log(batch)</span>
     <span class="hljs-comment">// },</span>
-    eachMessage: <span class="hljs-keyword">async</span> ({ topic, partition, message }) =&gt; {
+    <span class="hljs-attr">eachMessage</span>: <span class="hljs-keyword">async</span> ({ topic, partition, message }) =&gt; {
       <span class="hljs-keyword">const</span> prefix = <span class="hljs-string">`<span class="hljs-subst">${topic}</span>[<span class="hljs-subst">${partition}</span> | <span class="hljs-subst">${message.offset}</span>] / <span class="hljs-subst">${message.timestamp}</span>`</span>
       <span class="hljs-built_in">console</span>.log(<span class="hljs-string">`- <span class="hljs-subst">${prefix}</span> <span class="hljs-subst">${message.key}</span>#<span class="hljs-subst">${message.value}</span>`</span>)
     },

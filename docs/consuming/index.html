@@ -156,7 +156,7 @@
 <p>By default, <a href="/docs/consuming#each-message"><code>eachMessage</code></a> is invoked sequentially for each message in each partition. In order to concurrently process several messages per once, you can increase the <code>partitionsConsumedConcurrently</code> option:</p>
 <pre><code class="hljs css language-javascript">consumer.run({
     <span class="hljs-attr">partitionsConsumedConcurrently</span>: <span class="hljs-number">3</span>, <span class="hljs-comment">// Default: 1</span>
-    eachMessage: <span class="hljs-keyword">async</span> ({ topic, partition, message }) =&gt; {
+    <span class="hljs-attr">eachMessage</span>: <span class="hljs-keyword">async</span> ({ topic, partition, message }) =&gt; {
         <span class="hljs-comment">// This will be called up to 3 times concurrently</span>
     },
 })
@@ -281,7 +281,7 @@ consumer.commitOffsets([
 <p>Example: in combination with <a href="#concurrent-processing">consuming messages per partition concurrently</a>, it can prevent having to stop processing all partitions because of a slow process in one of the other partitions.</p>
 <pre><code class="hljs css language-javascript">consumer.run({
     <span class="hljs-attr">partitionsConsumedConcurrently</span>: <span class="hljs-number">3</span>, <span class="hljs-comment">// Default: 1</span>
-    eachMessage: <span class="hljs-keyword">async</span> ({ topic, partition, message }) =&gt; {
+    <span class="hljs-attr">eachMessage</span>: <span class="hljs-keyword">async</span> ({ topic, partition, message }) =&gt; {
       <span class="hljs-comment">// This will be called up to 3 times concurrently</span>
         <span class="hljs-keyword">try</span> {
             <span class="hljs-keyword">await</span> sendToDependency(message)
