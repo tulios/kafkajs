@@ -1,0 +1,3 @@
+diff a/src/consumer/runner.js b/src/consumer/runner.js	(rejected hunks)
+@@ -242 +241,0 @@ module.exports = class Runner extends EventEmitter {
+-          
