@@ -36,8 +36,7 @@ const STALE_METADATA_ERRORS = [
 const PRIVATE = {
   JOIN: Symbol('private:ConsumerGroup:join'),
   SYNC: Symbol('private:ConsumerGroup:sync'),
-  HEARTBEAT: Symbol('private:ConsumerGroup:heartbeat'),
-  SHAREDHEARTBEAT: Symbol('private:ConsumerGroup:sharedHeartbeat'),
+  SHARED_HEARTBEAT: Symbol('private:ConsumerGroup:sharedHeartbeat'),
 }
 
 module.exports = class ConsumerGroup {
@@ -111,7 +110,7 @@ module.exports = class ConsumerGroup {
 
     this.lastRequest = Date.now()
 
-    this[PRIVATE.SHAREDHEARTBEAT] = sharedPromiseTo(async ({ interval }) => {
+    this[PRIVATE.SHARED_HEARTBEAT] = sharedPromiseTo(async ({ interval }) => {
       const { groupId, generationId, memberId } = this
       const now = Date.now()
 
@@ -417,7 +416,7 @@ module.exports = class ConsumerGroup {
   }
 
   async heartbeat({ interval }) {
-    return this[PRIVATE.SHAREDHEARTBEAT]({ interval })
+    return this[PRIVATE.SHARED_HEARTBEAT]({ interval })
   }
 
   async fetch(nodeId) {
