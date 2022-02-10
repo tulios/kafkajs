@@ -102,7 +102,7 @@ describe('Consumer', () => {
     await waitForConsumerToJoinGroup(consumer)
 
     await expect(waitForMessages(messagesConsumed)).resolves.toEqual([
-      {
+      expect.objectContaining({
         topic: topicName,
         partition: 0,
         message: expect.objectContaining({
@@ -110,7 +110,7 @@ describe('Consumer', () => {
           value: Buffer.from(message1.value),
           offset: '0',
         }),
-      },
+      }),
     ])
   })
 

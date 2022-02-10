@@ -31,7 +31,7 @@ class KafkaJSProtocolError extends KafkaJSError {
 
 class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
   constructor(e, { topic, partition }) {
-    super(e)
+    super(e, { retriable: true })
     this.topic = topic
     this.partition = partition
     this.name = 'KafkaJSOffsetOutOfRange'
