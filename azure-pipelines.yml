@@ -263,7 +263,7 @@ jobs:
           git add .
           DOC_VERSION=$(echo "$VERSION" | sed -e "s/^refs\/tags\/v//")
           git commit -m "Versioned docs for $DOC_VERSION"
-          git push origin master
+          git push origin HEAD:master
         displayName: commit
         env:
           VERSION: $(Build.SourceBranch)

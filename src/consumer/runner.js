@@ -235,8 +235,7 @@ module.exports = class Runner extends EventEmitter {
         await this.consumerGroup.nextBatch(runnerId, async batch => {
           if (!this.running) return
 
-          if (!batch || batch.isEmpty()) {
-            await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+          if (!batch) {
             return
           }
 
@@ -259,6 +258,38 @@ module.exports = class Runner extends EventEmitter {
             lastOffset: batch.lastOffset(),
           }
 
+          /**
+           * If the batch contained only control records or only aborted messages then we still
+           * need to resolve and auto-commit to ensure the consumer can move forward.
+           *
+           * We also need to emit batch instrumentation events to allow any listeners keeping
+           * track of offsets to know about the latest point of consumption.
+           *
+           * Added in #1256
+           *
+           * @see https://github.com/apache/kafka/blob/9aa660786e46c1efbf5605a6a69136a1dac6edb9/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L1499-L1505
+           */
+          if (batch.isEmptyDueToFiltering()) {
+            this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
+
+            this.consumerGroup.resolveOffset({
+              topic: batch.topic,
+              partition: batch.partition,
+              offset: batch.lastOffset(),
+            })
+            await this.autoCommitOffsetsIfNecessary()
+
+            this.instrumentationEmitter.emit(END_BATCH_PROCESS, {
+              ...payload,
+              duration: Date.now() - startBatchProcess,
+            })
+            return
+          }
+
+          if (batch.isEmpty()) {
+            return
+          }
+
           this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
 
           if (this.eachMessage) {
@@ -273,7 +304,6 @@ module.exports = class Runner extends EventEmitter {
           })
 
           await this.autoCommitOffsets()
-          await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
         })
       } catch (e) {
         if (!this.running) {
@@ -308,6 +338,10 @@ module.exports = class Runner extends EventEmitter {
         throw e
       }
     })
+
+    if (this.running) {
+      await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+    }
   }
 
   autoCommitOffsets() {

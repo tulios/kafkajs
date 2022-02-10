@@ -16,6 +16,7 @@ class KafkaJSNonRetriableError extends KafkaJSError {
   constructor(e) {
     super(e, { retriable: false })
     this.name = 'KafkaJSNonRetriableError'
+    this.originalError = e
   }
 }
 
