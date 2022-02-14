@@ -35,6 +35,10 @@ module.exports = class ConnectionPool {
     return connection.send(protocolRequest)
   }
 
+  getConnection() {
+    return this.pool[0]
+  }
+
   async all(callback) {
     await Promise.all(this.pool.map(callback))
   }
