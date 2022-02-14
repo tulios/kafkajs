@@ -1,10 +1,26 @@
 const { isRebalancing } = require('../errors')
 const sharedPromiseTo = require('../utils/sharedPromiseTo')
 const Runner = require('./runner')
+const createRetry = require('../retry')
 const {
   events: { REBALANCING },
 } = require('./instrumentationEvents')
 
+/**
+ * @param {{
+ *  autoCommit: boolean,
+ *  logger: import('types').Logger,
+ *  consumerGroup: import('./consumerGroup'),
+ *  instrumentationEmitter: import('../instrumentation/emitter'),
+ *  eachBatchAutoResolve: boolean,
+ *  eachBatch: import('types').EachBatchHandler,
+ *  eachMessage: import('types').EachMessageHandler,
+ *  heartbeatInterval: number,
+ *  retry: import('types').RetryOptions,
+ *  onCrash: (e: Error) => void,
+ *  concurrency: number,
+ * }} options
+ */
 const createRunnerPool = ({
   autoCommit,
   logger: rootLogger,
@@ -19,6 +35,7 @@ const createRunnerPool = ({
   concurrency,
 }) => {
   const logger = rootLogger.namespace('RunnerPool')
+  const retrier = createRetry(Object.assign({}, retry))
 
   let runners = []
   let running = false
@@ -72,17 +89,40 @@ const createRunnerPool = ({
   const commitOffsets = async offsets => {
     const { groupId, memberId } = consumerGroup
 
-    const [runner] = runners
-    if (!runner) {
+    if (!running) {
       logger.debug('consumer not running, exiting', { groupId, memberId, offsets })
       return
     }
 
     try {
-      return await runner.commitOffsets(offsets)
-    } catch (error) {
-      await recover(error)
-      throw error
+      return await retrier(async (_, retryCount, retryTime) => {
+        try {
+          await consumerGroup.commitOffsets(offsets)
+        } catch (e) {
+          const { message: error, stack, retriable } = e
+
+          if (!running) {
+            logger.debug('consumer not running, exiting', { error, groupId, memberId, offsets })
+            return
+          }
+
+          if (retriable) {
+            logger.debug('Error while committing offsets, trying again...', {
+              groupId,
+              memberId,
+              error,
+              stack,
+              retryCount,
+              retryTime,
+              offsets,
+            })
+          }
+          throw e
+        }
+      })
+    } catch (e) {
+      await recover(e)
+      throw e
     }
   }
 
@@ -90,13 +130,14 @@ const createRunnerPool = ({
     await stopRunners()
 
     const { groupId, memberId } = consumerGroup
+    const { originalError = error } = error
 
     try {
-      if (isRebalancing(error)) {
+      if (isRebalancing(originalError)) {
         logger.error('The group is rebalancing, re-joining', {
           groupId,
           memberId,
-          error: error.message,
+          error: originalError.message,
         })
 
         instrumentationEmitter.emit(REBALANCING, { groupId, memberId })
@@ -107,11 +148,11 @@ const createRunnerPool = ({
         return
       }
 
-      if (error.type === 'UNKNOWN_MEMBER_ID') {
+      if (originalError.type === 'UNKNOWN_MEMBER_ID') {
         logger.error('The coordinator is not aware of this member, re-joining the group', {
           groupId,
           memberId,
-          error: error.message,
+          error: originalError.message,
         })
 
         consumerGroup.memberId = null

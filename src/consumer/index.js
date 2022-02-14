@@ -66,12 +66,6 @@ module.exports = ({
     throw new KafkaJSNonRetriableError('Consumer groupId must be a non-empty string.')
   }
 
-  if (heartbeatInterval >= sessionTimeout) {
-    throw new KafkaJSNonRetriableError(
-      `Consumer heartbeatInterval (${heartbeatInterval}) must be lower than sessionTimeout (${sessionTimeout}). It is recommended to set heartbeatInterval to approximately a third of the sessionTimeout.`
-    )
-  }
-
   const logger = rootLogger.namespace('Consumer')
   const instrumentationEmitter = rootInstrumentationEmitter || new InstrumentationEventEmitter()
   const assigners = partitionAssigners.map(createAssigner =>
@@ -79,9 +73,16 @@ module.exports = ({
   )
 
   const topics = {}
-  let runner = null
+  let runnerPool = null
+  /** @type {ConsumerGroup} */
   let consumerGroup = null
   let restartTimeout = null
+
+  if (heartbeatInterval >= sessionTimeout) {
+    throw new KafkaJSNonRetriableError(
+      `Consumer heartbeatInterval (${heartbeatInterval}) must be lower than sessionTimeout (${sessionTimeout}). It is recommended to set heartbeatInterval to approximately a third of the sessionTimeout.`
+    )
+  }
 
   /** @type {import("../../types").Consumer["connect"]} */
   const connect = async () => {
@@ -108,9 +109,9 @@ module.exports = ({
   /** @type {import("../../types").Consumer["stop"]} */
   const stop = async () => {
     try {
-      if (runner) {
-        await runner.stop()
-        runner = null
+      if (runnerPool) {
+        await runnerPool.stop()
+        runnerPool = null
         consumerGroup = null
         instrumentationEmitter.emit(STOP)
       }
@@ -212,7 +213,7 @@ module.exports = ({
         concurrency,
       })
 
-      runner = createRunnerPool({
+      runnerPool = createRunnerPool({
         autoCommit,
         logger: rootLogger,
         consumerGroup,
@@ -226,7 +227,7 @@ module.exports = ({
         concurrency,
       })
 
-      await runner.start()
+      await runnerPool.start()
     }
 
     const onCrash = async e => {
@@ -350,7 +351,7 @@ module.exports = ({
 
     const topics = Object.keys(commitsByTopic)
 
-    return runner.commitOffsets({
+    return runnerPool.commitOffsets({
       topics: topics.map(topic => {
         return {
           topic,

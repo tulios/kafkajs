@@ -1,7 +1,7 @@
 const { EventEmitter } = require('events')
 const Long = require('../utils/long')
 const createRetry = require('../retry')
-const { isRebalancing, isKafkaJSError } = require('../errors')
+const { isKafkaJSError } = require('../errors')
 
 const {
   events: { START_BATCH_PROCESS, END_BATCH_PROCESS },
@@ -170,7 +170,7 @@ module.exports = class Runner extends EventEmitter {
          * Commit offsets if provided. Otherwise commit most recent resolved offsets
          * if the autoCommit conditions are met.
          *
-         * @param {OffsetsByTopicPartition} [offsets] Optional.
+         * @param {import('../../types').OffsetsByTopicPartition} [offsets] Optional.
          */
         commitOffsetsIfNecessary: async offsets => {
           return offsets
@@ -227,114 +227,114 @@ module.exports = class Runner extends EventEmitter {
     return setImmediate(() => loop())
   }
 
+  /** @param {import('../../types').Batch} batch */
+  async handleBatch(batch) {
+    if (!this.running) return
+    if (!batch) return
+
+    const startBatchProcess = Date.now()
+    const payload = {
+      topic: batch.topic,
+      partition: batch.partition,
+      highWatermark: batch.highWatermark,
+      offsetLag: batch.offsetLag(),
+      /**
+       * @since 2019-06-24 (>= 1.8.0)
+       *
+       * offsetLag returns the lag based on the latest offset in the batch, to
+       * keep the event backward compatible we just introduced "offsetLagLow"
+       * which calculates the lag based on the first offset in the batch
+       */
+      offsetLagLow: batch.offsetLagLow(),
+      batchSize: batch.messages.length,
+      firstOffset: batch.firstOffset(),
+      lastOffset: batch.lastOffset(),
+    }
+
+    try {
+      /**
+       * If the batch contained only control records or only aborted messages then we still
+       * need to resolve and auto-commit to ensure the consumer can move forward.
+       *
+       * We also need to emit batch instrumentation events to allow any listeners keeping
+       * track of offsets to know about the latest point of consumption.
+       *
+       * Added in #1256
+       *
+       * @see https://github.com/apache/kafka/blob/9aa660786e46c1efbf5605a6a69136a1dac6edb9/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L1499-L1505
+       */
+      if (batch.isEmptyDueToFiltering()) {
+        this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
+
+        this.consumerGroup.resolveOffset({
+          topic: batch.topic,
+          partition: batch.partition,
+          offset: batch.lastOffset(),
+        })
+        await this.autoCommitOffsetsIfNecessary()
+
+        this.instrumentationEmitter.emit(END_BATCH_PROCESS, {
+          ...payload,
+          duration: Date.now() - startBatchProcess,
+        })
+        return
+      }
+
+      if (batch.isEmpty()) {
+        return
+      }
+
+      this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
+
+      if (this.eachMessage) {
+        await this.processEachMessage(batch)
+      } else if (this.eachBatch) {
+        await this.processEachBatch(batch)
+      }
+
+      this.instrumentationEmitter.emit(END_BATCH_PROCESS, {
+        ...payload,
+        duration: Date.now() - startBatchProcess,
+      })
+
+      await this.autoCommitOffsets()
+    } catch (error) {
+      if (error.name === 'KafkaJSOffsetOutOfRange') {
+        return this.handleBatch(batch)
+      }
+      throw error
+    }
+  }
+
   async consume() {
     const { runnerId } = this
 
-    await this.retrier(async (bail, retryCount, retryTime) => {
+    await this.retrier(async (_, retryCount, retryTime) => {
       try {
-        await this.consumerGroup.nextBatch(runnerId, async batch => {
-          if (!this.running) return
-
-          if (!batch) {
-            return
-          }
-
-          const startBatchProcess = Date.now()
-          const payload = {
-            topic: batch.topic,
-            partition: batch.partition,
-            highWatermark: batch.highWatermark,
-            offsetLag: batch.offsetLag(),
-            /**
-             * @since 2019-06-24 (>= 1.8.0)
-             *
-             * offsetLag returns the lag based on the latest offset in the batch, to
-             * keep the event backward compatible we just introduced "offsetLagLow"
-             * which calculates the lag based on the first offset in the batch
-             */
-            offsetLagLow: batch.offsetLagLow(),
-            batchSize: batch.messages.length,
-            firstOffset: batch.firstOffset(),
-            lastOffset: batch.lastOffset(),
-          }
-
-          /**
-           * If the batch contained only control records or only aborted messages then we still
-           * need to resolve and auto-commit to ensure the consumer can move forward.
-           *
-           * We also need to emit batch instrumentation events to allow any listeners keeping
-           * track of offsets to know about the latest point of consumption.
-           *
-           * Added in #1256
-           *
-           * @see https://github.com/apache/kafka/blob/9aa660786e46c1efbf5605a6a69136a1dac6edb9/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L1499-L1505
-           */
-          if (batch.isEmptyDueToFiltering()) {
-            this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
-
-            this.consumerGroup.resolveOffset({
-              topic: batch.topic,
-              partition: batch.partition,
-              offset: batch.lastOffset(),
-            })
-            await this.autoCommitOffsetsIfNecessary()
-
-            this.instrumentationEmitter.emit(END_BATCH_PROCESS, {
-              ...payload,
-              duration: Date.now() - startBatchProcess,
-            })
-            return
-          }
-
-          if (batch.isEmpty()) {
-            return
-          }
-
-          this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
-
-          if (this.eachMessage) {
-            await this.processEachMessage(batch)
-          } else if (this.eachBatch) {
-            await this.processEachBatch(batch)
-          }
-
-          this.instrumentationEmitter.emit(END_BATCH_PROCESS, {
-            ...payload,
-            duration: Date.now() - startBatchProcess,
-          })
-
-          await this.autoCommitOffsets()
-        })
+        await this.consumerGroup.nextBatch(runnerId, this.handleBatch.bind(this))
       } catch (e) {
+        const { retriable } = e
+        const { groupId, memberId } = this.consumerGroup
+
         if (!this.running) {
           this.logger.debug('consumer not running, exiting', {
             error: e.message,
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
+            groupId,
+            memberId,
           })
           return
         }
 
-        if (
-          isRebalancing(e) ||
-          e.type === 'UNKNOWN_MEMBER_ID' ||
-          e.name === 'KafkaJSNotImplemented'
-        )
-          return bail(e)
-
-        if (e.name === 'KafkaJSOffsetOutOfRange') {
-          throw e
+        if (retriable) {
+          this.logger.debug('Error while fetching data, trying again...', {
+            groupId,
+            memberId,
+            error: e.message,
+            stack: e.stack,
+            retryCount,
+            retryTime,
+          })
         }
-
-        this.logger.debug('Error while fetching data, trying again...', {
-          groupId: this.consumerGroup.groupId,
-          memberId: this.consumerGroup.memberId,
-          error: e.message,
-          stack: e.stack,
-          retryCount,
-          retryTime,
-        })
-
         throw e
       }
     })
@@ -354,51 +354,5 @@ module.exports = class Runner extends EventEmitter {
     if (this.autoCommit) {
       return this.consumerGroup.commitOffsetsIfNecessary()
     }
-  }
-
-  commitOffsets(offsets) {
-    if (!this.running) {
-      this.logger.debug('consumer not running, exiting', {
-        groupId: this.consumerGroup.groupId,
-        memberId: this.consumerGroup.memberId,
-        offsets,
-      })
-      return
-    }
-
-    return this.retrier(async (bail, retryCount, retryTime) => {
-      try {
-        await this.consumerGroup.commitOffsets(offsets)
-      } catch (e) {
-        if (!this.running) {
-          this.logger.debug('consumer not running, exiting', {
-            error: e.message,
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            offsets,
-          })
-          return
-        }
-
-        if (
-          isRebalancing(e) ||
-          e.type === 'UNKNOWN_MEMBER_ID' ||
-          e.name === 'KafkaJSNotImplemented'
-        )
-          return bail(e)
-
-        this.logger.debug('Error while committing offsets, trying again...', {
-          groupId: this.consumerGroup.groupId,
-          memberId: this.consumerGroup.memberId,
-          error: e.message,
-          stack: e.stack,
-          retryCount,
-          retryTime,
-          offsets,
-        })
-
-        throw e
-      }
-    })
   }
 }

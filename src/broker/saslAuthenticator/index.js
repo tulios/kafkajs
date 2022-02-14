@@ -32,7 +32,7 @@ module.exports = class SASLAuthenticator {
   }
 
   async authenticate() {
-    await this.connectionPool.concurrently(async connection => {
+    await this.connectionPool.all(async connection => {
       const mechanism = connection.sasl.mechanism.toUpperCase()
       if (!SUPPORTED_MECHANISMS.includes(mechanism)) {
         throw new KafkaJSSASLAuthenticationError(

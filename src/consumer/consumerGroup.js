@@ -164,7 +164,6 @@ module.exports = class ConsumerGroup {
 
   async leave() {
     const { groupId, memberId } = this
-
     if (memberId) {
       await this.coordinator.leaveGroup({ groupId, memberId })
       this.memberId = null
@@ -522,6 +521,7 @@ module.exports = class ConsumerGroup {
       })
     } catch (e) {
       await this.recoverFromFetch(e)
+      return this.fetch(nodeId)
     }
   }
 
@@ -535,7 +535,6 @@ module.exports = class ConsumerGroup {
 
       await this.cluster.refreshMetadata()
       await this.joinAndSync()
-      throw new KafkaJSError(e.message)
     }
 
     if (e.name === 'KafkaJSStaleTopicMetadataAssignment') {
@@ -561,8 +560,6 @@ module.exports = class ConsumerGroup {
       this.logger.debug(`${e.message}, refreshing metadata and retrying...`)
       await this.cluster.refreshMetadata()
     }
-
-    throw e
   }
 
   async recoverFromOffsetOutOfRange(e) {

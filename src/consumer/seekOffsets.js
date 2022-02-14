@@ -10,7 +10,7 @@ module.exports = class SeekOffsets extends Map {
 
   has(topic, partition) {
     const key = this.getKey(topic, partition)
-    return this.has(key)
+    return super.has(key)
   }
 
   pop(topic, partition) {
@@ -20,8 +20,8 @@ module.exports = class SeekOffsets extends Map {
 
     const key = this.getKey(topic, partition)
     const offset = this.get(key)
-    this.delete(key)
 
+    this.delete(key)
     return { topic, partition, offset }
   }
 }

@@ -16,8 +16,9 @@ const UNKNOWN = -1
 const REBALANCE_IN_PROGRESS = 27
 const rebalancingError = () => new KafkaJSProtocolError(createErrorFromCode(REBALANCE_IN_PROGRESS))
 
-describe('Consumer > Runner', () => {
+describe('Consumer > RunnerPool', () => {
   let runner,
+    /** @type {ReturnType<typeof createRunnerPool>} */
     runnerPool,
     consumerGroup,
     onCrash,
@@ -164,7 +165,6 @@ describe('Consumer > Runner', () => {
         instrumentationEmitter: new InstrumentationEventEmitter(),
         eachBatchAutoResolve: false,
         eachBatch,
-        onCrash,
         logger: newLogger(),
       })
       runner.scheduleConsume = jest.fn(() => runner.consume())
@@ -188,7 +188,7 @@ describe('Consumer > Runner', () => {
     let eachBatchCallUncommittedOffsets
 
     beforeEach(() => {
-      eachBatchCallUncommittedOffsets = jest.fn(({ uncommittedOffsets }) => {
+      eachBatchCallUncommittedOffsets = jest.fn(async ({ uncommittedOffsets }) => {
         uncommittedOffsets()
       })
 
@@ -196,7 +196,6 @@ describe('Consumer > Runner', () => {
         consumerGroup,
         instrumentationEmitter: new InstrumentationEventEmitter(),
         eachBatch: eachBatchCallUncommittedOffsets,
-        onCrash,
         autoCommit: false,
         logger: newLogger(),
       })
@@ -260,8 +259,8 @@ describe('Consumer > Runner', () => {
     })
 
     it('should commit offsets while running', async () => {
-      await runner.start({ recover })
-      await runner.commitOffsets(offsets)
+      await runnerPool.start()
+      await runnerPool.commitOffsets(offsets)
 
       expect(consumerGroup.commitOffsetsIfNecessary).toHaveBeenCalledTimes(0)
       expect(consumerGroup.commitOffsets.mock.calls.length).toBeGreaterThanOrEqual(1)
@@ -295,7 +294,7 @@ describe('Consumer > Runner', () => {
         },
         onCrash,
         logger: newLogger(),
-        partitionsConsumedConcurrently: 10,
+        concurrency: 10,
         retry: { retries: 0 },
       })
 
@@ -309,7 +308,7 @@ describe('Consumer > Runner', () => {
         .mockImplementationOnce(async (_, callback) => callback(await sleep(100)))
         .mockImplementationOnce(async (_, callback) => callback(batch))
 
-      await runnerPool.start({ recover })
+      await runnerPool.start()
 
       await waitFor(() => onCrash.mock.calls.length > 0)
       await expect(onCrash).toHaveBeenCalledWith(expect.any(KafkaJSNumberOfRetriesExceeded))

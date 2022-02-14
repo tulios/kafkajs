@@ -35,7 +35,7 @@ module.exports = class ConnectionPool {
     return connection.send(protocolRequest)
   }
 
-  async concurrently(callback) {
+  async all(callback) {
     await Promise.all(this.pool.map(callback))
   }
 }
