@@ -865,9 +865,11 @@ export type ConsumerGroupJoinEvent = InstrumentationEvent<{
   memberId: string
   memberAssignment: IMemberAssignment
 }>
+export type ConsumerFetchStartEvent = InstrumentationEvent<{ nodeId: number }>
 export type ConsumerFetchEvent = InstrumentationEvent<{
   numberOfBatches: number
   duration: number
+  nodeId: number
 }>
 interface IBatchProcessEvent {
   topic: string
@@ -975,7 +977,7 @@ export type Consumer = {
   ): RemoveInstrumentationEventListener<typeof eventName>
   on(
     eventName: ConsumerEvents['FETCH_START'],
-    listener: (event: InstrumentationEvent<{}>) => void
+    listener: (event: ConsumerFetchStartEvent) => void
   ): RemoveInstrumentationEventListener<typeof eventName>
   on(
     eventName: ConsumerEvents['FETCH'],
