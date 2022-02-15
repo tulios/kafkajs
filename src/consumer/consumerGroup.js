@@ -36,6 +36,7 @@ const STALE_METADATA_ERRORS = [
 const PRIVATE = {
   JOIN: Symbol('private:ConsumerGroup:join'),
   SYNC: Symbol('private:ConsumerGroup:sync'),
+  FETCH: Symbol('private:ConsumerGroup:fetch'),
   SHARED_HEARTBEAT: Symbol('private:ConsumerGroup:sharedHeartbeat'),
 }
 
@@ -309,7 +310,7 @@ module.exports = class ConsumerGroup {
       topicPartitions: currentMemberAssignment,
       concurrency: this.concurrency,
       nodeIds: this.cluster.getNodeIds(),
-      fetch: id => this.fetch(id),
+      fetch: id => this[PRIVATE.FETCH](id),
     })
   }
 
@@ -418,7 +419,7 @@ module.exports = class ConsumerGroup {
     return this[PRIVATE.SHARED_HEARTBEAT]({ interval })
   }
 
-  async fetch(nodeId) {
+  async [PRIVATE.FETCH](nodeId) {
     try {
       await this.cluster.refreshMetadataIfNecessary()
       this.checkForStaleAssignment()
@@ -521,7 +522,7 @@ module.exports = class ConsumerGroup {
       })
     } catch (e) {
       await this.recoverFromFetch(e)
-      return this.fetch(nodeId)
+      return this[PRIVATE.FETCH](nodeId)
     }
   }
 
