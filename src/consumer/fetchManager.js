@@ -74,14 +74,14 @@ const fetchManager = ({
 
     const queue = queues[runnerId]
 
-    let message = queue.shift()
-    if (!message) {
+    let fetchResult = queue.shift()
+    if (!fetchResult) {
       await fetchPromise
-      message = queue.shift()
+      fetchResult = queue.shift()
     }
 
-    if (!message) return callback()
-    const { nodeId, batch } = message
+    if (!fetchResult) return callback()
+    const { nodeId, batch } = fetchResult
 
     if (!(nodeId in inProgress)) inProgress[nodeId] = 0
 
