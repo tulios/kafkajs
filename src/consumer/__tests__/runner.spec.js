@@ -1,18 +1,41 @@
 const Runner = require('../runner')
 const Batch = require('../batch')
 const InstrumentationEventEmitter = require('../../instrumentation/emitter')
-const { newLogger, secureRandom } = require('testHelpers')
+const { newLogger, secureRandom, waitFor } = require('testHelpers')
 const sleep = require('../../utils/sleep')
 
 describe('Consumer > Runner', () => {
   let runner,
-    consumerGroup,
+    commitOffsetsIfNecessary,
+    commitOffsets,
+    hasSeekOffset,
+    heartbeat,
+    nextBatch,
+    resolveOffset,
+    uncommittedOffsets,
+    instrumentationEmitter,
     eachBatch,
     topicName,
     partition,
     emptyBatch,
-    instrumentationEmitter,
     recover
+
+  /** @param {Partial<ConstructorParameters<typeof Runner>[0]>} [partial]  */
+  const createTestRunner = partial => {
+    return new Runner({
+      commitOffsetsIfNecessary,
+      commitOffsets,
+      hasSeekOffset,
+      heartbeat,
+      nextBatch,
+      resolveOffset,
+      uncommittedOffsets,
+      instrumentationEmitter,
+      logger: newLogger(),
+      eachBatch,
+      ...partial,
+    })
+  }
 
   beforeEach(() => {
     topicName = `topic-${secureRandom()}`
@@ -24,30 +47,18 @@ describe('Consumer > Runner', () => {
       messages: [],
     })
 
-    eachBatch = jest.fn()
-    consumerGroup = {
-      connect: jest.fn(),
-      join: jest.fn(),
-      sync: jest.fn(),
-      joinAndSync: jest.fn(),
-      leave: jest.fn(),
-      nextBatch: jest.fn((_, callback) => callback(emptyBatch)),
-      resolveOffset: jest.fn(),
-      commitOffsets: jest.fn(),
-      commitOffsetsIfNecessary: jest.fn(),
-      uncommittedOffsets: jest.fn(),
-      heartbeat: jest.fn(),
-      assigned: jest.fn(() => []),
-      isLeader: jest.fn(() => true),
-    }
+    commitOffsetsIfNecessary = jest.fn()
+    commitOffsets = jest.fn()
+    hasSeekOffset = jest.fn(() => false)
+    heartbeat = jest.fn()
+    nextBatch = jest.fn(callback => callback(emptyBatch))
+    resolveOffset = jest.fn()
+    uncommittedOffsets = jest.fn()
     instrumentationEmitter = new InstrumentationEventEmitter()
-    runner = new Runner({
-      consumerGroup,
-      instrumentationEmitter,
-      logger: newLogger(),
-      eachBatch,
-    })
+    eachBatch = jest.fn()
     recover = jest.fn()
+
+    runner = createTestRunner()
   })
 
   afterEach(async () => {
@@ -61,12 +72,12 @@ describe('Consumer > Runner', () => {
       messages: [{ offset: 4, key: '1', value: '2' }],
     })
 
-    consumerGroup.nextBatch.mockImplementationOnce((_, callback) => callback(batch))
+    nextBatch.mockImplementationOnce(callback => callback(batch))
     runner.scheduleConsume = jest.fn()
-    await runner.start({ recover })
+    await runner.start(recover)
     await runner.consume() // Manually fetch for test
     expect(eachBatch).toHaveBeenCalled()
-    expect(consumerGroup.commitOffsets).toHaveBeenCalled()
+    expect(commitOffsets).toHaveBeenCalled()
     expect(recover).not.toHaveBeenCalled()
   })
 
@@ -78,9 +89,9 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      consumerGroup.nextBatch.mockImplementationOnce((_, callback) => callback(batch))
+      nextBatch.mockImplementationOnce(callback => callback(batch))
       runner.scheduleConsume = jest.fn()
-      await runner.start({ recover })
+      await runner.start(recover)
       await runner.consume() // Manually fetch for test
 
       expect(eachBatch).toHaveBeenCalledWith(
@@ -89,42 +100,38 @@ describe('Consumer > Runner', () => {
         })
       )
 
-      const { commitOffsetsIfNecessary } = eachBatch.mock.calls[0][0] // Access the callback
+      const {
+        commitOffsetsIfNecessary: eachBatchCommitOffsetsIfNecessary,
+      } = eachBatch.mock.calls[0][0] // Access the callback
 
       // Clear state
-      consumerGroup.commitOffsetsIfNecessary.mockClear()
-      consumerGroup.commitOffsets.mockClear()
+      commitOffsetsIfNecessary.mockClear()
+      commitOffsets.mockClear()
 
       // No offsets provided
-      await commitOffsetsIfNecessary()
-      expect(consumerGroup.commitOffsetsIfNecessary).toHaveBeenCalledTimes(1)
-      expect(consumerGroup.commitOffsets).toHaveBeenCalledTimes(0)
+      await eachBatchCommitOffsetsIfNecessary()
+      expect(commitOffsetsIfNecessary).toHaveBeenCalledTimes(1)
+      expect(commitOffsets).toHaveBeenCalledTimes(0)
 
       // Clear state
-      consumerGroup.commitOffsetsIfNecessary.mockClear()
-      consumerGroup.commitOffsets.mockClear()
+      commitOffsetsIfNecessary.mockClear()
+      commitOffsets.mockClear()
 
       // Provide offsets
       const offsets = {
         topics: [{ topic: topicName, partitions: [{ offset: '1', partition: 0 }] }],
       }
 
-      await commitOffsetsIfNecessary(offsets)
-      expect(consumerGroup.commitOffsetsIfNecessary).toHaveBeenCalledTimes(0)
-      expect(consumerGroup.commitOffsets).toHaveBeenCalledTimes(1)
-      expect(consumerGroup.commitOffsets).toHaveBeenCalledWith(offsets)
+      await eachBatchCommitOffsetsIfNecessary(offsets)
+      expect(commitOffsetsIfNecessary).toHaveBeenCalledTimes(0)
+      expect(commitOffsets).toHaveBeenCalledTimes(1)
+      expect(commitOffsets).toHaveBeenCalledWith(offsets)
     })
   })
 
   describe('when eachBatchAutoResolve is set to false', () => {
     beforeEach(() => {
-      runner = new Runner({
-        consumerGroup,
-        instrumentationEmitter: new InstrumentationEventEmitter(),
-        eachBatchAutoResolve: false,
-        eachBatch,
-        logger: newLogger(),
-      })
+      runner = createTestRunner({ eachBatchAutoResolve: false })
       runner.scheduleConsume = jest.fn(() => runner.consume())
     })
 
@@ -135,10 +142,10 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      consumerGroup.nextBatch.mockImplementationOnce((_, callback) => callback(batch))
-      await runner.start({ recover })
+      nextBatch.mockImplementationOnce(callback => callback(batch))
+      await runner.start(recover)
       expect(recover).not.toHaveBeenCalled()
-      expect(consumerGroup.resolveOffset).not.toHaveBeenCalled()
+      expect(resolveOffset).not.toHaveBeenCalled()
     })
   })
 
@@ -150,13 +157,7 @@ describe('Consumer > Runner', () => {
         uncommittedOffsets()
       })
 
-      runner = new Runner({
-        consumerGroup,
-        instrumentationEmitter: new InstrumentationEventEmitter(),
-        eachBatch: eachBatchCallUncommittedOffsets,
-        autoCommit: false,
-        logger: newLogger(),
-      })
+      runner = createTestRunner({ autoCommit: false, eachBatch: eachBatchCallUncommittedOffsets })
       runner.scheduleConsume = jest.fn(() => runner.consume())
     })
 
@@ -167,15 +168,15 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      consumerGroup.nextBatch.mockImplementationOnce((_, callback) => callback(batch))
+      nextBatch.mockImplementationOnce(callback => callback(batch))
       runner.scheduleConsume = jest.fn()
-      await runner.start({ recover })
+      await runner.start(recover)
       await runner.consume() // Manually fetch for test
 
-      expect(consumerGroup.commitOffsets).not.toHaveBeenCalled()
-      expect(consumerGroup.commitOffsetsIfNecessary).not.toHaveBeenCalled()
+      expect(commitOffsets).not.toHaveBeenCalled()
+      expect(commitOffsetsIfNecessary).not.toHaveBeenCalled()
       expect(eachBatchCallUncommittedOffsets).toHaveBeenCalled()
-      expect(consumerGroup.uncommittedOffsets).toHaveBeenCalled()
+      expect(uncommittedOffsets).toHaveBeenCalled()
 
       expect(recover).not.toHaveBeenCalled()
     })
@@ -188,30 +189,32 @@ describe('Consumer > Runner', () => {
       messages: [{ offset: 4, key: '1', value: '2' }],
     })
 
-    consumerGroup.heartbeat = async () => {
-      throw new Error('Error while processing heartbeats in parallel')
-    }
+    nextBatch.mockImplementation(async callback => {
+      await sleep(100)
+      return callback(batch)
+    })
 
-    consumerGroup.nextBatch
-      .mockImplementationOnce(async (_, callback) => callback(await sleep(100)))
-      .mockImplementationOnce(async (_, callback) => callback(batch))
+    const error = new Error('Error while processing heartbeats in parallel')
+    heartbeat.mockImplementation(async () => {
+      throw error
+    })
 
-    runner.scheduleConsume = jest.fn()
-    await runner.start({ recover })
+    await runner.start(recover)
 
-    await expect(runner.consume()).rejects.toThrow('Error while processing heartbeats in parallel')
+    await waitFor(() => recover.mock.calls.length > 0)
+    expect(recover).toHaveBeenCalledWith(error)
   })
 
   it('should ignore request errors from nextBatch on stopped consumer', async () => {
-    consumerGroup.nextBatch
+    nextBatch
       .mockImplementationOnce(async () => {
         await sleep(10)
         throw new Error('Failed or manually rejected request')
       })
-      .mockImplementationOnce(async (_, callback) => callback(await sleep(10)))
+      .mockImplementationOnce(async callback => callback(await sleep(10)))
 
     runner.scheduleConsume = jest.fn()
-    await runner.start({ recover })
+    await runner.start(recover)
     runner.running = false
 
     runner.consume()

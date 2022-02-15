@@ -242,6 +242,7 @@ module.exports = class Cluster {
     }
   }
 
+  /** @type {() => string[]} */
   getNodeIds() {
     return this.brokerPool.getNodeIds()
   }

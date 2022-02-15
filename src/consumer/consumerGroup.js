@@ -308,7 +308,7 @@ module.exports = class ConsumerGroup {
       instrumentationEmitter: this.instrumentationEmitter,
       concurrency: this.concurrency,
       nodeIds: this.cluster.getNodeIds(),
-      fetch: this.fetch.bind(this),
+      fetch: id => this.fetch(id),
     })
     this.fetchManager.assign(currentMemberAssignment)
   }

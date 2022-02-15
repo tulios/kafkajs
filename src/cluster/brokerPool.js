@@ -242,6 +242,7 @@ module.exports = class BrokerPool {
     }
   }
 
+  /** @type {() => string[]} */
   getNodeIds() {
     return keys(this.brokers)
   }

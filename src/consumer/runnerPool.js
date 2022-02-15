@@ -54,16 +54,20 @@ const createRunnerPool = ({
     runners = Array.from(Array(concurrency).keys()).map(
       runnerId =>
         new Runner({
-          runnerId,
-          autoCommit,
-          logger,
-          consumerGroup,
+          commitOffsetsIfNecessary: () => consumerGroup.commitOffsetsIfNecessary(),
+          uncommittedOffsets: () => consumerGroup.uncommittedOffsets(),
+          commitOffsets: offsets => consumerGroup.commitOffsets(offsets),
+          hasSeekOffset: topicPartition => consumerGroup.hasSeekOffset(topicPartition),
+          resolveOffset: offset => consumerGroup.resolveOffset(offset),
+          heartbeat: () => consumerGroup.heartbeat({ interval: heartbeatInterval }),
+          nextBatch: callback => consumerGroup.nextBatch(runnerId, callback),
+          logger: logger.namespace(`Runner ${runnerId}`),
           instrumentationEmitter,
           eachBatchAutoResolve,
+          autoCommit,
+          retry,
           eachBatch,
           eachMessage,
-          heartbeatInterval,
-          retry,
         })
     )
 
@@ -82,7 +86,7 @@ const createRunnerPool = ({
     } catch (e) {}
   }
 
-  const startRunners = () => Promise.all(runners.map(r => r.start({ recover })))
+  const startRunners = () => Promise.all(runners.map(r => r.start(recover)))
 
   const stopRunners = () => Promise.all(runners.map(r => r.stop()))
 
