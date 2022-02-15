@@ -6,13 +6,20 @@ const {
 
 const { values } = Object
 
-const fetchManager = ({ instrumentationEmitter, nodeIds, fetch, concurrency = 1 }) => {
+const fetchManager = ({
+  instrumentationEmitter,
+  nodeIds,
+  fetch,
+  concurrency = 1,
+  topicPartitions,
+}) => {
   const fetchers = {}
   const inProgress = {}
   const queues = Array(concurrency)
     .fill()
     .reduce((acc, _, runnerId) => ({ ...acc, [runnerId]: [] }), {})
-  let assignments = {}
+  const assignments = {}
+
   let error
 
   const fetchNode = async nodeId => {
@@ -86,22 +93,18 @@ const fetchManager = ({ instrumentationEmitter, nodeIds, fetch, concurrency = 1 
     }
   }
 
-  const assign = topicPartitions => {
-    assignments = {}
+  const getAssignments = () => assignments
 
-    flatMap(topicPartitions, ({ topic, partitions }) =>
-      partitions.map(partition => ({ topic, partition }))
-    ).forEach(({ topic, partition }, index) => {
-      const runnerId = index % concurrency
+  flatMap(topicPartitions, ({ topic, partitions }) =>
+    partitions.map(partition => ({ topic, partition }))
+  ).forEach(({ topic, partition }, index) => {
+    const runnerId = index % concurrency
 
-      if (!assignments[topic]) assignments[topic] = {}
-      assignments[topic][partition] = runnerId
-    })
+    if (!assignments[topic]) assignments[topic] = {}
+    assignments[topic][partition] = runnerId
+  })
 
-    return assignments
-  }
-
-  return { next, assign }
+  return { next, getAssignments }
 }
 
 module.exports = fetchManager

@@ -306,11 +306,11 @@ module.exports = class ConsumerGroup {
 
     this.fetchManager = fetchManager({
       instrumentationEmitter: this.instrumentationEmitter,
+      topicPartitions: currentMemberAssignment,
       concurrency: this.concurrency,
       nodeIds: this.cluster.getNodeIds(),
       fetch: id => this.fetch(id),
     })
-    this.fetchManager.assign(currentMemberAssignment)
   }
 
   joinAndSync() {

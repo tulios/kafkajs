@@ -17,6 +17,7 @@ describe('FetchManager', () => {
     return fetchManager({
       instrumentationEmitter: new InstrumentationEmitter(),
       concurrency: 2,
+      topicPartitions,
       nodeIds,
       fetch,
       ...overrides,
@@ -25,14 +26,12 @@ describe('FetchManager', () => {
 
   beforeEach(() => {
     manager = createManager({ fetch })
-    manager.assign(topicPartitions)
   })
 
-  describe('assign()', () => {
+  describe('assignments', () => {
     it('should assign partitions to a single runner', () => {
       manager = createManager({ concurrency: 1 })
-      const assignments = manager.assign(topicPartitions)
-      expect(assignments).toEqual({
+      expect(manager.getAssignments()).toEqual({
         topic1: { 0: 0 },
         topic2: { 0: 0, 1: 0, 2: 0 },
       })
@@ -40,8 +39,7 @@ describe('FetchManager', () => {
 
     it('should assign partitions evenly', () => {
       manager = createManager({ concurrency: 2 })
-      const assignments = manager.assign(topicPartitions)
-      expect(assignments).toEqual({
+      expect(manager.getAssignments()).toEqual({
         topic1: { 0: 0 },
         topic2: { 0: 1, 1: 0, 2: 1 },
       })
@@ -49,8 +47,7 @@ describe('FetchManager', () => {
 
     it('should assign partitions to the first runners', () => {
       manager = createManager({ concurrency: 6 })
-      const assignments = manager.assign(topicPartitions)
-      expect(assignments).toEqual({
+      expect(manager.getAssignments()).toEqual({
         topic1: { 0: 0 },
         topic2: { 0: 1, 1: 2, 2: 3 },
       })
@@ -101,7 +98,6 @@ describe('FetchManager', () => {
         return [batch]
       })
       manager = createManager({ fetch })
-      manager.assign(topicPartitions)
       await manager.next({ runnerId: 0, callback })
 
       expect(callback).toHaveBeenCalledWith(batch)
@@ -137,7 +133,6 @@ describe('FetchManager', () => {
       const callback = jest.fn(() => sleep(100))
 
       manager = createManager({ fetch, nodeIds: [0], concurrency: 1 })
-      manager.assign(topicPartitions)
 
       manager.next({ runnerId: 0, callback })
       await sleep(10)
