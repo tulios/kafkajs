@@ -1,110 +1,42 @@
-const flatten = require('../utils/flatten')
-const flatMap = require('../utils/flatMap')
-const {
-  events: { FETCH_START, FETCH },
-} = require('./instrumentationEvents')
+const seq = require('../utils/seq')
+const createFetcher = require('./fetcher')
 
-const { values } = Object
+/**
+ * @param {object} options
+ * @param {number[]} options.nodeIds
+ * @param {(nodeId: number) => Promise<T[]>} options.fetch
+ * @param {(batch: T) => Promise<void>} options.handler
+ * @param {number} [options.concurrency]
+ * @template T
+ */
+const createFetchManager = ({ nodeIds, fetch, handler, concurrency = 1 }) => {
+  const numFetchers = Math.min(concurrency, nodeIds.length)
+  const maxNumWorkers = Math.ceil(concurrency / numFetchers)
 
-const fetchManager = ({
-  instrumentationEmitter,
-  nodeIds,
-  fetch,
-  concurrency = 1,
-  topicPartitions,
-}) => {
-  const fetchers = {}
-  const inProgress = {}
-  const queues = Array(concurrency)
-    .fill()
-    .reduce((acc, _, runnerId) => ({ ...acc, [runnerId]: [] }), {})
-  const assignments = {}
+  const workerIds = seq(concurrency)
 
-  let error
+  const fetchers = seq(numFetchers, index => {
+    const fetcherNodeIds = nodeIds.filter((_, i) => i % concurrency === index)
+    const fetcherWorkerIds = workerIds.slice(
+      index * maxNumWorkers,
+      index * maxNumWorkers + maxNumWorkers
+    )
 
-  const fetchNode = async nodeId => {
-    if (fetchers[nodeId]) return fetchers[nodeId]
-
-    fetchers[nodeId] = (async () => {
-      const startFetch = Date.now()
-      instrumentationEmitter.emit(FETCH_START, { nodeId })
-
-      const batches = await fetch(nodeId)
-
-      instrumentationEmitter.emit(FETCH, {
-        numberOfBatches: batches.length,
-        duration: Date.now() - startFetch,
-        nodeId,
-      })
-
-      batches.forEach(batch => {
-        const { topic, partition } = batch
-        const runnerId = assignments[topic][partition]
-        queues[runnerId].push({ batch, nodeId })
-      })
-    })()
-
-    try {
-      await fetchers[nodeId]
-    } catch (e) {
-      error = e
-    } finally {
-      delete fetchers[nodeId]
-    }
-  }
-
-  const fetchEmptyNodes = () => {
-    const nodesInQueue = new Set(flatten(values(queues)).map(({ nodeId }) => nodeId))
-
-    const promises = nodeIds
-      .filter(nodeId => !inProgress[nodeId] && !nodesInQueue.has(nodeId))
-      .map(nodeId => fetchNode(nodeId))
-
-    if (promises.length) {
-      return Promise.race(promises)
-    }
-  }
-
-  const next = async ({ runnerId, callback }) => {
-    if (error) {
-      throw error
-    }
-
-    const fetchPromise = fetchEmptyNodes()
-
-    const queue = queues[runnerId]
-
-    let fetchResult = queue.shift()
-    if (!fetchResult) {
-      await fetchPromise
-      fetchResult = queue.shift()
-    }
-
-    if (!fetchResult) return callback()
-    const { nodeId, batch } = fetchResult
-
-    if (!(nodeId in inProgress)) inProgress[nodeId] = 0
-
-    inProgress[nodeId]++
-    try {
-      await callback(batch)
-    } finally {
-      inProgress[nodeId]--
-    }
-  }
-
-  const getAssignments = () => assignments
-
-  flatMap(topicPartitions, ({ topic, partitions }) =>
-    partitions.map(partition => ({ topic, partition }))
-  ).forEach(({ topic, partition }, index) => {
-    const runnerId = index % concurrency
-
-    if (!assignments[topic]) assignments[topic] = {}
-    assignments[topic][partition] = runnerId
+    return createFetcher({ nodeIds: fetcherNodeIds, workerIds: fetcherWorkerIds, fetch, handler })
   })
 
-  return { next, getAssignments }
+  const getFetchers = () => fetchers
+
+  const start = async () => {
+    try {
+      await Promise.all(fetchers.map(fetcher => fetcher.start()))
+    } catch (error) {
+      await Promise.all(fetchers.map(fetcher => fetcher.stop()))
+      throw error
+    }
+  }
+
+  return { start, getFetchers }
 }
 
-module.exports = fetchManager
+module.exports = createFetchManager
