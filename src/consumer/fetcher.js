@@ -1,29 +1,26 @@
 const EventEmitter = require('events')
-const createWorker = require('./worker')
-const createWorkerQueue = require('./workerQueue')
 
 /**
+ * Fetches data from all assigned nodes, waits for workerQueue to drain and repeats.
+ *
  * @param {object} options
  * @param {number[]} options.nodeIds
- * @param {number[]} options.workerIds
- * @param {import("./worker").Handler<T>} options.handler
+ * @param {import('./workerQueue').WorkerQueue} options.workerQueue
  * @param {(nodeId: number) => Promise<T[]>} options.fetch
  * @template T
  */
-const createFetcher = ({ nodeIds, workerIds, handler, fetch }) => {
-  const workers = workerIds.map(workerId => createWorker({ handler, workerId }))
-  const workerQueue = createWorkerQueue({ workers })
-
+const createFetcher = ({ nodeIds, workerQueue, fetch }) => {
   const emitter = new EventEmitter()
   let isRunning = false
+
+  const getNodeIds = () => nodeIds
+
+  const getWorkerQueue = () => workerQueue
 
   const fetchNodes = async () => {
     const batches = await Promise.all(nodeIds.map(nodeId => fetch(nodeId)))
     return batches.flat()
   }
-
-  const getNodeIds = () => nodeIds
-  const getWorkerIds = () => workers.map(x => x.getWorkerId())
 
   const start = async () => {
     isRunning = true
@@ -54,7 +51,7 @@ const createFetcher = ({ nodeIds, workerIds, handler, fetch }) => {
     await new Promise(resolve => emitter.once('end', () => resolve()))
   }
 
-  return { start, stop, getNodeIds, getWorkerIds }
+  return { getNodeIds, getWorkerQueue, start, stop }
 }
 
 module.exports = createFetcher

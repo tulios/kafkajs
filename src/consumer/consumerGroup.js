@@ -19,7 +19,6 @@ const {
   KafkaJSStaleTopicMetadataAssignment,
   isRebalancing,
 } = require('../errors')
-const fetchManager = require('./fetchManager')
 
 const { keys } = Object
 
@@ -36,11 +35,33 @@ const STALE_METADATA_ERRORS = [
 const PRIVATE = {
   JOIN: Symbol('private:ConsumerGroup:join'),
   SYNC: Symbol('private:ConsumerGroup:sync'),
-  FETCH: Symbol('private:ConsumerGroup:fetch'),
   SHARED_HEARTBEAT: Symbol('private:ConsumerGroup:sharedHeartbeat'),
 }
 
 module.exports = class ConsumerGroup {
+  /**
+   * @param {object} options
+   * @param {import('../../types').RetryOptions} options.retry
+   * @param {import('../../types').Cluster} options.cluster
+   * @param {string} options.groupId
+   * @param {string[]} options.topics
+   * @param {Record<string, { fromBeginning?: boolean }>} options.topicConfigurations
+   * @param {import('../../types').Logger} options.logger
+   * @param {import('../instrumentation/emitter')} options.instrumentationEmitter
+   * @param {import('../../types').Assigner[]} options.assigners
+   * @param {number} options.sessionTimeout
+   * @param {number} options.rebalanceTimeout
+   * @param {number} options.maxBytesPerPartition
+   * @param {number} options.minBytes
+   * @param {number} options.maxBytes
+   * @param {number} options.maxWaitTimeInMs
+   * @param {boolean} options.autoCommit
+   * @param {number} options.autoCommitInterval
+   * @param {number} options.autoCommitThreshold
+   * @param {number} options.isolationLevel
+   * @param {string} options.rackId
+   * @param {number} options.metadataMaxAge
+   */
   constructor({
     retry,
     cluster,
@@ -62,7 +83,6 @@ module.exports = class ConsumerGroup {
     isolationLevel,
     rackId,
     metadataMaxAge,
-    concurrency,
   }) {
     /** @type {import("../../types").Cluster} */
     this.cluster = cluster
@@ -86,7 +106,6 @@ module.exports = class ConsumerGroup {
     this.isolationLevel = isolationLevel
     this.rackId = rackId
     this.metadataMaxAge = metadataMaxAge
-    this.concurrency = concurrency
 
     this.seekOffset = new SeekOffsets()
     this.coordinator = null
@@ -131,6 +150,10 @@ module.exports = class ConsumerGroup {
 
   isLeader() {
     return this.leaderId && this.memberId === this.leaderId
+  }
+
+  getNodeIds() {
+    return this.cluster.getNodeIds()
   }
 
   async connect() {
@@ -304,14 +327,6 @@ module.exports = class ConsumerGroup {
       generationId,
       memberId,
     })
-
-    this.fetchManager = fetchManager({
-      instrumentationEmitter: this.instrumentationEmitter,
-      topicPartitions: currentMemberAssignment,
-      concurrency: this.concurrency,
-      nodeIds: this.cluster.getNodeIds(),
-      fetch: id => this[PRIVATE.FETCH](id),
-    })
   }
 
   joinAndSync() {
@@ -350,10 +365,6 @@ module.exports = class ConsumerGroup {
         bail(e)
       }
     })
-  }
-
-  async nextBatch(runnerId, callback) {
-    return this.fetchManager.next({ runnerId, callback })
   }
 
   /**
@@ -419,7 +430,7 @@ module.exports = class ConsumerGroup {
     return this[PRIVATE.SHARED_HEARTBEAT]({ interval })
   }
 
-  async [PRIVATE.FETCH](nodeId) {
+  async fetch(nodeId) {
     try {
       await this.cluster.refreshMetadataIfNecessary()
       this.checkForStaleAssignment()
@@ -522,7 +533,7 @@ module.exports = class ConsumerGroup {
       })
     } catch (e) {
       await this.recoverFromFetch(e)
-      return this[PRIVATE.FETCH](nodeId)
+      return this.fetch(nodeId)
     }
   }
 
@@ -536,6 +547,7 @@ module.exports = class ConsumerGroup {
 
       await this.cluster.refreshMetadata()
       await this.joinAndSync()
+      return
     }
 
     if (e.name === 'KafkaJSStaleTopicMetadataAssignment') {
@@ -547,20 +559,26 @@ module.exports = class ConsumerGroup {
       })
 
       await this.joinAndSync()
+      return
     }
 
     if (e.name === 'KafkaJSOffsetOutOfRange') {
       await this.recoverFromOffsetOutOfRange(e)
+      return
     }
 
     if (e.name === 'KafkaJSConnectionClosedError') {
       this.cluster.removeBroker({ host: e.host, port: e.port })
+      return
     }
 
     if (e.name === 'KafkaJSBrokerNotFound' || e.name === 'KafkaJSConnectionClosedError') {
       this.logger.debug(`${e.message}, refreshing metadata and retrying...`)
       await this.cluster.refreshMetadata()
+      return
     }
+
+    throw e
   }
 
   async recoverFromOffsetOutOfRange(e) {

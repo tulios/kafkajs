@@ -145,7 +145,7 @@ export interface CoordinatorMetadata {
 }
 
 export type Cluster = {
-  getNodeIds(): string[]
+  getNodeIds(): number[]
   metadata(): Promise<BrokerMetadata>
   removeBroker(options: { host: string; port: number }): void
   addMultipleTargetTopics(topics: string[]): Promise<void>

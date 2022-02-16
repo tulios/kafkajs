@@ -2,7 +2,7 @@ const Long = require('../utils/long')
 const createRetry = require('../retry')
 const { initialRetryTime } = require('../retry/defaults')
 const ConsumerGroup = require('./consumerGroup')
-const createRunnerPool = require('./runnerPool')
+const Runner = require('./runner')
 const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentationEvents')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const { KafkaJSNonRetriableError } = require('../errors')
@@ -72,8 +72,9 @@ module.exports = ({
     createAssigner({ groupId, logger, cluster })
   )
 
+  /** @type {Record<string, { fromBeginning?: boolean }>} */
   const topics = {}
-  let runnerPool = null
+  let runner = null
   /** @type {ConsumerGroup} */
   let consumerGroup = null
   let restartTimeout = null
@@ -109,9 +110,9 @@ module.exports = ({
   /** @type {import("../../types").Consumer["stop"]} */
   const stop = async () => {
     try {
-      if (runnerPool) {
-        await runnerPool.stop()
-        runnerPool = null
+      if (runner) {
+        await runner.stop()
+        runner = null
         consumerGroup = null
         instrumentationEmitter.emit(STOP)
       }
@@ -204,30 +205,29 @@ module.exports = ({
         maxBytes,
         maxWaitTimeInMs,
         instrumentationEmitter,
-        autoCommit,
-        autoCommitInterval,
-        autoCommitThreshold,
         isolationLevel,
         rackId,
         metadataMaxAge,
-        concurrency,
+        autoCommit,
+        autoCommitInterval,
+        autoCommitThreshold,
       })
 
-      runnerPool = createRunnerPool({
-        autoCommit,
+      runner = new Runner({
         logger: rootLogger,
         consumerGroup,
         instrumentationEmitter,
+        heartbeatInterval,
+        retry,
+        autoCommit,
         eachBatchAutoResolve,
         eachBatch,
         eachMessage,
-        heartbeatInterval,
-        retry,
         onCrash,
         concurrency,
       })
 
-      await runnerPool.start()
+      await runner.start()
     }
 
     const onCrash = async e => {
@@ -351,7 +351,7 @@ module.exports = ({
 
     const topics = Object.keys(commitsByTopic)
 
-    return runnerPool.commitOffsets({
+    return runner.commitOffsets({
       topics: topics.map(topic => {
         return {
           topic,

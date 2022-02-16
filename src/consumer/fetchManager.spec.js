@@ -10,7 +10,7 @@ describe('FetchManager', () => {
 
   beforeEach(() => {
     batchSize = 10
-    fetch = jest.fn(async nodeId => seq(batchSize, id => `message ${id} fron node ${nodeId}`))
+    fetch = jest.fn(async nodeId => seq(batchSize, id => `message ${id} from node ${nodeId}`))
     handler = jest.fn(async () => {
       await sleep(20)
     })
@@ -22,7 +22,10 @@ describe('FetchManager', () => {
   it('should distribute nodeIds evenly', async () => {
     fetchManager = createTestFetchManager({ concurrency: 2, nodeIds: seq(2) })
 
-    const [fetcher1, fetcher2] = fetchManager.getFetchers()
+    const fetchers = fetchManager.getFetchers()
+    expect(fetchers).toHaveLength(2)
+
+    const [fetcher1, fetcher2] = fetchers
     expect(fetcher1.getNodeIds()).toEqual([0])
     expect(fetcher2.getNodeIds()).toEqual([1])
   })
@@ -30,7 +33,10 @@ describe('FetchManager', () => {
   it('should assign nodeIds round-robin', async () => {
     fetchManager = createTestFetchManager({ concurrency: 2, nodeIds: seq(5) })
 
-    const [fetcher1, fetcher2] = fetchManager.getFetchers()
+    const fetchers = fetchManager.getFetchers()
+    expect(fetchers).toHaveLength(2)
+
+    const [fetcher1, fetcher2] = fetchers
     expect(fetcher1.getNodeIds()).toEqual([0, 2, 4])
     expect(fetcher2.getNodeIds()).toEqual([1, 3])
   })
@@ -43,10 +49,15 @@ describe('FetchManager', () => {
 
     const [fetcher] = fetchers
     expect(fetcher.getNodeIds()).toEqual([0])
-    expect(fetcher.getWorkerIds()).toEqual([0, 1])
+    expect(
+      fetcher
+        .getWorkerQueue()
+        .getWorkers()
+        .map(x => x.getWorkerId())
+    ).toEqual([0, 1])
   })
 
-  it('should finish processing in case of an error from any single worker', async () => {
+  it('should finish processing other batches in case of an error from any single worker', async () => {
     handler.mockImplementationOnce(() => {
       throw new Error('test')
     })

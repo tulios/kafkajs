@@ -3,36 +3,35 @@ const Batch = require('../batch')
 const InstrumentationEventEmitter = require('../../instrumentation/emitter')
 const { newLogger, secureRandom, waitFor } = require('testHelpers')
 const sleep = require('../../utils/sleep')
+const {
+  KafkaJSProtocolError,
+  KafkaJSNotImplemented,
+  KafkaJSNumberOfRetriesExceeded,
+} = require('../../errors')
+const { createErrorFromCode } = require('../../protocol/error')
+
+const UNKNOWN = -1
+const REBALANCE_IN_PROGRESS = 27
+const rebalancingError = () => new KafkaJSProtocolError(createErrorFromCode(REBALANCE_IN_PROGRESS))
 
 describe('Consumer > Runner', () => {
   let runner,
-    commitOffsetsIfNecessary,
-    commitOffsets,
-    hasSeekOffset,
-    heartbeat,
-    nextBatch,
-    resolveOffset,
-    uncommittedOffsets,
-    instrumentationEmitter,
+    consumerGroup,
+    onCrash,
     eachBatch,
     topicName,
     partition,
     emptyBatch,
-    recover
+    instrumentationEmitter
 
-  /** @param {Partial<ConstructorParameters<typeof Runner>[0]>} [partial]  */
   const createTestRunner = partial => {
     return new Runner({
-      commitOffsetsIfNecessary,
-      commitOffsets,
-      hasSeekOffset,
-      heartbeat,
-      nextBatch,
-      resolveOffset,
-      uncommittedOffsets,
+      consumerGroup,
+      onCrash,
       instrumentationEmitter,
       logger: newLogger(),
       eachBatch,
+      concurrency: 1,
       ...partial,
     })
   }
@@ -47,22 +46,48 @@ describe('Consumer > Runner', () => {
       messages: [],
     })
 
-    commitOffsetsIfNecessary = jest.fn()
-    commitOffsets = jest.fn()
-    hasSeekOffset = jest.fn(() => false)
-    heartbeat = jest.fn()
-    nextBatch = jest.fn(callback => callback(emptyBatch))
-    resolveOffset = jest.fn()
-    uncommittedOffsets = jest.fn()
-    instrumentationEmitter = new InstrumentationEventEmitter()
     eachBatch = jest.fn()
-    recover = jest.fn()
+    onCrash = jest.fn()
+    consumerGroup = {
+      getNodeIds: jest.fn(() => [1, 2, 3]),
+      connect: jest.fn(),
+      join: jest.fn(),
+      sync: jest.fn(),
+      joinAndSync: jest.fn(),
+      fetch: jest.fn(async () => [emptyBatch]),
+      resolveOffset: jest.fn(),
+      commitOffsets: jest.fn(),
+      commitOffsetsIfNecessary: jest.fn(),
+      uncommittedOffsets: jest.fn(),
+      heartbeat: jest.fn(),
+      assigned: jest.fn(() => []),
+      isLeader: jest.fn(() => true),
+    }
+    instrumentationEmitter = new InstrumentationEventEmitter()
 
     runner = createTestRunner()
   })
 
   afterEach(async () => {
     runner && (await runner.stop())
+  })
+
+  describe('when the group is rebalancing before the new consumer has joined', () => {
+    it('recovers from rebalance in progress and re-join the group', async () => {
+      consumerGroup.sync
+        .mockImplementationOnce(() => {
+          throw rebalancingError()
+        })
+        .mockImplementationOnce(() => {
+          throw rebalancingError()
+        })
+        .mockImplementationOnce(() => true)
+
+      runner.scheduleFetchManager = jest.fn()
+      await runner.start()
+      expect(runner.scheduleFetchManager).toHaveBeenCalled()
+      expect(onCrash).not.toHaveBeenCalled()
+    })
   })
 
   it('should "commit" offsets during fetch', async () => {
@@ -72,13 +97,12 @@ describe('Consumer > Runner', () => {
       messages: [{ offset: 4, key: '1', value: '2' }],
     })
 
-    nextBatch.mockImplementationOnce(callback => callback(batch))
-    runner.scheduleConsume = jest.fn()
-    await runner.start(recover)
-    await runner.consume() // Manually fetch for test
+    runner.scheduleFetchManager = jest.fn()
+    await runner.start()
+    await runner.handleBatch(batch) // Manually fetch for test
     expect(eachBatch).toHaveBeenCalled()
-    expect(commitOffsets).toHaveBeenCalled()
-    expect(recover).not.toHaveBeenCalled()
+    expect(consumerGroup.commitOffsets).toHaveBeenCalled()
+    expect(onCrash).not.toHaveBeenCalled()
   })
 
   describe('"eachBatch" callback', () => {
@@ -89,10 +113,9 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      nextBatch.mockImplementationOnce(callback => callback(batch))
-      runner.scheduleConsume = jest.fn()
-      await runner.start(recover)
-      await runner.consume() // Manually fetch for test
+      runner.scheduleFetchManager = jest.fn()
+      await runner.start()
+      await runner.handleBatch(batch) // Manually fetch for test
 
       expect(eachBatch).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -100,39 +123,37 @@ describe('Consumer > Runner', () => {
         })
       )
 
-      const {
-        commitOffsetsIfNecessary: eachBatchCommitOffsetsIfNecessary,
-      } = eachBatch.mock.calls[0][0] // Access the callback
+      const { commitOffsetsIfNecessary } = eachBatch.mock.calls[0][0] // Access the callback
 
       // Clear state
-      commitOffsetsIfNecessary.mockClear()
-      commitOffsets.mockClear()
+      consumerGroup.commitOffsetsIfNecessary.mockClear()
+      consumerGroup.commitOffsets.mockClear()
 
       // No offsets provided
-      await eachBatchCommitOffsetsIfNecessary()
-      expect(commitOffsetsIfNecessary).toHaveBeenCalledTimes(1)
-      expect(commitOffsets).toHaveBeenCalledTimes(0)
+      await commitOffsetsIfNecessary()
+      expect(consumerGroup.commitOffsetsIfNecessary).toHaveBeenCalledTimes(1)
+      expect(consumerGroup.commitOffsets).toHaveBeenCalledTimes(0)
 
       // Clear state
-      commitOffsetsIfNecessary.mockClear()
-      commitOffsets.mockClear()
+      consumerGroup.commitOffsetsIfNecessary.mockClear()
+      consumerGroup.commitOffsets.mockClear()
 
       // Provide offsets
       const offsets = {
         topics: [{ topic: topicName, partitions: [{ offset: '1', partition: 0 }] }],
       }
 
-      await eachBatchCommitOffsetsIfNecessary(offsets)
-      expect(commitOffsetsIfNecessary).toHaveBeenCalledTimes(0)
-      expect(commitOffsets).toHaveBeenCalledTimes(1)
-      expect(commitOffsets).toHaveBeenCalledWith(offsets)
+      await commitOffsetsIfNecessary(offsets)
+      expect(consumerGroup.commitOffsetsIfNecessary).toHaveBeenCalledTimes(0)
+      expect(consumerGroup.commitOffsets).toHaveBeenCalledTimes(1)
+      expect(consumerGroup.commitOffsets).toHaveBeenCalledWith(offsets)
     })
   })
 
   describe('when eachBatchAutoResolve is set to false', () => {
     beforeEach(() => {
       runner = createTestRunner({ eachBatchAutoResolve: false })
-      runner.scheduleConsume = jest.fn(() => runner.consume())
+      runner.scheduleFetchManager = jest.fn()
     })
 
     it('does not call resolveOffset with the last offset', async () => {
@@ -142,10 +163,10 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      nextBatch.mockImplementationOnce(callback => callback(batch))
-      await runner.start(recover)
-      expect(recover).not.toHaveBeenCalled()
-      expect(resolveOffset).not.toHaveBeenCalled()
+      await runner.start()
+      await runner.handleBatch(batch)
+      expect(onCrash).not.toHaveBeenCalled()
+      expect(consumerGroup.resolveOffset).not.toHaveBeenCalled()
     })
   })
 
@@ -158,7 +179,7 @@ describe('Consumer > Runner', () => {
       })
 
       runner = createTestRunner({ autoCommit: false, eachBatch: eachBatchCallUncommittedOffsets })
-      runner.scheduleConsume = jest.fn(() => runner.consume())
+      runner.scheduleFetchManager = jest.fn(() => runner.consume())
     })
 
     it('should not commit offsets during fetch', async () => {
@@ -168,56 +189,172 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      nextBatch.mockImplementationOnce(callback => callback(batch))
-      runner.scheduleConsume = jest.fn()
-      await runner.start(recover)
-      await runner.consume() // Manually fetch for test
+      runner.scheduleFetchManager = jest.fn()
+      await runner.start()
+      await runner.handleBatch(batch) // Manually fetch for test
 
-      expect(commitOffsets).not.toHaveBeenCalled()
-      expect(commitOffsetsIfNecessary).not.toHaveBeenCalled()
+      expect(consumerGroup.commitOffsets).not.toHaveBeenCalled()
+      expect(consumerGroup.commitOffsetsIfNecessary).not.toHaveBeenCalled()
       expect(eachBatchCallUncommittedOffsets).toHaveBeenCalled()
-      expect(uncommittedOffsets).toHaveBeenCalled()
+      expect(consumerGroup.uncommittedOffsets).toHaveBeenCalled()
 
-      expect(recover).not.toHaveBeenCalled()
+      expect(onCrash).not.toHaveBeenCalled()
     })
   })
 
-  it('correctly catch exceptions in parallel "heartbeat" processing', async () => {
-    const batch = new Batch(topicName, 0, {
-      partition,
-      highWatermark: 5,
-      messages: [{ offset: 4, key: '1', value: '2' }],
-    })
-
-    nextBatch.mockImplementation(async callback => {
-      await sleep(100)
-      return callback(batch)
-    })
-
-    const error = new Error('Error while processing heartbeats in parallel')
-    heartbeat.mockImplementation(async () => {
-      throw error
-    })
-
-    await runner.start(recover)
-
-    await waitFor(() => recover.mock.calls.length > 0)
-    expect(recover).toHaveBeenCalledWith(error)
-  })
-
-  it('should ignore request errors from nextBatch on stopped consumer', async () => {
-    nextBatch
-      .mockImplementationOnce(async () => {
-        await sleep(10)
-        throw new Error('Failed or manually rejected request')
+  it('calls onCrash for any other errors', async () => {
+    const unknownError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
+    consumerGroup.joinAndSync
+      .mockImplementationOnce(() => {
+        throw unknownError
       })
-      .mockImplementationOnce(async callback => callback(await sleep(10)))
+      .mockImplementationOnce(() => true)
 
-    runner.scheduleConsume = jest.fn()
-    await runner.start(recover)
-    runner.running = false
+    runner.scheduleFetchManager = jest.fn()
+    await runner.start()
 
-    runner.consume()
-    await sleep(100)
+    await waitFor(() => onCrash.mock.calls.length > 0)
+
+    expect(runner.scheduleFetch).not.toHaveBeenCalled()
+    expect(onCrash).toHaveBeenCalledWith(unknownError)
+  })
+
+  it('crashes on KafkaJSNotImplemented errors', async () => {
+    const notImplementedError = new KafkaJSNotImplemented('not implemented')
+    consumerGroup.fetch.mockImplementationOnce(() => Promise.reject(notImplementedError))
+
+    await runner.start()
+
+    await waitFor(() => onCrash.mock.calls.length > 0)
+    expect(onCrash).toHaveBeenCalledWith(notImplementedError)
+  })
+
+  describe('commitOffsets', () => {
+    let offsets
+
+    beforeEach(async () => {
+      offsets = { topics: [{ topic: topicName, partitions: [{ offset: '1', partition }] }] }
+
+      consumerGroup.joinAndSync.mockClear()
+      consumerGroup.commitOffsetsIfNecessary.mockClear()
+      consumerGroup.commitOffsets.mockClear()
+    })
+
+    it('should commit offsets while running', async () => {
+      await runner.start()
+      await runner.commitOffsets(offsets)
+
+      expect(consumerGroup.commitOffsetsIfNecessary).toHaveBeenCalledTimes(0)
+      expect(consumerGroup.commitOffsets.mock.calls.length).toBeGreaterThanOrEqual(1)
+      expect(consumerGroup.commitOffsets).toHaveBeenCalledWith(offsets)
+    })
+
+    it('should throw when group is rebalancing, while triggering another join', async () => {
+      const error = rebalancingError()
+      consumerGroup.commitOffsets.mockImplementationOnce(() => {
+        throw error
+      })
+
+      await runner.start()
+
+      expect(runner.commitOffsets(offsets)).rejects.toThrow(error.message)
+      expect(consumerGroup.joinAndSync).toHaveBeenCalledTimes(0)
+
+      await waitFor(() => consumerGroup.joinAndSync.mock.calls.length > 0)
+      expect(consumerGroup.joinAndSync).toHaveBeenCalledTimes(1)
+    })
+
+    it('correctly catch exceptions in parallel "eachBatch" processing', async () => {
+      runner = createTestRunner({
+        eachBatchAutoResolve: false,
+        eachBatch: async () => {
+          throw new Error('Error while processing batches in parallel')
+        },
+        concurrency: 10,
+        retry: { retries: 0 },
+      })
+
+      const batch = new Batch(topicName, 0, {
+        partition,
+        highWatermark: 5,
+        messages: [{ offset: 4, key: '1', value: '2' }],
+      })
+
+      const longRunningRequest = new Promise(resolve => {
+        setTimeout(() => resolve([]), 100)
+      })
+
+      consumerGroup.fetch
+        .mockImplementationOnce(longRunningRequest)
+        .mockImplementationOnce(async () => [batch])
+
+      await runner.start()
+
+      await waitFor(() => onCrash.mock.calls.length > 0)
+      await expect(onCrash).toHaveBeenCalledWith(expect.any(KafkaJSNumberOfRetriesExceeded))
+    })
+
+    it('correctly catch exceptions in parallel "heartbeat" processing', async () => {
+      const batch = new Batch(topicName, 0, {
+        partition,
+        highWatermark: 5,
+        messages: [{ offset: 4, key: '1', value: '2' }],
+      })
+
+      const longRunningRequest = new Promise(resolve => {
+        setTimeout(() => resolve([]), 100)
+      })
+
+      const error = new Error('Error while processing heartbeats in parallel')
+      consumerGroup.heartbeat = async () => {
+        throw error
+      }
+
+      consumerGroup.fetch
+        .mockImplementation(longRunningRequest)
+        .mockImplementationOnce(async () => [batch])
+
+      await runner.start()
+
+      await waitFor(() => onCrash.mock.calls.length > 0)
+      expect(onCrash).toHaveBeenCalledWith(error)
+    })
+
+    it('a triggered rejoin failing should cause a crash', async () => {
+      await runner.start()
+
+      const unknownError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
+      consumerGroup.joinAndSync.mockImplementationOnce(() => {
+        throw unknownError
+      })
+      consumerGroup.commitOffsets.mockImplementationOnce(() => {
+        throw rebalancingError()
+      })
+
+      expect(runner.commitOffsets(offsets)).rejects.toThrow(rebalancingError().message)
+
+      await waitFor(() => onCrash.mock.calls.length > 0)
+      expect(onCrash).toHaveBeenCalledWith(unknownError)
+    })
+
+    it('should ignore request errors from fetch on stopped consumer', async () => {
+      const rejectedRequest = () =>
+        new Promise((resolve, reject) => {
+          setTimeout(() => reject(new Error('Failed or manually rejected request')), 10)
+        })
+
+      consumerGroup.fetch
+        .mockImplementationOnce(rejectedRequest)
+        .mockImplementationOnce(async () => {
+          await sleep(10)
+          return []
+        })
+
+      runner.scheduleFetchManager = jest.fn()
+      await runner.start()
+      runner.running = false
+
+      await runner.fetch()
+    })
   })
 })

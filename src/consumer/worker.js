@@ -13,6 +13,8 @@ const createWorker = ({ handler, workerId }) => {
   const getWorkerId = () => workerId
 
   /**
+   * Takes messages from next() until it returns undefined.
+   *
    * @param {{ next: () => T | undefined }} param0
    * @returns {Promise<void>}
    */

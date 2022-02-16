@@ -5,21 +5,21 @@ const allSettled = require('../utils/promiseAllSettled')
  */
 
 /**
- *
  * @param {object} options
  * @param {import('./worker').Worker<T>[]} options.workers
  * @template T
  */
 const createWorkerQueue = ({ workers }) => {
-  /** @type {T[]} */
-  const queue = []
+  const getWorkers = () => workers
 
   /**
+   * Waits until workers have processed all batches in the queue.
+   *
    * @param {...T} batches
    * @returns {Promise<void>}
    */
   const push = async (...batches) => {
-    queue.push(...batches)
+    const queue = [...batches]
 
     const results = await allSettled(
       workers.map(worker =>
@@ -36,7 +36,7 @@ const createWorkerQueue = ({ workers }) => {
     }
   }
 
-  return { push }
+  return { getWorkers, push }
 }
 
 module.exports = createWorkerQueue
