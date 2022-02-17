@@ -533,7 +533,7 @@ module.exports = class ConsumerGroup {
       })
     } catch (e) {
       await this.recoverFromFetch(e)
-      return this.fetch(nodeId)
+      return []
     }
   }
 

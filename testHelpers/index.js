@@ -6,21 +6,21 @@ const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 const Cluster = require('../src/cluster')
 const waitFor = require('../src/utils/waitFor')
-const ConnectionPool = require('../src/network/connectionPool')
 const connectionBuilder = require('../src/cluster/connectionPoolBuilder')
+const ConnectionPool = require('../src/network/connectionPool')
 const defaultSocketFactory = require('../src/network/socketFactory')
 const socketFactory = defaultSocketFactory()
 
 const {
   createLogger,
-  LEVELS: { DEBUG },
+  LEVELS: { NOTHING },
 } = require('../src/loggers')
 
 const LoggerConsole = require('../src/loggers/console')
 const { Kafka } = require('../index')
 
 const newLogger = (opts = {}) =>
-  createLogger(Object.assign({ level: DEBUG, logCreator: LoggerConsole }, opts))
+  createLogger(Object.assign({ level: NOTHING, logCreator: LoggerConsole }, opts))
 
 const getHost = () => 'localhost'
 const secureRandom = (length = 10) =>

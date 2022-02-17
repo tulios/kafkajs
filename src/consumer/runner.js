@@ -45,6 +45,7 @@ module.exports = class Runner extends EventEmitter {
     this.consumerGroup = consumerGroup
     this.instrumentationEmitter = instrumentationEmitter
     this.eachBatchAutoResolve = eachBatchAutoResolve
+    this.concurrency = concurrency
     this.eachBatch = eachBatch
     this.eachMessage = eachMessage
     this.heartbeatInterval = heartbeatInterval
@@ -52,11 +53,11 @@ module.exports = class Runner extends EventEmitter {
     this.onCrash = onCrash
     this.autoCommit = autoCommit
     this.fetchManager = createFetchManager({
-      logger,
-      nodeIds: consumerGroup.getNodeIds(),
+      logger: this.logger,
+      getNodeIds: () => this.consumerGroup.getNodeIds(),
       fetch: nodeId => this.fetch(nodeId),
       handler: batch => this.handleBatch(batch),
-      concurrency,
+      concurrency: this.concurrency,
     })
 
     this.running = false
@@ -73,6 +74,22 @@ module.exports = class Runner extends EventEmitter {
     }
   }
 
+  async scheduleJoin() {
+    if (!this.running) {
+      this.logger.debug('consumer not running, exiting', {
+        groupId: this.consumerGroup.groupId,
+        memberId: this.consumerGroup.memberId,
+      })
+      return
+    }
+
+    try {
+      await this.consumerGroup.joinAndSync()
+    } catch (e) {
+      this.onCrash(e)
+    }
+  }
+
   async start() {
     if (this.running) {
       return
@@ -86,7 +103,7 @@ module.exports = class Runner extends EventEmitter {
     }
 
     this.running = true
-    setImmediate(() => this.scheduleFetchManager())
+    this.scheduleFetchManager()
   }
 
   async scheduleFetchManager() {
@@ -453,7 +470,7 @@ module.exports = class Runner extends EventEmitter {
             memberId: this.consumerGroup.memberId,
           })
 
-          setImmediate(() => this.consumerGroup.joinAndSync())
+          setImmediate(() => this.scheduleJoin())
 
           bail(new KafkaJSError(e))
         }
@@ -468,7 +485,7 @@ module.exports = class Runner extends EventEmitter {
           })
 
           this.consumerGroup.memberId = null
-          setImmediate(() => this.consumerGroup.joinAndSync())
+          setImmediate(() => this.scheduleJoin())
 
           bail(new KafkaJSError(e))
         }

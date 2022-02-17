@@ -215,7 +215,7 @@ describe('Consumer > Runner', () => {
 
     await waitFor(() => onCrash.mock.calls.length > 0)
 
-    expect(runner.scheduleFetch).not.toHaveBeenCalled()
+    expect(runner.scheduleFetchManager).not.toHaveBeenCalled()
     expect(onCrash).toHaveBeenCalledWith(unknownError)
   })
 
@@ -255,12 +255,16 @@ describe('Consumer > Runner', () => {
         throw error
       })
 
+      runner.scheduleFetchManager = jest.fn()
       await runner.start()
+
+      consumerGroup.joinAndSync.mockClear()
 
       expect(runner.commitOffsets(offsets)).rejects.toThrow(error.message)
       expect(consumerGroup.joinAndSync).toHaveBeenCalledTimes(0)
 
-      await waitFor(() => consumerGroup.joinAndSync.mock.calls.length > 0)
+      await sleep(100)
+
       expect(consumerGroup.joinAndSync).toHaveBeenCalledTimes(1)
     })
 
@@ -280,9 +284,10 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      const longRunningRequest = new Promise(resolve => {
-        setTimeout(() => resolve([]), 100)
-      })
+      const longRunningRequest = () =>
+        new Promise(resolve => {
+          setTimeout(() => resolve([]), 100)
+        })
 
       consumerGroup.fetch
         .mockImplementationOnce(longRunningRequest)
@@ -321,6 +326,7 @@ describe('Consumer > Runner', () => {
     })
 
     it('a triggered rejoin failing should cause a crash', async () => {
+      runner.scheduleFetchManager = jest.fn()
       await runner.start()
 
       const unknownError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
@@ -334,6 +340,7 @@ describe('Consumer > Runner', () => {
       expect(runner.commitOffsets(offsets)).rejects.toThrow(rebalancingError().message)
 
       await waitFor(() => onCrash.mock.calls.length > 0)
+
       expect(onCrash).toHaveBeenCalledWith(unknownError)
     })
 

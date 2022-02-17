@@ -1,12 +1,14 @@
 const sleep = require('../utils/sleep')
 const seq = require('../utils/seq')
 const createFetchManager = require('./fetchManager')
+const { newLogger } = require('testHelpers')
+const waitFor = require('../utils/waitFor')
 
 describe('FetchManager', () => {
-  let fetchManager, fetch, handler, nodeIds, concurrency, batchSize
+  let fetchManager, fetch, handler, getNodeIds, concurrency, batchSize
 
   const createTestFetchManager = partial =>
-    createFetchManager({ concurrency, fetch, handler, nodeIds, ...partial })
+    createFetchManager({ logger: newLogger(), concurrency, fetch, handler, getNodeIds, ...partial })
 
   beforeEach(() => {
     batchSize = 10
@@ -14,13 +16,18 @@ describe('FetchManager', () => {
     handler = jest.fn(async () => {
       await sleep(20)
     })
-    nodeIds = seq(4)
+    getNodeIds = jest.fn(() => seq(4))
     concurrency = 3
     fetchManager = createTestFetchManager()
   })
 
+  afterEach(async () => {
+    fetchManager && (await fetchManager.stop())
+  })
+
   it('should distribute nodeIds evenly', async () => {
-    fetchManager = createTestFetchManager({ concurrency: 2, nodeIds: seq(2) })
+    fetchManager = createTestFetchManager({ concurrency: 2, getNodeIds: () => seq(2) })
+    fetchManager.start()
 
     const fetchers = fetchManager.getFetchers()
     expect(fetchers).toHaveLength(2)
@@ -31,7 +38,8 @@ describe('FetchManager', () => {
   })
 
   it('should assign nodeIds round-robin', async () => {
-    fetchManager = createTestFetchManager({ concurrency: 2, nodeIds: seq(5) })
+    fetchManager = createTestFetchManager({ concurrency: 2, getNodeIds: () => seq(5) })
+    fetchManager.start()
 
     const fetchers = fetchManager.getFetchers()
     expect(fetchers).toHaveLength(2)
@@ -42,7 +50,8 @@ describe('FetchManager', () => {
   })
 
   it('should create a single fetcher', async () => {
-    fetchManager = createTestFetchManager({ concurrency: 2, nodeIds: seq(1) })
+    fetchManager = createTestFetchManager({ concurrency: 2, getNodeIds: () => seq(1) })
+    fetchManager.start()
 
     const fetchers = fetchManager.getFetchers()
     expect(fetchers).toHaveLength(1)
@@ -63,5 +72,28 @@ describe('FetchManager', () => {
     })
     await expect(fetchManager.start()).toReject()
     expect(handler).toHaveBeenCalledTimes((concurrency - 1) * batchSize + 1)
+  })
+
+  it('should rebalance fetchers in case of change in nodeIds', async () => {
+    getNodeIds.mockImplementation(() => seq(2))
+
+    fetchManager = createTestFetchManager({ concurrency: 3 })
+    fetchManager.start()
+
+    let fetchers = fetchManager.getFetchers()
+    expect(fetchers).toHaveLength(2)
+    expect(fetchers[0].getWorkerQueue().getWorkers()).toHaveLength(2)
+    expect(fetchers[1].getWorkerQueue().getWorkers()).toHaveLength(1)
+
+    getNodeIds.mockImplementation(() => seq(3))
+
+    fetch.mockClear()
+    await waitFor(() => fetch.mock.calls.length > 0)
+
+    fetchers = fetchManager.getFetchers()
+    expect(fetchers).toHaveLength(3)
+    fetchers.forEach(fetcher => {
+      expect(fetcher.getWorkerQueue().getWorkers()).toHaveLength(1)
+    })
   })
 })
