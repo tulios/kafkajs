@@ -24,14 +24,13 @@ describeIfOauthbearerEnabled('Brokers re-authentication with SASL OAUTHBEARER', 
     spy.mock.calls.filter(mock => mock[0].request.apiKey === apiSaslAuthenticateKey)
 
   test('Does not re-authenticate when still within session validity threshold', async () => {
-    const connectionPool = createConnectionPool(saslOAuthBearerConnectionOpts())
-    const connection = connectionPool.getConnection()
-    const spy = jest.spyOn(connection, 'send')
-    broker = new Broker({
-      connectionPool,
-      logger: newLogger(),
+    const connectionPool = createConnectionPool({
+      ...saslOAuthBearerConnectionOpts(),
       reauthenticationThreshold: 2000,
     })
+    const connection = await connectionPool.getConnection()
+    const spy = jest.spyOn(connection, 'send')
+    broker = new Broker({ connectionPool, logger: newLogger() })
     await broker.connect()
     await wait(1000)
     await broker.listGroups()
@@ -44,14 +43,13 @@ describeIfOauthbearerEnabled('Brokers re-authentication with SASL OAUTHBEARER', 
   })
 
   test('Re-authenticate if needed before making a request', async () => {
-    const connectionPool = createConnectionPool(saslOAuthBearerConnectionOpts())
-    const connection = connectionPool.getConnection()
-    const spy = jest.spyOn(connection, 'send')
-    broker = new Broker({
-      connectionPool,
-      logger: newLogger(),
+    const connectionPool = createConnectionPool({
+      ...saslOAuthBearerConnectionOpts(),
       reauthenticationThreshold: 14900,
     })
+    const connection = await connectionPool.getConnection()
+    const spy = jest.spyOn(connection, 'send')
+    broker = new Broker({ connectionPool, logger: newLogger() })
     await broker.connect()
     await wait(1000)
     await broker.listGroups()
@@ -60,14 +58,13 @@ describeIfOauthbearerEnabled('Brokers re-authentication with SASL OAUTHBEARER', 
   })
 
   test('Re-authenticate only once with multiple parallel requests', async () => {
-    const connectionPool = createConnectionPool(saslOAuthBearerConnectionOpts())
-    const connection = connectionPool.getConnection()
-    const spy = jest.spyOn(connection, 'send')
-    broker = new Broker({
-      connectionPool,
-      logger: newLogger(),
+    const connectionPool = createConnectionPool({
+      ...saslOAuthBearerConnectionOpts(),
       reauthenticationThreshold: 14900,
     })
+    const connection = await connectionPool.getConnection()
+    const spy = jest.spyOn(connection, 'send')
+    broker = new Broker({ connectionPool, logger: newLogger() })
     await broker.connect()
     await wait(1000)
     await Promise.all([
@@ -81,14 +78,13 @@ describeIfOauthbearerEnabled('Brokers re-authentication with SASL OAUTHBEARER', 
   })
 
   test('Re-authenticate every request sent when re-authentication threshold is same as session lifetime', async () => {
-    const connectionPool = createConnectionPool(saslOAuthBearerConnectionOpts())
-    const connection = connectionPool.getConnection()
-    const spy = jest.spyOn(connection, 'send')
-    broker = new Broker({
-      connectionPool,
-      logger: newLogger(),
+    const connectionPool = createConnectionPool({
+      ...saslOAuthBearerConnectionOpts(),
       reauthenticationThreshold: 15000,
     })
+    const connection = await connectionPool.getConnection()
+    const spy = jest.spyOn(connection, 'send')
+    broker = new Broker({ connectionPool, logger: newLogger() })
     await broker.connect()
     await wait(1000)
     await broker.listGroups()
@@ -101,14 +97,13 @@ describeIfOauthbearerEnabled('Brokers re-authentication with SASL OAUTHBEARER', 
   })
 
   test('Re-authenticates only once with multiple requests sent in parallel when re-authentication threshold is same as session lifetime', async () => {
-    const connectionPool = createConnectionPool(saslOAuthBearerConnectionOpts())
-    const connection = connectionPool.getConnection()
-    const spy = jest.spyOn(connection, 'send')
-    broker = new Broker({
-      connectionPool,
-      logger: newLogger(),
+    const connectionPool = createConnectionPool({
+      ...saslOAuthBearerConnectionOpts(),
       reauthenticationThreshold: 15000,
     })
+    const connection = await connectionPool.getConnection()
+    const spy = jest.spyOn(connection, 'send')
+    broker = new Broker({ connectionPool, logger: newLogger() })
     await broker.connect()
     await wait(1000)
     await Promise.all([

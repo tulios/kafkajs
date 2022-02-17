@@ -20,6 +20,7 @@ const ConnectionPool = require('../network/connectionPool')
  * @param {import("../../types").RetryOptions} [options.retry]
  * @param {import("../../types").Logger} options.logger
  * @param {import("../instrumentation/emitter")} [options.instrumentationEmitter]
+ * @param {number} [options.reauthenticationThreshold]
  * @returns {ConnectionPoolBuilder}
  */
 module.exports = ({
@@ -34,6 +35,7 @@ module.exports = ({
   maxInFlightRequests,
   logger,
   instrumentationEmitter = null,
+  reauthenticationThreshold,
 }) => {
   let index = 0
 
@@ -108,6 +110,7 @@ module.exports = ({
         maxInFlightRequests,
         instrumentationEmitter,
         logger,
+        reauthenticationThreshold,
       })
     },
   }

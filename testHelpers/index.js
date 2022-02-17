@@ -34,6 +34,7 @@ const connectionOpts = (opts = {}) => ({
   socketFactory,
   clientId: `test-${secureRandom()}`,
   connectionTimeout: 3000,
+  requestTimeout: 30000,
   logger: newLogger(),
   host: getHost(),
   port: 9092,

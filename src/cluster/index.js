@@ -85,6 +85,7 @@ module.exports = class Cluster {
       requestTimeout,
       enforceRequestTimeout,
       maxInFlightRequests,
+      reauthenticationThreshold,
     })
 
     this.targetTopics = new Set()
@@ -99,7 +100,6 @@ module.exports = class Cluster {
       retry,
       allowAutoTopicCreation,
       authenticationTimeout,
-      reauthenticationThreshold,
       metadataMaxAge,
     })
     this.committedOffsetsByGroup = offsets

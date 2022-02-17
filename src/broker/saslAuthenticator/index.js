@@ -19,8 +19,8 @@ const SUPPORTED_MECHANISMS = Object.keys(AUTHENTICATORS)
 const UNLIMITED_SESSION_LIFETIME = '0'
 
 module.exports = class SASLAuthenticator {
-  constructor(connectionPool, logger, versions, supportAuthenticationProtocol) {
-    this.connectionPool = connectionPool
+  constructor(connection, logger, versions, supportAuthenticationProtocol) {
+    this.connection = connection
     this.logger = logger
     this.sessionLifetime = UNLIMITED_SESSION_LIFETIME
 
@@ -32,46 +32,44 @@ module.exports = class SASLAuthenticator {
   }
 
   async authenticate() {
-    await this.connectionPool.all(async connection => {
-      const mechanism = connection.sasl.mechanism.toUpperCase()
-      if (!SUPPORTED_MECHANISMS.includes(mechanism)) {
-        throw new KafkaJSSASLAuthenticationError(
-          `SASL ${mechanism} mechanism is not supported by the client`
+    const mechanism = this.connection.sasl.mechanism.toUpperCase()
+    if (!SUPPORTED_MECHANISMS.includes(mechanism)) {
+      throw new KafkaJSSASLAuthenticationError(
+        `SASL ${mechanism} mechanism is not supported by the client`
+      )
+    }
+
+    const handshake = await this.connection.send(this.saslHandshake({ mechanism }))
+    if (!handshake.enabledMechanisms.includes(mechanism)) {
+      throw new KafkaJSSASLAuthenticationError(
+        `SASL ${mechanism} mechanism is not supported by the server`
+      )
+    }
+
+    const saslAuthenticate = async ({ request, response, authExpectResponse }) => {
+      if (this.protocolAuthentication) {
+        const { buffer: requestAuthBytes } = await request.encode()
+        const authResponse = await this.connection.send(
+          this.protocolAuthentication({ authBytes: requestAuthBytes })
         )
-      }
 
-      const handshake = await connection.send(this.saslHandshake({ mechanism }))
-      if (!handshake.enabledMechanisms.includes(mechanism)) {
-        throw new KafkaJSSASLAuthenticationError(
-          `SASL ${mechanism} mechanism is not supported by the server`
-        )
-      }
+        // `0` is a string because `sessionLifetimeMs` is an int64 encoded as string.
+        // This is not present in SaslAuthenticateV0, so we default to `"0"`
+        this.sessionLifetime = authResponse.sessionLifetimeMs || UNLIMITED_SESSION_LIFETIME
 
-      const saslAuthenticate = async ({ request, response, authExpectResponse }) => {
-        if (this.protocolAuthentication) {
-          const { buffer: requestAuthBytes } = await request.encode()
-          const authResponse = await connection.send(
-            this.protocolAuthentication({ authBytes: requestAuthBytes })
-          )
-
-          // `0` is a string because `sessionLifetimeMs` is an int64 encoded as string.
-          // This is not present in SaslAuthenticateV0, so we default to `"0"`
-          this.sessionLifetime = authResponse.sessionLifetimeMs || UNLIMITED_SESSION_LIFETIME
-
-          if (!authExpectResponse) {
-            return
-          }
-
-          const { authBytes: responseAuthBytes } = authResponse
-          const payloadDecoded = await response.decode(responseAuthBytes)
-          return response.parse(payloadDecoded)
+        if (!authExpectResponse) {
+          return
         }
 
-        return connection.authenticate({ request, response, authExpectResponse })
+        const { authBytes: responseAuthBytes } = authResponse
+        const payloadDecoded = await response.decode(responseAuthBytes)
+        return response.parse(payloadDecoded)
       }
 
-      const Authenticator = AUTHENTICATORS[mechanism]
-      await new Authenticator(connection, this.logger, saslAuthenticate).authenticate()
-    })
+      return this.connection.sendAuthRequest({ request, response, authExpectResponse })
+    }
+
+    const Authenticator = AUTHENTICATORS[mechanism]
+    await new Authenticator(this.connection, this.logger, saslAuthenticate).authenticate()
   }
 }

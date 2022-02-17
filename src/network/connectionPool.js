@@ -1,45 +1,65 @@
 const apiKeys = require('../protocol/requests/apiKeys')
 const Connection = require('./connection')
 
-const { assign } = Object
-
 module.exports = class ConnectionPool {
+  /**
+   * @param {ConstructorParameters<typeof Connection>[0]} options
+   */
   constructor(options) {
-    assign(this, options)
+    this.logger = options.logger.namespace('ConnectionPool')
+    this.connectionTimeout = options.connectionTimeout
+    this.host = options.host
+    this.port = options.port
+    this.rack = options.rack
+    this.ssl = options.ssl
+    this.sasl = options.sasl
+    this.clientId = options.clientId
+    this.socketFactory = options.socketFactory
 
     this.pool = new Array(2).fill().map(() => new Connection(options))
   }
 
-  get connected() {
-    return this.pool.every(c => c.connected)
+  isConnected() {
+    return this.pool.some(c => c.isConnected())
   }
 
-  connectionByProtocolRequest(protocolRequest) {
-    const {
-      request: { apiKey },
-    } = protocolRequest
-    const index = { [apiKeys.Fetch]: 1 }[apiKey] || 0
-    return this.pool[index]
+  isAuthenticated() {
+    return this.pool.some(c => c.isAuthenticated())
   }
 
-  async connect() {
-    await Promise.all(this.pool.map(c => c.connect()))
+  setSupportAuthenticationProtocol(isSupported) {
+    this.map(c => c.setSupportAuthenticationProtocol(isSupported))
   }
 
-  async disconnect() {
-    await Promise.all(this.pool.map(c => c.disconnect()))
+  setVersions(versions) {
+    this.map(c => c.setVersions(versions))
   }
 
-  send(protocolRequest) {
-    const connection = this.connectionByProtocolRequest(protocolRequest)
+  map(callback) {
+    return this.pool.map(c => callback(c))
+  }
+
+  async send(protocolRequest) {
+    const connection = await this.getConnectionByRequest(protocolRequest)
     return connection.send(protocolRequest)
   }
 
-  getConnection() {
-    return this.pool[0]
+  getConnectionByRequest({ request: { apiKey } }) {
+    const index = { [apiKeys.Fetch]: 1 }[apiKey] || 0
+    return this.getConnection(index)
   }
 
-  async all(callback) {
-    await Promise.all(this.pool.map(callback))
+  async getConnection(index = 0) {
+    const connection = this.pool[index]
+
+    if (!connection.isConnected()) {
+      await connection.connect()
+    }
+
+    return connection
+  }
+
+  async destroy() {
+    await Promise.all(this.map(c => c.disconnect()))
   }
 }

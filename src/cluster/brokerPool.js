@@ -18,7 +18,6 @@ module.exports = class BrokerPool {
    * @param {import("../../types").RetryOptions} [options.retry]
    * @param {boolean} [options.allowAutoTopicCreation]
    * @param {number} [options.authenticationTimeout]
-   * @param {number} [options.reauthenticationThreshold]
    * @param {number} [options.metadataMaxAge]
    */
   constructor({
@@ -27,7 +26,6 @@ module.exports = class BrokerPool {
     retry,
     allowAutoTopicCreation,
     authenticationTimeout,
-    reauthenticationThreshold,
     metadataMaxAge,
   }) {
     this.rootLogger = logger
@@ -40,7 +38,6 @@ module.exports = class BrokerPool {
       new Broker({
         allowAutoTopicCreation,
         authenticationTimeout,
-        reauthenticationThreshold,
         ...options,
       })
 
@@ -51,7 +48,6 @@ module.exports = class BrokerPool {
     this.metadata = null
     this.metadataExpireAt = null
     this.versions = null
-    this.supportAuthenticationProtocol = null
   }
 
   /**
@@ -125,7 +121,6 @@ module.exports = class BrokerPool {
     this.brokers = {}
     this.metadata = null
     this.versions = null
-    this.supportAuthenticationProtocol = null
   }
 
   /**
@@ -189,7 +184,6 @@ module.exports = class BrokerPool {
               [nodeId]: this.createBroker({
                 logger: this.rootLogger,
                 versions: this.versions,
-                supportAuthenticationProtocol: this.supportAuthenticationProtocol,
                 connectionPool: await this.connectionPoolBuilder.build({ host, port, rack }),
                 nodeId,
               }),
