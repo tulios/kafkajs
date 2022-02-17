@@ -9,6 +9,7 @@ const { KafkaJSNonRetriableError } = require('../errors')
 const { roundRobin } = require('./assigners')
 const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
 const ISOLATION_LEVEL = require('../protocol/isolationLevel')
+const sharedPromiseTo = require('../utils/sharedPromiseTo')
 
 const { keys, values } = Object
 const { CONNECT, DISCONNECT, STOP, CRASH } = events
@@ -108,7 +109,7 @@ module.exports = ({
   }
 
   /** @type {import("../../types").Consumer["stop"]} */
-  const stop = async () => {
+  const stop = sharedPromiseTo(async () => {
     try {
       if (runner) {
         await runner.stop()
@@ -127,7 +128,7 @@ module.exports = ({
 
       throw e
     }
-  }
+  })
 
   /** @type {import("../../types").Consumer["subscribe"]} */
   const subscribe = async ({ topic, fromBeginning = false }) => {

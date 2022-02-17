@@ -1,4 +1,5 @@
 const EventEmitter = require('events')
+const flatten = require('../utils/flatten')
 
 /**
  * Fetches data from all assigned nodes, waits for workerQueue to drain and repeats.
@@ -19,7 +20,7 @@ const createFetcher = ({ nodeIds, workerQueue, fetch }) => {
 
   const fetchNodes = async () => {
     const batches = await Promise.all(nodeIds.map(nodeId => fetch(nodeId)))
-    return batches.flat()
+    return flatten(batches)
   }
 
   const start = async () => {
