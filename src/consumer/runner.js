@@ -45,7 +45,6 @@ module.exports = class Runner extends EventEmitter {
     this.consumerGroup = consumerGroup
     this.instrumentationEmitter = instrumentationEmitter
     this.eachBatchAutoResolve = eachBatchAutoResolve
-    this.concurrency = concurrency
     this.eachBatch = eachBatch
     this.eachMessage = eachMessage
     this.heartbeatInterval = heartbeatInterval
@@ -57,7 +56,7 @@ module.exports = class Runner extends EventEmitter {
       getNodeIds: () => this.consumerGroup.getNodeIds(),
       fetch: nodeId => this.fetch(nodeId),
       handler: batch => this.handleBatch(batch),
-      concurrency: this.concurrency,
+      concurrency,
     })
 
     this.running = false
@@ -110,7 +109,7 @@ module.exports = class Runner extends EventEmitter {
     try {
       await this.fetchManager.start()
     } catch (e) {
-      return this.onCrash(e)
+      this.onCrash(e)
     } finally {
       this.running = false
     }
@@ -120,6 +119,12 @@ module.exports = class Runner extends EventEmitter {
     if (!this.running) {
       return
     }
+
+    this.logger.debug('stop consumer group', {
+      groupId: this.consumerGroup.groupId,
+      memberId: this.consumerGroup.memberId,
+    })
+
     this.running = false
 
     try {
