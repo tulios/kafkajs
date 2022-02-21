@@ -5,7 +5,7 @@ const { KafkaJSConnectionError, KafkaJSConnectionClosedError } = require('../err
 const { INT_32_MAX_VALUE } = require('../constants')
 const getEnv = require('../env')
 const RequestQueue = require('./requestQueue')
-const { CONNECTION_STATUS } = require('./connectionStatus')
+const { CONNECTION_STATUS, CONNECTED_STATUS } = require('./connectionStatus')
 const sharedPromiseTo = require('../utils/sharedPromiseTo')
 const Long = require('../utils/long')
 const SASLAuthenticator = require('../broker/saslAuthenticator')
@@ -156,7 +156,7 @@ module.exports = class Connection {
   }
 
   isConnected() {
-    return this.connectionStatus === CONNECTION_STATUS.CONNECTED
+    return CONNECTED_STATUS.includes(this.connectionStatus)
   }
 
   /**
