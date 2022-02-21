@@ -285,7 +285,7 @@ module.exports = class Runner extends EventEmitter {
       return
     }
 
-    /** @param {import('../../types').Batch} batch */
+    /** @param {import('./batch')} batch */
     const onBatch = async batch => {
       const startBatchProcess = Date.now()
       const payload = {

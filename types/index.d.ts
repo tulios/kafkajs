@@ -811,7 +811,6 @@ export type Batch = {
   lastOffset(): string
   offsetLag(): string
   offsetLagLow(): string
-  isEmptyDueToFiltering(): boolean
 }
 
 export type GroupOverview = {
