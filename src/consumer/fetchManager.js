@@ -29,26 +29,19 @@ const createFetchManager = ({
 
   const createFetchers = () => {
     const nodeIds = getNodeIds()
-    const numFetchers = Math.min(concurrency, nodeIds.length)
-    const maxNumWorkers = Math.ceil(concurrency / numFetchers)
 
     const workers = seq(concurrency, workerId => createWorker({ handler, workerId }))
-
-    const fetchers = seq(numFetchers, index => {
-      const fetcherNodeIds = nodeIds.filter((_, i) => i % concurrency === index)
-      const fetcherWorkers = workers.slice(maxNumWorkers * index, maxNumWorkers * (index + 1))
-
-      const workerQueue = createWorkerQueue({ workers: fetcherWorkers })
-
-      return createFetcher({
-        nodeIds: fetcherNodeIds,
+    const workerQueue = createWorkerQueue({ workers })
+    const fetchers = nodeIds.map(nodeId =>
+      createFetcher({
+        nodeId,
         workerQueue,
         fetch: async nodeId => {
           validateShouldRebalance(nodeIds)
           return fetch(nodeId)
         },
       })
-    })
+    )
 
     logger.debug(`Created ${fetchers.length} fetchers`, { nodeIds, concurrency })
     return fetchers
@@ -63,20 +56,25 @@ const createFetchManager = ({
   }
 
   const start = async () => {
-    fetchers = createFetchers()
+    logger.debug('Starting...')
 
-    logger.debug('Starting fetchers...')
-    try {
-      await Promise.all(fetchers.map(fetcher => fetcher.start()))
-    } catch (error) {
-      await stop()
+    while (true) {
+      fetchers = createFetchers()
 
-      if (error instanceof KafkaJSFetcherRebalanceError) {
-        logger.debug('Rebalancing fetchers...')
-        return start()
+      try {
+        await Promise.all(fetchers.map(fetcher => fetcher.start()))
+      } catch (error) {
+        await stop()
+
+        if (error instanceof KafkaJSFetcherRebalanceError) {
+          logger.debug('Rebalancing fetchers...')
+          continue
+        }
+
+        throw error
       }
 
-      throw error
+      break
     }
   }
 

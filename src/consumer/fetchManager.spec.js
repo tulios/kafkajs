@@ -25,45 +25,15 @@ describe('FetchManager', () => {
     fetchManager && (await fetchManager.stop())
   })
 
-  it('should distribute nodeIds evenly', async () => {
-    fetchManager = createTestFetchManager({ concurrency: 2, getNodeIds: () => seq(2) })
+  it('should construct fetchers and workers', async () => {
     fetchManager.start()
 
     const fetchers = fetchManager.getFetchers()
-    expect(fetchers).toHaveLength(2)
+    expect(fetchers).toHaveLength(getNodeIds().length)
 
-    const [fetcher1, fetcher2] = fetchers
-    expect(fetcher1.getNodeIds()).toEqual([0])
-    expect(fetcher2.getNodeIds()).toEqual([1])
-  })
-
-  it('should assign nodeIds round-robin', async () => {
-    fetchManager = createTestFetchManager({ concurrency: 2, getNodeIds: () => seq(5) })
-    fetchManager.start()
-
-    const fetchers = fetchManager.getFetchers()
-    expect(fetchers).toHaveLength(2)
-
-    const [fetcher1, fetcher2] = fetchers
-    expect(fetcher1.getNodeIds()).toEqual([0, 2, 4])
-    expect(fetcher2.getNodeIds()).toEqual([1, 3])
-  })
-
-  it('should create a single fetcher', async () => {
-    fetchManager = createTestFetchManager({ concurrency: 2, getNodeIds: () => seq(1) })
-    fetchManager.start()
-
-    const fetchers = fetchManager.getFetchers()
-    expect(fetchers).toHaveLength(1)
-
-    const [fetcher] = fetchers
-    expect(fetcher.getNodeIds()).toEqual([0])
-    expect(
-      fetcher
-        .getWorkerQueue()
-        .getWorkers()
-        .map(x => x.getWorkerId())
-    ).toEqual([0, 1])
+    const workerQueue = fetchers[0].getWorkerQueue()
+    const workers = workerQueue.getWorkers()
+    expect(workers).toHaveLength(concurrency)
   })
 
   it('should finish processing other batches in case of an error from any single worker', async () => {
@@ -71,7 +41,7 @@ describe('FetchManager', () => {
       throw new Error('test')
     })
     await expect(fetchManager.start()).toReject()
-    expect(handler).toHaveBeenCalledTimes((concurrency - 1) * batchSize + 1)
+    expect(handler).toHaveBeenCalledTimes(getNodeIds().length * batchSize)
   })
 
   it('should rebalance fetchers in case of change in nodeIds', async () => {
@@ -82,8 +52,6 @@ describe('FetchManager', () => {
 
     let fetchers = fetchManager.getFetchers()
     expect(fetchers).toHaveLength(2)
-    expect(fetchers[0].getWorkerQueue().getWorkers()).toHaveLength(2)
-    expect(fetchers[1].getWorkerQueue().getWorkers()).toHaveLength(1)
 
     getNodeIds.mockImplementation(() => seq(3))
 
@@ -92,8 +60,5 @@ describe('FetchManager', () => {
 
     fetchers = fetchManager.getFetchers()
     expect(fetchers).toHaveLength(3)
-    fetchers.forEach(fetcher => {
-      expect(fetcher.getWorkerQueue().getWorkers()).toHaveLength(1)
-    })
   })
 })

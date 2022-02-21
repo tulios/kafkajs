@@ -7,13 +7,13 @@ describe('WorkerQueue', () => {
   let workerQueue, workers, handler
 
   beforeEach(() => {
-    handler = jest.fn(() => {})
+    handler = jest.fn(async () => {})
 
     workers = seq(3, workerId => createWorker({ handler, workerId }))
     workerQueue = createWorkerQueue({ workers })
   })
 
-  it('should handle all messages within on push', async () => {
+  it('should handle all messages within one push', async () => {
     await workerQueue.push(...batches)
     expect(handler).toHaveBeenCalledTimes(100)
   })

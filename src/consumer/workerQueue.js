@@ -10,6 +10,9 @@ const allSettled = require('../utils/promiseAllSettled')
  * @template T
  */
 const createWorkerQueue = ({ workers }) => {
+  /** @type {{ batch: T, resolve: (value?: any) => void, reject: (e: Error) => void}[]} */
+  const queue = []
+
   const getWorkers = () => workers
 
   /**
@@ -19,16 +22,13 @@ const createWorkerQueue = ({ workers }) => {
    * @returns {Promise<void>}
    */
   const push = async (...batches) => {
-    const queue = [...batches]
-
-    const results = await allSettled(
-      workers.map(worker =>
-        worker.run({
-          next: () => queue.shift(),
-        })
-      )
+    const promises = batches.map(
+      batch => new Promise((resolve, reject) => queue.push({ batch, resolve, reject }))
     )
 
+    workers.forEach(worker => worker.run({ next: () => queue.shift() }))
+
+    const results = await allSettled(promises)
     const rejected = results.find(result => result.status === 'rejected')
     if (rejected) {
       // @ts-ignore
@@ -36,7 +36,7 @@ const createWorkerQueue = ({ workers }) => {
     }
   }
 
-  return { getWorkers, push }
+  return { push, getWorkers }
 }
 
 module.exports = createWorkerQueue

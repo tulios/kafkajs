@@ -5,30 +5,35 @@
  * @typedef {ReturnType<typeof createWorker>} Worker
  */
 
+const sharedPromiseTo = require('../utils/sharedPromiseTo')
+
 /**
  * @param {{ handler: Handler<T>, workerId: number }} options
  * @template T
  */
 const createWorker = ({ handler, workerId }) => {
-  const getWorkerId = () => workerId
-
   /**
-   * Takes messages from next() until it returns undefined.
+   * Takes batches from next() until it returns undefined.
    *
-   * @param {{ next: () => T | undefined }} param0
+   * @param {{ next: () => { batch: T, resolve: () => void, reject: (e: Error) => void } | undefined }} param0
    * @returns {Promise<void>}
    */
-  const run = async ({ next }) => {
-    const batch = next()
-    if (!batch) {
-      return
+  const run = sharedPromiseTo(async ({ next }) => {
+    while (true) {
+      const item = next()
+      if (!item) break
+
+      const { batch, resolve, reject } = item
+      try {
+        await handler(batch, { workerId })
+        resolve()
+      } catch (error) {
+        reject(error)
+      }
     }
+  })
 
-    await handler(batch, { workerId })
-    return run({ next })
-  }
-
-  return { getWorkerId, run }
+  return { run }
 }
 
 module.exports = createWorker

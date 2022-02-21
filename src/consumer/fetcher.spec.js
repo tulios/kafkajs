@@ -6,7 +6,7 @@ const createWorkerQueue = require('./workerQueue')
 const createWorker = require('./worker')
 
 describe('Fetcher', () => {
-  let fetcher, fetch, handler, nodeIds, workers, workerQueue
+  let fetcher, fetch, handler, workerIds, workers, workerQueue
 
   beforeEach(() => {
     fetch = jest.fn(async nodeId => {
@@ -18,31 +18,29 @@ describe('Fetcher', () => {
       await sleep(50)
     })
 
-    nodeIds = [1, 2, 3]
-
-    workers = seq(5, workerId => createWorker({ workerId, handler }))
+    workerIds = seq(5)
+    workers = workerIds.map(workerId => createWorker({ workerId, handler }))
     workerQueue = createWorkerQueue({ workers })
-    fetcher = createFetcher({ nodeIds, fetch, workerQueue })
+    fetcher = createFetcher({ nodeId: 0, fetch, workerQueue })
   })
 
-  it('should fetch all nodes', async () => {
+  it('should fetch node 0 and process batches before exiting', async () => {
     fetcher.start()
     await fetcher.stop()
 
-    expect(fetch).toHaveBeenCalledTimes(nodeIds.length)
-    nodeIds.forEach(nodeId => {
-      expect(fetch).toHaveBeenCalledWith(nodeId)
-    })
+    expect(fetch).toHaveBeenCalledWith(0)
+    expect(handler).toHaveBeenCalledTimes(10)
   })
 
   it('should utilize all workers', async () => {
     fetcher.start()
-    await waitFor(() => handler.mock.calls.length > workers.length)
+
+    await waitFor(() => handler.mock.calls.length > workerIds.length)
     await fetcher.stop()
 
     const calledWorkerIds = handler.mock.calls.map(([, { workerId }]) => workerId)
-    workers.forEach(worker => {
-      expect(calledWorkerIds).toContain(worker.getWorkerId())
+    workerIds.forEach(workerId => {
+      expect(calledWorkerIds).toContain(workerId)
     })
   })
 })
