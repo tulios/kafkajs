@@ -24,12 +24,13 @@ describe('Fetcher', () => {
     fetcher = createFetcher({ nodeId: 0, fetch, workerQueue })
   })
 
-  it('should fetch node 0 and process batches before exiting', async () => {
+  it('should fetch, but not push to workerQueue before exiting', async () => {
     fetcher.start()
     await fetcher.stop()
 
+    expect(fetch).toHaveBeenCalledTimes(1)
     expect(fetch).toHaveBeenCalledWith(0)
-    expect(handler).toHaveBeenCalledTimes(10)
+    expect(handler).toHaveBeenCalledTimes(0)
   })
 
   it('should utilize all workers', async () => {
