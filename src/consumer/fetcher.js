@@ -22,7 +22,9 @@ const createFetcher = ({ nodeId, workerQueue, fetch }) => {
     while (isRunning) {
       try {
         const batches = await fetch(nodeId)
-        await workerQueue.push(...batches)
+        if (isRunning) {
+          await workerQueue.push(...batches)
+        }
       } catch (error) {
         isRunning = false
         emitter.emit('end')
