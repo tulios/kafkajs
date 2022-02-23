@@ -23,21 +23,30 @@ const createFetchManager = ({
   concurrency = 1,
 }) => {
   const logger = rootLogger.namespace('FetchManager')
+  const workers = seq(concurrency, workerId => createWorker({ handler, workerId }))
+  const workerQueue = createWorkerQueue({ workers })
+
   let fetchers = []
 
   const getFetchers = () => fetchers
 
   const createFetchers = () => {
-    const nodeIds = getNodeIds()
+    const nodeIds = getNodeIds().sort()
 
-    const workers = seq(concurrency, workerId => createWorker({ handler, workerId }))
-    const workerQueue = createWorkerQueue({ workers })
+    const validateShouldRebalance = () => {
+      const current = getNodeIds().sort()
+      const hasChanged = JSON.stringify(nodeIds) !== JSON.stringify(current)
+      if (hasChanged) {
+        throw new KafkaJSFetcherRebalanceError()
+      }
+    }
+
     const fetchers = nodeIds.map(nodeId =>
       createFetcher({
         nodeId,
         workerQueue,
         fetch: async nodeId => {
-          validateShouldRebalance(nodeIds)
+          validateShouldRebalance()
           return fetch(nodeId)
         },
       })
@@ -45,14 +54,6 @@ const createFetchManager = ({
 
     logger.debug(`Created ${fetchers.length} fetchers`, { nodeIds, concurrency })
     return fetchers
-  }
-
-  const validateShouldRebalance = previous => {
-    const current = getNodeIds()
-    const hasChanged = JSON.stringify(previous.sort()) !== JSON.stringify(current.sort())
-    if (hasChanged) {
-      throw new KafkaJSFetcherRebalanceError()
-    }
   }
 
   const start = async () => {

@@ -362,6 +362,11 @@ module.exports = class ConsumerGroup {
           throw new KafkaJSError(e)
         }
 
+        if (e.type === 'UNKNOWN_MEMBER_ID') {
+          this.memberId = null
+          throw new KafkaJSError(e)
+        }
+
         bail(e)
       }
     })

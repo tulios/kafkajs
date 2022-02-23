@@ -249,7 +249,7 @@ describe('Consumer > Runner', () => {
       expect(consumerGroup.commitOffsets).toHaveBeenCalledWith(offsets)
     })
 
-    it('should throw when group is rebalancing, while triggering another join', async () => {
+    it('should throw when group is rebalancing', async () => {
       const error = rebalancingError()
       consumerGroup.commitOffsets.mockImplementationOnce(() => {
         throw error
@@ -261,11 +261,6 @@ describe('Consumer > Runner', () => {
       consumerGroup.joinAndSync.mockClear()
 
       expect(runner.commitOffsets(offsets)).rejects.toThrow(error.message)
-      expect(consumerGroup.joinAndSync).toHaveBeenCalledTimes(0)
-
-      await sleep(100)
-
-      expect(consumerGroup.joinAndSync).toHaveBeenCalledTimes(1)
     })
 
     it('correctly catch exceptions in parallel "eachBatch" processing', async () => {
@@ -323,25 +318,6 @@ describe('Consumer > Runner', () => {
 
       await waitFor(() => onCrash.mock.calls.length > 0)
       expect(onCrash).toHaveBeenCalledWith(error)
-    })
-
-    it('a triggered rejoin failing should cause a crash', async () => {
-      runner.scheduleFetchManager = jest.fn()
-      await runner.start()
-
-      const unknownError = new KafkaJSProtocolError(createErrorFromCode(UNKNOWN))
-      consumerGroup.joinAndSync.mockImplementationOnce(() => {
-        throw unknownError
-      })
-      consumerGroup.commitOffsets.mockImplementationOnce(() => {
-        throw rebalancingError()
-      })
-
-      expect(runner.commitOffsets(offsets)).rejects.toThrow(rebalancingError().message)
-
-      await waitFor(() => onCrash.mock.calls.length > 0)
-
-      expect(onCrash).toHaveBeenCalledWith(unknownError)
     })
 
     it('should ignore request errors from fetch on stopped consumer', async () => {
