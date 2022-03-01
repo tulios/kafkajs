@@ -113,6 +113,18 @@ module.exports = class Runner extends EventEmitter {
           continue
         }
 
+        if (e.type === 'UNKNOWN_MEMBER_ID') {
+          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+            error: e.message,
+          })
+
+          this.consumerGroup.memberId = null
+          await this.consumerGroup.joinAndSync()
+          continue
+        }
+
         this.onCrash(e)
         break
       }
@@ -401,7 +413,11 @@ module.exports = class Runner extends EventEmitter {
           return
         }
 
-        if (isRebalancing(e) || e.name === 'KafkaJSNotImplemented') {
+        if (
+          isRebalancing(e) ||
+          e.type === 'UNKNOWN_MEMBER_ID' ||
+          e.name === 'KafkaJSNotImplemented'
+        ) {
           return bail(e)
         }
 
