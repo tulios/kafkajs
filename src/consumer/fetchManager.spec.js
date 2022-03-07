@@ -1,6 +1,7 @@
 const sleep = require('../utils/sleep')
 const seq = require('../utils/seq')
 const createFetchManager = require('./fetchManager')
+const Batch = require('./batch')
 const { newLogger } = require('testHelpers')
 const waitFor = require('../utils/waitFor')
 
@@ -12,7 +13,17 @@ describe('FetchManager', () => {
 
   beforeEach(() => {
     batchSize = 10
-    fetch = jest.fn(async nodeId => seq(batchSize, id => `message ${id} from node ${nodeId}`))
+    fetch = jest.fn(async nodeId =>
+      seq(
+        batchSize,
+        id =>
+          new Batch('test-topic', 0, {
+            partition: id.toString(),
+            highWatermark: '100',
+            messages: [],
+          })
+      )
+    )
     handler = jest.fn(async () => {
       await sleep(20)
     })

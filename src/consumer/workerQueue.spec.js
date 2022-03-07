@@ -1,15 +1,28 @@
 const createWorkerQueue = require('./workerQueue')
 const createWorker = require('./worker')
+const Batch = require('./batch')
 const seq = require('../utils/seq')
+const { newLogger } = require('../../testHelpers')
 
 describe('WorkerQueue', () => {
-  const batches = seq(100, index => `message ${index}`)
+  const batches = seq(
+    100,
+    index =>
+      new Batch('test-topic', 0, {
+        partition: index.toString(),
+        highWatermark: '100',
+        messages: [],
+      })
+  )
   let workerQueue, workers, handler
 
   beforeEach(() => {
     handler = jest.fn(async () => {})
 
-    workers = seq(3, workerId => createWorker({ handler, workerId }))
+    const partitionAssignments = new Map()
+    workers = seq(3, workerId =>
+      createWorker({ handler, workerId, logger: newLogger(), partitionAssignments })
+    )
     workerQueue = createWorkerQueue({ workers })
   })
 
