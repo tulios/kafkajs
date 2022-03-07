@@ -31,11 +31,12 @@ const createFetchManager = ({
   const getFetchers = () => fetchers
 
   const createFetchers = () => {
-    const nodeIds = getNodeIds().sort()
+    const nodeIds = getNodeIds()
 
     const validateShouldRebalance = () => {
-      const current = getNodeIds().sort()
-      const hasChanged = JSON.stringify(nodeIds) !== JSON.stringify(current)
+      const current = getNodeIds()
+      const hasChanged =
+        nodeIds.length !== current.length || nodeIds.some(nodeId => !current.includes(nodeId))
       if (hasChanged) {
         throw new KafkaJSFetcherRebalanceError()
       }
