@@ -3,12 +3,14 @@ const { bugs } = pkgJson
 
 class KafkaJSError extends Error {
   constructor(e, { retriable = true } = {}) {
-    super(e)
+    const cause = e instanceof Error ? e : undefined
+    super(e, { cause })
     Error.captureStackTrace(this, this.constructor)
     this.message = e.message || e
     this.name = 'KafkaJSError'
     this.retriable = retriable
     this.helpUrl = e.helpUrl
+    this.cause = cause
   }
 }
 
@@ -16,6 +18,7 @@ class KafkaJSNonRetriableError extends KafkaJSError {
   constructor(e) {
     super(e, { retriable: false })
     this.name = 'KafkaJSNonRetriableError'
+    // Kept for backwards compatibility. Introduced in v1.16.0
     this.originalError = e
   }
 }
@@ -50,6 +53,7 @@ class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
   constructor(e, { retryCount, retryTime }) {
     super(e)
     this.stack = `${this.name}\n  Caused by: ${e.stack}`
+    // Kept for backwards compatibility. Introduced in v1.16.0
     this.originalError = e
     this.retryCount = retryCount
     this.retryTime = retryTime

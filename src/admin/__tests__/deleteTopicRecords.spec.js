@@ -339,9 +339,9 @@ describe('Admin > deleteTopicRecords', () => {
 
     expect(error).toBeDefined()
     expect(error.name).toBe('KafkaJSNonRetriableError')
-    expect(error.originalError.name).toBe('KafkaJSDeleteTopicRecordsError')
-    expect(error.originalError.retriable).toBe(false)
-    expect(error.originalError.partitions).toEqual([
+    expect(error.cause.name).toBe('KafkaJSDeleteTopicRecordsError')
+    expect(error.cause.retriable).toBe(false)
+    expect(error.cause.partitions).toEqual([
       {
         partition: 1,
         offset: '99',
@@ -403,9 +403,9 @@ describe('Admin > deleteTopicRecords', () => {
 
     expect(error).toBeDefined()
     expect(error.name).toBe('KafkaJSNonRetriableError')
-    expect(error.originalError.name).toBe('KafkaJSDeleteTopicRecordsError')
-    expect(error.originalError.retriable).toBe(false)
-    expect(error.originalError.partitions).toEqual(
+    expect(error.cause.name).toBe('KafkaJSDeleteTopicRecordsError')
+    expect(error.cause.retriable).toBe(false)
+    expect(error.cause.partitions).toEqual(
       expect.arrayContaining([
         {
           partition: 0,

@@ -283,7 +283,7 @@ module.exports = ({
               'Caught error when invoking user-provided "restartOnFailure" callback. Defaulting to restarting.',
               {
                 error: error.message || error,
-                originalError: e.message || e,
+                cause: e.message || e,
                 groupId,
               }
             )
