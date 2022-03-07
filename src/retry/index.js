@@ -47,10 +47,12 @@ const createRetriable = (configs, resolve, reject, fn) => {
           if (shouldRetry) {
             scheduleRetry()
           } else {
-            reject(new KafkaJSNumberOfRetriesExceeded(e, { retryCount, retryTime }))
+            reject(
+              new KafkaJSNumberOfRetriesExceeded(e, { retryCount, retryTime, cause: e.cause || e })
+            )
           }
         } else {
-          reject(new KafkaJSNonRetriableError(e))
+          reject(new KafkaJSNonRetriableError(e, { cause: e.cause || e }))
         }
       })
   }
