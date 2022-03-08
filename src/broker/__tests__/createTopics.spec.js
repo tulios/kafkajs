@@ -86,7 +86,7 @@ describe('Broker > createTopics', () => {
     })
   })
 
-  it('should use the default replication factor', async () => {
+  it('should use the default replication factor and num partitions if not specified', async () => {
     await broker.connect()
     const topicName = `test-topic-${secureRandom()}`
     const response = await broker.createTopics({
@@ -110,7 +110,7 @@ describe('Broker > createTopics', () => {
         {
           type: ConfigResourceTypes.BROKER,
           name: '0',
-          configNames: ['default.replication.factor'],
+          configNames: ['default.replication.factor', 'num.partitions'],
         },
       ],
     })
@@ -119,11 +119,18 @@ describe('Broker > createTopics', () => {
       null,
       10
     )
+    const defaultNumPartitions = parseInt(
+      describeResponse.resources[0].configEntries[1].configValue,
+      null,
+      10
+    )
     expect(defaultReplicationFactor).toBeGreaterThan(0)
+    expect(defaultNumPartitions).toBeGreaterThan(0)
 
     const metadata = await broker.metadata([topicName])
     expect(metadata.topicMetadata[0].partitionMetadata[0].replicas.length).toEqual(
       defaultReplicationFactor
     )
+    expect(metadata.topicMetadata[0].partitionMetadata).toHaveLength(defaultNumPartitions)
   })
 })
