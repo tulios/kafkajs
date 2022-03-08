@@ -8,9 +8,9 @@ const { KafkaJSFetcherRebalanceError } = require('../errors')
 
 /**
  * @param {object} options
- * @param {import('types').Logger} options.logger
+ * @param {import('../../types').Logger} options.logger
  * @param {() => number[]} options.getNodeIds
- * @param {(nodeId: number) => Promise<T[]>} options.fetch
+ * @param {(nodeId: number) => Promise<import('../../types').Batch[]>} options.fetch
  * @param {import('./worker').Handler<T>} options.handler
  * @param {number} [options.concurrency]
  * @template T
@@ -31,11 +31,13 @@ const createFetchManager = ({
   const getFetchers = () => fetchers
 
   const createFetchers = () => {
-    const nodeIds = getNodeIds().sort()
+    const nodeIds = getNodeIds()
+    const partitionAssignments = new Map()
 
     const validateShouldRebalance = () => {
-      const current = getNodeIds().sort()
-      const hasChanged = JSON.stringify(nodeIds) !== JSON.stringify(current)
+      const current = getNodeIds()
+      const hasChanged =
+        nodeIds.length !== current.length || nodeIds.some(nodeId => !current.includes(nodeId))
       if (hasChanged) {
         throw new KafkaJSFetcherRebalanceError()
       }
@@ -45,10 +47,12 @@ const createFetchManager = ({
       createFetcher({
         nodeId,
         workerQueue,
+        partitionAssignments,
         fetch: async nodeId => {
           validateShouldRebalance()
           return fetch(nodeId)
         },
+        logger,
       })
     )
 

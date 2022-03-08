@@ -1,4 +1,20 @@
 const createWorker = require('./worker')
+const Batch = require('./batch')
+const seq = require('../utils/seq')
+
+const createBatch = partition =>
+  new Batch('test-topic', 0, {
+    partition: partition.toString(),
+    highWatermark: '100',
+    messages: [
+      { offset: '0' },
+      { offset: '1' },
+      { offset: '2' },
+      { offset: '3' },
+      { offset: '4' },
+      { offset: '5' },
+    ],
+  })
 
 describe('Worker', () => {
   let worker, handler, next, workerId, resolve, reject
@@ -13,16 +29,17 @@ describe('Worker', () => {
   })
 
   it('should loop until next() returns undefined', async () => {
+    const [first, second] = seq(2).map(createBatch)
     next
-      .mockImplementationOnce(() => ({ batch: 'first', resolve, reject }))
-      .mockImplementationOnce(() => ({ batch: 'second', resolve, reject }))
+      .mockImplementationOnce(() => ({ batch: first, resolve, reject }))
+      .mockImplementationOnce(() => ({ batch: second, resolve, reject }))
 
     await worker.run({ next })
 
     expect(next).toHaveBeenCalledTimes(3)
     expect(handler).toHaveBeenCalledTimes(2)
-    expect(handler).toHaveBeenCalledWith('first', { workerId })
-    expect(handler).toHaveBeenCalledWith('second', { workerId })
+    expect(handler).toHaveBeenCalledWith(first, { workerId })
+    expect(handler).toHaveBeenCalledWith(second, { workerId })
     expect(resolve).toHaveBeenCalledTimes(2)
   })
 

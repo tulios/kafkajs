@@ -1,9 +1,18 @@
 const createWorkerQueue = require('./workerQueue')
 const createWorker = require('./worker')
+const Batch = require('./batch')
 const seq = require('../utils/seq')
 
 describe('WorkerQueue', () => {
-  const batches = seq(100, index => `message ${index}`)
+  const batches = seq(
+    100,
+    index =>
+      new Batch('test-topic', 0, {
+        partition: index.toString(),
+        highWatermark: '100',
+        messages: [],
+      })
+  )
   let workerQueue, workers, handler
 
   beforeEach(() => {

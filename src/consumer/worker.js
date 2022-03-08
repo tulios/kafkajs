@@ -24,6 +24,7 @@ const createWorker = ({ handler, workerId }) => {
       if (!item) break
 
       const { batch, resolve, reject } = item
+
       try {
         await handler(batch, { workerId })
         resolve()
