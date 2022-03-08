@@ -23,9 +23,9 @@ const createFetchManager = ({
   concurrency = 1,
 }) => {
   const logger = rootLogger.namespace('FetchManager')
-  const partitionAssignments = new Map()
+  const workerAssignments = new Map()
   const workers = seq(concurrency, workerId =>
-    createWorker({ handler, workerId, partitionAssignments, logger })
+    createWorker({ handler, workerId, partitionAssignments: workerAssignments, logger })
   )
   const workerQueue = createWorkerQueue({ workers })
 
@@ -35,6 +35,7 @@ const createFetchManager = ({
 
   const createFetchers = () => {
     const nodeIds = getNodeIds()
+    const fetcherAssignments = new Map()
 
     const validateShouldRebalance = () => {
       const current = getNodeIds()
@@ -49,10 +50,12 @@ const createFetchManager = ({
       createFetcher({
         nodeId,
         workerQueue,
+        partitionAssignments: fetcherAssignments,
         fetch: async nodeId => {
           validateShouldRebalance()
-          return await fetch(nodeId)
+          return fetch(nodeId)
         },
+        logger,
       })
     )
 

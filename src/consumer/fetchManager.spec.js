@@ -18,7 +18,7 @@ describe('FetchManager', () => {
         batchSize,
         id =>
           new Batch('test-topic', 0, {
-            partition: id.toString(),
+            partition: `${nodeId}${id}`,
             highWatermark: '100',
             messages: [],
           })
