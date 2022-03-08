@@ -29,7 +29,7 @@ const createWorker = ({ handler, workerId, partitionAssignments, logger: rootLog
       const key = `${topic}|${partition}`
       if (partitionAssignments.has(key)) {
         logger.info('Skipping batch due to partition already being assigned to another worker', {
-          assignedWorker: partitionAssignments[partition],
+          assignedWorker: partitionAssignments[key],
           topic,
           partition,
         })
