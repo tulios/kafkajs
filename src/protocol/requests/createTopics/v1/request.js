@@ -32,7 +32,7 @@ module.exports = ({ topics, validateOnly = false, timeout = 5000 }) => ({
 const encodeTopics = ({
   topic,
   numPartitions = 1,
-  replicationFactor = 1,
+  replicationFactor = -1,
   replicaAssignment = [],
   configEntries = [],
 }) => {
