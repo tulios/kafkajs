@@ -1,7 +1,6 @@
 const createWorker = require('./worker')
 const Batch = require('./batch')
 const seq = require('../utils/seq')
-const { newLogger } = require('../../testHelpers')
 
 const createBatch = partition =>
   new Batch('test-topic', 0, {
@@ -18,7 +17,7 @@ const createBatch = partition =>
   })
 
 describe('Worker', () => {
-  let worker, handler, next, workerId, partitionAssignments, resolve, reject
+  let worker, handler, next, workerId, resolve, reject
 
   beforeEach(() => {
     resolve = jest.fn(() => {})
@@ -26,8 +25,7 @@ describe('Worker', () => {
     handler = jest.fn(async () => {})
     next = jest.fn(() => undefined)
     workerId = 0
-    partitionAssignments = new Map()
-    worker = createWorker({ handler, workerId, partitionAssignments, logger: newLogger() })
+    worker = createWorker({ handler, workerId })
   })
 
   it('should loop until next() returns undefined', async () => {
@@ -55,32 +53,5 @@ describe('Worker', () => {
 
     await worker.run({ next })
     expect(reject).toHaveBeenCalledWith(error)
-  })
-
-  it('should skip batches that are already assigned to another worker', async () => {
-    const secondWorker = createWorker({
-      handler,
-      workerId: 1,
-      partitionAssignments,
-      logger: newLogger(),
-    })
-
-    const secondNext = jest.fn(() => undefined)
-    const batches = seq(2).map(createBatch)
-
-    ;[next, secondNext].forEach(queue => {
-      batches.forEach(batch => {
-        queue.mockImplementationOnce(() => ({ batch, resolve, reject }))
-      })
-    })
-
-    await Promise.all([
-      worker.run({ next, resolve, reject }),
-      secondWorker.run({ next: secondNext, resolve, reject }),
-    ])
-
-    expect(next).toHaveBeenCalledTimes(3)
-    expect(secondNext).toHaveBeenCalledTimes(3)
-    expect(handler).toHaveBeenCalledTimes(2)
   })
 })
