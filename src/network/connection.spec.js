@@ -320,14 +320,14 @@ describe('Network > Connection', () => {
       expect(connection.correlationId).toEqual(2)
     })
 
-    test('resets to 0 when correlationId is equal to Number.MAX_VALUE', () => {
+    test('resets to 0 when correlationId is equal to max signed int32', () => {
       expect(connection.correlationId).toEqual(0)
 
       connection.nextCorrelationId()
       connection.nextCorrelationId()
       expect(connection.correlationId).toEqual(2)
 
-      connection.correlationId = Number.MAX_VALUE
+      connection.correlationId = Math.pow(2, 31) - 1
       const id1 = connection.nextCorrelationId()
       expect(id1).toEqual(0)
       expect(connection.correlationId).toEqual(1)
