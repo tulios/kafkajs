@@ -87,8 +87,8 @@ The method will throw exceptions in case of errors.</p>
 <p><code>ITopicConfig</code> structure:</p>
 <pre><code class="hljs css language-javascript">{
     <span class="hljs-attr">topic</span>: &lt;String&gt;,
-    numPartitions: &lt;Number&gt;,     // default: 1
-    replicationFactor: &lt;Number&gt;, // default: 1
+    numPartitions: &lt;Number&gt;,     // default: -1 (uses broker `num.partitions` configuration)
+    replicationFactor: &lt;Number&gt;, // default: -1 (uses broker `default.replication.factor` configuration)
     replicaAssignment: &lt;Array&gt;,  // Example: [{ partition: 0, replicas: [0,1,2] }] - default: []
     configEntries: &lt;Array&gt;       // Example: [{ name: 'cleanup.policy', value: 'compact' }] - default: []
 }
