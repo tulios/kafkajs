@@ -22,7 +22,11 @@ describe('Admin', () => {
     yetAnotherTopicName = `yet-another-topic-${secureRandom()}`
     groupId = `consumer-group-id-${secureRandom()}`
 
-    await createTopic({ topic: topicName })
+    await Promise.all(
+      [topicName, anotherTopicName, yetAnotherTopicName].map(topic =>
+        createTopic({ topic, numPartitions: 1 })
+      )
+    )
 
     logger = newLogger()
     cluster = createCluster()
