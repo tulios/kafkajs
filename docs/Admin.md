@@ -46,8 +46,8 @@ await admin.createTopics({
 ```javascript
 {
     topic: <String>,
-    numPartitions: <Number>,     // default: 1
-    replicationFactor: <Number>, // default: 1
+    numPartitions: <Number>,     // default: -1 (uses broker `num.partitions` configuration)
+    replicationFactor: <Number>, // default: -1 (uses broker `default.replication.factor` configuration)
     replicaAssignment: <Array>,  // Example: [{ partition: 0, replicas: [0,1,2] }] - default: []
     configEntries: <Array>       // Example: [{ name: 'cleanup.policy', value: 'compact' }] - default: []
 }
