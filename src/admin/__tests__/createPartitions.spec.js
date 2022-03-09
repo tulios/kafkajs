@@ -56,7 +56,7 @@ describe('Admin', () => {
 
       await expect(
         admin.createPartitions({
-          topicPartitions: [{ topic: topicName + 'x', count: 2 }],
+          topicPartitions: [{ topic: topicName + 'x', count: 3 }],
         })
       ).rejects.toHaveProperty('message', 'This server does not host this topic-partition')
     })
@@ -75,7 +75,7 @@ describe('Admin', () => {
 
       await expect(
         admin.createPartitions({
-          topicPartitions: [{ topic: topicName, count: 2, assignments: [[10]] }],
+          topicPartitions: [{ topic: topicName, count: 3, assignments: [[10]] }],
         })
       ).rejects.toHaveProperty('message', 'Replica assignment is invalid')
     })
@@ -112,7 +112,7 @@ describe('Admin', () => {
 
       await expect(
         admin.createPartitions({
-          topicPartitions: [{ topic: topicName, count: 2 }],
+          topicPartitions: [{ topic: topicName, count: 3 }],
         })
       ).resolves.not.toThrow()
     })
@@ -132,7 +132,7 @@ describe('Admin', () => {
       admin = createAdmin({ cluster, logger: newLogger() })
       await expect(
         admin.createPartitions({
-          topicPartitions: [{ topic: topicName, count: 2 }],
+          topicPartitions: [{ topic: topicName, count: 3 }],
         })
       ).resolves.not.toThrow()
 

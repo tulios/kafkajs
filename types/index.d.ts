@@ -205,7 +205,7 @@ export interface ITopicConfig {
   numPartitions?: number
   replicationFactor?: number
   replicaAssignment?: object[]
-  configEntries?: object[]
+  configEntries?: IResourceConfigEntry[]
 }
 
 export interface ITopicPartitionConfig {
@@ -324,10 +324,15 @@ export interface DescribeConfigResponse {
   throttleTime: number
 }
 
+export interface IResourceConfigEntry {
+  name: string
+  value: string
+}
+
 export interface IResourceConfig {
   type: ResourceTypes | ConfigResourceTypes
   name: string
-  configEntries: { name: string; value: string }[]
+  configEntries: IResourceConfigEntry[]
 }
 
 type ValueOf<T> = T[keyof T]
