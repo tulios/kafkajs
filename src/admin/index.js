@@ -132,6 +132,37 @@ module.exports = ({
       )
     }
 
+    for (const { topic, configEntries } of topics) {
+      if (configEntries == null) {
+        continue
+      }
+
+      if (!Array.isArray(configEntries)) {
+        throw new KafkaJSNonRetriableError(
+          `Invalid configEntries for topic "${topic}", must be an array`
+        )
+      }
+
+      configEntries.forEach((entry, index) => {
+        if (typeof entry !== 'object' || entry == null) {
+          throw new KafkaJSNonRetriableError(
+            `Invalid configEntries for topic "${topic}". Entry ${index} must be an object`
+          )
+        }
+
+        for (const requiredProperty of ['name', 'value']) {
+          if (
+            !Object.prototype.hasOwnProperty.call(entry, requiredProperty) ||
+            typeof entry[requiredProperty] !== 'string'
+          ) {
+            throw new KafkaJSNonRetriableError(
+              `Invalid configEntries for topic "${topic}". Entry ${index} must have a valid "${requiredProperty}" property`
+            )
+          }
+        }
+      })
+    }
+
     const retrier = createRetry(retry)
 
     return retrier(async (bail, retryCount, retryTime) => {
