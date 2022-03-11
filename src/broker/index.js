@@ -48,6 +48,7 @@ module.exports = class Broker {
    *                                                are true, topics that don't exist will be created when
    *                                                fetching metadata.
    * @param {boolean} [options.supportAuthenticationProtocol=null] If the server supports the SASLAuthenticate protocol
+   * @param {() => void)} [options.onDisconnect=null] A callback function that is called on disconnect
    */
   constructor({
     connection,
@@ -58,6 +59,7 @@ module.exports = class Broker {
     reauthenticationThreshold = 10000,
     allowAutoTopicCreation = true,
     supportAuthenticationProtocol = null,
+    onDisconnect = null,
   }) {
     this.connection = connection
     this.nodeId = nodeId
@@ -68,6 +70,7 @@ module.exports = class Broker {
     this.reauthenticationThreshold = reauthenticationThreshold
     this.allowAutoTopicCreation = allowAutoTopicCreation
     this.supportAuthenticationProtocol = supportAuthenticationProtocol
+    this.onDisconnect = onDisconnect
 
     this.authenticatedAt = null
     this.sessionLifetime = Long.ZERO
@@ -168,6 +171,10 @@ module.exports = class Broker {
   async disconnect() {
     this.authenticatedAt = null
     await this.connection.disconnect()
+
+    if (this.onDisconnect) {
+      this.onDisconnect(this)
+    }
   }
 
   /**

@@ -267,10 +267,6 @@ module.exports = ({
         stack: e.stack,
       })
 
-      if (e.name === 'KafkaJSConnectionClosedError') {
-        cluster.removeBroker({ host: e.host, port: e.port })
-      }
-
       await disconnect()
 
       const isErrorRetriable = e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true

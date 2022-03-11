@@ -41,6 +41,7 @@ module.exports = class BrokerPool {
         allowAutoTopicCreation,
         authenticationTimeout,
         reauthenticationThreshold,
+        onDisconnect: broker => this.removeBroker({ broker }),
         ...options,
       })
 
@@ -129,21 +130,21 @@ module.exports = class BrokerPool {
   /**
    * @public
    * @param {Object} destination
-   * @param {string} destination.host
-   * @param {number} destination.port
+   * @param {Broker} destination.broker
    */
-  removeBroker({ host, port }) {
-    const removedBroker = values(this.brokers).find(
-      broker => broker.connection.host === host && broker.connection.port === port
-    )
-
-    if (removedBroker) {
-      delete this.brokers[removedBroker.nodeId]
+  removeBroker({ broker }) {
+    if (broker && broker === this.brokers[broker.nodeId]) {
+      delete this.brokers[broker.nodeId]
       this.metadataExpireAt = null
+    }
 
-      if (this.seedBroker.nodeId === removedBroker.nodeId) {
-        this.seedBroker = shuffle(values(this.brokers))[0]
+    // The seed broker does not always have a nodeId
+    if (broker === this.seedBroker) {
+      const nextSeedBroker = shuffle(values(this.brokers))[0]
+      if (nextSeedBroker) {
+        this.seedBroker = nextSeedBroker
       }
+      this.metadataExpireAt = null
     }
   }
 
@@ -163,6 +164,18 @@ module.exports = class BrokerPool {
 
         const replacedBrokers = []
 
+        // The seed broker starts without any nodeId or rack
+        // Set those here if necessary
+        if (!this.seedBroker.nodeId) {
+          const seedNodeMetadata = this.metadata.brokers.find(
+            broker => broker.host === seedHost && broker.port === seedPort
+          )
+          if (seedNodeMetadata) {
+            this.seedBroker.nodeId = seedNodeMetadata.nodeId
+            this.seedBroker.connection.rack = seedNodeMetadata.rack
+          }
+        }
+
         this.brokers = await this.metadata.brokers.reduce(
           async (resultPromise, { nodeId, host, port, rack }) => {
             const result = await resultPromise
@@ -175,9 +188,7 @@ module.exports = class BrokerPool {
               replacedBrokers.push(result[nodeId])
             }
 
-            if (host === seedHost && port === seedPort) {
-              this.seedBroker.nodeId = nodeId
-              this.seedBroker.connection.rack = rack
+            if (host === seedHost && port === seedPort && nodeId === this.seedBroker.nodeId) {
               return assign(result, {
                 [nodeId]: this.seedBroker,
               })

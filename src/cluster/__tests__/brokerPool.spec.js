@@ -1,6 +1,5 @@
 const {
   createConnectionBuilder,
-  plainTextBrokers,
   createConnection,
   newLogger,
   secureRandom,
@@ -91,7 +90,7 @@ describe('Cluster > BrokerPool', () => {
       await broker.connect()
       expect(broker.isConnected()).toEqual(true)
 
-      await brokerPool.seedBroker.disconnect()
+      await brokerPool.seedBroker.connection.disconnect()
       expect(brokerPool.seedBroker.isConnected()).toEqual(false)
 
       jest.spyOn(brokerPool.seedBroker, 'connect')
@@ -141,35 +140,28 @@ describe('Cluster > BrokerPool', () => {
   })
 
   describe('#removeBroker', () => {
-    let host, port
+    let broker
 
     beforeEach(async () => {
       await brokerPool.connect()
       await brokerPool.refreshMetadata([topicName])
       expect(Object.values(brokerPool.brokers).length).toBeGreaterThan(1)
 
-      const brokerUri = plainTextBrokers().shift()
-      const [hostToRemove, portToRemove] = brokerUri.split(':')
-      host = hostToRemove
-      port = Number(portToRemove)
+      broker = brokerPool.brokers[0]
     })
 
-    it('removes the broker by host and port', () => {
+    it('removes the target broker', () => {
       const numberOfBrokers = Object.values(brokerPool.brokers).length
 
-      brokerPool.removeBroker({ host, port })
+      brokerPool.removeBroker({ broker })
 
-      const brokers = Object.values(brokerPool.brokers)
-      expect(brokers.length).toEqual(numberOfBrokers - 1)
-      expect(
-        brokers.find(broker => broker.connection.host === host && broker.connection.port === port)
-      ).toEqual(undefined)
+      expect(Object.values(brokerPool.brokers).length).toEqual(numberOfBrokers - 1)
+      expect(brokerPool.brokers[broker.nodeId]).toEqual(undefined)
     })
 
     it('replaces the seed broker if it is the target broker', () => {
-      const seedBrokerHost = brokerPool.seedBroker.connection.host
       const seedBrokerPort = brokerPool.seedBroker.connection.port
-      brokerPool.removeBroker({ host: seedBrokerHost, port: seedBrokerPort })
+      brokerPool.removeBroker({ broker: brokerPool.seedBroker })
 
       // check only port since the host will be "localhost" on most tests
       expect(brokerPool.seedBroker.connection.port).not.toEqual(seedBrokerPort)
@@ -177,7 +169,7 @@ describe('Cluster > BrokerPool', () => {
 
     it('erases metadataExpireAt to force a metadata refresh', () => {
       brokerPool.metadataExpireAt = Date.now() + 25
-      brokerPool.removeBroker({ host, port })
+      brokerPool.removeBroker({ broker })
       expect(brokerPool.metadataExpireAt).toEqual(null)
     })
   })
@@ -231,6 +223,12 @@ describe('Cluster > BrokerPool', () => {
       )
     })
 
+    it('sets the nodeId on the seed broker', async () => {
+      brokerPool.seedBroker.nodeId = null
+      await brokerPool.refreshMetadata([topicName])
+      expect(brokerPool.seedBroker.nodeId).not.toEqual(null)
+    })
+
     it('includes the seed broker into the broker pool', async () => {
       await brokerPool.refreshMetadata([topicName])
       const seed = brokerPool.seedBroker.connection
@@ -246,7 +244,7 @@ describe('Cluster > BrokerPool', () => {
       await brokerPool.refreshMetadata([topicName])
 
       const nodeId = 'fakebroker'
-      const fakeBroker = new Broker({
+      const fakeBroker = brokerPool.createBroker({
         connection: createConnection(),
         logger: newLogger(),
       })
@@ -276,6 +274,32 @@ describe('Cluster > BrokerPool', () => {
       expect(brokerPool.metadata).toEqual(null)
       await brokerPool.refreshMetadata([topicName])
       expect(brokerPool.metadata).not.toEqual(null)
+    })
+
+    describe('when multiple nodes have the same host and port', () => {
+      // These tests cover compatibility with Oracle Cloud's Stream service, which
+      // uses the same port and host for each node in the cluster
+
+      let lastBroker
+      beforeEach(async () => {
+        await brokerPool.refreshMetadata([topicName])
+        lastBroker = brokerPool.brokers[Object.keys(brokerPool.brokers).length - 1]
+        jest.spyOn(brokerPool, 'findConnectedBroker').mockImplementation(() => lastBroker)
+      })
+
+      it('the seed node will not override other nodes', async () => {
+        const { host: seedHost, port: seedPort } = brokerPool.seedBroker.connection
+        jest.spyOn(lastBroker, 'metadata').mockImplementationOnce(() => ({
+          ...brokerPool.metadata,
+          brokers: brokerPool.metadata.brokers.map(broker => {
+            return { ...broker, host: seedHost, port: seedPort }
+          }),
+        }))
+
+        await brokerPool.refreshMetadata([topicName])
+        expect(Object.keys(brokerPool.brokers)).toEqual(['0', '1', '2'])
+        expect(Object.values(brokerPool.brokers).map(b => b.nodeId)).toEqual([0, 1, 2])
+      })
     })
 
     describe('when replacing nodeIds with different host/port/rack', () => {
@@ -407,6 +431,7 @@ describe('Cluster > BrokerPool', () => {
 
       const broker = await brokerPool.findBroker({ nodeId })
       expect(broker.isConnected()).toEqual(true)
+      expect(brokerPool.brokers[nodeId]).toEqual(broker)
     })
 
     it('throws an error when the broker is not found', async () => {
