@@ -26,14 +26,21 @@ await consumer.subscribe({ topic: 'topic-C' })
 await consumer.subscribe({ topic: 'topic-D', fromBeginning: true })
 ```
 
-Alternatively, you can subscribe to multiple topics at once using a RegExp:
+Alternatively, you can subscribe to multiple topics at once - by supplying either a list:
+
+```javascript
+await consumer.connect()
+await consumer.subscribe({ topic: ['topic-A', 'topic-B'] })
+```
+
+or by using a RegExp:
 
 ```javascript
 await consumer.connect()
 await consumer.subscribe({ topic: /topic-(eu|us)-.*/i })
 ```
 
-The consumer will not match topics created after the subscription. If your broker has `topic-A` and `topic-B`, you subscribe to `/topic-.*/`, then `topic-C` is created, your consumer would not be automatically subscribed to `topic-C`.
+When suppling a RegExp, the consumer will not match topics created after the subscription. If your broker has `topic-A` and `topic-B`, you subscribe to `/topic-.*/`, then `topic-C` is created, your consumer would not be automatically subscribed to `topic-C`.
 
 KafkaJS offers you two ways to process your data: `eachMessage` and `eachBatch`
 

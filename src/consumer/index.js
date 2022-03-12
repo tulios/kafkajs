@@ -184,9 +184,11 @@ module.exports = ({
     }
 
     const isRegExp = topic instanceof RegExp
-    if (typeof topic !== 'string' && !isRegExp) {
+    const isStringArray = Array.isArray(topic) && topic.every(t => typeof t === 'string')
+
+    if (typeof topic !== 'string' && !isRegExp && !isStringArray) {
       throw new KafkaJSNonRetriableError(
-        `Invalid topic ${topic} (${typeof topic}), the topic name has to be a String or a RegExp`
+        `Invalid topic ${topic} (${typeof topic}), the topic name has to be a String, String[] or a RegExp`
       )
     }
 
@@ -205,6 +207,8 @@ module.exports = ({
       })
 
       topicsToSubscribe.push(...matchedTopics)
+    } else if (isStringArray) {
+      topicsToSubscribe.push(...topic)
     } else {
       topicsToSubscribe.push(topic)
     }

@@ -901,7 +901,7 @@ export type ConsumerRunConfig = {
   eachMessage?: EachMessageHandler
 }
 
-export type ConsumerSubscribeTopic = { topic: string | RegExp; fromBeginning?: boolean }
+export type ConsumerSubscribeTopic = { topic: string | string[] | RegExp; fromBeginning?: boolean }
 
 export type Consumer = {
   connect(): Promise<void>

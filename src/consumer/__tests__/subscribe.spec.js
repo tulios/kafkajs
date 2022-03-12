@@ -46,11 +46,46 @@ describe('Consumer', () => {
       )
     })
 
-    it('throws an error if the topic is not a String or RegExp', async () => {
+    it('throws an error if the topic is not a String, String[] or RegExp', async () => {
       await expect(consumer.subscribe({ topic: 1 })).rejects.toHaveProperty(
         'message',
-        'Invalid topic 1 (number), the topic name has to be a String or a RegExp'
+        'Invalid topic 1 (number), the topic name has to be a String, String[] or a RegExp'
       )
+    })
+  })
+
+  describe('with string array', () => {
+    it('subscribes to all topics supplied in the array', async () => {
+      const topicA = `topic-A`
+      const topicB = `topic-B`
+      const topicC = `topic-C`
+
+      await createTopic({ topic: topicA })
+      await createTopic({ topic: topicB })
+      await createTopic({ topic: topicC })
+
+      const messagesConsumed = []
+      await consumer.connect()
+      await consumer.subscribe({ topic: [topicA, topicB], fromBeginning: true })
+
+      consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
+      await waitForConsumerToJoinGroup(consumer)
+
+      await producer.connect()
+      await producer.sendBatch({
+        acks: 1,
+        topicMessages: [
+          { topic: topicA, messages: [{ key: 'key-a', value: 'value-a' }] },
+          { topic: topicB, messages: [{ key: 'key-b', value: 'value-b' }] },
+          { topic: topicC, messages: [{ key: 'key-c', value: 'value-c' }] },
+        ],
+      })
+
+      await waitForMessages(messagesConsumed, { number: 2 })
+      expect(messagesConsumed.map(m => m.message.value.toString()).sort()).toEqual([
+        'value-a',
+        'value-b',
+      ])
     })
   })
 
