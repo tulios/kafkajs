@@ -4,7 +4,7 @@ const { KafkaJSProtocolError } = require('../../errors')
 const {
   secureRandom,
   createTopic,
-  createConnection,
+  createConnectionPool,
   newLogger,
   retryProtocol,
 } = require('testHelpers')
@@ -17,7 +17,7 @@ describe('Broker > AddPartitionsToTxn', () => {
     topicName = `test-topic-${secureRandom()}`
 
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
 
@@ -36,7 +36,7 @@ describe('Broker > AddPartitionsToTxn', () => {
     )
 
     broker = new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
 

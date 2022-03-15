@@ -631,7 +631,6 @@ describe('Consumer', () => {
     await producer.connect()
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-    const sleep = value => waitFor(delay => delay >= value)
     let calls = 0
 
     consumer.run({
@@ -649,7 +648,7 @@ describe('Consumer', () => {
     const message2 = { key: `key-${key2}`, value: `value-${key2}` }
 
     await producer.send({ acks: 1, topic: topicName, messages: [message1, message2] })
-    await sleep(80) // wait for 1 message
+    await waitFor(() => calls > 0, {})
     await consumer.disconnect() // don't give the consumer the chance to consume the 2nd message
 
     expect(calls).toEqual(1)

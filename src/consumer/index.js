@@ -9,6 +9,7 @@ const { KafkaJSNonRetriableError } = require('../errors')
 const { roundRobin } = require('./assigners')
 const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
 const ISOLATION_LEVEL = require('../protocol/isolationLevel')
+const sharedPromiseTo = require('../utils/sharedPromiseTo')
 
 const { keys, values } = Object
 const { CONNECT, DISCONNECT, STOP, CRASH } = events
@@ -72,62 +73,17 @@ module.exports = ({
     createAssigner({ groupId, logger, cluster })
   )
 
+  /** @type {Record<string, { fromBeginning?: boolean }>} */
   const topics = {}
   let runner = null
+  /** @type {ConsumerGroup} */
   let consumerGroup = null
+  let restartTimeout = null
 
   if (heartbeatInterval >= sessionTimeout) {
     throw new KafkaJSNonRetriableError(
       `Consumer heartbeatInterval (${heartbeatInterval}) must be lower than sessionTimeout (${sessionTimeout}). It is recommended to set heartbeatInterval to approximately a third of the sessionTimeout.`
     )
-  }
-
-  const createConsumerGroup = ({ autoCommit, autoCommitInterval, autoCommitThreshold }) => {
-    return new ConsumerGroup({
-      logger: rootLogger,
-      topics: keys(topics),
-      topicConfigurations: topics,
-      retry,
-      cluster,
-      groupId,
-      assigners,
-      sessionTimeout,
-      rebalanceTimeout,
-      maxBytesPerPartition,
-      minBytes,
-      maxBytes,
-      maxWaitTimeInMs,
-      instrumentationEmitter,
-      autoCommit,
-      autoCommitInterval,
-      autoCommitThreshold,
-      isolationLevel,
-      rackId,
-      metadataMaxAge,
-    })
-  }
-
-  const createRunner = ({
-    eachBatchAutoResolve,
-    eachBatch,
-    eachMessage,
-    onCrash,
-    autoCommit,
-    partitionsConsumedConcurrently,
-  }) => {
-    return new Runner({
-      autoCommit,
-      logger: rootLogger,
-      consumerGroup,
-      instrumentationEmitter,
-      eachBatchAutoResolve,
-      eachBatch,
-      eachMessage,
-      heartbeatInterval,
-      retry,
-      onCrash,
-      partitionsConsumedConcurrently,
-    })
   }
 
   /** @type {import("../../types").Consumer["connect"]} */
@@ -153,7 +109,7 @@ module.exports = ({
   }
 
   /** @type {import("../../types").Consumer["stop"]} */
-  const stop = async () => {
+  const stop = sharedPromiseTo(async () => {
     try {
       if (runner) {
         await runner.stop()
@@ -162,6 +118,7 @@ module.exports = ({
         instrumentationEmitter.emit(STOP)
       }
 
+      clearTimeout(restartTimeout)
       logger.info('Stopped', { groupId })
     } catch (e) {
       logger.error(`Caught error when stopping the consumer: ${e.message}`, {
@@ -171,7 +128,7 @@ module.exports = ({
 
       throw e
     }
-  }
+  })
 
   /** @type {import("../../types").Consumer["subscribe"]} */
   const subscribe = async ({ topic, fromBeginning = false }) => {
@@ -222,7 +179,7 @@ module.exports = ({
     autoCommitInterval = null,
     autoCommitThreshold = null,
     eachBatchAutoResolve = true,
-    partitionsConsumedConcurrently = 1,
+    partitionsConsumedConcurrently: concurrency = 1,
     eachBatch = null,
     eachMessage = null,
   } = {}) => {
@@ -231,33 +188,47 @@ module.exports = ({
       return
     }
 
-    consumerGroup = createConsumerGroup({
-      autoCommit,
-      autoCommitInterval,
-      autoCommitThreshold,
-    })
-
     const start = async onCrash => {
       logger.info('Starting', { groupId })
-      runner = createRunner({
+
+      consumerGroup = new ConsumerGroup({
+        logger: rootLogger,
+        topics: keys(topics),
+        topicConfigurations: topics,
+        retry,
+        cluster,
+        groupId,
+        assigners,
+        sessionTimeout,
+        rebalanceTimeout,
+        maxBytesPerPartition,
+        minBytes,
+        maxBytes,
+        maxWaitTimeInMs,
+        instrumentationEmitter,
+        isolationLevel,
+        rackId,
+        metadataMaxAge,
+        autoCommit,
+        autoCommitInterval,
+        autoCommitThreshold,
+      })
+
+      runner = new Runner({
+        logger: rootLogger,
+        consumerGroup,
+        instrumentationEmitter,
+        heartbeatInterval,
+        retry,
         autoCommit,
         eachBatchAutoResolve,
         eachBatch,
         eachMessage,
         onCrash,
-        partitionsConsumedConcurrently,
+        concurrency,
       })
 
       await runner.start()
-    }
-
-    const restart = onCrash => {
-      consumerGroup = createConsumerGroup({
-        autoCommitInterval,
-        autoCommitThreshold,
-      })
-
-      start(onCrash)
     }
 
     const onCrash = async e => {
@@ -305,7 +276,7 @@ module.exports = ({
           groupId,
         })
 
-        setTimeout(() => restart(onCrash), retryTime)
+        restartTimeout = setTimeout(() => start(onCrash), retryTime)
       }
     }
 

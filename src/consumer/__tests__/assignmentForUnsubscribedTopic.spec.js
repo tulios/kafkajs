@@ -99,8 +99,6 @@ describe('Consumer', () => {
 
     await consumer1.connect()
     await Promise.all(topicNames.map(topic => consumer1.subscribe({ topic })))
-    consumer1.run({ eachMessage: () => {} })
-    await waitForConsumerToJoinGroup(consumer1)
 
     // Second consumer is also replaced, subscribing to both topics
     await consumer2.disconnect()
@@ -115,6 +113,8 @@ describe('Consumer', () => {
 
     await consumer2.connect()
     await Promise.all(topicNames.map(topic => consumer2.subscribe({ topic })))
+
+    consumer1.run({ eachMessage: () => {} })
     consumer2.run({ eachMessage: () => {} })
 
     // Both consumers are assigned to both topics

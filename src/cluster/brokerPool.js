@@ -6,32 +6,30 @@ const { KafkaJSBrokerNotFound, KafkaJSProtocolError } = require('../errors')
 
 const { keys, assign, values } = Object
 const hasBrokerBeenReplaced = (broker, { host, port, rack }) =>
-  broker.connection.host !== host ||
-  broker.connection.port !== port ||
-  broker.connection.rack !== rack
+  broker.connectionPool.host !== host ||
+  broker.connectionPool.port !== port ||
+  broker.connectionPool.rack !== rack
 
 module.exports = class BrokerPool {
   /**
    * @param {object} options
-   * @param {import("./connectionBuilder").ConnectionBuilder} options.connectionBuilder
+   * @param {import("./connectionPoolBuilder").ConnectionPoolBuilder} options.connectionPoolBuilder
    * @param {import("../../types").Logger} options.logger
    * @param {import("../../types").RetryOptions} [options.retry]
    * @param {boolean} [options.allowAutoTopicCreation]
    * @param {number} [options.authenticationTimeout]
-   * @param {number} [options.reauthenticationThreshold]
    * @param {number} [options.metadataMaxAge]
    */
   constructor({
-    connectionBuilder,
+    connectionPoolBuilder,
     logger,
     retry,
     allowAutoTopicCreation,
     authenticationTimeout,
-    reauthenticationThreshold,
     metadataMaxAge,
   }) {
     this.rootLogger = logger
-    this.connectionBuilder = connectionBuilder
+    this.connectionPoolBuilder = connectionPoolBuilder
     this.metadataMaxAge = metadataMaxAge || 0
     this.logger = logger.namespace('BrokerPool')
     this.retrier = createRetry(assign({}, retry))
@@ -40,7 +38,6 @@ module.exports = class BrokerPool {
       new Broker({
         allowAutoTopicCreation,
         authenticationTimeout,
-        reauthenticationThreshold,
         ...options,
       })
 
@@ -51,7 +48,6 @@ module.exports = class BrokerPool {
     this.metadata = null
     this.metadataExpireAt = null
     this.versions = null
-    this.supportAuthenticationProtocol = null
   }
 
   /**
@@ -71,8 +67,10 @@ module.exports = class BrokerPool {
       await this.seedBroker.disconnect()
     }
 
+    const connectionPool = await this.connectionPoolBuilder.build()
+
     this.seedBroker = this.createBroker({
-      connection: await this.connectionBuilder.build(),
+      connectionPool,
       logger: this.rootLogger,
     })
   }
@@ -123,7 +121,6 @@ module.exports = class BrokerPool {
     this.brokers = {}
     this.metadata = null
     this.versions = null
-    this.supportAuthenticationProtocol = null
   }
 
   /**
@@ -134,7 +131,7 @@ module.exports = class BrokerPool {
    */
   removeBroker({ host, port }) {
     const removedBroker = values(this.brokers).find(
-      broker => broker.connection.host === host && broker.connection.port === port
+      broker => broker.connectionPool.host === host && broker.connectionPool.port === port
     )
 
     if (removedBroker) {
@@ -154,7 +151,7 @@ module.exports = class BrokerPool {
    */
   async refreshMetadata(topics) {
     const broker = await this.findConnectedBroker()
-    const { host: seedHost, port: seedPort } = this.seedBroker.connection
+    const { host: seedHost, port: seedPort } = this.seedBroker.connectionPool
 
     return this.retrier(async (bail, retryCount, retryTime) => {
       try {
@@ -177,7 +174,7 @@ module.exports = class BrokerPool {
 
             if (host === seedHost && port === seedPort) {
               this.seedBroker.nodeId = nodeId
-              this.seedBroker.connection.rack = rack
+              this.seedBroker.connectionPool.rack = rack
               return assign(result, {
                 [nodeId]: this.seedBroker,
               })
@@ -187,8 +184,7 @@ module.exports = class BrokerPool {
               [nodeId]: this.createBroker({
                 logger: this.rootLogger,
                 versions: this.versions,
-                supportAuthenticationProtocol: this.supportAuthenticationProtocol,
-                connection: await this.connectionBuilder.build({ host, port, rack }),
+                connectionPool: await this.connectionPoolBuilder.build({ host, port, rack }),
                 nodeId,
               }),
             })
@@ -238,6 +234,11 @@ module.exports = class BrokerPool {
     if (shouldRefresh) {
       return this.refreshMetadata(topics)
     }
+  }
+
+  /** @type {() => string[]} */
+  getNodeIds() {
+    return keys(this.brokers)
   }
 
   /**
@@ -328,11 +329,11 @@ module.exports = class BrokerPool {
         }
 
         if (e.type === 'ILLEGAL_SASL_STATE') {
-          // Rebuild the connection since it can't recover from illegal SASL state
-          broker.connection = await this.connectionBuilder.build({
-            host: broker.connection.host,
-            port: broker.connection.port,
-            rack: broker.connection.rack,
+          // Rebuild the connection pool since it can't recover from illegal SASL state
+          broker.connectionPool = await this.connectionPoolBuilder.build({
+            host: broker.connectionPool.host,
+            port: broker.connectionPool.port,
+            rack: broker.connectionPool.rack,
           })
 
           this.logger.error(`Failed to connect to broker, reconnecting`, { retryCount, retryTime })
