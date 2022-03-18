@@ -1,8 +1,8 @@
 const fs = require('fs')
 const ip = require('ip')
 const tls = require('tls')
-const net = require('tls')
-const { createTunnel, closeTunnel } = require('proxy-chain')
+const net = require('net')
+const http = require('http')
 
 const { Kafka, logLevel } = require('../index')
 const PrettyConsoleLogger = require('./prettyConsoleLogger')
@@ -13,22 +13,40 @@ const proxy = {
   port: parseInt(process.env.HTTP_PROXY_PORT, 10),
 }
 
-const socketFactory = async ({ host, port, ssl, onConnect }) => {
-  const tunnelServer = await createTunnel(`http://${proxy.host}:${proxy.port}`, `${host}:${port}`)
-  const [tunnelHost, tunnelPort] = tunnelServer.split(':')
-  const socket = ssl
-    ? tls.connect(
-        Object.assign({ host: tunnelHost, port: tunnelPort, servername: host }, ssl),
-        onConnect
-      )
-    : net.connect({ host, port }, onConnect)
-
-  socket.setKeepAlive(true, 60000)
-
-  socket.on('close', () => {
-    closeTunnel(tunnelServer, true, () => {
-      kafka.logger().info('Tunnel closed', { host, port, tunnelHost, tunnelPort })
+const socketFactory = ({ host, port, ssl, onConnect }) => {
+  const socket = net.connect({ ...proxy }, () => {
+    console.log('Connected')
+    // Connected to proxy
+    const clientRequest = http.request({
+      ...proxy,
+      createConnection: () => socket,
+      method: 'CONNECT',
+      path: `${host}:${port}`,
+      headers: {
+        host: proxy.host,
+      },
     })
+
+    clientRequest.on('connect', (res, socket, head) => {
+      console.log('Response', res)
+      if (res.statusCode !== 200) {
+        socket.emit('error', new Error(`Tunneling connection failed: ${res.statusCode}`))
+        return
+      }
+
+      if (ssl) {
+        const tlsSocket = new tls.TLSSocket(socket)
+        tls.connect({ socket: tlsSocket, servername: host, ...ssl }, onConnect)
+      } else {
+        onConnect()
+      }
+    })
+
+    clientRequest.on('error', err => {
+      socket.emit('error', err)
+    })
+
+    clientRequest.end()
   })
 
   return socket

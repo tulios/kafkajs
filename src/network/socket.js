@@ -10,7 +10,7 @@
  * @param {(err: Error) => void} options.onError
  * @param {() => void} options.onTimeout
  */
-module.exports = async ({
+module.exports = ({
   socketFactory,
   host,
   port,
@@ -21,7 +21,7 @@ module.exports = async ({
   onError,
   onTimeout,
 }) => {
-  const socket = await socketFactory({
+  const socket = socketFactory({
     host,
     port,
     ssl,
