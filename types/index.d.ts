@@ -92,10 +92,12 @@ export interface PartitionerArgs {
 export type ICustomPartitioner = () => (args: PartitionerArgs) => number
 export type DefaultPartitioner = ICustomPartitioner
 export type JavaCompatiblePartitioner = ICustomPartitioner
+export type StickyPartitioner = ICustomPartitioner
 
 export const Partitioners: {
   DefaultPartitioner: DefaultPartitioner
   JavaCompatiblePartitioner: JavaCompatiblePartitioner
+  StickyPartitioner: StickyPartitioner
 }
 
 export type PartitionMetadata = {

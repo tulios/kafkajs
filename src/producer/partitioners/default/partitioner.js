@@ -1,15 +1,8 @@
 const randomBytes = require('./randomBytes')
+const toPositive = require('./toPositive')
 
 // Based on the java client 0.10.2
 // https://github.com/apache/kafka/blob/0.10.2/clients/src/main/java/org/apache/kafka/clients/producer/internals/DefaultPartitioner.java
-
-/**
- * A cheap way to deterministically convert a number to a positive value. When the input is
- * positive, the original value is returned. When the input number is negative, the returned
- * positive value is the original value bit AND against 0x7fffffff which is not its absolutely
- * value.
- */
-const toPositive = x => x & 0x7fffffff
 
 /**
  * The default partitioning strategy:
