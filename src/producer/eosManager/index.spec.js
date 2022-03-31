@@ -68,10 +68,10 @@ describe('Producer > eosManager', () => {
     expect(eosManager.getSequence(topic, 2)).toEqual(0) // Different partition
     expect(eosManager.getSequence('foobar', 1)).toEqual(0) // Different topic
 
-    eosManager.updateSequence(topic, 3, Math.pow(2, 32) - 100)
-    expect(eosManager.getSequence(topic, 3)).toEqual(Math.pow(2, 32) - 100) // Rotates once we reach 2 ^ 32 (max Int32)
+    eosManager.updateSequence(topic, 3, Math.pow(2, 31) - 100)
+    expect(eosManager.getSequence(topic, 3)).toEqual(Math.pow(2, 31) - 100) // Rotates once we reach 2 ^ 31 (max Int32)
     eosManager.updateSequence(topic, 3, 100)
-    expect(eosManager.getSequence(topic, 3)).toEqual(0) // Rotates once we reach 2 ^ 32 (max Int32)
+    expect(eosManager.getSequence(topic, 3)).toEqual(0) // Rotates once we reach 2 ^ 31 (max Int32)
 
     await eosManager.initProducerId()
     expect(eosManager.getSequence(topic, 1)).toEqual(0) // Sequences reset by initProducerId

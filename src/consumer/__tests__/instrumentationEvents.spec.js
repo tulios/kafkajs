@@ -184,6 +184,7 @@ describe('Consumer > Instrumentation Events', () => {
       payload: {
         numberOfBatches: expect.any(Number),
         duration: expect.any(Number),
+        nodeId: expect.any(String),
       },
     })
   })
@@ -208,7 +209,9 @@ describe('Consumer > Instrumentation Events', () => {
       id: expect.any(Number),
       timestamp: expect.any(Number),
       type: 'consumer.fetch_start',
-      payload: {},
+      payload: {
+        nodeId: expect.any(String),
+      },
     })
   })
 

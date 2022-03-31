@@ -3,7 +3,7 @@ jest.mock('../../utils/shuffle', () => jest.fn())
 const Broker = require('../index')
 const mockShuffle = require('../../utils/shuffle')
 
-const { createConnection, newLogger } = require('testHelpers')
+const { createConnectionPool, newLogger } = require('testHelpers')
 
 const minBytes = 1
 const maxBytes = 10485760 // 10MB
@@ -29,10 +29,10 @@ describe('Broker > Fetch', () => {
   }
 
   beforeEach(async () => {
-    connection = createConnection()
+    connection = createConnectionPool()
     connection.send = jest.fn()
     broker = new Broker({
-      connection,
+      connectionPool: connection,
       logger: newLogger(),
     })
 

@@ -3,8 +3,7 @@ const flatten = require('../../../utils/flatten')
 
 /**
  * RoundRobinAssigner
- * @param {Cluster} cluster
- * @returns {function}
+ * @type {import('types').PartitionAssigner}
  */
 module.exports = ({ cluster }) => ({
   name: 'RoundRobinAssigner',
@@ -16,10 +15,11 @@ module.exports = ({ cluster }) => ({
    * The members array contains information about each member, `memberMetadata` is the result of the
    * `protocol` operation.
    *
-   * @param {array} members array of members, e.g:
+   * @param {object} group
+   * @param {import('types').GroupMember[]} group.members array of members, e.g:
                               [{ memberId: 'test-5f93f5a3', memberMetadata: Buffer }]
-   * @param {array} topics
-   * @returns {array} object partitions per topic per member, e.g:
+   * @param {string[]} group.topics
+   * @returns {Promise<import('types').GroupMemberAssignment[]>} object partitions per topic per member, e.g:
    *                   [
    *                     {
    *                       memberId: 'test-5f93f5a3',

@@ -6,8 +6,8 @@ const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 const Cluster = require('../src/cluster')
 const waitFor = require('../src/utils/waitFor')
-const connectionBuilder = require('../src/cluster/connectionBuilder')
-const Connection = require('../src/network/connection')
+const connectionBuilder = require('../src/cluster/connectionPoolBuilder')
+const ConnectionPool = require('../src/network/connectionPool')
 const defaultSocketFactory = require('../src/network/socketFactory')
 const socketFactory = defaultSocketFactory()
 
@@ -50,6 +50,7 @@ const connectionOpts = (opts = {}) => ({
   socketFactory,
   clientId: `test-${secureRandom()}`,
   connectionTimeout: 3000,
+  requestTimeout: 30000,
   logger: newLogger(),
   host: getHost(),
   port: brokerPlainPort,
@@ -174,7 +175,8 @@ if (process.env['OAUTHBEARER_ENABLED'] !== '1') {
   })
 }
 
-const createConnection = (opts = {}) => new Connection(Object.assign(connectionOpts(), opts))
+const createConnectionPool = (opts = {}) =>
+  new ConnectionPool(Object.assign(connectionOpts(), opts))
 
 const createConnectionBuilder = (opts = {}, brokers = plainTextBrokers()) => {
   return connectionBuilder({
@@ -366,7 +368,7 @@ module.exports = {
   saslSCRAM512ConnectionOpts,
   saslOAuthBearerConnectionOpts,
   saslEntries,
-  createConnection,
+  createConnectionPool,
   createConnectionBuilder,
   createCluster,
   createModPartitioner,

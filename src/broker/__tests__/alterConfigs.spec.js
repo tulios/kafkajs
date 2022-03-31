@@ -1,4 +1,4 @@
-const { createConnection, connectionOpts, secureRandom, newLogger } = require('testHelpers')
+const { createConnectionPool, connectionOpts, secureRandom, newLogger } = require('testHelpers')
 const RESOURCE_TYPES = require('../../protocol/resourceTypes')
 const Broker = require('../index')
 
@@ -13,7 +13,7 @@ describe('Broker > alterConfigs', () => {
 
   beforeEach(async () => {
     seedBroker = new Broker({
-      connection: createConnection(connectionOpts()),
+      connectionPool: createConnectionPool(connectionOpts()),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -22,7 +22,7 @@ describe('Broker > alterConfigs', () => {
     const newBrokerData = metadata.brokers.find(b => b.nodeId === metadata.controllerId)
 
     broker = new Broker({
-      connection: createConnection(newBrokerData),
+      connectionPool: createConnectionPool(newBrokerData),
       logger: newLogger(),
     })
   })

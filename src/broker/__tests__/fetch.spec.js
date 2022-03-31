@@ -4,7 +4,7 @@ const createRetrier = require('../../retry')
 
 const {
   secureRandom,
-  createConnection,
+  createConnectionPool,
   createCluster,
   newLogger,
   createTopic,
@@ -82,7 +82,7 @@ describe('Broker > Fetch', () => {
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -99,7 +99,7 @@ describe('Broker > Fetch', () => {
 
     // Connect to the correct broker to produce message
     broker = new Broker({
-      connection: createConnection(newBrokerData),
+      connectionPool: createConnectionPool(newBrokerData),
       logger: newLogger(),
     })
     await broker.connect()
@@ -112,7 +112,7 @@ describe('Broker > Fetch', () => {
 
   test('rejects the Promise if lookupRequest is not defined', async () => {
     await broker.disconnect()
-    broker = new Broker({ connection: createConnection(), logger: newLogger() })
+    broker = new Broker({ connectionPool: createConnectionPool(), logger: newLogger() })
     await expect(broker.fetch({ topics: [] })).rejects.toEqual(new Error('Broker not connected'))
   })
 
@@ -271,7 +271,7 @@ describe('Broker > Fetch', () => {
       await broker.disconnect()
 
       broker = new Broker({
-        connection: createConnection(newBrokerData),
+        connectionPool: createConnectionPool(newBrokerData),
         logger: newLogger(),
       })
       await broker.connect()
@@ -544,7 +544,7 @@ describe('Broker > Fetch', () => {
       })
 
       broker = new Broker({
-        connection: createConnection(newBrokerData),
+        connectionPool: createConnectionPool(newBrokerData),
         logger: newLogger(),
       })
 

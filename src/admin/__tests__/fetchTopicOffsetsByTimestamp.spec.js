@@ -13,7 +13,7 @@ const {
 } = require('testHelpers')
 
 describe('Admin', () => {
-  let topicName, admin, producer, cluster
+  let topicName, admin, producer, cluster, consumer
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
@@ -30,6 +30,7 @@ describe('Admin', () => {
   })
   afterEach(async () => {
     admin && (await admin.disconnect())
+    consumer && (await consumer.disconnect())
     producer && (await producer.disconnect())
   })
 
@@ -72,7 +73,7 @@ describe('Admin', () => {
       )
       expect(offsetsFutureTimestamp).toEqual([{ partition: 0, offset: '20' }])
       const groupId = `consumer-group-id-${secureRandom()}`
-      const consumer = createConsumer({
+      consumer = createConsumer({
         cluster,
         groupId,
         maxWaitTimeInMs: 1,

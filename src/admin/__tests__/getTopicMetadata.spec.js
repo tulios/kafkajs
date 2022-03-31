@@ -78,7 +78,7 @@ describe('Admin', () => {
 
       expect(topicsMetadata[0]).toHaveProperty('name', existingTopicName)
       expect(topicsMetadata[1]).toHaveProperty('name', newTopicName)
-      expect(topicsMetadata[1].partitions).toHaveLength(1)
+      expect(topicsMetadata[1].partitions).toHaveLength(2)
     })
 
     test('throws an error if the topic does not exist and "allowAutoTopicCreation" is false', async () => {

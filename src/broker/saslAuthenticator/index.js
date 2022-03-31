@@ -66,7 +66,7 @@ module.exports = class SASLAuthenticator {
         return response.parse(payloadDecoded)
       }
 
-      return this.connection.authenticate({ request, response, authExpectResponse })
+      return this.connection.sendAuthRequest({ request, response, authExpectResponse })
     }
 
     const Authenticator = AUTHENTICATORS[mechanism]

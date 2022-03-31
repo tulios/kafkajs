@@ -1,7 +1,7 @@
 const Broker = require('../index')
 const {
   secureRandom,
-  createConnection,
+  createConnectionPool,
   newLogger,
   createTopic,
   retryProtocol,
@@ -14,7 +14,7 @@ describe('Broker > Metadata', () => {
   beforeEach(() => {
     topicName = `test-topic-${secureRandom()}`
     broker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
   })
@@ -96,7 +96,7 @@ describe('Broker > Metadata', () => {
     beforeEach(() => {
       topicName = `test-topic-${secureRandom()}`
       broker = new Broker({
-        connection: createConnection(),
+        connectionPool: createConnectionPool(),
         allowAutoTopicCreation: false,
         logger: newLogger(),
       })
