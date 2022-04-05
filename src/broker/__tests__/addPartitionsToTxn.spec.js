@@ -4,7 +4,7 @@ const { KafkaJSProtocolError } = require('../../errors')
 const {
   secureRandom,
   createTopic,
-  createConnection,
+  createConnectionPool,
   newLogger,
   retryProtocol,
 } = require('testHelpers')
@@ -17,7 +17,7 @@ describe('Broker > AddPartitionsToTxn', () => {
     topicName = `test-topic-${secureRandom()}`
 
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
 
@@ -36,7 +36,7 @@ describe('Broker > AddPartitionsToTxn', () => {
     )
 
     broker = new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
 
@@ -51,8 +51,8 @@ describe('Broker > AddPartitionsToTxn', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await broker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    broker && (await broker.disconnect())
   })
 
   test('request', async () => {
@@ -69,6 +69,7 @@ describe('Broker > AddPartitionsToTxn', () => {
     })
 
     expect(result).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       errors: [
         {
@@ -86,7 +87,7 @@ describe('Broker > AddPartitionsToTxn', () => {
     await expect(
       broker.addPartitionsToTxn({
         transactionalId,
-        producerId: 'foo',
+        producerId: '123456789',
         producerEpoch,
         topics: [
           {

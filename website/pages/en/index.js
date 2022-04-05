@@ -69,6 +69,13 @@ class HomeSplash extends React.Component {
             <Button href={docUrl('getting-started')}>Documentation</Button>
             <Button href={siteConfig.repoUrl}>Github</Button>
           </PromoSection>
+          <Container className="trademark-notice">
+            <small>
+              KAFKA is a registered trademark of The Apache Software Foundation and has been
+              licensed for use by KafkaJS. KafkaJS has no affiliation with and is not endorsed by
+              The Apache Software Foundation.
+            </small>
+          </Container>
         </div>
       </SplashContainer>
     )
@@ -91,7 +98,7 @@ class Index extends React.Component {
         <Block layout="fourColumn">
           {[
             {
-              title: '(Almost) No Dependencies',
+              title: 'No Dependencies',
               content:
                 'Committed to staying lean and dependency free. 100% Javascript, with no native addons required.',
             },

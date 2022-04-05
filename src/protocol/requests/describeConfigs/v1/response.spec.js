@@ -1,4 +1,5 @@
 const { decode, parse } = require('./response')
+const { DEFAULT_CONFIG } = require('../../../configSource')
 
 describe('Protocol > Requests > DescribeConfigs > v1', () => {
   test('response', async () => {
@@ -10,19 +11,19 @@ describe('Protocol > Requests > DescribeConfigs > v1', () => {
           errorCode: 0,
           errorMessage: null,
           resourceType: 2,
-          resourceName:
-            'test-topic-e0cadb9e9f1a6396c116-54438-43bb8b69-32cf-4909-af02-cbe20c2d9e3d',
+          resourceName: 'topic-test1',
           configEntries: [
             {
               configName: 'compression.type',
               configValue: 'producer',
               readOnly: false,
-              isDefault: false,
+              isDefault: true,
+              configSource: DEFAULT_CONFIG,
               isSensitive: false,
               configSynonyms: [
                 {
                   configName: 'compression.type',
-                  configSource: 5,
+                  configSource: DEFAULT_CONFIG,
                   configValue: 'producer',
                 },
               ],
@@ -31,7 +32,8 @@ describe('Protocol > Requests > DescribeConfigs > v1', () => {
               configName: 'retention.ms',
               configValue: '604800000',
               readOnly: false,
-              isDefault: false,
+              isDefault: true,
+              configSource: DEFAULT_CONFIG,
               isSensitive: false,
               configSynonyms: [],
             },

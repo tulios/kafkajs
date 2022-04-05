@@ -45,4 +45,4 @@ You will now be able to connect to your Kafka broker at `$(HOST_IP):9092`. See t
 
 ## SSL & authentication methods
 
-To configure Kafka to use SSL and/or authentication methods such as SASL, see [docker-compose.yml](https://github.com/tulios/kafkajs/blob/master/docker-compose.2_3.yml). This configuration is used while developing KafkaJS, and is more complicated to set up, but may give you a more production-like development environment.
+To configure Kafka to use SSL and/or authentication methods such as SASL, see [docker-compose.yml](https://github.com/tulios/kafkajs/blob/master/docker-compose.2_4.yml). This configuration is used while developing KafkaJS, and is more complicated to set up, but may give you a more production-like development environment.

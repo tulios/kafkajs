@@ -1,3 +1,4 @@
+const createAdmin = require('../../admin')
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
 const { KafkaJSNonRetriableError } = require('../../errors')
@@ -97,16 +98,16 @@ describe('Consumer', () => {
 
       await waitForConsumerToJoinGroup(consumer)
       await expect(waitForMessages(messagesConsumed, { number: 2 })).resolves.toEqual([
-        {
+        expect.objectContaining({
           topic: topicName,
           partition: 0,
           message: expect.objectContaining({ offset: '1' }),
-        },
-        {
+        }),
+        expect.objectContaining({
           topic: topicName,
           partition: 0,
           message: expect.objectContaining({ offset: '2' }),
-        },
+        }),
       ])
     })
 
@@ -132,11 +133,11 @@ describe('Consumer', () => {
 
       await waitForConsumerToJoinGroup(consumer)
       await expect(waitForMessages(messagesConsumed, { number: 1 })).resolves.toEqual([
-        {
+        expect.objectContaining({
           topic: topicName,
           partition: 0,
           message: expect.objectContaining({ offset: '2' }),
-        },
+        }),
       ])
     })
 
@@ -156,12 +157,74 @@ describe('Consumer', () => {
 
       await waitForConsumerToJoinGroup(consumer)
       await expect(waitForMessages(messagesConsumed, { number: 1 })).resolves.toEqual([
-        {
+        expect.objectContaining({
           topic: topicName,
           partition: 0,
           message: expect.objectContaining({ offset: '0' }),
-        },
+        }),
       ])
+    })
+
+    describe('When "autoCommit" is false', () => {
+      let admin
+
+      beforeEach(() => {
+        admin = createAdmin({ logger: newLogger(), cluster })
+      })
+
+      afterEach(async () => {
+        admin && (await admin.disconnect())
+      })
+
+      it('should not commit the offset', async () => {
+        await Promise.all([consumer, producer, admin].map(client => client.connect()))
+
+        await producer.send({
+          acks: 1,
+          topic: topicName,
+          messages: [1, 2, 3].map(n => ({ key: `key-${n}`, value: `value-${n}` })),
+        })
+        await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+        let messagesConsumed = []
+        consumer.run({
+          autoCommit: false,
+          eachMessage: async event => messagesConsumed.push(event),
+        })
+        consumer.seek({ topic: topicName, partition: 0, offset: 2 })
+
+        await waitForConsumerToJoinGroup(consumer)
+        await expect(waitForMessages(messagesConsumed, { number: 1 })).resolves.toEqual([
+          expect.objectContaining({
+            topic: topicName,
+            partition: 0,
+            message: expect.objectContaining({ offset: '2' }),
+          }),
+        ])
+
+        await expect(admin.fetchOffsets({ groupId, topic: topicName })).resolves.toEqual([
+          expect.objectContaining({
+            partition: 0,
+            offset: '-1',
+          }),
+        ])
+
+        messagesConsumed = []
+        consumer.seek({ topic: topicName, partition: 0, offset: 1 })
+
+        await expect(waitForMessages(messagesConsumed, { number: 2 })).resolves.toEqual([
+          expect.objectContaining({
+            topic: topicName,
+            partition: 0,
+            message: expect.objectContaining({ offset: '1' }),
+          }),
+          expect.objectContaining({
+            topic: topicName,
+            partition: 0,
+            message: expect.objectContaining({ offset: '2' }),
+          }),
+        ])
+      })
     })
   })
 })

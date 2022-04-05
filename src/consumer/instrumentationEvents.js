@@ -3,6 +3,7 @@ const InstrumentationEventType = require('../instrumentation/eventType')
 const networkEvents = require('../network/instrumentationEvents')
 const consumerType = InstrumentationEventType('consumer')
 
+/** @type {import('types').ConsumerEvents} */
 const events = {
   HEARTBEAT: consumerType('heartbeat'),
   COMMIT_OFFSETS: consumerType('commit_offsets'),
@@ -15,6 +16,8 @@ const events = {
   DISCONNECT: consumerType('disconnect'),
   STOP: consumerType('stop'),
   CRASH: consumerType('crash'),
+  REBALANCING: consumerType('rebalancing'),
+  RECEIVED_UNSUBSCRIBED_TOPICS: consumerType('received_unsubscribed_topics'),
   REQUEST: consumerType(networkEvents.NETWORK_REQUEST),
   REQUEST_TIMEOUT: consumerType(networkEvents.NETWORK_REQUEST_TIMEOUT),
   REQUEST_QUEUE_SIZE: consumerType(networkEvents.NETWORK_REQUEST_QUEUE_SIZE),

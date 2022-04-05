@@ -1,6 +1,5 @@
 /* eslint-disable */
-
-const Long = require('long')
+const Long = require('../../../utils/long')
 
 // Based on the kafka client 0.10.2 murmur2 implementation
 // https://github.com/apache/kafka/blob/0.10.2/clients/src/main/java/org/apache/kafka/common/utils/Utils.java#L364
@@ -9,8 +8,8 @@ const SEED = Long.fromValue(0x9747b28c)
 
 // 'm' and 'r' are mixing constants generated offline.
 // They're not really 'magic', they just happen to work well.
-const M = 0x5bd1e995
-const R = 24
+const M = Long.fromValue(0x5bd1e995)
+const R = Long.fromValue(24)
 
 module.exports = key => {
   const data = Buffer.isBuffer(key) ? key : Buffer.from(String(key))

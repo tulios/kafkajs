@@ -1,11 +1,4 @@
-const {
-  createConnection,
-  connectionOpts,
-  saslConnectionOpts,
-  saslSCRAM256ConnectionOpts,
-  saslSCRAM512ConnectionOpts,
-  newLogger,
-} = require('testHelpers')
+const { createConnectionPool, connectionOpts, saslEntries, newLogger } = require('testHelpers')
 
 const Broker = require('../index')
 
@@ -14,7 +7,7 @@ describe('Broker > disconnect', () => {
 
   beforeEach(() => {
     broker = new Broker({
-      connection: createConnection(connectionOpts()),
+      connectionPool: createConnectionPool(connectionOpts()),
       logger: newLogger(),
     })
   })
@@ -25,41 +18,22 @@ describe('Broker > disconnect', () => {
 
   test('disconnect', async () => {
     await broker.connect()
-    expect(broker.connection.connected).toEqual(true)
+    expect(broker.connectionPool.isConnected()).toEqual(true)
     await broker.disconnect()
-    expect(broker.connection.connected).toEqual(false)
+    expect(broker.connectionPool.isConnected()).toEqual(false)
   })
 
-  test('when authenticated with SASL set authenticated to false', async () => {
-    broker = new Broker({
-      connection: createConnection(saslConnectionOpts()),
-      logger: newLogger(),
-    })
-    await broker.connect()
-    expect(broker.authenticatedAt).not.toBe(null)
-    await broker.disconnect()
-    expect(broker.authenticatedAt).toBe(null)
-  })
+  for (const e of saslEntries) {
+    test(`when authenticated with SASL ${e.name} set authenticated to false`, async () => {
+      const connectionPool = createConnectionPool(e.opts())
+      broker = new Broker({ connectionPool, logger: newLogger() })
+      await broker.connect()
 
-  test('when authenticated with SASL SCRAM 256 set authenticated to false', async () => {
-    broker = new Broker({
-      connection: createConnection(saslSCRAM256ConnectionOpts()),
-      logger: newLogger(),
-    })
-    await broker.connect()
-    expect(broker.authenticatedAt).not.toBe(null)
-    await broker.disconnect()
-    expect(broker.authenticatedAt).toBe(null)
-  })
+      const connection = await connectionPool.getConnection()
+      expect(connection.authenticatedAt).not.toBe(null)
 
-  test('when authenticated with SASL SCRAM 512 set authenticated to false', async () => {
-    broker = new Broker({
-      connection: createConnection(saslSCRAM512ConnectionOpts()),
-      logger: newLogger(),
+      await broker.disconnect()
+      expect(connection.authenticatedAt).toBe(null)
     })
-    await broker.connect()
-    expect(broker.authenticatedAt).not.toBe(null)
-    await broker.disconnect()
-    expect(broker.authenticatedAt).toBe(null)
-  })
+  }
 })

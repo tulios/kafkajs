@@ -1,4 +1,5 @@
 const createRetry = require('../retry')
+const { CONNECTION_STATUS } = require('../network/connectionStatus')
 const { DefaultPartitioner } = require('./partitioners/')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const createEosManager = require('./eosManager')
@@ -14,6 +15,20 @@ const eventKeys = keys(events)
 
 const { CONNECT, DISCONNECT } = events
 
+/**
+ *
+ * @param {Object} params
+ * @param {import('../../types').Cluster} params.cluster
+ * @param {import('../../types').Logger} params.logger
+ * @param {import('../../types').ICustomPartitioner} [params.createPartitioner]
+ * @param {import('../../types').RetryOptions} [params.retry]
+ * @param {boolean} [params.idempotent]
+ * @param {string} [params.transactionalId]
+ * @param {number} [params.transactionTimeout]
+ * @param {InstrumentationEventEmitter} [params.instrumentationEmitter]
+ *
+ * @returns {import('../../types').Producer}
+ */
 module.exports = ({
   cluster,
   logger: rootLogger,
@@ -24,6 +39,7 @@ module.exports = ({
   transactionTimeout,
   instrumentationEmitter: rootInstrumentationEmitter,
 }) => {
+  let connectionStatus = CONNECTION_STATUS.DISCONNECTED
   retry = retry || { retries: idempotent ? Number.MAX_SAFE_INTEGER : 5 }
 
   if (idempotent && retry.retries < 1) {
@@ -56,15 +72,12 @@ module.exports = ({
     eosManager: idempotentEosManager,
     idempotent,
     retrier,
+    getConnectionStatus: () => connectionStatus,
   })
 
   let transactionalEosManager
 
-  /**
-   * @param {string} eventName
-   * @param {AsyncFunction} listener
-   * @return {Function} removeListener
-   */
+  /** @type {import("../../types").Producer["on"]} */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {
       throw new KafkaJSNonRetriableError(`Event name should be one of ${eventKeys}`)
@@ -83,7 +96,7 @@ module.exports = ({
 
   /**
    * Begin a transaction. The returned object contains methods to send messages
-   * to the transaction and end the transaction by comitting or aborting.
+   * to the transaction and end the transaction by committing or aborting.
    *
    * Only messages sent on the transaction object will participate in the transaction.
    *
@@ -133,6 +146,7 @@ module.exports = ({
       retrier,
       eosManager: transactionalEosManager,
       idempotent: true,
+      getConnectionStatus: () => connectionStatus,
     })
 
     const isActive = () => transactionalEosManager.isInTransaction() && !transactionDidEnd
@@ -203,6 +217,7 @@ module.exports = ({
      */
     connect: async () => {
       await cluster.connect()
+      connectionStatus = CONNECTION_STATUS.CONNECTED
       instrumentationEmitter.emit(CONNECT)
 
       if (idempotent && !idempotentEosManager.isInitialized()) {
@@ -213,7 +228,9 @@ module.exports = ({
      * @return {Promise}
      */
     disconnect: async () => {
+      connectionStatus = CONNECTION_STATUS.DISCONNECTING
       await cluster.disconnect()
+      connectionStatus = CONNECTION_STATUS.DISCONNECTED
       instrumentationEmitter.emit(DISCONNECT)
     },
     isIdempotent: () => {

@@ -40,6 +40,33 @@ const versions = {
       response,
     }
   },
+  4: ({ groupId, groupGenerationId, memberId, retentionTime = RETENTION_TIME, topics }) => {
+    const request = require('./v4/request')
+    const response = require('./v4/response')
+    return {
+      request: request({
+        groupId,
+        groupGenerationId,
+        memberId,
+        retentionTime,
+        topics,
+      }),
+      response,
+    }
+  },
+  5: ({ groupId, groupGenerationId, memberId, topics }) => {
+    const request = require('./v5/request')
+    const response = require('./v5/response')
+    return {
+      request: request({
+        groupId,
+        groupGenerationId,
+        memberId,
+        topics,
+      }),
+      response,
+    }
+  },
 }
 
 module.exports = {

@@ -1,7 +1,13 @@
 const createAdmin = require('../index')
 const createConsumer = require('../../consumer')
 
-const { secureRandom, createCluster, newLogger, createTopic } = require('testHelpers')
+const {
+  secureRandom,
+  createCluster,
+  newLogger,
+  createTopic,
+  waitForConsumerToJoinGroup,
+} = require('testHelpers')
 
 describe('Admin', () => {
   let topicName, groupId, admin, consumer
@@ -14,14 +20,14 @@ describe('Admin', () => {
   })
 
   afterEach(async () => {
-    await admin.disconnect()
+    admin && (await admin.disconnect())
     consumer && (await consumer.disconnect())
   })
 
   describe('resetOffsets', () => {
     test('throws an error if the groupId is invalid', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
-      await expect(admin.setOffsets({ groupId: null })).rejects.toHaveProperty(
+      await expect(admin.resetOffsets({ groupId: null })).rejects.toHaveProperty(
         'message',
         'Invalid groupId null'
       )
@@ -29,7 +35,7 @@ describe('Admin', () => {
 
     test('throws an error if the topic name is not a valid string', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
-      await expect(admin.setOffsets({ groupId: 'groupId', topic: null })).rejects.toHaveProperty(
+      await expect(admin.resetOffsets({ groupId: 'groupId', topic: null })).rejects.toHaveProperty(
         'message',
         'Invalid topic null'
       )
@@ -84,11 +90,12 @@ describe('Admin', () => {
       expect(offsets).toEqual([{ partition: 0, offset: '-2', metadata: null }])
     })
 
-    test('throws an error if the consumer group is runnig', async () => {
+    test('throws an error if the consumer group is running', async () => {
       consumer = createConsumer({ groupId, cluster: createCluster(), logger: newLogger() })
       await consumer.connect()
       await consumer.subscribe({ topic: topicName })
-      await consumer.run({ eachMessage: () => true })
+      consumer.run({ eachMessage: () => true })
+      await waitForConsumerToJoinGroup(consumer)
 
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
 

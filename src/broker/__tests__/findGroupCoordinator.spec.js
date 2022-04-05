@@ -1,5 +1,5 @@
 const Broker = require('../index')
-const { secureRandom, createConnection, newLogger, retryProtocol } = require('testHelpers')
+const { secureRandom, createConnectionPool, newLogger, retryProtocol } = require('testHelpers')
 
 describe('Broker > FindGroupCoordinator', () => {
   let groupId, seedBroker
@@ -7,14 +7,14 @@ describe('Broker > FindGroupCoordinator', () => {
   beforeEach(async () => {
     groupId = `consumer-group-id-${secureRandom()}`
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await seedBroker.connect()
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
   })
 
   test('request', async () => {
@@ -26,6 +26,7 @@ describe('Broker > FindGroupCoordinator', () => {
     expect(response).toEqual({
       errorCode: 0,
       errorMessage: expect.toBeOneOf([null, 'NONE']),
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       coordinator: {
         nodeId: expect.any(Number),

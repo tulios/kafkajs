@@ -3,7 +3,7 @@ const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 const {
   secureRandom,
   createTopic,
-  createConnection,
+  createConnectionPool,
   newLogger,
   retryProtocol,
 } = require('testHelpers')
@@ -31,7 +31,7 @@ describe('Broker > TxnOffsetCommit', () => {
     )
 
     return new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
   }
@@ -42,7 +42,7 @@ describe('Broker > TxnOffsetCommit', () => {
     topicName = `test-topic-${secureRandom()}`
 
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
 
@@ -78,9 +78,9 @@ describe('Broker > TxnOffsetCommit', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await transactionBroker.disconnect()
-    await consumerBroker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    transactionBroker && (await transactionBroker.disconnect())
+    consumerBroker && (await consumerBroker.disconnect())
   })
 
   test('request', async () => {
@@ -100,7 +100,9 @@ describe('Broker > TxnOffsetCommit', () => {
       ],
     })
 
+    result.topics.forEach(topic => topic.partitions.sort((p1, p2) => p1.partition - p2.partition))
     expect(result).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       topics: [
         {

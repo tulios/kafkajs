@@ -77,7 +77,7 @@ describe('Admin', () => {
     })
 
     test('delete groups that is still connected', async () => {
-      // let's try to delete group that has consumer conected, it should throw error
+      // let's try to delete group that has consumer connected, it should throw error
       try {
         await admin.deleteGroups([groupId])
       } catch (error) {

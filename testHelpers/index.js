@@ -3,10 +3,11 @@ const execa = require('execa')
 const uuid = require('uuid/v4')
 const semver = require('semver')
 const crypto = require('crypto')
+const jwt = require('jsonwebtoken')
 const Cluster = require('../src/cluster')
 const waitFor = require('../src/utils/waitFor')
-const connectionBuilder = require('../src/cluster/connectionBuilder')
-const Connection = require('../src/network/connection')
+const connectionBuilder = require('../src/cluster/connectionPoolBuilder')
+const ConnectionPool = require('../src/network/connectionPool')
 const defaultSocketFactory = require('../src/network/socketFactory')
 const socketFactory = defaultSocketFactory()
 
@@ -33,6 +34,8 @@ const connectionOpts = (opts = {}) => ({
   socketFactory,
   clientId: `test-${secureRandom()}`,
   connectionTimeout: 3000,
+  requestTimeout: 30000,
+  metadataMaxAge: 300000,
   logger: newLogger(),
   host: getHost(),
   port: 9092,
@@ -59,6 +62,16 @@ const saslConnectionOpts = () =>
     },
   })
 
+const saslWrongConnectionOpts = () =>
+  Object.assign(sslConnectionOpts(), {
+    port: 9094,
+    sasl: {
+      mechanism: 'plain',
+      username: 'wrong',
+      password: 'wrong',
+    },
+  })
+
 const saslSCRAM256ConnectionOpts = () =>
   Object.assign(sslConnectionOpts(), {
     port: 9094,
@@ -66,6 +79,16 @@ const saslSCRAM256ConnectionOpts = () =>
       mechanism: 'scram-sha-256',
       username: 'testscram',
       password: 'testtestscram=256',
+    },
+  })
+
+const saslSCRAM256WrongConnectionOpts = () =>
+  Object.assign(sslConnectionOpts(), {
+    port: 9094,
+    sasl: {
+      mechanism: 'scram-sha-256',
+      username: 'wrong',
+      password: 'wrong',
     },
   })
 
@@ -79,19 +102,75 @@ const saslSCRAM512ConnectionOpts = () =>
     },
   })
 
-const createConnection = (opts = {}) => new Connection(Object.assign(connectionOpts(), opts))
+const saslSCRAM512WrongConnectionOpts = () =>
+  Object.assign(sslConnectionOpts(), {
+    port: 9094,
+    sasl: {
+      mechanism: 'scram-sha-512',
+      username: 'wrong',
+      password: 'wrong',
+    },
+  })
+
+const saslOAuthBearerConnectionOpts = () =>
+  Object.assign(sslConnectionOpts(), {
+    port: 9094,
+    sasl: {
+      mechanism: 'oauthbearer',
+      oauthBearerProvider: () => {
+        const token = jwt.sign({ sub: 'test' }, undefined, { algorithm: 'none', expiresIn: '1h' })
+
+        return {
+          value: token,
+        }
+      },
+    },
+  })
+
+/**
+ * List of the possible SASL setups.
+ * OAUTHBEARER must be enabled as a special case.
+ */
+const saslEntries = []
+if (process.env['OAUTHBEARER_ENABLED'] !== '1') {
+  saslEntries.push({
+    name: 'PLAIN',
+    opts: saslConnectionOpts,
+    wrongOpts: saslWrongConnectionOpts,
+    expectedErr: /SASL PLAIN authentication failed/,
+  })
+
+  saslEntries.push({
+    name: 'SCRAM 256',
+    opts: saslSCRAM256ConnectionOpts,
+    wrongOpts: saslSCRAM256WrongConnectionOpts,
+    expectedErr: /SASL SCRAM SHA256 authentication failed/,
+  })
+
+  saslEntries.push({
+    name: 'SCRAM 512',
+    opts: saslSCRAM512ConnectionOpts,
+    wrongOpts: saslSCRAM512WrongConnectionOpts,
+    expectedErr: /SASL SCRAM SHA512 authentication failed/,
+  })
+} else {
+  saslEntries.push({
+    name: 'OAUTHBEARER',
+    opts: saslOAuthBearerConnectionOpts,
+  })
+}
+
+const createConnectionPool = (opts = {}) =>
+  new ConnectionPool(Object.assign(connectionOpts(), opts))
 
 const createConnectionBuilder = (opts = {}, brokers = plainTextBrokers()) => {
-  const { ssl, sasl, clientId } = Object.assign(connectionOpts(), opts)
   return connectionBuilder({
     socketFactory,
     logger: newLogger(),
     brokers,
-    ssl,
-    sasl,
-    clientId,
     connectionTimeout: 1000,
-    retry: null,
+    ...connectionOpts(),
+    ...opts,
   })
 }
 
@@ -106,6 +185,12 @@ const createModPartitioner = () => ({ partitionMetadata, message }) => {
 
 const testWaitFor = async (fn, opts = {}) => waitFor(fn, { ignoreTimeout: true, ...opts })
 
+/**
+ * @param {import("../types").KafkaJSError} errorType
+ * @param {() => Promise<T>} fn
+ * @returns {Promise<T>}
+ * @template T
+ */
 const retryProtocol = (errorType, fn) =>
   waitFor(
     async () => {
@@ -159,7 +244,7 @@ const waitForConsumerToJoinGroup = (consumer, { maxWait = 10000, label = '' } = 
     })
   })
 
-const createTopic = async ({ topic, partitions = 1, config = [] }) => {
+const createTopic = async ({ topic, partitions = 1, replicas = 1, config = [] }) => {
   const kafka = new Kafka({ clientId: 'testHelpers', brokers: [`${getHost()}:9092`] })
   const admin = kafka.admin()
 
@@ -167,7 +252,9 @@ const createTopic = async ({ topic, partitions = 1, config = [] }) => {
     await admin.connect()
     await admin.createTopics({
       waitForLeaders: true,
-      topics: [{ topic, numPartitions: partitions, configEntries: config }],
+      topics: [
+        { topic, numPartitions: partitions, replicationFactor: replicas, configEntries: config },
+      ],
     })
   } finally {
     admin && (await admin.disconnect())
@@ -189,21 +276,48 @@ const addPartitions = async ({ topic, partitions }) => {
   })
 }
 
-const testIfKafkaVersion = version => (description, callback, testFn = test) => {
-  return semver.gte(semver.coerce(process.env.KAFKA_VERSION), semver.coerce(version))
-    ? testFn(description, callback)
-    : test.skip(description, callback)
+const testIfKafkaVersion = (version, versionComparator) => {
+  const scopedTest = (description, callback, testFn = test) => {
+    return versionComparator(semver.coerce(process.env.KAFKA_VERSION), semver.coerce(version))
+      ? testFn(description, callback)
+      : test.skip(description, callback)
+  }
+
+  scopedTest.only = (description, callback) => scopedTest(description, callback, test.only)
+
+  return scopedTest
 }
 
-const testIfKafka_0_11 = testIfKafkaVersion('0.11')
-testIfKafka_0_11.only = (description, callback) => {
-  return testIfKafka_0_11(description, callback, test.only)
+const testIfKafkaVersionLTE = version => testIfKafkaVersion(version, semver.lte)
+const testIfKafkaVersionGTE = version => testIfKafkaVersion(version, semver.gte)
+
+const testIfKafkaAtMost_0_10 = testIfKafkaVersionLTE('0.10')
+const testIfKafkaAtLeast_0_11 = testIfKafkaVersionGTE('0.11')
+const testIfKafkaAtLeast_1_1_0 = testIfKafkaVersionGTE('1.1')
+
+const flakyTest = (description, callback, testFn = test) =>
+  testFn(`[flaky] ${description}`, callback)
+flakyTest.skip = (description, callback) => flakyTest(description, callback, test.skip)
+flakyTest.only = (description, callback) => flakyTest(description, callback, test.only)
+const describeIfEnv = (key, value) => (description, callback, describeFn = describe) => {
+  return value === process.env[key]
+    ? describeFn(description, callback)
+    : describe.skip(description, callback)
 }
 
-const testIfKafka_1_1_0 = testIfKafkaVersion('1.1')
-testIfKafka_1_1_0.only = (description, callback) => {
-  return testIfKafka_1_1_0(description, callback, test.only)
+const describeIfNotEnv = (key, value) => (description, callback, describeFn = describe) => {
+  return value !== process.env[key]
+    ? describeFn(description, callback)
+    : describe.skip(description, callback)
 }
+
+/**
+ * Conditional describes for SASL OAUTHBEARER.
+ * OAUTHBEARER must be enabled as a special case as current Kafka impl
+ * doesn't allow it to be enabled aside of other SASL mechanisms.
+ */
+const describeIfOauthbearerEnabled = describeIfEnv('OAUTHBEARER_ENABLED', '1')
+const describeIfOauthbearerDisabled = describeIfNotEnv('OAUTHBEARER_ENABLED', '1')
 
 const unsupportedVersionResponse = () => Buffer.from({ type: 'Buffer', data: [0, 35, 0, 0, 0, 0] })
 const unsupportedVersionResponseWithTimeout = () =>
@@ -231,7 +345,9 @@ module.exports = {
   saslConnectionOpts,
   saslSCRAM256ConnectionOpts,
   saslSCRAM512ConnectionOpts,
-  createConnection,
+  saslOAuthBearerConnectionOpts,
+  saslEntries,
+  createConnectionPool,
   createConnectionBuilder,
   createCluster,
   createModPartitioner,
@@ -245,8 +361,12 @@ module.exports = {
   waitForMessages,
   waitForNextEvent,
   waitForConsumerToJoinGroup,
-  testIfKafka_0_11,
-  testIfKafka_1_1_0,
+  testIfKafkaAtMost_0_10,
+  testIfKafkaAtLeast_0_11,
+  testIfKafkaAtLeast_1_1_0,
+  flakyTest,
+  describeIfOauthbearerEnabled,
+  describeIfOauthbearerDisabled,
   addPartitions,
   unsupportedVersionResponse,
   generateMessages,

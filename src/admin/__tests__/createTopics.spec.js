@@ -1,11 +1,16 @@
 const createAdmin = require('../index')
-const { KafkaJSProtocolError } = require('../../errors')
+const {
+  KafkaJSProtocolError,
+  KafkaJSAggregateError,
+  KafkaJSCreateTopicError,
+} = require('../../errors')
 const { createErrorFromCode } = require('../../protocol/error')
 
 const { secureRandom, createCluster, newLogger } = require('testHelpers')
 
 const NOT_CONTROLLER = 41
 const TOPIC_ALREADY_EXISTS = 36
+const INVALID_TOPIC_EXCEPTION = 17
 
 describe('Admin', () => {
   let topicName, admin
@@ -15,7 +20,7 @@ describe('Admin', () => {
   })
 
   afterEach(async () => {
-    await admin.disconnect()
+    admin && (await admin.disconnect())
   })
 
   describe('createTopics', () => {
@@ -47,6 +52,33 @@ describe('Admin', () => {
         'message',
         'Invalid topics array, it cannot have multiple entries for the same topic'
       )
+    })
+
+    test.each([
+      [
+        'are not an array',
+        'this-is-not-an-array',
+        'Invalid configEntries for topic "topic-123", must be an array',
+      ],
+      [
+        'contain a non-object',
+        ['this-is-not-an-object'],
+        'Invalid configEntries for topic "topic-123". Entry 0 must be an object',
+      ],
+      [
+        'contain an entry with missing value property',
+        [{ name: 'missing-value' }],
+        'Invalid configEntries for topic "topic-123". Entry 0 must have a valid "value" property',
+      ],
+      [
+        'contain an entry with missing name property',
+        [{ value: 'missing-name' }],
+        'Invalid configEntries for topic "topic-123". Entry 0 must have a valid "name" property',
+      ],
+    ])('throws an error if the config entries %s', async (_, configEntries, errorMessage) => {
+      admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
+      const topics = [{ topic: 'topic-123', configEntries }]
+      await expect(admin.createTopics({ topics })).rejects.toHaveProperty('message', errorMessage)
     })
 
     test('create the new topics and return true', async () => {
@@ -93,7 +125,9 @@ describe('Admin', () => {
       cluster.refreshMetadata = jest.fn()
       cluster.findControllerBroker = jest.fn(() => broker)
       broker.createTopics.mockImplementationOnce(() => {
-        throw new KafkaJSProtocolError(createErrorFromCode(TOPIC_ALREADY_EXISTS))
+        throw new KafkaJSAggregateError('error', [
+          new KafkaJSCreateTopicError(createErrorFromCode(TOPIC_ALREADY_EXISTS), topicName),
+        ])
       })
 
       admin = createAdmin({ cluster, logger: newLogger() })
@@ -131,6 +165,32 @@ describe('Admin', () => {
 
       expect(broker.metadata).toHaveBeenCalledTimes(1)
       expect(broker.metadata).toHaveBeenCalledWith([topicName, topic2, topic3])
+    })
+
+    test('forward non ignorable errors with topic name metadata', async () => {
+      const cluster = createCluster()
+      const broker = { createTopics: jest.fn(), metadata: jest.fn(() => true) }
+
+      cluster.refreshMetadata = jest.fn()
+      cluster.findControllerBroker = jest.fn(() => broker)
+
+      broker.createTopics.mockImplementationOnce(() => {
+        throw new KafkaJSAggregateError('error', [
+          new KafkaJSCreateTopicError(createErrorFromCode(INVALID_TOPIC_EXCEPTION), topicName),
+        ])
+      })
+      admin = createAdmin({ cluster, logger: newLogger() })
+
+      await expect(
+        admin.createTopics({
+          waitForLeaders: true,
+          topics: [{ topic: topicName }],
+        })
+      ).rejects.toBeInstanceOf(KafkaJSAggregateError)
+
+      expect(cluster.refreshMetadata).toHaveBeenCalledTimes(1)
+      expect(cluster.findControllerBroker).toHaveBeenCalledTimes(1)
+      expect(broker.createTopics).toHaveBeenCalledTimes(1)
     })
   })
 })

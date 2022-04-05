@@ -1,5 +1,6 @@
 const Decoder = require('../../../decoder')
 const { parse: parseV0 } = require('../v0/response')
+const { DEFAULT_CONFIG } = require('../../../configSource')
 
 /**
  * DescribeConfigs Response (Version: 1) => throttle_time_ms [resources]
@@ -27,14 +28,24 @@ const decodeSynonyms = decoder => ({
   configSource: decoder.readInt8(),
 })
 
-const decodeConfigEntries = decoder => ({
-  configName: decoder.readString(),
-  configValue: decoder.readString(),
-  readOnly: decoder.readBoolean(),
-  isDefault: decoder.readBoolean(),
-  isSensitive: decoder.readBoolean(),
-  configSynonyms: decoder.readArray(decodeSynonyms),
-})
+const decodeConfigEntries = decoder => {
+  const configName = decoder.readString()
+  const configValue = decoder.readString()
+  const readOnly = decoder.readBoolean()
+  const configSource = decoder.readInt8()
+  const isSensitive = decoder.readBoolean()
+  const configSynonyms = decoder.readArray(decodeSynonyms)
+
+  return {
+    configName,
+    configValue,
+    readOnly,
+    isDefault: configSource === DEFAULT_CONFIG,
+    configSource,
+    isSensitive,
+    configSynonyms,
+  }
+}
 
 const decodeResources = decoder => ({
   errorCode: decoder.readInt16(),

@@ -1,68 +1,65 @@
-const Long = require('long')
 const Lock = require('../utils/lock')
 const { Types: Compression } = require('../protocol/message/compression')
 const { requests, lookup } = require('../protocol/requests')
 const { KafkaJSNonRetriableError } = require('../errors')
 const apiKeys = require('../protocol/requests/apiKeys')
-const SASLAuthenticator = require('./saslAuthenticator')
+const shuffle = require('../utils/shuffle')
 
 const PRIVATE = {
-  SHOULD_REAUTHENTICATE: Symbol('private:Broker:shouldReauthenticate'),
+  SEND_REQUEST: Symbol('private:Broker:sendRequest'),
+}
+
+/** @type {import("../protocol/requests").Lookup} */
+const notInitializedLookup = () => {
+  throw new Error('Broker not connected')
 }
 
 /**
  * Each node in a Kafka cluster is called broker. This class contains
  * the high-level operations a node can perform.
  *
- * @param {Connection} connection
- * @param {Object} logger
- * @param {Object} [versions=null] The object with all available versions and APIs
- *                                 supported by this cluster. The output of broker#apiVersions
- * @param {number} [authenticationTimeout=1000]
- * @param {boolean} [allowAutoTopicCreation=true] If this and the broker config 'auto.create.topics.enable'
- *                                                are true, topics that don't exist will be created when
- *                                                fetching metadata.
- * @param {boolean} [supportAuthenticationProtocol=null] If the server supports the SASLAuthenticate protocol
+ * @type {import("../../types").Broker}
  */
 module.exports = class Broker {
+  /**
+   * @param {Object} options
+   * @param {import("../network/connectionPool")} options.connectionPool
+   * @param {import("../../types").Logger} options.logger
+   * @param {number} [options.nodeId]
+   * @param {import("../../types").ApiVersions} [options.versions=null] The object with all available versions and APIs
+   *                                 supported by this cluster. The output of broker#apiVersions
+   * @param {number} [options.authenticationTimeout=1000]
+   * @param {boolean} [options.allowAutoTopicCreation=true] If this and the broker config 'auto.create.topics.enable'
+   *                                                are true, topics that don't exist will be created when
+   *                                                fetching metadata.
+   */
   constructor({
-    connection,
+    connectionPool,
     logger,
-    allowExperimentalV011,
     nodeId = null,
     versions = null,
     authenticationTimeout = 1000,
-    reauthenticationThreshold = 10000,
     allowAutoTopicCreation = true,
-    supportAuthenticationProtocol = null,
   }) {
-    this.connection = connection
+    this.connectionPool = connectionPool
     this.nodeId = nodeId
     this.rootLogger = logger
     this.logger = logger.namespace('Broker')
     this.versions = versions
-    this.allowExperimentalV011 = allowExperimentalV011
     this.authenticationTimeout = authenticationTimeout
-    this.reauthenticationThreshold = reauthenticationThreshold
     this.allowAutoTopicCreation = allowAutoTopicCreation
-    this.supportAuthenticationProtocol = supportAuthenticationProtocol
-
-    this.authenticatedAt = null
-    this.sessionLifetime = Long.ZERO
 
     // The lock timeout has twice the connectionTimeout because the same timeout is used
     // for the first apiVersions call
-    const lockTimeout = 2 * this.connection.connectionTimeout + this.authenticationTimeout
-    this.brokerAddress = `${this.connection.host}:${this.connection.port}`
+    const lockTimeout = 2 * this.connectionPool.connectionTimeout + this.authenticationTimeout
+    this.brokerAddress = `${this.connectionPool.host}:${this.connectionPool.port}`
 
     this.lock = new Lock({
       timeout: lockTimeout,
       description: `connect to broker ${this.brokerAddress}`,
     })
 
-    this.lookupRequest = () => {
-      throw new Error('Broker not connected')
-    }
+    this.lookupRequest = notInitializedLookup
   }
 
   /**
@@ -70,9 +67,9 @@ module.exports = class Broker {
    * @returns {boolean}
    */
   isConnected() {
-    const { connected, sasl } = this.connection
-    const isAuthenticated = this.authenticatedAt != null && !this[PRIVATE.SHOULD_REAUTHENTICATE]()
-    return sasl ? connected && isAuthenticated : connected
+    return this.connectionPool.sasl
+      ? this.connectionPool.isConnected() && this.connectionPool.isAuthenticated()
+      : this.connectionPool.isConnected()
   }
 
   /**
@@ -86,41 +83,32 @@ module.exports = class Broker {
         return
       }
 
-      this.authenticatedAt = null
-      await this.connection.connect()
+      const connection = await this.connectionPool.getConnection()
 
       if (!this.versions) {
         this.versions = await this.apiVersions()
       }
+      this.connectionPool.setVersions(this.versions)
 
-      this.lookupRequest = lookup(this.versions, this.allowExperimentalV011)
+      this.lookupRequest = lookup(this.versions)
 
-      if (this.supportAuthenticationProtocol === null) {
+      if (connection.getSupportAuthenticationProtocol() === null) {
+        let supportAuthenticationProtocol = false
         try {
           this.lookupRequest(apiKeys.SaslAuthenticate, requests.SaslAuthenticate)
-          this.supportAuthenticationProtocol = true
+          supportAuthenticationProtocol = true
         } catch (_) {
-          this.supportAuthenticationProtocol = false
+          supportAuthenticationProtocol = false
         }
+        this.connectionPool.setSupportAuthenticationProtocol(supportAuthenticationProtocol)
 
         this.logger.debug(`Verified support for SaslAuthenticate`, {
           broker: this.brokerAddress,
-          supportAuthenticationProtocol: this.supportAuthenticationProtocol,
+          supportAuthenticationProtocol,
         })
       }
 
-      if (this.authenticatedAt == null && this.connection.sasl) {
-        const authenticator = new SASLAuthenticator(
-          this.connection,
-          this.rootLogger,
-          this.versions,
-          this.supportAuthenticationProtocol
-        )
-
-        await authenticator.authenticate()
-        this.authenticatedAt = process.hrtime()
-        this.sessionLifetime = Long.fromValue(authenticator.sessionLifetime)
-      }
+      await connection.authenticate()
     } finally {
       await this.lock.release()
     }
@@ -131,13 +119,12 @@ module.exports = class Broker {
    * @returns {Promise}
    */
   async disconnect() {
-    this.authenticatedAt = null
-    await this.connection.disconnect()
+    await this.connectionPool.destroy()
   }
 
   /**
    * @public
-   * @returns {Promise}
+   * @returns {Promise<import("../../types").ApiVersions>}
    */
   async apiVersions() {
     let response
@@ -150,9 +137,9 @@ module.exports = class Broker {
     for (const candidateVersion of availableVersions) {
       try {
         const apiVersions = requests.ApiVersions.protocol({ version: candidateVersion })
-        response = await this.connection.send({
+        response = await this[PRIVATE.SEND_REQUEST]({
           ...apiVersions(),
-          requestTimeout: this.connection.connectionTimeout,
+          requestTimeout: this.connectionPool.connectionTimeout,
         })
         break
       } catch (e) {
@@ -180,20 +167,22 @@ module.exports = class Broker {
 
   /**
    * @public
-   * @param {Array} [topics=[]] An array of topics to fetch metadata for.
+   * @type {import("../../types").Broker['metadata']}
+   * @param {string[]} [topics=[]] An array of topics to fetch metadata for.
    *                            If no topics are specified fetch metadata for all topics
-   * @returns {Promise}
    */
   async metadata(topics = []) {
     const metadata = this.lookupRequest(apiKeys.Metadata, requests.Metadata)
-    return await this.connection.send(
-      metadata({ topics, allowAutoTopicCreation: this.allowAutoTopicCreation })
+    const shuffledTopics = shuffle(topics)
+    return await this[PRIVATE.SEND_REQUEST](
+      metadata({ topics: shuffledTopics, allowAutoTopicCreation: this.allowAutoTopicCreation })
     )
   }
 
   /**
    * @public
-   * @param {Array} topicData An array of messages per topic and per partition, example:
+   * @param {Object} request
+   * @param {Array} request.topicData An array of messages per topic and per partition, example:
    *                          [
    *                            {
    *                              topic: 'test-topic-1',
@@ -228,15 +217,15 @@ module.exports = class Broker {
    *                              ]
    *                            },
    *                          ]
-   * @param {number} [acks=-1] Control the number of required acks.
+   * @param {number} [request.acks=-1] Control the number of required acks.
    *                           -1 = all replicas must acknowledge
    *                            0 = no acknowledgments
    *                            1 = only waits for the leader to acknowledge
-   * @param {number} [timeout=30000] The time to await a response in ms
-   * @param {string} [transactionalId=null]
-   * @param {number} [producerId=-1] Broker assigned producerId
-   * @param {number} [producerEpoch=0] Broker assigned producerEpoch
-   * @param {Compression.Types} [compression=Compression.Types.None] Compression codec
+   * @param {number} [request.timeout=30000] The time to await a response in ms
+   * @param {string} [request.transactionalId=null]
+   * @param {number} [request.producerId=-1] Broker assigned producerId
+   * @param {number} [request.producerEpoch=0] Broker assigned producerEpoch
+   * @param {import("../../types").CompressionTypes} [request.compression=CompressionTypes.None] Compression codec
    * @returns {Promise}
    */
   async produce({
@@ -249,7 +238,7 @@ module.exports = class Broker {
     compression = Compression.None,
   }) {
     const produce = this.lookupRequest(apiKeys.Produce, requests.Produce)
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       produce({
         acks,
         timeout,
@@ -264,15 +253,16 @@ module.exports = class Broker {
 
   /**
    * @public
-   * @param {number} replicaId=-1 Broker id of the follower. For normal consumers, use -1
-   * @param {number} isolationLevel=1 This setting controls the visibility of transactional records. Default READ_COMMITTED.
-   * @param {number} maxWaitTime=5000 Maximum time in ms to wait for the response
-   * @param {number} minBytes=1 Minimum bytes to accumulate in the response
-   * @param {number} maxBytes=10485760 Maximum bytes to accumulate in the response. Note that this is
+   * @param {Object} request
+   * @param {number} [request.replicaId=-1] Broker id of the follower. For normal consumers, use -1
+   * @param {number} [request.isolationLevel=1] This setting controls the visibility of transactional records. Default READ_COMMITTED.
+   * @param {number} [request.maxWaitTime=5000] Maximum time in ms to wait for the response
+   * @param {number} [request.minBytes=1] Minimum bytes to accumulate in the response
+   * @param {number} [request.maxBytes=10485760] Maximum bytes to accumulate in the response. Note that this is
    *                                   not an absolute maximum, if the first message in the first non-empty
    *                                   partition of the fetch is larger than this value, the message will still
    *                                   be returned to ensure that progress can be made. Default 10MB.
-   * @param {Array} topics Topics to fetch
+   * @param {Array} request.topics Topics to fetch
    *                        [
    *                          {
    *                            topic: 'topic-name',
@@ -285,6 +275,8 @@ module.exports = class Broker {
    *                            ]
    *                          }
    *                        ]
+   * @param {string} [request.rackId=''] A rack identifier for this client. This can be any string value which indicates where this
+   *                           client is physically located. It corresponds with the broker config `broker.rack`.
    * @returns {Promise}
    */
   async fetch({
@@ -294,48 +286,87 @@ module.exports = class Broker {
     minBytes = 1,
     maxBytes = 10485760,
     topics,
+    rackId = '',
   }) {
     // TODO: validate topics not null/empty
     const fetch = this.lookupRequest(apiKeys.Fetch, requests.Fetch)
-    return await this.connection.send(
-      fetch({ replicaId, isolationLevel, maxWaitTime, minBytes, maxBytes, topics })
+
+    // Shuffle topic-partitions to ensure fair response allocation across partitions (KIP-74)
+    const flattenedTopicPartitions = topics.reduce((topicPartitions, { topic, partitions }) => {
+      partitions.forEach(partition => {
+        topicPartitions.push({ topic, partition })
+      })
+      return topicPartitions
+    }, [])
+
+    const shuffledTopicPartitions = shuffle(flattenedTopicPartitions)
+
+    // Consecutive partitions for the same topic can be combined into a single `topic` entry
+    const consolidatedTopicPartitions = shuffledTopicPartitions.reduce(
+      (topicPartitions, { topic, partition }) => {
+        const last = topicPartitions[topicPartitions.length - 1]
+
+        if (last != null && last.topic === topic) {
+          topicPartitions[topicPartitions.length - 1].partitions.push(partition)
+        } else {
+          topicPartitions.push({ topic, partitions: [partition] })
+        }
+
+        return topicPartitions
+      },
+      []
+    )
+
+    return await this[PRIVATE.SEND_REQUEST](
+      fetch({
+        replicaId,
+        isolationLevel,
+        maxWaitTime,
+        minBytes,
+        maxBytes,
+        topics: consolidatedTopicPartitions,
+        rackId,
+      })
     )
   }
 
   /**
    * @public
-   * @param {string} groupId The group id
-   * @param {number} groupGenerationId The generation of the group
-   * @param {string} memberId The member id assigned by the group coordinator
+   * @param {object} request
+   * @param {string} request.groupId The group id
+   * @param {number} request.groupGenerationId The generation of the group
+   * @param {string} request.memberId The member id assigned by the group coordinator
    * @returns {Promise}
    */
   async heartbeat({ groupId, groupGenerationId, memberId }) {
     const heartbeat = this.lookupRequest(apiKeys.Heartbeat, requests.Heartbeat)
-    return await this.connection.send(heartbeat({ groupId, groupGenerationId, memberId }))
+    return await this[PRIVATE.SEND_REQUEST](heartbeat({ groupId, groupGenerationId, memberId }))
   }
 
   /**
    * @public
-   * @param {string} groupId The unique group id
-   * @param {CoordinatorType} coordinatorType The type of coordinator to find
+   * @param {object} request
+   * @param {string} request.groupId The unique group id
+   * @param {import("../protocol/coordinatorTypes").CoordinatorType} request.coordinatorType The type of coordinator to find
    * @returns {Promise}
    */
   async findGroupCoordinator({ groupId, coordinatorType }) {
     // TODO: validate groupId, mandatory
     const findCoordinator = this.lookupRequest(apiKeys.GroupCoordinator, requests.GroupCoordinator)
-    return await this.connection.send(findCoordinator({ groupId, coordinatorType }))
+    return await this[PRIVATE.SEND_REQUEST](findCoordinator({ groupId, coordinatorType }))
   }
 
   /**
    * @public
-   * @param {string} groupId The unique group id
-   * @param {number} sessionTimeout The coordinator considers the consumer dead if it receives
+   * @param {object} request
+   * @param {string} request.groupId The unique group id
+   * @param {number} request.sessionTimeout The coordinator considers the consumer dead if it receives
    *                                no heartbeat after this timeout in ms
-   * @param {number} rebalanceTimeout The maximum time that the coordinator will wait for each member
+   * @param {number} request.rebalanceTimeout The maximum time that the coordinator will wait for each member
    *                                  to rejoin when rebalancing the group
-   * @param {string} [memberId=""] The assigned consumer id or an empty string for a new consumer
-   * @param {string} [protocolType="consumer"] Unique name for class of protocols implemented by group
-   * @param {Array} groupProtocols List of protocols that the member supports (assignment strategy)
+   * @param {string} [request.memberId=""] The assigned consumer id or an empty string for a new consumer
+   * @param {string} [request.protocolType="consumer"] Unique name for class of protocols implemented by group
+   * @param {Array} request.groupProtocols List of protocols that the member supports (assignment strategy)
    *                                [{ name: 'AssignerName', metadata: '{"version": 1, "topics": []}' }]
    * @returns {Promise}
    */
@@ -348,40 +379,53 @@ module.exports = class Broker {
     groupProtocols,
   }) {
     const joinGroup = this.lookupRequest(apiKeys.JoinGroup, requests.JoinGroup)
-    return await this.connection.send(
-      joinGroup({
-        groupId,
-        sessionTimeout,
-        rebalanceTimeout,
-        memberId,
-        protocolType,
-        groupProtocols,
-      })
-    )
+    const makeRequest = (assignedMemberId = memberId) =>
+      this[PRIVATE.SEND_REQUEST](
+        joinGroup({
+          groupId,
+          sessionTimeout,
+          rebalanceTimeout,
+          memberId: assignedMemberId,
+          protocolType,
+          groupProtocols,
+        })
+      )
+
+    try {
+      return await makeRequest()
+    } catch (error) {
+      if (error.name === 'KafkaJSMemberIdRequired') {
+        return makeRequest(error.memberId)
+      }
+
+      throw error
+    }
   }
 
   /**
    * @public
-   * @param {string} groupId
-   * @param {string} memberId
+   * @param {object} request
+   * @param {string} request.groupId
+   * @param {string} request.memberId
    * @returns {Promise}
    */
   async leaveGroup({ groupId, memberId }) {
     const leaveGroup = this.lookupRequest(apiKeys.LeaveGroup, requests.LeaveGroup)
-    return await this.connection.send(leaveGroup({ groupId, memberId }))
+    return await this[PRIVATE.SEND_REQUEST](leaveGroup({ groupId, memberId }))
   }
 
   /**
    * @public
-   * @param {string} groupId
-   * @param {number} generationId
-   * @param {string} memberId
-   * @param {object} groupAssignment
+   * @param {object} request
+   * @param {string} request.groupId
+   * @param {number} request.generationId
+   * @param {string} request.memberId
+   * @param {object} request.groupAssignment
    * @returns {Promise}
    */
   async syncGroup({ groupId, generationId, memberId, groupAssignment }) {
     const syncGroup = this.lookupRequest(apiKeys.SyncGroup, requests.SyncGroup)
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       syncGroup({
         groupId,
         generationId,
@@ -393,9 +437,10 @@ module.exports = class Broker {
 
   /**
    * @public
-   * @param {number} replicaId=-1 Broker id of the follower. For normal consumers, use -1
-   * @param {number} isolationLevel=1 This setting controls the visibility of transactional records (default READ_COMMITTED, Kafka >0.11 only)
-   * @param {TopicPartitionOffset[]} topics e.g:
+   * @param {object} request
+   * @param {number} request.replicaId=-1 Broker id of the follower. For normal consumers, use -1
+   * @param {number} request.isolationLevel=1 This setting controls the visibility of transactional records (default READ_COMMITTED, Kafka >0.11 only)
+   * @param {TopicPartitionOffset[]} request.topics e.g:
    *
    * @typedef {Object} TopicPartitionOffset
    * @property {string} topic
@@ -410,7 +455,9 @@ module.exports = class Broker {
    */
   async listOffsets({ replicaId, isolationLevel, topics }) {
     const listOffsets = this.lookupRequest(apiKeys.ListOffsets, requests.ListOffsets)
-    const result = await this.connection.send(listOffsets({ replicaId, isolationLevel, topics }))
+    const result = await this[PRIVATE.SEND_REQUEST](
+      listOffsets({ replicaId, isolationLevel, topics })
+    )
 
     // ListOffsets >= v1 will return a single `offset` rather than an array of `offsets` (ListOffsets V0).
     // Normalize to just return `offset`.
@@ -425,12 +472,13 @@ module.exports = class Broker {
 
   /**
    * @public
-   * @param {string} groupId
-   * @param {number} groupGenerationId
-   * @param {string} memberId
-   * @param {number} [retentionTime=-1] -1 signals to the broker that its default configuration
+   * @param {object} request
+   * @param {string} request.groupId
+   * @param {number} request.groupGenerationId
+   * @param {string} request.memberId
+   * @param {number} [request.retentionTime=-1] -1 signals to the broker that its default configuration
    *                                    should be used.
-   * @param {object} topics Topics to commit offsets, e.g:
+   * @param {object} request.topics Topics to commit offsets, e.g:
    *                  [
    *                    {
    *                      topic: 'topic-name',
@@ -443,7 +491,7 @@ module.exports = class Broker {
    */
   async offsetCommit({ groupId, groupGenerationId, memberId, retentionTime, topics }) {
     const offsetCommit = this.lookupRequest(apiKeys.OffsetCommit, requests.OffsetCommit)
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       offsetCommit({
         groupId,
         groupGenerationId,
@@ -456,8 +504,9 @@ module.exports = class Broker {
 
   /**
    * @public
-   * @param {string} groupId
-   * @param {object} topics - If the topic array is null fetch offsets for all topics. e.g:
+   * @param {object} request
+   * @param {string} request.groupId
+   * @param {object} request.topics - If the topic array is null fetch offsets for all topics. e.g:
    *                  [
    *                    {
    *                      topic: 'topic-name',
@@ -470,22 +519,24 @@ module.exports = class Broker {
    */
   async offsetFetch({ groupId, topics }) {
     const offsetFetch = this.lookupRequest(apiKeys.OffsetFetch, requests.OffsetFetch)
-    return await this.connection.send(offsetFetch({ groupId, topics }))
+    return await this[PRIVATE.SEND_REQUEST](offsetFetch({ groupId, topics }))
   }
 
   /**
    * @public
-   * @param {Array} groupIds
+   * @param {object} request
+   * @param {Array} request.groupIds
    * @returns {Promise}
    */
   async describeGroups({ groupIds }) {
     const describeGroups = this.lookupRequest(apiKeys.DescribeGroups, requests.DescribeGroups)
-    return await this.connection.send(describeGroups({ groupIds }))
+    return await this[PRIVATE.SEND_REQUEST](describeGroups({ groupIds }))
   }
 
   /**
    * @public
-   * @param {Array} topics e.g:
+   * @param {object} request
+   * @param {Array} request.topics e.g:
    *                 [
    *                   {
    *                     topic: 'topic-name',
@@ -493,20 +544,21 @@ module.exports = class Broker {
    *                     replicationFactor: 1
    *                   }
    *                 ]
-   * @param {boolean} [validateOnly=false] If this is true, the request will be validated, but the topic
+   * @param {boolean} [request.validateOnly=false] If this is true, the request will be validated, but the topic
    *                                       won't be created
-   * @param {number} [timeout=5000] The time in ms to wait for a topic to be completely created
+   * @param {number} [request.timeout=5000] The time in ms to wait for a topic to be completely created
    *                                on the controller node
    * @returns {Promise}
    */
   async createTopics({ topics, validateOnly = false, timeout = 5000 }) {
     const createTopics = this.lookupRequest(apiKeys.CreateTopics, requests.CreateTopics)
-    return await this.connection.send(createTopics({ topics, validateOnly, timeout }))
+    return await this[PRIVATE.SEND_REQUEST](createTopics({ topics, validateOnly, timeout }))
   }
 
   /**
    * @public
-   * @param {Array} topicPartitions e.g:
+   * @param {object} request
+   * @param {Array} request.topicPartitions e.g:
    *                 [
    *                   {
    *                     topic: 'topic-name',
@@ -514,49 +566,54 @@ module.exports = class Broker {
    *                     assignments: []
    *                   }
    *                 ]
-   * @param {boolean} [validateOnly=false] If this is true, the request will be validated, but the topic
+   * @param {boolean} [request.validateOnly=false] If this is true, the request will be validated, but the topic
    *                                       won't be created
-   * @param {number} [timeout=5000] The time in ms to wait for a topic to be completely created
+   * @param {number} [request.timeout=5000] The time in ms to wait for a topic to be completely created
    *                                on the controller node
    * @returns {Promise<void>}
    */
   async createPartitions({ topicPartitions, validateOnly = false, timeout = 5000 }) {
     const createPartitions = this.lookupRequest(apiKeys.CreatePartitions, requests.CreatePartitions)
-    return await this.connection.send(createPartitions({ topicPartitions, validateOnly, timeout }))
+    return await this[PRIVATE.SEND_REQUEST](
+      createPartitions({ topicPartitions, validateOnly, timeout })
+    )
   }
 
   /**
    * @public
-   * @param {Array<string>} topics An array of topics to be deleted
-   * @param {number} [timeout=5000] The time in ms to wait for a topic to be completely deleted on the
+   * @param {object} request
+   * @param {string[]} request.topics An array of topics to be deleted
+   * @param {number} [request.timeout=5000] The time in ms to wait for a topic to be completely deleted on the
    *                                controller node. Values <= 0 will trigger topic deletion and return
    *                                immediately
    * @returns {Promise}
    */
   async deleteTopics({ topics, timeout = 5000 }) {
     const deleteTopics = this.lookupRequest(apiKeys.DeleteTopics, requests.DeleteTopics)
-    return await this.connection.send(deleteTopics({ topics, timeout }))
+    return await this[PRIVATE.SEND_REQUEST](deleteTopics({ topics, timeout }))
   }
 
   /**
    * @public
-   * @param {Array<ResourceQuery>} resources
+   * @param {object} request
+   * @param {import("../../types").ResourceConfigQuery[]} request.resources
    *                                 [{
    *                                   type: RESOURCE_TYPES.TOPIC,
    *                                   name: 'topic-name',
    *                                   configNames: ['compression.type', 'retention.ms']
    *                                 }]
-   * @param {boolean} [includeSynonyms=false]
+   * @param {boolean} [request.includeSynonyms=false]
    * @returns {Promise}
    */
   async describeConfigs({ resources, includeSynonyms = false }) {
     const describeConfigs = this.lookupRequest(apiKeys.DescribeConfigs, requests.DescribeConfigs)
-    return await this.connection.send(describeConfigs({ resources, includeSynonyms }))
+    return await this[PRIVATE.SEND_REQUEST](describeConfigs({ resources, includeSynonyms }))
   }
 
   /**
    * @public
-   * @param {Array<ResourceConfig>} resources
+   * @param {object} request
+   * @param {import("../../types").IResourceConfig[]} request.resources
    *                                 [{
    *                                  type: RESOURCE_TYPES.TOPIC,
    *                                  name: 'topic-name',
@@ -567,12 +624,12 @@ module.exports = class Broker {
    *                                    }
    *                                  ]
    *                                 }]
-   * @param {boolean} [validateOnly=false]
+   * @param {boolean} [request.validateOnly=false]
    * @returns {Promise}
    */
   async alterConfigs({ resources, validateOnly = false }) {
     const alterConfigs = this.lookupRequest(apiKeys.AlterConfigs, requests.AlterConfigs)
-    return await this.connection.send(alterConfigs({ resources, validateOnly }))
+    return await this[PRIVATE.SEND_REQUEST](alterConfigs({ resources, validateOnly }))
   }
 
   /**
@@ -580,13 +637,14 @@ module.exports = class Broker {
    *
    * Request should be made to the transaction coordinator.
    * @public
-   * @param {number} transactionTimeout The time in ms to wait for before aborting idle transactions
-   * @param {number} [transactionalId] The transactional id or null if the producer is not transactional
+   * @param {object} request
+   * @param {number} request.transactionTimeout The time in ms to wait for before aborting idle transactions
+   * @param {number} [request.transactionalId] The transactional id or null if the producer is not transactional
    * @returns {Promise}
    */
   async initProducerId({ transactionalId, transactionTimeout }) {
     const initProducerId = this.lookupRequest(apiKeys.InitProducerId, requests.InitProducerId)
-    return await this.connection.send(initProducerId({ transactionalId, transactionTimeout }))
+    return await this[PRIVATE.SEND_REQUEST](initProducerId({ transactionalId, transactionTimeout }))
   }
 
   /**
@@ -594,10 +652,11 @@ module.exports = class Broker {
    *
    * Request should be made to the transaction coordinator.
    * @public
-   * @param {string} transactionalId The transactional id corresponding to the transaction.
-   * @param {number} producerId Current producer id in use by the transactional id.
-   * @param {number} producerEpoch Current epoch associated with the producer id.
-   * @param {object[]} topics e.g:
+   * @param {object} request
+   * @param {string} request.transactionalId The transactional id corresponding to the transaction.
+   * @param {number} request.producerId Current producer id in use by the transactional id.
+   * @param {number} request.producerEpoch Current epoch associated with the producer id.
+   * @param {object[]} request.topics e.g:
    *                  [
    *                    {
    *                      topic: 'topic-name',
@@ -611,7 +670,7 @@ module.exports = class Broker {
       apiKeys.AddPartitionsToTxn,
       requests.AddPartitionsToTxn
     )
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       addPartitionsToTxn({ transactionalId, producerId, producerEpoch, topics })
     )
   }
@@ -621,15 +680,16 @@ module.exports = class Broker {
    *
    * Request should be made to the transaction coordinator.
    * @public
-   * @param {string} transactionalId The transactional id corresponding to the transaction.
-   * @param {number} producerId Current producer id in use by the transactional id.
-   * @param {number} producerEpoch Current epoch associated with the producer id.
-   * @param {string} groupId The unique group identifier (for the consumer group)
+   * @param {object} request
+   * @param {string} request.transactionalId The transactional id corresponding to the transaction.
+   * @param {number} request.producerId Current producer id in use by the transactional id.
+   * @param {number} request.producerEpoch Current epoch associated with the producer id.
+   * @param {string} request.groupId The unique group identifier (for the consumer group)
    * @returns {Promise}
    */
   async addOffsetsToTxn({ transactionalId, producerId, producerEpoch, groupId }) {
     const addOffsetsToTxn = this.lookupRequest(apiKeys.AddOffsetsToTxn, requests.AddOffsetsToTxn)
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       addOffsetsToTxn({ transactionalId, producerId, producerEpoch, groupId })
     )
   }
@@ -639,12 +699,13 @@ module.exports = class Broker {
    *
    * Request should be made to the consumer coordinator.
    * @public
-   * @param {OffsetCommitTopic[]} topics
-   * @param {string} transactionalId The transactional id corresponding to the transaction.
-   * @param {string} groupId The unique group identifier (for the consumer group)
-   * @param {number} producerId Current producer id in use by the transactional id.
-   * @param {number} producerEpoch Current epoch associated with the producer id.
-   * @param {OffsetCommitTopic[]} topics
+   * @param {object} request
+   * @param {OffsetCommitTopic[]} request.topics
+   * @param {string} request.transactionalId The transactional id corresponding to the transaction.
+   * @param {string} request.groupId The unique group identifier (for the consumer group)
+   * @param {number} request.producerId Current producer id in use by the transactional id.
+   * @param {number} request.producerEpoch Current epoch associated with the producer id.
+   * @param {OffsetCommitTopic[]} request.topics
    *
    * @typedef {Object} OffsetCommitTopic
    * @property {string} topic
@@ -659,7 +720,7 @@ module.exports = class Broker {
    */
   async txnOffsetCommit({ transactionalId, groupId, producerId, producerEpoch, topics }) {
     const txnOffsetCommit = this.lookupRequest(apiKeys.TxnOffsetCommit, requests.TxnOffsetCommit)
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       txnOffsetCommit({ transactionalId, groupId, producerId, producerEpoch, topics })
     )
   }
@@ -669,15 +730,16 @@ module.exports = class Broker {
    *
    * Request should be made to the transaction coordinator.
    * @public
-   * @param {string} transactionalId The transactional id corresponding to the transaction.
-   * @param {number} producerId Current producer id in use by the transactional id.
-   * @param {number} producerEpoch Current epoch associated with the producer id.
-   * @param {boolean} transactionResult The result of the transaction (false = ABORT, true = COMMIT)
+   * @param {object} request
+   * @param {string} request.transactionalId The transactional id corresponding to the transaction.
+   * @param {number} request.producerId Current producer id in use by the transactional id.
+   * @param {number} request.producerEpoch Current epoch associated with the producer id.
+   * @param {boolean} request.transactionResult The result of the transaction (false = ABORT, true = COMMIT)
    * @returns {Promise}
    */
   async endTxn({ transactionalId, producerId, producerEpoch, transactionResult }) {
     const endTxn = this.lookupRequest(apiKeys.EndTxn, requests.EndTxn)
-    return await this.connection.send(
+    return await this[PRIVATE.SEND_REQUEST](
       endTxn({ transactionalId, producerId, producerEpoch, transactionResult })
     )
   }
@@ -689,38 +751,134 @@ module.exports = class Broker {
    */
   async listGroups() {
     const listGroups = this.lookupRequest(apiKeys.ListGroups, requests.ListGroups)
-    return await this.connection.send(listGroups())
+    return await this[PRIVATE.SEND_REQUEST](listGroups())
   }
 
   /**
    * Send request to delete groups
-   * @param {Array<string>} groupIds
+   * @param {string[]} groupIds
    * @public
    * @returns {Promise}
    */
   async deleteGroups(groupIds) {
     const deleteGroups = this.lookupRequest(apiKeys.DeleteGroups, requests.DeleteGroups)
-    return await this.connection.send(deleteGroups(groupIds))
+    return await this[PRIVATE.SEND_REQUEST](deleteGroups(groupIds))
   }
 
-  /***
+  /**
+   * Send request to delete records
+   * @public
+   * @param {object} request
+   * @param {TopicPartitionRecords[]} request.topics
+   *                          [
+   *                            {
+   *                              topic: 'my-topic-name',
+   *                              partitions: [
+   *                                { partition: 0, offset 2 },
+   *                                { partition: 1, offset 4 },
+   *                              ],
+   *                            }
+   *                          ]
+   * @returns {Promise<Array>} example:
+   *                          {
+   *                            throttleTime: 0
+   *                           [
+   *                              {
+   *                                topic: 'my-topic-name',
+   *                                partitions: [
+   *                                 { partition: 0, lowWatermark: '2n', errorCode: 0 },
+   *                                 { partition: 1, lowWatermark: '4n', errorCode: 0 },
+   *                               ],
+   *                             },
+   *                           ]
+   *                          }
+   *
+   * @typedef {object} TopicPartitionRecords
+   * @property {string} topic
+   * @property {PartitionRecord[]} partitions
+   *
+   * @typedef {object} PartitionRecord
+   * @property {number} partition
+   * @property {number} offset
+   */
+  async deleteRecords({ topics }) {
+    const deleteRecords = this.lookupRequest(apiKeys.DeleteRecords, requests.DeleteRecords)
+    return await this[PRIVATE.SEND_REQUEST](deleteRecords({ topics }))
+  }
+
+  /**
+   * @public
+   * @param {object} request
+   * @param {import("../../types").AclEntry[]} request.acl e.g:
+   *                 [
+   *                   {
+   *                     resourceType: AclResourceTypes.TOPIC,
+   *                     resourceName: 'topic-name',
+   *                     resourcePatternType: ResourcePatternTypes.LITERAL,
+   *                     principal: 'User:bob',
+   *                     host: '*',
+   *                     operation: AclOperationTypes.ALL,
+   *                     permissionType: AclPermissionTypes.DENY,
+   *                   }
+   *                 ]
+   * @returns {Promise<void>}
+   */
+  async createAcls({ acl }) {
+    const createAcls = this.lookupRequest(apiKeys.CreateAcls, requests.CreateAcls)
+    return await this[PRIVATE.SEND_REQUEST](createAcls({ creations: acl }))
+  }
+
+  /**
+   * @public
+   * @param {import("../../types").AclEntry} aclEntry
+   * @returns {Promise<void>}
+   */
+  async describeAcls({
+    resourceType,
+    resourceName,
+    resourcePatternType,
+    principal,
+    host,
+    operation,
+    permissionType,
+  }) {
+    const describeAcls = this.lookupRequest(apiKeys.DescribeAcls, requests.DescribeAcls)
+    return await this[PRIVATE.SEND_REQUEST](
+      describeAcls({
+        resourceType,
+        resourceName,
+        resourcePatternType,
+        principal,
+        host,
+        operation,
+        permissionType,
+      })
+    )
+  }
+
+  /**
+   * @public
+   * @param {Object} request
+   * @param {import("../../types").AclEntry[]} request.filters
+   * @returns {Promise<void>}
+   */
+  async deleteAcls({ filters }) {
+    const deleteAcls = this.lookupRequest(apiKeys.DeleteAcls, requests.DeleteAcls)
+    return await this[PRIVATE.SEND_REQUEST](deleteAcls({ filters }))
+  }
+
+  /**
    * @private
    */
-  [PRIVATE.SHOULD_REAUTHENTICATE]() {
-    if (this.sessionLifetime.equals(Long.ZERO)) {
-      return false
+  async [PRIVATE.SEND_REQUEST](protocolRequest) {
+    try {
+      return await this.connectionPool.send(protocolRequest)
+    } catch (e) {
+      if (e.name === 'KafkaJSConnectionClosedError') {
+        await this.disconnect()
+      }
+
+      throw e
     }
-
-    if (this.authenticatedAt == null) {
-      return true
-    }
-
-    const [secondsSince, remainingNanosSince] = process.hrtime(this.authenticatedAt)
-    const millisSince = Long.fromValue(secondsSince)
-      .multiply(1000)
-      .add(Long.fromValue(remainingNanosSince).divide(1000000))
-
-    const reauthenticateAt = millisSince.add(this.reauthenticationThreshold)
-    return reauthenticateAt.greaterThanOrEqual(this.sessionLifetime)
   }
 }

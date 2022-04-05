@@ -2,7 +2,7 @@ const Broker = require('../index')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 const {
   secureRandom,
-  createConnection,
+  createConnectionPool,
   newLogger,
   retryProtocol,
   createTopic,
@@ -26,7 +26,7 @@ describe('Broker > EndTxn', () => {
     topicName = `test-topic-${secureRandom()}`
 
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
 
@@ -45,7 +45,7 @@ describe('Broker > EndTxn', () => {
     )
 
     transactionBroker = new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
 
@@ -61,8 +61,8 @@ describe('Broker > EndTxn', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await transactionBroker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    transactionBroker && (await transactionBroker.disconnect())
   })
 
   test('commit transaction', async () => {
@@ -76,6 +76,7 @@ describe('Broker > EndTxn', () => {
     })
 
     expect(result).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       errorCode: 0,
     })
@@ -92,6 +93,7 @@ describe('Broker > EndTxn', () => {
     })
 
     expect(result).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       errorCode: 0,
     })

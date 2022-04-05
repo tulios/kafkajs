@@ -9,21 +9,24 @@ const {
   createModPartitioner,
   newLogger,
   waitFor,
+  waitForConsumerToJoinGroup,
+  testIfKafkaAtLeast_0_11,
 } = require('testHelpers')
 
 describe('Consumer > Instrumentation Events', () => {
   let topicName, groupId, cluster, producer, consumer, consumer2, message, emitter
 
-  const createTestConsumer = ({ heartbeatInterval = 100, ...otherOps } = {}) =>
+  const createTestConsumer = (opts = {}) =>
     createConsumer({
       cluster,
       groupId,
       logger: newLogger(),
-      heartbeatInterval,
-      maxWaitTimeInMs: 1,
+      heartbeatInterval: 100,
+      maxWaitTimeInMs: 500,
       maxBytesPerPartition: 180,
+      rebalanceTimeout: 1000,
       instrumentationEmitter: emitter,
-      ...otherOps,
+      ...opts,
     })
 
   beforeEach(async () => {
@@ -33,7 +36,7 @@ describe('Consumer > Instrumentation Events', () => {
     await createTopic({ topic: topicName })
 
     emitter = new InstrumentationEventEmitter()
-    cluster = createCluster({ instrumentationEmitter: emitter })
+    cluster = createCluster({ instrumentationEmitter: emitter, metadataMaxAge: 50 })
     producer = createProducer({
       cluster,
       createPartitioner: createModPartitioner,
@@ -181,6 +184,7 @@ describe('Consumer > Instrumentation Events', () => {
       payload: {
         numberOfBatches: expect.any(Number),
         duration: expect.any(Number),
+        nodeId: expect.any(String),
       },
     })
   })
@@ -205,7 +209,9 @@ describe('Consumer > Instrumentation Events', () => {
       id: expect.any(Number),
       timestamp: expect.any(Number),
       type: 'consumer.fetch_start',
-      payload: {},
+      payload: {
+        nodeId: expect.any(String),
+      },
     })
   })
 
@@ -278,6 +284,85 @@ describe('Consumer > Instrumentation Events', () => {
     })
   })
 
+  testIfKafkaAtLeast_0_11(
+    'emits start and end batch process when reading empty control batches',
+    async () => {
+      const startBatchProcessSpy = jest.fn()
+      const endBatchProcessSpy = jest.fn()
+
+      consumer = createTestConsumer()
+      consumer.on(consumer.events.START_BATCH_PROCESS, startBatchProcessSpy)
+      consumer.on(consumer.events.END_BATCH_PROCESS, endBatchProcessSpy)
+
+      await consumer.connect()
+      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.run({ eachMessage: async () => {} })
+
+      producer = createProducer({
+        cluster,
+        createPartitioner: createModPartitioner,
+        logger: newLogger(),
+        transactionalId: `test-producer-${secureRandom()}`,
+        maxInFlightRequests: 1,
+        idempotent: true,
+      })
+
+      await producer.connect()
+      const transaction = await producer.transaction()
+
+      await transaction.send({
+        topic: topicName,
+        acks: -1,
+        messages: [
+          {
+            key: 'test',
+            value: 'test',
+          },
+        ],
+      })
+      await transaction.abort()
+
+      await waitFor(
+        () => startBatchProcessSpy.mock.calls.length > 0 && endBatchProcessSpy.mock.calls.length > 0
+      )
+
+      expect(startBatchProcessSpy).toHaveBeenCalledWith({
+        id: expect.any(Number),
+        timestamp: expect.any(Number),
+        type: 'consumer.start_batch_process',
+        payload: {
+          topic: topicName,
+          partition: 0,
+          highWatermark: '2',
+          offsetLag: expect.any(String),
+          offsetLagLow: expect.any(String),
+          batchSize: 0,
+          firstOffset: '0',
+          lastOffset: '1',
+        },
+      })
+      expect(startBatchProcessSpy).toHaveBeenCalledTimes(1)
+
+      expect(endBatchProcessSpy).toHaveBeenCalledWith({
+        id: expect.any(Number),
+        timestamp: expect.any(Number),
+        type: 'consumer.end_batch_process',
+        payload: {
+          topic: topicName,
+          partition: 0,
+          highWatermark: '2',
+          offsetLag: expect.any(String),
+          offsetLagLow: expect.any(String),
+          batchSize: 0,
+          firstOffset: '0',
+          lastOffset: '1',
+          duration: expect.any(Number),
+        },
+      })
+      expect(endBatchProcessSpy).toHaveBeenCalledTimes(1)
+    }
+  )
+
   it('emits connection events', async () => {
     const connectListener = jest.fn().mockName('connect')
     const disconnectListener = jest.fn().mockName('disconnect')
@@ -312,6 +397,7 @@ describe('Consumer > Instrumentation Events', () => {
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
     await consumer.run({ eachMessage })
 
+    await producer.connect()
     await producer.send({ acks: 1, topic: topicName, messages: [message] })
 
     await waitFor(() => crashListener.mock.calls.length > 0)
@@ -320,7 +406,89 @@ describe('Consumer > Instrumentation Events', () => {
       id: expect.any(Number),
       timestamp: expect.any(Number),
       type: 'consumer.crash',
-      payload: { error, groupId },
+      payload: { error, groupId, restart: true },
+    })
+  })
+
+  it('emits crash events with restart=false', async () => {
+    const crashListener = jest.fn()
+    const error = new Error('💣💥')
+    const eachMessage = jest.fn().mockImplementationOnce(() => {
+      throw error
+    })
+
+    consumer = createTestConsumer({ retry: { retries: 0, restartOnFailure: async () => false } })
+    consumer.on(consumer.events.CRASH, crashListener)
+
+    await consumer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.run({ eachMessage })
+
+    await producer.connect()
+    await producer.send({ acks: 1, topic: topicName, messages: [message] })
+
+    await waitFor(() => crashListener.mock.calls.length > 0)
+
+    expect(crashListener).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.crash',
+      payload: { error, groupId, restart: false },
+    })
+  })
+
+  it('emits rebalancing', async () => {
+    const onRebalancing = jest.fn()
+
+    const groupId = `consumer-group-id-${secureRandom()}`
+
+    consumer = createTestConsumer({
+      groupId,
+      cluster: createCluster({
+        instrumentationEmitter: new InstrumentationEventEmitter(),
+        metadataMaxAge: 50,
+      }),
+    })
+
+    consumer2 = createTestConsumer({
+      groupId,
+      cluster: createCluster({
+        instrumentationEmitter: new InstrumentationEventEmitter(),
+        metadataMaxAge: 50,
+      }),
+    })
+
+    let memberId
+    consumer.on(consumer.events.GROUP_JOIN, async event => {
+      memberId = memberId || event.payload.memberId
+    })
+
+    consumer.on(consumer.events.REBALANCING, async event => {
+      onRebalancing(event)
+    })
+
+    await consumer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    consumer.run({ eachMessage: () => true })
+
+    await waitForConsumerToJoinGroup(consumer, { label: 'consumer1' })
+
+    await consumer2.connect()
+    await consumer2.subscribe({ topic: topicName, fromBeginning: true })
+
+    consumer2.run({ eachMessage: () => true })
+
+    await waitForConsumerToJoinGroup(consumer2, { label: 'consumer2' })
+
+    expect(onRebalancing).toBeCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.rebalancing',
+      payload: {
+        groupId: groupId,
+        memberId: memberId,
+      },
     })
   })
 
@@ -437,6 +605,81 @@ describe('Consumer > Instrumentation Events', () => {
         broker: expect.any(String),
         clientId: expect.any(String),
         queueSize: expect.any(Number),
+      },
+    })
+  })
+
+  it('emits received unsubscribed topics events', async () => {
+    const topicNames = [`test-topic-${secureRandom()}`, `test-topic-${secureRandom()}`]
+    const otherTopic = `test-topic-${secureRandom()}`
+    const groupId = `consumer-group-id-${secureRandom()}`
+
+    for (const topicName of [...topicNames, otherTopic]) {
+      await createTopic({ topic: topicName, partitions: 2 })
+    }
+
+    // First consumer subscribes to topicNames
+    consumer = createTestConsumer({
+      groupId,
+      cluster: createCluster({
+        instrumentationEmitter: new InstrumentationEventEmitter(),
+        metadataMaxAge: 50,
+      }),
+    })
+
+    await consumer.connect()
+    await Promise.all(
+      topicNames.map(topicName => consumer.subscribe({ topic: topicName, fromBeginning: true }))
+    )
+
+    consumer.run({ eachMessage: () => {} })
+    await waitForConsumerToJoinGroup(consumer, { label: 'consumer1' })
+
+    // Second consumer re-uses group id but only subscribes to one of the topics
+    consumer2 = createTestConsumer({
+      groupId,
+      cluster: createCluster({
+        instrumentationEmitter: new InstrumentationEventEmitter(),
+        metadataMaxAge: 50,
+      }),
+    })
+
+    const onReceivedUnsubscribedTopics = jest.fn()
+    let receivedUnsubscribedTopics = 0
+    consumer2.on(consumer.events.RECEIVED_UNSUBSCRIBED_TOPICS, async event => {
+      onReceivedUnsubscribedTopics(event)
+      receivedUnsubscribedTopics++
+    })
+
+    await consumer2.connect()
+    await Promise.all(
+      [topicNames[1], otherTopic].map(topicName =>
+        consumer2.subscribe({ topic: topicName, fromBeginning: true })
+      )
+    )
+
+    consumer2.run({ eachMessage: () => {} })
+    await waitForConsumerToJoinGroup(consumer2, { label: 'consumer2' })
+
+    // Wait for rebalance to finish
+    await waitFor(async () => {
+      const { state, members } = await consumer.describeGroup()
+      return state === 'Stable' && members.length === 2
+    })
+
+    await waitFor(() => receivedUnsubscribedTopics > 0)
+
+    expect(onReceivedUnsubscribedTopics).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.received_unsubscribed_topics',
+      payload: {
+        groupId,
+        generationId: expect.any(Number),
+        memberId: expect.any(String),
+        assignedTopics: topicNames,
+        topicsSubscribed: [topicNames[1], otherTopic],
+        topicsNotSubscribed: [topicNames[0]],
       },
     })
   })

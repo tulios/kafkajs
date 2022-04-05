@@ -1,5 +1,5 @@
 const Broker = require('../index')
-const { secureRandom, createConnection, newLogger, retryProtocol } = require('testHelpers')
+const { secureRandom, createConnectionPool, newLogger, retryProtocol } = require('testHelpers')
 const { MemberMetadata, MemberAssignment } = require('../../consumer/assignerProtocol')
 
 describe('Broker > SyncGroup', () => {
@@ -10,7 +10,7 @@ describe('Broker > SyncGroup', () => {
     groupId = `consumer-group-id-${secureRandom()}`
 
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -23,15 +23,15 @@ describe('Broker > SyncGroup', () => {
     )
 
     groupCoordinator = new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
     await groupCoordinator.connect()
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await groupCoordinator.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    groupCoordinator && (await groupCoordinator.disconnect())
   })
 
   test('request', async () => {
@@ -60,6 +60,11 @@ describe('Broker > SyncGroup', () => {
       groupAssignment,
     })
 
-    expect(response).toEqual({ throttleTime: 0, errorCode: 0, memberAssignment })
+    expect(response).toEqual({
+      clientSideThrottleTime: expect.optional(0),
+      throttleTime: 0,
+      errorCode: 0,
+      memberAssignment,
+    })
   })
 })

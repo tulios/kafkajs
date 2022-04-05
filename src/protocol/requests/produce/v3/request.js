@@ -1,4 +1,4 @@
-const Long = require('long')
+const Long = require('../../../../utils/long')
 const Encoder = require('../../../encoder')
 const { Produce: apiKey } = require('../../apiKeys')
 const { Types } = require('../../../message/compression')

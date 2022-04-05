@@ -33,13 +33,14 @@ const MemberMetadata = {
 
 const MemberAssignment = {
   /**
-   * @param {number} version
-   * @param {Object<String,Array>} assignment, example:
+   * @param {object} options
+   * @param {number} options.version
+   * @param {Object<String,Array>} options.assignment, example:
    *                               {
    *                                 'topic-A': [0, 2, 4, 6],
    *                                 'topic-B': [0, 2],
    *                               }
-   * @param {Buffer} [userData=Buffer.alloc(0)]
+   * @param {Buffer} [options.userData=Buffer.alloc(0)]
    *
    * @returns Buffer
    */

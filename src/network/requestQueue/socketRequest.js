@@ -40,12 +40,15 @@ const REQUEST_STATE = {
  */
 module.exports = class SocketRequest {
   /**
-   * @param {number} requestTimeout
-   * @param {string} broker - e.g: 127.0.0.1:9092
-   * @param {RequestEntry} entry
-   * @param {boolean} expectResponse
-   * @param {Function} send
-   * @param {InstrumentationEventEmitter} [instrumentationEmitter=null]
+   * @param {Object} options
+   * @param {number} options.requestTimeout
+   * @param {string} options.broker - e.g: 127.0.0.1:9092
+   * @param {string} options.clientId
+   * @param {RequestEntry} options.entry
+   * @param {boolean} options.expectResponse
+   * @param {Function} options.send
+   * @param {() => void} options.timeout
+   * @param {import("../../instrumentation/emitter")} [options.instrumentationEmitter=null]
    */
   constructor({
     requestTimeout,

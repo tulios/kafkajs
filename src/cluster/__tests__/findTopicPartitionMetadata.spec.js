@@ -9,14 +9,16 @@ describe('Cluster > findTopicPartitionMetadata', () => {
   })
 
   test('returns the partition metadata of a topic', () => {
-    const partitionMetadata = {
-      isr: [2],
-      leader: 2,
-      partitionErrorCode: 0,
-      partitionId: 0,
-      replicas: [2],
-    }
-    cluster.brokerPool.metadata = {}
+    const partitionMetadata = [
+      {
+        isr: [2],
+        leader: 2,
+        partitionErrorCode: 0,
+        partitionId: 0,
+        replicas: [2],
+      },
+    ]
+    cluster.brokerPool.metadata = { topicMetadata: [{ topic, partitionMetadata }] }
     cluster.brokerPool.topicMetadataCache.set(topic, { metadata: { topic, partitionMetadata } })
     expect(cluster.findTopicPartitionMetadata(topic)).toEqual(partitionMetadata)
   })
@@ -36,13 +38,15 @@ describe('Cluster > findTopicPartitionMetadata', () => {
   })
 
   it('returns an empty array if there is no metadata for a given topic', () => {
-    const partitionMetadata = {
-      isr: [2],
-      leader: 2,
-      partitionErrorCode: 0,
-      partitionId: 0,
-      replicas: [2],
-    }
+    const partitionMetadata = [
+      {
+        isr: [2],
+        leader: 2,
+        partitionErrorCode: 0,
+        partitionId: 0,
+        replicas: [2],
+      },
+    ]
     cluster.brokerPool.metadata = {}
     cluster.brokerPool.topicMetadataCache.set(topic, { topic, partitionMetadata })
     const anotherTopic = `test-topic-${secureRandom()}`

@@ -4,6 +4,7 @@ const { createErrorFromCode } = require('../../protocol/error')
 
 const { secureRandom, createCluster, newLogger, createTopic } = require('testHelpers')
 const RESOURCE_TYPES = require('../../protocol/resourceTypes')
+const CONFIG_RESOURCE_TYPES = require('../../protocol/configResourceTypes')
 const NOT_CONTROLLER = 41
 
 describe('Admin', () => {
@@ -20,7 +21,7 @@ describe('Admin', () => {
   })
 
   afterEach(async () => {
-    await admin.disconnect()
+    admin && (await admin.disconnect())
   })
 
   describe('describeConfigs', () => {
@@ -123,7 +124,8 @@ describe('Admin', () => {
 
     test('retries if the controller has moved', async () => {
       const cluster = createCluster()
-      const broker = { describeConfigs: jest.fn(() => true) }
+      const brokerResponse = { resources: [true] }
+      const broker = { describeConfigs: jest.fn(() => brokerResponse) }
 
       cluster.refreshMetadata = jest.fn()
       cluster.findControllerBroker = jest
@@ -138,11 +140,38 @@ describe('Admin', () => {
         admin.describeConfigs({
           resources: [{ type: RESOURCE_TYPES.TOPIC, name: topicName }],
         })
-      ).resolves.toEqual(true)
+      ).resolves.toEqual(brokerResponse)
 
       expect(cluster.refreshMetadata).toHaveBeenCalledTimes(2)
       expect(cluster.findControllerBroker).toHaveBeenCalledTimes(2)
       expect(broker.describeConfigs).toHaveBeenCalledTimes(1)
+    })
+
+    test('describe broker configs', async () => {
+      await createTopic({ topic: topicName })
+
+      const cluster = createCluster()
+      admin = createAdmin({ cluster, logger: newLogger() })
+      await admin.connect()
+
+      const metadata = await cluster.brokerPool.seedBroker.metadata()
+      const brokers = metadata.brokers
+      const brokerToDescribeConfig = brokers[1].nodeId.toString()
+
+      const resources = [
+        {
+          type: RESOURCE_TYPES.TOPIC,
+          name: topicName,
+          configNames: ['cleanup.policy'],
+        },
+        {
+          type: CONFIG_RESOURCE_TYPES.BROKER,
+          name: brokerToDescribeConfig,
+        },
+      ]
+
+      const response = await admin.describeConfigs({ resources })
+      expect(response.resources.length).toEqual(2)
     })
   })
 })
