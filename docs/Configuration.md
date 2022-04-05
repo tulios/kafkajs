@@ -417,3 +417,37 @@ const kafka = new Kafka({
   socketFactory: myCustomSocketFactory,
 })
 ```
+
+### Proxy support
+
+Support for proxying traffic can be implemented with a custom socket factory. In the example
+below we are using [proxy-chain](https://github.com/apify/proxy-chain) to integrate with the
+proxy server, but any other proxy library can be used as long as the socket factory interface
+is implemented.
+
+```javascript
+const tls = require('tls')
+const net = require('net')
+const { createTunnel, closeTunnel } = require('proxy-chain')
+
+const socketFactory = ({ host, port, ssl, onConnect }) => {
+  const socket = ssl ? new tls.TLSSocket() : new net.Socket()
+
+  createTunnel(process.env.HTTP_PROXY, `${host}:${port}`)
+    .then((tunnelAddress) => {
+      const [tunnelHost, tunnelPort] = tunnelAddress.split(':')
+      socket.setKeepAlive(true, 60000)
+      socket.connect(
+        Object.assign({ host: tunnelHost, port: tunnelPort, servername: host }, ssl),
+        onConnect
+      )
+
+      socket.on('close', () => {
+        closeTunnel(tunnelServer, true)
+      })
+    })
+    .catch(error => socket.emit('error', error))
+
+  return socket
+}
+```
