@@ -66,20 +66,19 @@
 <p>Subscribing to some topics:</p>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> consumer.connect()
 
-<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-A'</span> })
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topics</span>: [<span class="hljs-string">'topic-A'</span>] })
 
-<span class="hljs-comment">// Subscribe can be called several times</span>
-<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-B'</span> })
-<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-C'</span> })
+<span class="hljs-comment">// You can subscribe to multiple topics at once</span>
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topics</span>: [<span class="hljs-string">'topic-B'</span>, <span class="hljs-string">'topic-C'</span>] })
 
 <span class="hljs-comment">// It's possible to start from the beginning of the topic</span>
-<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-D'</span>, <span class="hljs-attr">fromBeginning</span>: <span class="hljs-literal">true</span> })
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topics</span>: [<span class="hljs-string">'topic-D'</span>], <span class="hljs-attr">fromBeginning</span>: <span class="hljs-literal">true</span> })
 </code></pre>
-<p>Alternatively, you can subscribe to multiple topics at once using a RegExp:</p>
+<p>Alternatively, you can subscribe to any topic that matches a regular expression:</p>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> consumer.connect()
-<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-regexp">/topic-(eu|us)-.*/i</span> })
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topics</span>: [<span class="hljs-regexp">/topic-(eu|us)-.*/i</span>] })
 </code></pre>
-<p>The consumer will not match topics created after the subscription. If your broker has <code>topic-A</code> and <code>topic-B</code>, you subscribe to <code>/topic-.*/</code>, then <code>topic-C</code> is created, your consumer would not be automatically subscribed to <code>topic-C</code>.</p>
+<p>When suppling a regular expression, the consumer will not match topics created after the subscription. If your broker has <code>topic-A</code> and <code>topic-B</code>, you subscribe to <code>/topic-.*/</code>, then <code>topic-C</code> is created, your consumer would not be automatically subscribed to <code>topic-C</code>.</p>
 <p>KafkaJS offers you two ways to process your data: <code>eachMessage</code> and <code>eachBatch</code></p>
 <h2><a class="anchor" aria-hidden="true" id="a-name-each-message-a-eachmessage"></a><a href="#a-name-each-message-a-eachmessage" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="each-message"></a> eachMessage</h2>
 <p>The <code>eachMessage</code> handler provides a convenient and easy to use API, feeding your function one message at a time. It is implemented on top of <code>eachBatch</code>, and it will automatically commit your offsets and heartbeat at the configured interval for you. If you are just looking to get started with Kafka consumers this a good place to start.</p>
@@ -212,8 +211,8 @@ consumer.commitOffsets([
 </ul>
 <h2><a class="anchor" aria-hidden="true" id="a-name-from-beginning-a-frombeginning"></a><a href="#a-name-from-beginning-a-frombeginning" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="from-beginning"></a> fromBeginning</h2>
 <p>The consumer group will use the latest committed offset when starting to fetch messages. If the offset is invalid or not defined, <code>fromBeginning</code> defines the behavior of the consumer group. This can be configured when subscribing to a topic:</p>
-<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'test-topic'</span>, <span class="hljs-attr">fromBeginning</span>: <span class="hljs-literal">true</span> })
-<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'other-topic'</span>, <span class="hljs-attr">fromBeginning</span>: <span class="hljs-literal">false</span> })
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topics</span>: [<span class="hljs-string">'test-topic'</span>], <span class="hljs-attr">fromBeginning</span>: <span class="hljs-literal">true</span> })
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topics</span>: [<span class="hljs-string">'other-topic'</span>], <span class="hljs-attr">fromBeginning</span>: <span class="hljs-literal">false</span> })
 </code></pre>
 <p>When <code>fromBeginning</code> is <code>true</code>, the group will use the earliest offset. If set to <code>false</code>, it will use the latest offset. The default is <code>false</code>.</p>
 <h2><a class="anchor" aria-hidden="true" id="a-name-options-a-options"></a><a href="#a-name-options-a-options" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="options"></a> Options</h2>
@@ -263,7 +262,7 @@ consumer.commitOffsets([
 </blockquote>
 <p>Example: A situation where this could be useful is when an external dependency used by the consumer is under too much load. Here we want to <code>pause</code> consumption from a topic when this happens, and after a predefined interval we <code>resume</code> again:</p>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> consumer.connect()
-<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'jobs'</span> })
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topics</span>: [<span class="hljs-string">'jobs'</span>] })
 
 <span class="hljs-keyword">await</span> consumer.run({ <span class="hljs-attr">eachMessage</span>: <span class="hljs-keyword">async</span> ({ topic, message }) =&gt; {
     <span class="hljs-keyword">try</span> {
@@ -313,7 +312,7 @@ consumer.commitOffsets([
 <h2><a class="anchor" aria-hidden="true" id="a-name-seek-a-seek"></a><a href="#a-name-seek-a-seek" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="seek"></a> Seek</h2>
 <p>To move the offset position in a topic/partition the <code>Consumer</code> provides the method <code>seek</code>. This method has to be called after the consumer is initialized and is running (after consumer#run).</p>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> consumer.connect()
-<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'example'</span> })
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topics</span>: [<span class="hljs-string">'example'</span>] })
 
 <span class="hljs-comment">// you don't need to await consumer#run</span>
 consumer.run({ <span class="hljs-attr">eachMessage</span>: <span class="hljs-keyword">async</span> ({ topic, message }) =&gt; <span class="hljs-literal">true</span> })
