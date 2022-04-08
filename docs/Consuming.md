@@ -16,31 +16,23 @@ Subscribing to some topics:
 ```javascript
 await consumer.connect()
 
-await consumer.subscribe({ topic: 'topic-A' })
+await consumer.subscribe({ topics: ['topic-A'] })
 
-// Subscribe can be called several times
-await consumer.subscribe({ topic: 'topic-B' })
-await consumer.subscribe({ topic: 'topic-C' })
+// You can subscribe to multiple topics at once
+await consumer.subscribe({ topics: ['topic-B', 'topic-C'] })
 
 // It's possible to start from the beginning of the topic
-await consumer.subscribe({ topic: 'topic-D', fromBeginning: true })
+await consumer.subscribe({ topics: ['topic-D'], fromBeginning: true })
 ```
 
-Alternatively, you can subscribe to multiple topics at once - by supplying either a list:
+Alternatively, you can subscribe to any topic that matches a regular expression:
 
 ```javascript
 await consumer.connect()
-await consumer.subscribe({ topic: ['topic-A', 'topic-B'] })
+await consumer.subscribe({ topics: [/topic-(eu|us)-.*/i] })
 ```
 
-or by using a RegExp:
-
-```javascript
-await consumer.connect()
-await consumer.subscribe({ topic: /topic-(eu|us)-.*/i })
-```
-
-When suppling a RegExp, the consumer will not match topics created after the subscription. If your broker has `topic-A` and `topic-B`, you subscribe to `/topic-.*/`, then `topic-C` is created, your consumer would not be automatically subscribed to `topic-C`.
+When suppling a regular expression, the consumer will not match topics created after the subscription. If your broker has `topic-A` and `topic-B`, you subscribe to `/topic-.*/`, then `topic-C` is created, your consumer would not be automatically subscribed to `topic-C`.
 
 KafkaJS offers you two ways to process your data: `eachMessage` and `eachBatch`
 
@@ -212,8 +204,8 @@ The usual usage pattern for offsets stored outside of Kafka is as follows:
 The consumer group will use the latest committed offset when starting to fetch messages. If the offset is invalid or not defined, `fromBeginning` defines the behavior of the consumer group. This can be configured when subscribing to a topic:
 
 ```javascript
-await consumer.subscribe({ topic: 'test-topic', fromBeginning: true })
-await consumer.subscribe({ topic: 'other-topic', fromBeginning: false })
+await consumer.subscribe({ topics: ['test-topic'], fromBeginning: true })
+await consumer.subscribe({ topics: ['other-topic'], fromBeginning: false })
 ```
 
 When `fromBeginning` is `true`, the group will use the earliest offset. If set to `false`, it will use the latest offset. The default is `false`.
@@ -268,7 +260,7 @@ Example: A situation where this could be useful is when an external dependency u
 
 ```javascript
 await consumer.connect()
-await consumer.subscribe({ topic: 'jobs' })
+await consumer.subscribe({ topics: ['jobs'] })
 
 await consumer.run({ eachMessage: async ({ topic, message }) => {
     try {
@@ -329,7 +321,7 @@ To move the offset position in a topic/partition the `Consumer` provides the met
 
 ```javascript
 await consumer.connect()
-await consumer.subscribe({ topic: 'example' })
+await consumer.subscribe({ topics: ['example'] })
 
 // you don't need to await consumer#run
 consumer.run({ eachMessage: async ({ topic, message }) => true })

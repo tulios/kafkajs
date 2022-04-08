@@ -174,43 +174,51 @@ module.exports = ({
   }
 
   /** @type {import("../../types").Consumer["subscribe"]} */
-  const subscribe = async ({ topic, fromBeginning = false }) => {
+  const subscribe = async ({ topic, topics: subscriptionTopics, fromBeginning = false }) => {
     if (consumerGroup) {
       throw new KafkaJSNonRetriableError('Cannot subscribe to topic while consumer is running')
     }
 
-    if (!topic) {
-      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    if (!topic && !subscriptionTopics) {
+      throw new KafkaJSNonRetriableError('Missing required argument "topics"')
     }
 
-    const isRegExp = topic instanceof RegExp
-    const isStringArray = Array.isArray(topic) && topic.every(t => typeof t === 'string')
-
-    if (typeof topic !== 'string' && !isRegExp && !isStringArray) {
-      throw new KafkaJSNonRetriableError(
-        `Invalid topic ${topic} (${typeof topic}), the topic name has to be a String, String[] or a RegExp`
-      )
+    if (subscriptionTopics != null && !Array.isArray(subscriptionTopics)) {
+      throw new KafkaJSNonRetriableError('Argument "topics" must be an array')
     }
+
+    const subscriptions = subscriptionTopics || [topic]
+
+    for (const subscription of subscriptions) {
+      if (typeof subscription !== 'string' && !(subscription instanceof RegExp)) {
+        throw new KafkaJSNonRetriableError(
+          `Invalid topic ${subscription} (${typeof subscription}), the topic name has to be a String or a RegExp`
+        )
+      }
+    }
+
+    const hasRegexSubscriptions = subscriptions.some(subscription => subscription instanceof RegExp)
+    const metadata = hasRegexSubscriptions ? await cluster.metadata() : undefined
 
     const topicsToSubscribe = []
-    if (isRegExp) {
-      const topicRegExp = topic
-      const metadata = await cluster.metadata()
-      const matchedTopics = metadata.topicMetadata
-        .map(({ topic: topicName }) => topicName)
-        .filter(topicName => topicRegExp.test(topicName))
+    for (const subscription of subscriptions) {
+      const isRegExp = subscription instanceof RegExp
+      if (isRegExp) {
+        const topicRegExp = subscription
+        const matchedTopics = metadata.topicMetadata
+          .map(({ topic: topicName }) => topicName)
+          .filter(topicName => topicRegExp.test(topicName))
 
-      logger.debug('Subscription based on RegExp', {
-        groupId,
-        topicRegExp: topicRegExp.toString(),
-        matchedTopics,
-      })
+        logger.debug('Subscription based on RegExp', {
+          groupId,
+          topicRegExp: topicRegExp.toString(),
+          matchedTopics,
+        })
 
-      topicsToSubscribe.push(...matchedTopics)
-    } else if (isStringArray) {
-      topicsToSubscribe.push(...topic)
-    } else {
-      topicsToSubscribe.push(topic)
+        topicsToSubscribe.push(...matchedTopics)
+      } else {
+        topicsToSubscribe.push(subscription)
+      }
     }
 
     for (const t of topicsToSubscribe) {
