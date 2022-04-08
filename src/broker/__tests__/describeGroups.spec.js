@@ -1,7 +1,7 @@
 const Broker = require('../index')
 const {
   secureRandom,
-  createConnection,
+  createConnectionPool,
   newLogger,
   retryProtocol,
   createCluster,
@@ -15,7 +15,7 @@ describe('Broker > DescribeGroups', () => {
     groupId = `consumer-group-id-${secureRandom()}`
     topicName = `test-topic-${secureRandom()}`
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -28,7 +28,7 @@ describe('Broker > DescribeGroups', () => {
     )
 
     broker = new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
     await broker.connect()

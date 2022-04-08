@@ -1,4 +1,4 @@
-const { createConnection, connectionOpts, secureRandom, newLogger } = require('testHelpers')
+const { createConnectionPool, connectionOpts, secureRandom, newLogger } = require('testHelpers')
 
 const Broker = require('../index')
 const ACL_RESOURCE_TYPES = require('../../protocol/aclResourceTypes')
@@ -11,7 +11,7 @@ describe('Broker > describeAcls', () => {
 
   beforeEach(async () => {
     seedBroker = new Broker({
-      connection: createConnection(connectionOpts()),
+      connectionPool: createConnectionPool(connectionOpts()),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -20,7 +20,7 @@ describe('Broker > describeAcls', () => {
     const newBrokerData = metadata.brokers.find(b => b.nodeId === metadata.controllerId)
 
     broker = new Broker({
-      connection: createConnection(newBrokerData),
+      connectionPool: createConnectionPool(newBrokerData),
       logger: newLogger(),
     })
   })

@@ -1,6 +1,6 @@
 /**
  *
- * @param { [Promise<T>] } promises
+ * @param { Promise<T>[] } promises
  * @returns {Promise<[{ status: "fulfilled", value: T} | { status: "rejected", reason: Error}]> }
  * @template T
  */

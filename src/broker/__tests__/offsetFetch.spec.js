@@ -2,7 +2,7 @@ const Broker = require('../index')
 const { MemberMetadata, MemberAssignment } = require('../../consumer/assignerProtocol')
 const {
   secureRandom,
-  createConnection,
+  createConnectionPool,
   newLogger,
   createTopic,
   retryProtocol,
@@ -16,7 +16,7 @@ describe('Broker > OffsetFetch', () => {
     groupId = `consumer-group-id-${secureRandom()}`
 
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -33,7 +33,7 @@ describe('Broker > OffsetFetch', () => {
 
     // Connect to the correct broker to produce message
     broker = new Broker({
-      connection: createConnection(newBrokerData),
+      connectionPool: createConnectionPool(newBrokerData),
       logger: newLogger(),
     })
     await broker.connect()
@@ -46,7 +46,7 @@ describe('Broker > OffsetFetch', () => {
     )
 
     groupCoordinator = new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
     await groupCoordinator.connect()

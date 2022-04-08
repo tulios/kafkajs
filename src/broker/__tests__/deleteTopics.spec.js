@@ -1,4 +1,4 @@
-const { createConnection, connectionOpts, secureRandom, newLogger } = require('testHelpers')
+const { createConnectionPool, connectionOpts, secureRandom, newLogger } = require('testHelpers')
 
 const Broker = require('../index')
 const topicNameComparator = (a, b) => a.topic.localeCompare(b.topic)
@@ -8,7 +8,7 @@ describe('Broker > deleteTopics', () => {
 
   beforeEach(async () => {
     seedBroker = new Broker({
-      connection: createConnection(connectionOpts()),
+      connectionPool: createConnectionPool(connectionOpts()),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -17,7 +17,7 @@ describe('Broker > deleteTopics', () => {
     const newBrokerData = metadata.brokers.find(b => b.nodeId === metadata.controllerId)
 
     broker = new Broker({
-      connection: createConnection(newBrokerData),
+      connectionPool: createConnectionPool(newBrokerData),
       logger: newLogger(),
     })
   })

@@ -4,7 +4,7 @@ const { Types: Compression } = require('../../protocol/message/compression')
 const { KafkaJSProtocolError } = require('../../errors')
 const {
   secureRandom,
-  createConnection,
+  createConnectionPool,
   newLogger,
   createTopic,
   testIfKafkaAtLeast_0_11,
@@ -54,7 +54,7 @@ describe('Broker > Produce', () => {
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
     broker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await broker.connect()
@@ -69,7 +69,7 @@ describe('Broker > Produce', () => {
   test('rejects the Promise if lookupRequest is not defined', async () => {
     await broker.disconnect()
     broker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await expect(broker.produce({ topicData: [] })).rejects.toEqual(
@@ -89,7 +89,7 @@ describe('Broker > Produce', () => {
 
     // Connect to the correct broker to produce message
     broker2 = new Broker({
-      connection: createConnection(newBrokerData),
+      connectionPool: createConnectionPool(newBrokerData),
       logger: newLogger(),
     })
     await broker2.connect()
@@ -150,7 +150,7 @@ describe('Broker > Produce', () => {
 
     // Connect to the correct broker to produce message
     broker2 = new Broker({
-      connection: createConnection(newBrokerData),
+      connectionPool: createConnectionPool(newBrokerData),
       logger: newLogger(),
     })
     await broker2.connect()
@@ -221,7 +221,7 @@ describe('Broker > Produce', () => {
 
       // Connect to the correct broker to produce message
       broker2 = new Broker({
-        connection: createConnection(newBrokerData),
+        connectionPool: createConnectionPool(newBrokerData),
         logger: newLogger(),
       })
       await broker2.connect()
@@ -285,7 +285,7 @@ describe('Broker > Produce', () => {
       )
 
       const producerBroker = new Broker({
-        connection: createConnection({ host, port }),
+        connectionPool: createConnectionPool({ host, port }),
         logger: newLogger(),
       })
 
@@ -308,7 +308,7 @@ describe('Broker > Produce', () => {
 
       // Connect to the correct broker to produce message
       broker2 = new Broker({
-        connection: createConnection(newBrokerData),
+        connectionPool: createConnectionPool(newBrokerData),
         logger: newLogger(),
       })
       await broker2.connect()
@@ -382,7 +382,7 @@ describe('Broker > Produce', () => {
 
       // Connect to the correct broker to produce message
       broker2 = new Broker({
-        connection: createConnection(newBrokerData),
+        connectionPool: createConnectionPool(newBrokerData),
         logger: newLogger(),
       })
       await broker2.connect()
@@ -444,7 +444,7 @@ describe('Broker > Produce', () => {
 
       // Connect to the correct broker to produce message
       broker2 = new Broker({
-        connection: createConnection(newBrokerData),
+        connectionPool: createConnectionPool(newBrokerData),
         logger: newLogger(),
       })
       await broker2.connect()
@@ -528,7 +528,7 @@ describe('Broker > Produce', () => {
 
         // Connect to the correct broker to produce message
         broker2 = new Broker({
-          connection: createConnection(newBrokerData),
+          connectionPool: createConnectionPool(newBrokerData),
           logger: newLogger(),
         })
         await broker2.connect()
