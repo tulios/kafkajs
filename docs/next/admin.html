@@ -210,7 +210,7 @@ The method will throw exceptions in case of errors.</p>
 <span class="hljs-comment">// ]</span>
 </code></pre>
 <p>Omit <code>topics</code> altogether if you want to get the consumer group offsets for all topics with committed offsets.</p>
-<p>Include the optional <code>resolveOffsets</code> flag to resolve the offsets without having to start a consumer, useful when fetching directly after calling <a href="#a-name-reset-offsets-a-reset-consumer-group-offsets">resetOffets</a>:</p>
+<p>Include the optional <code>resolveOffsets</code> flag to resolve the offsets without having to start a consumer, useful when fetching directly after calling <a href="#a-name-reset-offsets-a-reset-consumer-group-offsets">resetOffsets</a>:</p>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.resetOffsets({ groupId, topic })
 <span class="hljs-keyword">await</span> admin.fetchOffsets({ groupId, topic, <span class="hljs-attr">resolveOffsets</span>: <span class="hljs-literal">false</span> })
 <span class="hljs-comment">// [</span>
