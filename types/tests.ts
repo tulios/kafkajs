@@ -61,7 +61,7 @@ removeListener()
 
 const runConsumer = async () => {
   await consumer.connect()
-  await consumer.subscribe({ topic })
+  await consumer.subscribe({ topics: [topic] })
   await consumer.run({
     eachBatch: async ({
       batch,
