@@ -237,7 +237,7 @@ describe('Admin', () => {
       admin = createSASLAdminClientForUser({ username: 'bob', password: 'bobbob' })
       await admin.connect()
 
-      await expect(admin.getTopicMetadata({ topics: [topicName] })).rejects.toThrow(
+      await expect(admin.fetchTopicMetadata({ topics: [topicName] })).rejects.toThrow(
         'Not authorized to access topics: [Topic authorization failed]'
       )
 
@@ -245,7 +245,7 @@ describe('Admin', () => {
       admin = createSASLAdminClientForUser({ username: 'alice', password: 'alicealice' })
       await admin.connect()
 
-      await expect(admin.getTopicMetadata({ topics: [topicName] })).resolves.toBeTruthy()
+      await expect(admin.fetchTopicMetadata({ topics: [topicName] })).resolves.toBeTruthy()
     })
   })
 })

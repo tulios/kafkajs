@@ -1,13 +1,14 @@
 const createRetry = require('../../retry')
+const Lock = require('../../utils/lock')
 const { KafkaJSNonRetriableError } = require('../../errors')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 const createStateMachine = require('./transactionStateMachine')
+const { INT_32_MAX_VALUE } = require('../../constants')
 const assert = require('assert')
 
 const STATES = require('./transactionStates')
 const NO_PRODUCER_ID = -1
 const SEQUENCE_START = 0
-const INT_32_MAX_VALUE = Math.pow(2, 32)
 const INIT_PRODUCER_RETRIABLE_PROTOCOL_ERRORS = [
   'NOT_COORDINATOR_FOR_GROUP',
   'GROUP_COORDINATOR_NOT_AVAILABLE',
@@ -63,6 +64,11 @@ module.exports = ({
    * Sequences are sent with every Record Batch and tracked per Topic-Partition
    */
   let producerSequence = {}
+
+  /**
+   * Idempotent production requires a mutex lock per broker to serialize requests with sequence number handling
+   */
+  let brokerMutexLocks = {}
 
   /**
    * Topic partitions already participating in the transaction
@@ -134,6 +140,7 @@ module.exports = ({
             producerId = result.producerId
             producerEpoch = result.producerEpoch
             producerSequence = {}
+            brokerMutexLocks = {}
 
             logger.debug('Initialized producer id & epoch', { producerId, producerEpoch })
           } catch (e) {
@@ -302,6 +309,18 @@ module.exports = ({
 
       isInTransaction() {
         return stateMachine.state() === STATES.TRANSACTING
+      },
+
+      async acquireBrokerLock(broker) {
+        if (this.isInitialized()) {
+          brokerMutexLocks[broker.nodeId] =
+            brokerMutexLocks[broker.nodeId] || new Lock({ timeout: 0xffff })
+          await brokerMutexLocks[broker.nodeId].acquire()
+        }
+      },
+
+      releaseBrokerLock(broker) {
+        if (this.isInitialized()) brokerMutexLocks[broker.nodeId].release()
       },
 
       /**

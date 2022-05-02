@@ -3,7 +3,6 @@ const { KafkaJSProtocolError } = require('../../errors')
 const { createErrorFromCode } = require('../../protocol/error')
 
 const { secureRandom, createCluster, newLogger, createTopic } = require('testHelpers')
-const RESOURCE_TYPES = require('../../protocol/resourceTypes')
 const CONFIG_RESOURCE_TYPES = require('../../protocol/configResourceTypes')
 const NOT_CONTROLLER = 41
 
@@ -11,7 +10,7 @@ describe('Admin', () => {
   let topicName, admin
 
   const getConfigEntries = response =>
-    response.resources.find(r => r.resourceType === RESOURCE_TYPES.TOPIC).configEntries
+    response.resources.find(r => r.resourceType === CONFIG_RESOURCE_TYPES.TOPIC).configEntries
 
   const getConfigValue = (configEntries, name) =>
     configEntries.find(c => c.configName === name).configValue
@@ -47,7 +46,7 @@ describe('Admin', () => {
 
     test('throws an error if there are invalid resource types', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
-      const resources = [{ type: RESOURCE_TYPES.TOPIC }, { type: 1999 }]
+      const resources = [{ type: CONFIG_RESOURCE_TYPES.TOPIC }, { type: 1999 }]
       await expect(admin.describeConfigs({ resources })).rejects.toHaveProperty(
         'message',
         'Invalid resource type 1999: {"type":1999}'
@@ -57,8 +56,8 @@ describe('Admin', () => {
     test('throws an error if there are blank resource names', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
       const resources = [
-        { type: RESOURCE_TYPES.TOPIC, name: 'abc' },
-        { type: RESOURCE_TYPES.TOPIC, name: null },
+        { type: CONFIG_RESOURCE_TYPES.TOPIC, name: 'abc' },
+        { type: CONFIG_RESOURCE_TYPES.TOPIC, name: null },
       ]
       await expect(admin.describeConfigs({ resources })).rejects.toHaveProperty(
         'message',
@@ -69,8 +68,8 @@ describe('Admin', () => {
     test('throws an error if there are invalid resource names', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
       const resources = [
-        { type: RESOURCE_TYPES.TOPIC, name: 'abc' },
-        { type: RESOURCE_TYPES.TOPIC, name: 123 },
+        { type: CONFIG_RESOURCE_TYPES.TOPIC, name: 'abc' },
+        { type: CONFIG_RESOURCE_TYPES.TOPIC, name: 123 },
       ]
       await expect(admin.describeConfigs({ resources })).rejects.toHaveProperty(
         'message',
@@ -81,8 +80,8 @@ describe('Admin', () => {
     test('throws an error if there are invalid resource configNames', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
       const resources = [
-        { type: RESOURCE_TYPES.TOPIC, name: 'abc', configNames: [] },
-        { type: RESOURCE_TYPES.TOPIC, name: 'def', configNames: 123 },
+        { type: CONFIG_RESOURCE_TYPES.TOPIC, name: 'abc', configNames: [] },
+        { type: CONFIG_RESOURCE_TYPES.TOPIC, name: 'def', configNames: 123 },
       ]
       await expect(admin.describeConfigs({ resources })).rejects.toHaveProperty(
         'message',
@@ -96,7 +95,7 @@ describe('Admin', () => {
 
       await admin.connect()
       const response = await admin.describeConfigs({
-        resources: [{ type: RESOURCE_TYPES.TOPIC, name: topicName }],
+        resources: [{ type: CONFIG_RESOURCE_TYPES.TOPIC, name: topicName }],
       })
 
       expect(getConfigEntries(response).length).toBeGreaterThan(1)
@@ -110,7 +109,7 @@ describe('Admin', () => {
       const response = await admin.describeConfigs({
         resources: [
           {
-            type: RESOURCE_TYPES.TOPIC,
+            type: CONFIG_RESOURCE_TYPES.TOPIC,
             name: topicName,
             configNames: ['cleanup.policy'],
           },
@@ -138,7 +137,7 @@ describe('Admin', () => {
       admin = createAdmin({ cluster, logger: newLogger() })
       await expect(
         admin.describeConfigs({
-          resources: [{ type: RESOURCE_TYPES.TOPIC, name: topicName }],
+          resources: [{ type: CONFIG_RESOURCE_TYPES.TOPIC, name: topicName }],
         })
       ).resolves.toEqual(brokerResponse)
 
@@ -160,7 +159,7 @@ describe('Admin', () => {
 
       const resources = [
         {
-          type: RESOURCE_TYPES.TOPIC,
+          type: CONFIG_RESOURCE_TYPES.TOPIC,
           name: topicName,
           configNames: ['cleanup.policy'],
         },

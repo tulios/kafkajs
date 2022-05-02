@@ -53,11 +53,10 @@ describe('Admin', () => {
       admin = createAdmin({ cluster, logger: newLogger() })
       await admin.connect()
 
-      await expect(admin.getTopicMetadata({ topics: [topicName] })).resolves.toBeTruthy()
+      await expect(admin.fetchTopicOffsets(topicName)).resolves.toBeTruthy()
       expect(cluster.targetTopics.size).toEqual(1)
 
       await admin.deleteTopics({ topics: [topicName] })
-      await expect(admin.getTopicMetadata()).resolves.toBeTruthy()
       expect(cluster.targetTopics.size).toEqual(0)
     })
 

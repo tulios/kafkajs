@@ -79,25 +79,29 @@ describe('Consumer', () => {
 
     expect(cluster.refreshMetadataIfNecessary).toHaveBeenCalled()
 
-    expect(messagesConsumed[0]).toEqual({
-      topic: topicName,
-      partition: 0,
-      message: expect.objectContaining({
-        key: Buffer.from(messages[0].key),
-        value: Buffer.from(messages[0].value),
-        offset: '0',
-      }),
-    })
+    expect(messagesConsumed[0]).toEqual(
+      expect.objectContaining({
+        topic: topicName,
+        partition: 0,
+        message: expect.objectContaining({
+          key: Buffer.from(messages[0].key),
+          value: Buffer.from(messages[0].value),
+          offset: '0',
+        }),
+      })
+    )
 
-    expect(messagesConsumed[messagesConsumed.length - 1]).toEqual({
-      topic: topicName,
-      partition: 0,
-      message: expect.objectContaining({
-        key: Buffer.from(messages[messages.length - 1].key),
-        value: Buffer.from(messages[messages.length - 1].value),
-        offset: '99',
-      }),
-    })
+    expect(messagesConsumed[messagesConsumed.length - 1]).toEqual(
+      expect.objectContaining({
+        topic: topicName,
+        partition: 0,
+        message: expect.objectContaining({
+          key: Buffer.from(messages[messages.length - 1].key),
+          value: Buffer.from(messages[messages.length - 1].value),
+          offset: '99',
+        }),
+      })
+    )
 
     // check if all offsets are present
     expect(messagesConsumed.map(m => m.message.offset)).toEqual(messages.map((_, i) => `${i}`))
@@ -205,6 +209,54 @@ describe('Consumer', () => {
     }
   })
 
+  it('heartbeats are exposed in the eachMessage handler', async () => {
+    consumer = createConsumer({
+      cluster,
+      groupId,
+      heartbeatInterval: 50,
+      logger: newLogger(),
+    })
+
+    topicName = `test-topic-${secureRandom()}`
+    await createTopic({
+      topic: topicName,
+      partitions: 1,
+    })
+
+    await consumer.connect()
+    await producer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    const messagesConsumed = []
+
+    let heartbeats = 0
+    consumer.on(consumer.events.HEARTBEAT, () => {
+      heartbeats++
+    })
+
+    consumer.run({
+      eachMessage: async payload => {
+        await new Promise(resolve => {
+          setTimeout(resolve, 100)
+        })
+
+        await payload.heartbeat()
+        messagesConsumed.push(payload.message)
+
+        await new Promise(resolve => {
+          setTimeout(resolve, 100)
+        })
+      },
+    })
+
+    await waitForConsumerToJoinGroup(consumer)
+
+    await producer.send({ acks: 1, topic: topicName, messages: [{ key: 'value', value: 'value' }] })
+    await waitForMessages(messagesConsumed, { number: 1 })
+
+    expect(heartbeats).toBe(1)
+  })
+
   it('consume GZIP messages', async () => {
     await consumer.connect()
     await producer.connect()
@@ -227,7 +279,7 @@ describe('Consumer', () => {
     })
 
     await expect(waitForMessages(messagesConsumed, { number: 2 })).resolves.toEqual([
-      {
+      expect.objectContaining({
         topic: topicName,
         partition: 0,
         message: expect.objectContaining({
@@ -235,8 +287,8 @@ describe('Consumer', () => {
           value: Buffer.from(message1.value),
           offset: '0',
         }),
-      },
-      {
+      }),
+      expect.objectContaining({
         topic: topicName,
         partition: 0,
         message: expect.objectContaining({
@@ -244,7 +296,7 @@ describe('Consumer', () => {
           value: Buffer.from(message2.value),
           offset: '1',
         }),
-      },
+      }),
     ])
   })
 
@@ -335,29 +387,35 @@ describe('Consumer', () => {
 
     expect(cluster.refreshMetadataIfNecessary).toHaveBeenCalled()
 
-    expect(messagesConsumed[0]).toEqual({
-      topic: topicName,
-      partition: 0,
-      message: expect.objectContaining({
-        key: Buffer.from(messages[0].key),
-        value: Buffer.from(messages[0].value),
-        offset: '0',
-      }),
-    })
+    expect(messagesConsumed[0]).toEqual(
+      expect.objectContaining({
+        topic: topicName,
+        partition: 0,
+        message: expect.objectContaining({
+          key: Buffer.from(messages[0].key),
+          value: Buffer.from(messages[0].value),
+          offset: '0',
+        }),
+      })
+    )
 
-    expect(messagesConsumed[messagesConsumed.length - 1]).toEqual({
-      topic: topicName,
-      partition: 0,
-      message: expect.objectContaining({
-        key: Buffer.from(messages[messages.length - 1].key),
-        value: Buffer.from(messages[messages.length - 1].value),
-        offset: '99',
-      }),
-    })
+    expect(messagesConsumed[messagesConsumed.length - 1]).toEqual(
+      expect.objectContaining({
+        topic: topicName,
+        partition: 0,
+        message: expect.objectContaining({
+          key: Buffer.from(messages[messages.length - 1].key),
+          value: Buffer.from(messages[messages.length - 1].value),
+          offset: '99',
+        }),
+      })
+    )
 
     // check if all offsets are present
     expect(messagesConsumed.map(m => m.message.offset)).toEqual(messages.map((_, i) => `${i}`))
-    const [partition] = await admin.fetchOffsets({ groupId, topic: topicName })
+    const response = await admin.fetchOffsets({ groupId, topics: [topicName] })
+    const { partitions } = response.find(({ topic }) => topic === topicName)
+    const partition = partitions.find(({ partition }) => partition === 0)
     expect(partition.offset).toEqual('100') // check if offsets were committed
   })
 
@@ -418,71 +476,79 @@ describe('Consumer', () => {
     const messagesFromTopic1 = messagesConsumed.filter(m => m.topic === topicName)
     const messagesFromTopic2 = messagesConsumed.filter(m => m.topic === topicName2)
 
-    expect(messagesFromTopic1[0]).toEqual({
-      topic: topicName,
-      partition: 0,
-      message: expect.objectContaining({
-        key: Buffer.from(messages1[0].key),
-        value: Buffer.from(messages1[0].value),
-        headers: {
-          'header-keyA': Buffer.from(messages1[0].headers['header-keyA']),
-          'header-keyB': Buffer.from(messages1[0].headers['header-keyB']),
-          'header-keyC': Buffer.from(messages1[0].headers['header-keyC']),
-        },
-        magicByte: 2,
-        offset: '0',
-      }),
-    })
+    expect(messagesFromTopic1[0]).toEqual(
+      expect.objectContaining({
+        topic: topicName,
+        partition: 0,
+        message: expect.objectContaining({
+          key: Buffer.from(messages1[0].key),
+          value: Buffer.from(messages1[0].value),
+          headers: {
+            'header-keyA': Buffer.from(messages1[0].headers['header-keyA']),
+            'header-keyB': Buffer.from(messages1[0].headers['header-keyB']),
+            'header-keyC': Buffer.from(messages1[0].headers['header-keyC']),
+          },
+          magicByte: 2,
+          offset: '0',
+        }),
+      })
+    )
 
     const lastMessage1 = messages1[messages1.length - 1]
-    expect(messagesFromTopic1[messagesFromTopic1.length - 1]).toEqual({
-      topic: topicName,
-      partition: 0,
-      message: expect.objectContaining({
-        key: Buffer.from(lastMessage1.key),
-        value: Buffer.from(lastMessage1.value),
-        headers: {
-          'header-keyA': Buffer.from(lastMessage1.headers['header-keyA']),
-          'header-keyB': Buffer.from(lastMessage1.headers['header-keyB']),
-          'header-keyC': Buffer.from(lastMessage1.headers['header-keyC']),
-        },
-        magicByte: 2,
-        offset: '102',
-      }),
-    })
+    expect(messagesFromTopic1[messagesFromTopic1.length - 1]).toEqual(
+      expect.objectContaining({
+        topic: topicName,
+        partition: 0,
+        message: expect.objectContaining({
+          key: Buffer.from(lastMessage1.key),
+          value: Buffer.from(lastMessage1.value),
+          headers: {
+            'header-keyA': Buffer.from(lastMessage1.headers['header-keyA']),
+            'header-keyB': Buffer.from(lastMessage1.headers['header-keyB']),
+            'header-keyC': Buffer.from(lastMessage1.headers['header-keyC']),
+          },
+          magicByte: 2,
+          offset: '102',
+        }),
+      })
+    )
 
-    expect(messagesFromTopic2[0]).toEqual({
-      topic: topicName2,
-      partition: 0,
-      message: expect.objectContaining({
-        key: Buffer.from(messages2[0].key),
-        value: Buffer.from(messages2[0].value),
-        headers: {
-          'header-keyA': Buffer.from(messages2[0].headers['header-keyA']),
-          'header-keyB': Buffer.from(messages2[0].headers['header-keyB']),
-          'header-keyC': Buffer.from(messages2[0].headers['header-keyC']),
-        },
-        magicByte: 2,
-        offset: '0',
-      }),
-    })
+    expect(messagesFromTopic2[0]).toEqual(
+      expect.objectContaining({
+        topic: topicName2,
+        partition: 0,
+        message: expect.objectContaining({
+          key: Buffer.from(messages2[0].key),
+          value: Buffer.from(messages2[0].value),
+          headers: {
+            'header-keyA': Buffer.from(messages2[0].headers['header-keyA']),
+            'header-keyB': Buffer.from(messages2[0].headers['header-keyB']),
+            'header-keyC': Buffer.from(messages2[0].headers['header-keyC']),
+          },
+          magicByte: 2,
+          offset: '0',
+        }),
+      })
+    )
 
     const lastMessage2 = messages2[messages2.length - 1]
-    expect(messagesFromTopic2[messagesFromTopic2.length - 1]).toEqual({
-      topic: topicName2,
-      partition: 0,
-      message: expect.objectContaining({
-        key: Buffer.from(lastMessage2.key),
-        value: Buffer.from(lastMessage2.value),
-        headers: {
-          'header-keyA': Buffer.from(lastMessage2.headers['header-keyA']),
-          'header-keyB': Buffer.from(lastMessage2.headers['header-keyB']),
-          'header-keyC': Buffer.from(lastMessage2.headers['header-keyC']),
-        },
-        magicByte: 2,
-        offset: '102',
-      }),
-    })
+    expect(messagesFromTopic2[messagesFromTopic2.length - 1]).toEqual(
+      expect.objectContaining({
+        topic: topicName2,
+        partition: 0,
+        message: expect.objectContaining({
+          key: Buffer.from(lastMessage2.key),
+          value: Buffer.from(lastMessage2.value),
+          headers: {
+            'header-keyA': Buffer.from(lastMessage2.headers['header-keyA']),
+            'header-keyB': Buffer.from(lastMessage2.headers['header-keyB']),
+            'header-keyC': Buffer.from(lastMessage2.headers['header-keyC']),
+          },
+          magicByte: 2,
+          offset: '102',
+        }),
+      })
+    )
 
     // check if all offsets are present
     expect(messagesFromTopic1.map(m => m.message.offset)).toEqual(messages1.map((_, i) => `${i}`))
@@ -533,7 +599,7 @@ describe('Consumer', () => {
     })
 
     await expect(waitForMessages(messagesConsumed, { number: 2 })).resolves.toEqual([
-      {
+      expect.objectContaining({
         topic: topicName,
         partition: 0,
         message: expect.objectContaining({
@@ -545,8 +611,8 @@ describe('Consumer', () => {
           magicByte: 2,
           offset: '0',
         }),
-      },
-      {
+      }),
+      expect.objectContaining({
         topic: topicName,
         partition: 0,
         message: expect.objectContaining({
@@ -558,7 +624,7 @@ describe('Consumer', () => {
           magicByte: 2,
           offset: '1',
         }),
-      },
+      }),
     ])
   })
 
@@ -567,7 +633,6 @@ describe('Consumer', () => {
     await producer.connect()
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-    const sleep = value => waitFor(delay => delay >= value)
     let calls = 0
 
     consumer.run({
@@ -585,7 +650,7 @@ describe('Consumer', () => {
     const message2 = { key: `key-${key2}`, value: `value-${key2}` }
 
     await producer.send({ acks: 1, topic: topicName, messages: [message1, message2] })
-    await sleep(80) // wait for 1 message
+    await waitFor(() => calls > 0, {})
     await consumer.disconnect() // don't give the consumer the chance to consume the 2nd message
 
     expect(calls).toEqual(1)

@@ -10,6 +10,7 @@ const {
   newLogger,
   waitFor,
   waitForConsumerToJoinGroup,
+  testIfKafkaAtLeast_0_11,
 } = require('testHelpers')
 
 describe('Consumer > Instrumentation Events', () => {
@@ -183,6 +184,7 @@ describe('Consumer > Instrumentation Events', () => {
       payload: {
         numberOfBatches: expect.any(Number),
         duration: expect.any(Number),
+        nodeId: expect.any(String),
       },
     })
   })
@@ -207,7 +209,9 @@ describe('Consumer > Instrumentation Events', () => {
       id: expect.any(Number),
       timestamp: expect.any(Number),
       type: 'consumer.fetch_start',
-      payload: {},
+      payload: {
+        nodeId: expect.any(String),
+      },
     })
   })
 
@@ -279,6 +283,85 @@ describe('Consumer > Instrumentation Events', () => {
       },
     })
   })
+
+  testIfKafkaAtLeast_0_11(
+    'emits start and end batch process when reading empty control batches',
+    async () => {
+      const startBatchProcessSpy = jest.fn()
+      const endBatchProcessSpy = jest.fn()
+
+      consumer = createTestConsumer()
+      consumer.on(consumer.events.START_BATCH_PROCESS, startBatchProcessSpy)
+      consumer.on(consumer.events.END_BATCH_PROCESS, endBatchProcessSpy)
+
+      await consumer.connect()
+      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.run({ eachMessage: async () => {} })
+
+      producer = createProducer({
+        cluster,
+        createPartitioner: createModPartitioner,
+        logger: newLogger(),
+        transactionalId: `test-producer-${secureRandom()}`,
+        maxInFlightRequests: 1,
+        idempotent: true,
+      })
+
+      await producer.connect()
+      const transaction = await producer.transaction()
+
+      await transaction.send({
+        topic: topicName,
+        acks: -1,
+        messages: [
+          {
+            key: 'test',
+            value: 'test',
+          },
+        ],
+      })
+      await transaction.abort()
+
+      await waitFor(
+        () => startBatchProcessSpy.mock.calls.length > 0 && endBatchProcessSpy.mock.calls.length > 0
+      )
+
+      expect(startBatchProcessSpy).toHaveBeenCalledWith({
+        id: expect.any(Number),
+        timestamp: expect.any(Number),
+        type: 'consumer.start_batch_process',
+        payload: {
+          topic: topicName,
+          partition: 0,
+          highWatermark: '2',
+          offsetLag: expect.any(String),
+          offsetLagLow: expect.any(String),
+          batchSize: 0,
+          firstOffset: '0',
+          lastOffset: '1',
+        },
+      })
+      expect(startBatchProcessSpy).toHaveBeenCalledTimes(1)
+
+      expect(endBatchProcessSpy).toHaveBeenCalledWith({
+        id: expect.any(Number),
+        timestamp: expect.any(Number),
+        type: 'consumer.end_batch_process',
+        payload: {
+          topic: topicName,
+          partition: 0,
+          highWatermark: '2',
+          offsetLag: expect.any(String),
+          offsetLagLow: expect.any(String),
+          batchSize: 0,
+          firstOffset: '0',
+          lastOffset: '1',
+          duration: expect.any(Number),
+        },
+      })
+      expect(endBatchProcessSpy).toHaveBeenCalledTimes(1)
+    }
+  )
 
   it('emits connection events', async () => {
     const connectListener = jest.fn().mockName('connect')

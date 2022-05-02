@@ -4,7 +4,6 @@ module.exports = topicDataForBroker => {
       topic,
       partitions: partitions.map(partition => ({
         partition,
-        firstSequence: sequencePerPartition[partition],
         messages: messagesPerPartition[partition],
       })),
     })

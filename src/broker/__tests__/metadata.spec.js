@@ -1,7 +1,7 @@
 const Broker = require('../index')
 const {
   secureRandom,
-  createConnection,
+  createConnectionPool,
   newLogger,
   createTopic,
   retryProtocol,
@@ -14,7 +14,7 @@ describe('Broker > Metadata', () => {
   beforeEach(() => {
     topicName = `test-topic-${secureRandom()}`
     broker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
   })
@@ -72,7 +72,7 @@ describe('Broker > Metadata', () => {
     })
   })
 
-  test('can fetch metatada for all topics', async () => {
+  test('can fetch metadata for all topics', async () => {
     await broker.connect()
     await createTopic({ topic: topicName })
     await createTopic({ topic: `test-topic-${secureRandom()}` })
@@ -96,7 +96,7 @@ describe('Broker > Metadata', () => {
     beforeEach(() => {
       topicName = `test-topic-${secureRandom()}`
       broker = new Broker({
-        connection: createConnection(),
+        connectionPool: createConnectionPool(),
         allowAutoTopicCreation: false,
         logger: newLogger(),
       })

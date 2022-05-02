@@ -58,7 +58,7 @@ describe('Consumer', () => {
     consumer2.run({ eachMessage: () => {} })
     const event = await waitForConsumerToJoinGroup(consumer2, { label: 'consumer2' })
 
-    // verify that the assigment does not contain the unsubscribed topic
+    // verify that the assignment does not contain the unsubscribed topic
     expect(event.payload.memberAssignment[topicNames[1]]).toBeUndefined()
   })
 
@@ -99,8 +99,6 @@ describe('Consumer', () => {
 
     await consumer1.connect()
     await Promise.all(topicNames.map(topic => consumer1.subscribe({ topic })))
-    consumer1.run({ eachMessage: () => {} })
-    await waitForConsumerToJoinGroup(consumer1)
 
     // Second consumer is also replaced, subscribing to both topics
     await consumer2.disconnect()
@@ -115,6 +113,8 @@ describe('Consumer', () => {
 
     await consumer2.connect()
     await Promise.all(topicNames.map(topic => consumer2.subscribe({ topic })))
+
+    consumer1.run({ eachMessage: () => {} })
     consumer2.run({ eachMessage: () => {} })
 
     // Both consumers are assigned to both topics

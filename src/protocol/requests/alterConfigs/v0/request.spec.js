@@ -1,12 +1,12 @@
 const RequestV0Protocol = require('./request')
-const RESOURCE_TYPES = require('../../../resourceTypes')
+const CONFIG_RESOURCE_TYPES = require('../../../configResourceTypes')
 
 describe('Protocol > Requests > AlterConfigs > v0', () => {
   test('request', async () => {
     const { buffer } = await RequestV0Protocol({
       resources: [
         {
-          type: RESOURCE_TYPES.TOPIC,
+          type: CONFIG_RESOURCE_TYPES.TOPIC,
           name: 'test-topic-d7fa92c03177d87573b1-38076-21364f66-8613-47e0-b273-bc9de397515e',
           configEntries: [{ name: 'cleanup.policy', value: 'compact' }],
         },

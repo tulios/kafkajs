@@ -2,7 +2,7 @@ const {
   createCluster,
   secureRandom,
   createTopic,
-  createConnection,
+  createConnectionPool,
   newLogger,
 } = require('testHelpers')
 
@@ -39,7 +39,7 @@ describe('Cluster > findBroker', () => {
   test('refresh metadata on lock timeout', async () => {
     const nodeId = 0
     const mockBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
 
@@ -62,7 +62,7 @@ describe('Cluster > findBroker', () => {
   test('refresh metadata on KafkaJSConnectionError ECONNREFUSED', async () => {
     const nodeId = 0
     const mockBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
 
@@ -101,7 +101,7 @@ describe('Cluster > findBroker', () => {
   test('refresh metadata on KafkaJSConnectionError Connection Timeout', async () => {
     const nodeId = 0
     const mockBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
 

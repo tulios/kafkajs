@@ -1,4 +1,4 @@
-const { createConnection, connectionOpts, newLogger } = require('testHelpers')
+const { createConnectionPool, connectionOpts, newLogger } = require('testHelpers')
 const { KafkaJSProtocolError, KafkaJSNonRetriableError } = require('../../errors')
 const { createErrorFromCode } = require('../../protocol/error')
 const { requests } = require('../../protocol/requests')
@@ -11,7 +11,7 @@ describe('Broker > ApiVersions', () => {
 
   beforeEach(async () => {
     broker = new Broker({
-      connection: createConnection(connectionOpts()),
+      connectionPool: createConnectionPool(connectionOpts()),
       logger: newLogger(),
     })
     await broker.connect()

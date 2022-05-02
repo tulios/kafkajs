@@ -1,5 +1,5 @@
 const Broker = require('../index')
-const { createConnection, newLogger, retryProtocol, secureRandom } = require('testHelpers')
+const { createConnectionPool, newLogger, retryProtocol, secureRandom } = require('testHelpers')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 
 describe('Broker > InitProducerId', () => {
@@ -9,7 +9,7 @@ describe('Broker > InitProducerId', () => {
     transactionalId = `producer-group-id-${secureRandom()}`
 
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -26,7 +26,7 @@ describe('Broker > InitProducerId', () => {
     )
 
     broker = new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
     await broker.connect()

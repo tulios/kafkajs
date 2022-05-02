@@ -1,18 +1,13 @@
 const { EventEmitter } = require('events')
 const Long = require('../utils/long')
 const createRetry = require('../retry')
-const limitConcurrency = require('../utils/concurrency')
-const { KafkaJSError } = require('../errors')
-const barrier = require('./barrier')
+const { isKafkaJSError, isRebalancing } = require('../errors')
 
 const {
   events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS, REBALANCING },
 } = require('./instrumentationEvents')
+const createFetchManager = require('./fetchManager')
 
-const isRebalancing = e =>
-  e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
-
-const isKafkaJSError = e => e instanceof KafkaJSError
 const isSameOffset = (offsetA, offsetB) => Long.fromValue(offsetA).equals(Long.fromValue(offsetB))
 const CONSUMING_START = 'consuming-start'
 const CONSUMING_STOP = 'consuming-stop'
@@ -24,9 +19,9 @@ module.exports = class Runner extends EventEmitter {
    * @param {import("./consumerGroup")} options.consumerGroup
    * @param {import("../instrumentation/emitter")} options.instrumentationEmitter
    * @param {boolean} [options.eachBatchAutoResolve=true]
-   * @param {number} [options.partitionsConsumedConcurrently]
-   * @param {(payload: import("../../types").EachBatchPayload) => Promise<void>} options.eachBatch
-   * @param {(payload: import("../../types").EachMessagePayload) => Promise<void>} options.eachMessage
+   * @param {number} options.concurrency
+   * @param {(payload: import("../../types").EachBatchPayload) => Promise<void>} [options.eachBatch]
+   * @param {(payload: import("../../types").EachMessagePayload) => Promise<void>} [options.eachMessage]
    * @param {number} [options.heartbeatInterval]
    * @param {(reason: Error) => void} options.onCrash
    * @param {import("../../types").RetryOptions} [options.retry]
@@ -37,7 +32,7 @@ module.exports = class Runner extends EventEmitter {
     consumerGroup,
     instrumentationEmitter,
     eachBatchAutoResolve = true,
-    partitionsConsumedConcurrently,
+    concurrency,
     eachBatch,
     eachMessage,
     heartbeatInterval,
@@ -56,7 +51,13 @@ module.exports = class Runner extends EventEmitter {
     this.retrier = createRetry(Object.assign({}, retry))
     this.onCrash = onCrash
     this.autoCommit = autoCommit
-    this.partitionsConsumedConcurrently = partitionsConsumedConcurrently
+    this.fetchManager = createFetchManager({
+      logger: this.logger,
+      getNodeIds: () => this.consumerGroup.getNodeIds(),
+      fetch: nodeId => this.fetch(nodeId),
+      handler: batch => this.handleBatch(batch),
+      concurrency,
+    })
 
     this.running = false
     this.consuming = false
@@ -73,23 +74,6 @@ module.exports = class Runner extends EventEmitter {
     }
   }
 
-  async join() {
-    await this.consumerGroup.joinAndSync()
-    this.running = true
-  }
-
-  async scheduleJoin() {
-    if (!this.running) {
-      this.logger.debug('consumer not running, exiting', {
-        groupId: this.consumerGroup.groupId,
-        memberId: this.consumerGroup.memberId,
-      })
-      return
-    }
-
-    return this.join().catch(this.onCrash)
-  }
-
   async start() {
     if (this.running) {
       return
@@ -97,13 +81,57 @@ module.exports = class Runner extends EventEmitter {
 
     try {
       await this.consumerGroup.connect()
-      await this.join()
-
-      this.running = true
-      this.scheduleFetch()
+      await this.consumerGroup.joinAndSync()
     } catch (e) {
-      this.onCrash(e)
+      return this.onCrash(e)
     }
+
+    this.running = true
+    this.scheduleFetchManager()
+  }
+
+  async scheduleFetchManager() {
+    this.consuming = true
+
+    while (this.running) {
+      try {
+        await this.fetchManager.start()
+      } catch (e) {
+        if (isRebalancing(e)) {
+          this.logger.warn('The group is rebalancing, re-joining', {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+            error: e.message,
+          })
+
+          this.instrumentationEmitter.emit(REBALANCING, {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+          })
+
+          await this.consumerGroup.joinAndSync()
+          continue
+        }
+
+        if (e.type === 'UNKNOWN_MEMBER_ID') {
+          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+            error: e.message,
+          })
+
+          this.consumerGroup.memberId = null
+          await this.consumerGroup.joinAndSync()
+          continue
+        }
+
+        this.onCrash(e)
+        break
+      }
+    }
+
+    this.consuming = false
+    this.running = false
   }
 
   async stop() {
@@ -119,6 +147,7 @@ module.exports = class Runner extends EventEmitter {
     this.running = false
 
     try {
+      await this.fetchManager.stop()
       await this.waitForConsumer()
       await this.consumerGroup.leave()
     } catch (e) {}
@@ -139,6 +168,17 @@ module.exports = class Runner extends EventEmitter {
     })
   }
 
+  async heartbeat() {
+    try {
+      await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+    } catch (e) {
+      if (isRebalancing(e)) {
+        await this.autoCommitOffsets()
+      }
+      throw e
+    }
+  }
+
   async processEachMessage(batch) {
     const { topic, partition } = batch
 
@@ -148,7 +188,12 @@ module.exports = class Runner extends EventEmitter {
       }
 
       try {
-        await this.eachMessage({ topic, partition, message })
+        await this.eachMessage({
+          topic,
+          partition,
+          message,
+          heartbeat: () => this.heartbeat(),
+        })
       } catch (e) {
         if (!isKafkaJSError(e)) {
           this.logger.error(`Error when calling eachMessage`, {
@@ -166,7 +211,7 @@ module.exports = class Runner extends EventEmitter {
       }
 
       this.consumerGroup.resolveOffset({ topic, partition, offset: message.offset })
-      await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
+      await this.heartbeat()
       await this.autoCommitOffsetsIfNecessary()
     }
   }
@@ -199,14 +244,12 @@ module.exports = class Runner extends EventEmitter {
 
           this.consumerGroup.resolveOffset({ topic, partition, offset: offsetToResolve })
         },
-        heartbeat: async () => {
-          await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
-        },
+        heartbeat: () => this.heartbeat(),
         /**
          * Commit offsets if provided. Otherwise commit most recent resolved offsets
          * if the autoCommit conditions are met.
          *
-         * @param {OffsetsByTopicPartition} [offsets] Optional.
+         * @param {import('../../types').OffsetsByTopicPartition} [offsets] Optional.
          */
         commitOffsetsIfNecessary: async offsets => {
           return offsets
@@ -241,12 +284,21 @@ module.exports = class Runner extends EventEmitter {
     }
   }
 
-  async fetch() {
+  async fetch(nodeId) {
+    if (!this.running) {
+      this.logger.debug('consumer not running, exiting', {
+        groupId: this.consumerGroup.groupId,
+        memberId: this.consumerGroup.memberId,
+      })
+
+      return []
+    }
+
     const startFetch = Date.now()
 
-    this.instrumentationEmitter.emit(FETCH_START, {})
+    this.instrumentationEmitter.emit(FETCH_START, { nodeId })
 
-    const iterator = await this.consumerGroup.fetch()
+    const batches = await this.consumerGroup.fetch(nodeId)
 
     this.instrumentationEmitter.emit(FETCH, {
       /**
@@ -259,8 +311,23 @@ module.exports = class Runner extends EventEmitter {
        */
       numberOfBatches: 0,
       duration: Date.now() - startFetch,
+      nodeId,
     })
 
+    return batches
+  }
+
+  async handleBatch(batch) {
+    if (!this.running) {
+      this.logger.debug('consumer not running, exiting', {
+        groupId: this.consumerGroup.groupId,
+        memberId: this.consumerGroup.memberId,
+      })
+
+      return
+    }
+
+    /** @param {import('./batch')} batch */
     const onBatch = async batch => {
       const startBatchProcess = Date.now()
       const payload = {
@@ -281,6 +348,41 @@ module.exports = class Runner extends EventEmitter {
         lastOffset: batch.lastOffset(),
       }
 
+      /**
+       * If the batch contained only control records or only aborted messages then we still
+       * need to resolve and auto-commit to ensure the consumer can move forward.
+       *
+       * We also need to emit batch instrumentation events to allow any listeners keeping
+       * track of offsets to know about the latest point of consumption.
+       *
+       * Added in #1256
+       *
+       * @see https://github.com/apache/kafka/blob/9aa660786e46c1efbf5605a6a69136a1dac6edb9/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L1499-L1505
+       */
+      if (batch.isEmptyDueToFiltering()) {
+        this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
+
+        this.consumerGroup.resolveOffset({
+          topic: batch.topic,
+          partition: batch.partition,
+          offset: batch.lastOffset(),
+        })
+        await this.autoCommitOffsetsIfNecessary()
+
+        this.instrumentationEmitter.emit(END_BATCH_PROCESS, {
+          ...payload,
+          duration: Date.now() - startBatchProcess,
+        })
+
+        await this.heartbeat()
+        return
+      }
+
+      if (batch.isEmpty()) {
+        await this.heartbeat()
+        return
+      }
+
       this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
 
       if (this.eachMessage) {
@@ -293,99 +395,14 @@ module.exports = class Runner extends EventEmitter {
         ...payload,
         duration: Date.now() - startBatchProcess,
       })
-    }
 
-    const { lock, unlock, unlockWithError } = barrier()
-    const concurrently = limitConcurrency({ limit: this.partitionsConsumedConcurrently })
-
-    let requestsCompleted = false
-    let numberOfExecutions = 0
-    let expectedNumberOfExecutions = 0
-    const enqueuedTasks = []
-
-    while (true) {
-      const result = iterator.next()
-
-      if (result.done) {
-        break
-      }
-
-      if (!this.running) {
-        result.value.catch(error => {
-          this.logger.debug('Ignoring error in fetch request while stopping runner', {
-            error: error.message || error,
-            stack: error.stack,
-          })
-        })
-
-        continue
-      }
-
-      enqueuedTasks.push(async () => {
-        const batches = await result.value
-        expectedNumberOfExecutions += batches.length
-
-        batches.map(batch =>
-          concurrently(async () => {
-            try {
-              if (!this.running) {
-                return
-              }
-
-              if (batch.isEmpty()) {
-                return
-              }
-
-              await onBatch(batch)
-              await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
-            } catch (e) {
-              unlockWithError(e)
-            } finally {
-              numberOfExecutions++
-              if (requestsCompleted && numberOfExecutions === expectedNumberOfExecutions) {
-                unlock()
-              }
-            }
-          }).catch(unlockWithError)
-        )
-      })
-    }
-
-    await Promise.all(enqueuedTasks.map(fn => fn()))
-    requestsCompleted = true
-
-    if (expectedNumberOfExecutions === numberOfExecutions) {
-      unlock()
-    }
-
-    const error = await lock
-    if (error) {
-      throw error
-    }
-
-    await this.autoCommitOffsets()
-    await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
-  }
-
-  async scheduleFetch() {
-    if (!this.running) {
-      this.logger.debug('consumer not running, exiting', {
-        groupId: this.consumerGroup.groupId,
-        memberId: this.consumerGroup.memberId,
-      })
-
-      return
+      await this.autoCommitOffsets()
+      await this.heartbeat()
     }
 
     return this.retrier(async (bail, retryCount, retryTime) => {
       try {
-        this.consuming = true
-        await this.fetch()
-        this.consuming = false
-
-        if (this.running) {
-          setImmediate(() => this.scheduleFetch())
-        }
+        await onBatch(batch)
       } catch (e) {
         if (!this.running) {
           this.logger.debug('consumer not running, exiting', {
@@ -396,46 +413,11 @@ module.exports = class Runner extends EventEmitter {
           return
         }
 
-        if (isRebalancing(e)) {
-          this.logger.error('The group is rebalancing, re-joining', {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            error: e.message,
-            retryCount,
-            retryTime,
-          })
-
-          this.instrumentationEmitter.emit(REBALANCING, {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-          })
-
-          await this.join()
-          setImmediate(() => this.scheduleFetch())
-          return
-        }
-
-        if (e.type === 'UNKNOWN_MEMBER_ID') {
-          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            error: e.message,
-            retryCount,
-            retryTime,
-          })
-
-          this.consumerGroup.memberId = null
-          await this.join()
-          setImmediate(() => this.scheduleFetch())
-          return
-        }
-
-        if (e.name === 'KafkaJSOffsetOutOfRange') {
-          setImmediate(() => this.scheduleFetch())
-          return
-        }
-
-        if (e.name === 'KafkaJSNotImplemented') {
+        if (
+          isRebalancing(e) ||
+          e.type === 'UNKNOWN_MEMBER_ID' ||
+          e.name === 'KafkaJSNotImplemented'
+        ) {
           return bail(e)
         }
 
@@ -449,10 +431,8 @@ module.exports = class Runner extends EventEmitter {
         })
 
         throw e
-      } finally {
-        this.consuming = false
       }
-    }).catch(this.onCrash)
+    })
   }
 
   autoCommitOffsets() {
@@ -489,40 +469,6 @@ module.exports = class Runner extends EventEmitter {
             offsets,
           })
           return
-        }
-
-        if (isRebalancing(e)) {
-          this.logger.error('The group is rebalancing, re-joining', {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            error: e.message,
-            retryCount,
-            retryTime,
-          })
-
-          this.instrumentationEmitter.emit(REBALANCING, {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-          })
-
-          setImmediate(() => this.scheduleJoin())
-
-          bail(new KafkaJSError(e))
-        }
-
-        if (e.type === 'UNKNOWN_MEMBER_ID') {
-          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            error: e.message,
-            retryCount,
-            retryTime,
-          })
-
-          this.consumerGroup.memberId = null
-          setImmediate(() => this.scheduleJoin())
-
-          bail(new KafkaJSError(e))
         }
 
         if (e.name === 'KafkaJSNotImplemented') {

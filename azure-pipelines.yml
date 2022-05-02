@@ -26,11 +26,11 @@ jobs:
   - job: lint
     displayName: Lint
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '10.x'
+        versionSpec: '14.x'
     - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
       displayName: should skip tests
     - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -41,11 +41,11 @@ jobs:
   - job: typescript_types
     displayName: Typescript types
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '10.x'
+        versionSpec: '14.x'
     - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
       displayName: should skip tests
     - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -60,11 +60,11 @@ jobs:
     variables:
       test_retries: 2
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -85,11 +85,11 @@ jobs:
     variables:
       test_retries: 2
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -110,11 +110,11 @@ jobs:
     variables:
       test_retries: 2
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -135,11 +135,11 @@ jobs:
     variables:
       test_retries: 2
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -162,11 +162,11 @@ jobs:
     variables:
       test_retries: 2
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -190,11 +190,11 @@ jobs:
       - name: COMPOSE_FILE
         value: docker-compose.2_4_oauthbearer.yml
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -221,11 +221,11 @@ jobs:
       - test_consumer
       - test_others
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - task: Npm@1
         inputs:
           command: publish
@@ -241,11 +241,11 @@ jobs:
     dependsOn:
       - npm_release
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: |
           git config user.name "Website Build Bot"
           git config user.email "<>"
@@ -263,7 +263,7 @@ jobs:
           git add .
           DOC_VERSION=$(echo "$VERSION" | sed -e "s/^refs\/tags\/v//")
           git commit -m "Versioned docs for $DOC_VERSION"
-          git push origin master
+          git push origin HEAD:master
         displayName: commit
         env:
           VERSION: $(Build.SourceBranch)
@@ -280,11 +280,11 @@ jobs:
       - test_consumer
       - test_others
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: yarn install
         displayName: yarn install
       - bash: ./scripts/pipeline/checkBetaEligibility.js
@@ -308,11 +308,11 @@ jobs:
       - test_others
       - beta_release_check
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: yarn install
         displayName: yarn install
       - bash: ./scripts/pipeline/generateBetaReleaseVersion.js
@@ -355,11 +355,11 @@ jobs:
       - test_consumer
       - test_others
     pool:
-      vmImage: 'Ubuntu 16.04'
+      vmImage: 'ubuntu-latest'
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: git config core.autocrlf true || test true
         displayName: git config core.autocrlf
       - bash: git config --global user.name "${GH_NAME}" || test true

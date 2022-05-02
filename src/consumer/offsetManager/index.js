@@ -215,17 +215,7 @@ module.exports = class OffsetManager {
 
   /**
    * Return all locally resolved offsets which are not marked as committed, by topic-partition.
-   * @returns {OffsetsByTopicPartition}
-   *
-   * @typedef {Object} OffsetsByTopicPartition
-   * @property {TopicOffsets[]} topics
-   *
-   * @typedef {Object} TopicOffsets
-   * @property {PartitionOffset[]} partitions
-   *
-   * @typedef {Object} PartitionOffset
-   * @property {string} partition
-   * @property {string} offset
+   * @returns {import('../../../types').OffsetsByTopicPartition}
    */
   uncommittedOffsets() {
     const offsets = topic => keys(this.resolvedOffsets[topic])
@@ -281,7 +271,12 @@ module.exports = class OffsetManager {
           (obj, { partition, offset }) => assign(obj, { [partition]: offset }),
           {}
         )
-        assign(this.committedOffsets()[topic], updatedOffsets)
+
+        this[PRIVATE.COMMITTED_OFFSETS][topic] = assign(
+          {},
+          this.committedOffsets()[topic],
+          updatedOffsets
+        )
       })
 
       this.lastCommit = Date.now()

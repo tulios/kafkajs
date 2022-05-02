@@ -16,24 +16,23 @@ Subscribing to some topics:
 ```javascript
 await consumer.connect()
 
-await consumer.subscribe({ topic: 'topic-A' })
+await consumer.subscribe({ topics: ['topic-A'] })
 
-// Subscribe can be called several times
-await consumer.subscribe({ topic: 'topic-B' })
-await consumer.subscribe({ topic: 'topic-C' })
+// You can subscribe to multiple topics at once
+await consumer.subscribe({ topics: ['topic-B', 'topic-C'] })
 
 // It's possible to start from the beginning of the topic
-await consumer.subscribe({ topic: 'topic-D', fromBeginning: true })
+await consumer.subscribe({ topics: ['topic-D'], fromBeginning: true })
 ```
 
-Alternatively, you can subscribe to multiple topics at once using a RegExp:
+Alternatively, you can subscribe to any topic that matches a regular expression:
 
 ```javascript
 await consumer.connect()
-await consumer.subscribe({ topic: /topic-(eu|us)-.*/i })
+await consumer.subscribe({ topics: [/topic-(eu|us)-.*/i] })
 ```
 
-The consumer will not match topics created after the subscription. If your broker has `topic-A` and `topic-B`, you subscribe to `/topic-.*/`, then `topic-C` is created, your consumer would not be automatically subscribed to `topic-C`.
+When suppling a regular expression, the consumer will not match topics created after the subscription. If your broker has `topic-A` and `topic-B`, you subscribe to `/topic-.*/`, then `topic-C` is created, your consumer would not be automatically subscribed to `topic-C`.
 
 KafkaJS offers you two ways to process your data: `eachMessage` and `eachBatch`
 
@@ -43,7 +42,7 @@ The `eachMessage` handler provides a convenient and easy to use API, feeding you
 
 ```javascript
 await consumer.run({
-    eachMessage: async ({ topic, partition, message }) => {
+    eachMessage: async ({ topic, partition, message, heartbeat }) => {
         console.log({
             key: message.key.toString(),
             value: message.value.toString(),
@@ -52,6 +51,8 @@ await consumer.run({
     },
 })
 ```
+
+Be aware that the `eachMessage` handler should not block for longer than the configured [session timeout](#options) or else the consumer will be removed from the group. If your workload involves very slow processing times for individual messages then you should either increase the session timeout or make periodic use of the `heartbeat` function exposed in the handler payload.
 
 ## <a name="each-batch"></a> eachBatch
 
@@ -173,7 +174,7 @@ When disabling [`autoCommit`](#auto-commit) you can still manually commit messag
 - By [sending message offsets in a transaction](Transactions.md#offsets).
 - By using the `commitOffsets` method of the consumer (see below).
 
-The `consumer.commitOffsets` is the lowest-level option and will ignore all other auto commit settings, but in doing so allows the committed offset to be set to any offset and committing various offsets at once. This can be useful, for example, for building an processing reset tool. It can only be called after `consumer.run`. Committing offsets does not change what message we'll consume next once we've started consuming, but instead is only used to determine **from which place to start**. To immediately change from what offset you're consuming messages, you'll want to [seek](#seek), instead.
+The `consumer.commitOffsets` is the lowest-level option and will ignore all other auto commit settings, but in doing so allows the committed offset to be set to any offset and committing various offsets at once. This can be useful, for example, for building a processing reset tool. It can only be called after `consumer.run`. Committing offsets does not change what message we'll consume next once we've started consuming, but instead is only used to determine **from which place to start**. To immediately change from what offset you're consuming messages, you'll want to [seek](#seek), instead.
 
 ```javascript
 consumer.run({
@@ -203,8 +204,8 @@ The usual usage pattern for offsets stored outside of Kafka is as follows:
 The consumer group will use the latest committed offset when starting to fetch messages. If the offset is invalid or not defined, `fromBeginning` defines the behavior of the consumer group. This can be configured when subscribing to a topic:
 
 ```javascript
-await consumer.subscribe({ topic: 'test-topic', fromBeginning: true })
-await consumer.subscribe({ topic: 'other-topic', fromBeginning: false })
+await consumer.subscribe({ topics: ['test-topic'], fromBeginning: true })
+await consumer.subscribe({ topics: ['other-topic'], fromBeginning: false })
 ```
 
 When `fromBeginning` is `true`, the group will use the earliest offset. If set to `false`, it will use the latest offset. The default is `false`.
@@ -259,7 +260,7 @@ Example: A situation where this could be useful is when an external dependency u
 
 ```javascript
 await consumer.connect()
-await consumer.subscribe({ topic: 'jobs' })
+await consumer.subscribe({ topics: ['jobs'] })
 
 await consumer.run({ eachMessage: async ({ topic, message }) => {
     try {
@@ -320,7 +321,7 @@ To move the offset position in a topic/partition the `Consumer` provides the met
 
 ```javascript
 await consumer.connect()
-await consumer.subscribe({ topic: 'example' })
+await consumer.subscribe({ topics: ['example'] })
 
 // you don't need to await consumer#run
 consumer.run({ eachMessage: async ({ topic, message }) => true })
