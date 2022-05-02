@@ -451,14 +451,6 @@ export type Admin = {
     topicPartitions: ITopicPartitionConfig[]
   }): Promise<boolean>
   fetchTopicMetadata(options?: { topics: string[] }): Promise<{ topics: Array<ITopicMetadata> }>
-  /**
-   * @deprecated "topic: string" replaced by "topics: string[]"
-   */
-  fetchOffsets(options: {
-    groupId: string
-    topic: string
-    resolveOffsets?: boolean
-  }): Promise<FetchOffsetsPartition[]>
   fetchOffsets(options: {
     groupId: string
     topics?: string[]

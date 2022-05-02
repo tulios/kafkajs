@@ -408,30 +408,21 @@ module.exports = ({
    * Note: set either topic or topics but not both.
    *
    * @param {string} groupId
-   * @param {string} topic - deprecated, use the `topics` parameter. Topic to fetch offsets for.
    * @param {string[]} topics - list of topics to fetch offsets for, defaults to `[]` which fetches all topics for `groupId`.
    * @param {boolean} [resolveOffsets=false]
    * @return {Promise}
    */
-  const fetchOffsets = async ({ groupId, topic, topics, resolveOffsets = false }) => {
+  const fetchOffsets = async ({ groupId, topics, resolveOffsets = false }) => {
     if (!groupId) {
       throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
     }
 
-    if (!topic && !topics) {
+    if (!topics) {
       topics = []
     }
 
-    if (!topic && !Array.isArray(topics)) {
-      throw new KafkaJSNonRetriableError(`Expected topic or topics array to be set`)
-    }
-
-    if (topic && topics) {
-      throw new KafkaJSNonRetriableError(`Either topic or topics must be set, not both`)
-    }
-
-    if (topic) {
-      topics = [topic]
+    if (!Array.isArray(topics)) {
+      throw new KafkaJSNonRetriableError('Expected topics array to be set')
     }
 
     const coordinator = await cluster.findGroupCoordinator({ groupId })
@@ -476,7 +467,7 @@ module.exports = ({
       )
     }
 
-    const result = consumerOffsets.map(({ topic, partitions }) => {
+    return consumerOffsets.map(({ topic, partitions }) => {
       const completePartitions = partitions.map(({ partition, offset, metadata }) => ({
         partition,
         offset,
@@ -485,12 +476,6 @@ module.exports = ({
 
       return { topic, partitions: completePartitions }
     })
-
-    if (topic) {
-      return result.pop().partitions
-    } else {
-      return result
-    }
   }
 
   /**
