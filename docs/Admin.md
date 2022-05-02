@@ -210,7 +210,7 @@ Include the optional `resolveOffsets` flag to resolve the offsets without having
 
 ```javascript
 await admin.resetOffsets({ groupId, topic })
-await admin.fetchOffsets({ groupId, topic, resolveOffsets: false })
+await admin.fetchOffsets({ groupId, topics: [topic], resolveOffsets: false })
 // [
 //   { partition: 0, offset: '-1' },
 //   { partition: 1, offset: '-1' },
@@ -219,7 +219,7 @@ await admin.fetchOffsets({ groupId, topic, resolveOffsets: false })
 // ]
 
 await admin.resetOffsets({ groupId, topic })
-await admin.fetchOffsets({ groupId, topic, resolveOffsets: true })
+await admin.fetchOffsets({ groupId, topics: [topic], resolveOffsets: true })
 // [
 //   { partition: 0, offset: '31004' },
 //   { partition: 1, offset: '54312' },

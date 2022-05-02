@@ -413,7 +413,9 @@ describe('Consumer', () => {
 
     // check if all offsets are present
     expect(messagesConsumed.map(m => m.message.offset)).toEqual(messages.map((_, i) => `${i}`))
-    const [partition] = await admin.fetchOffsets({ groupId, topic: topicName })
+    const response = await admin.fetchOffsets({ groupId, topics: [topicName] })
+    const { partitions } = response.find(({ topic }) => topic === topicName)
+    const partition = partitions.find(({ partition }) => partition === '0')
     expect(partition.offset).toEqual('100') // check if offsets were committed
   })
 
