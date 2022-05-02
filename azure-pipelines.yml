@@ -30,7 +30,7 @@ jobs:
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '10.x'
+        versionSpec: '14.x'
     - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
       displayName: should skip tests
     - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -45,7 +45,7 @@ jobs:
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '10.x'
+        versionSpec: '14.x'
     - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
       displayName: should skip tests
     - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -64,7 +64,7 @@ jobs:
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -89,7 +89,7 @@ jobs:
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -114,7 +114,7 @@ jobs:
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -139,7 +139,7 @@ jobs:
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -166,7 +166,7 @@ jobs:
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -194,7 +194,7 @@ jobs:
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: ./scripts/pipeline/shouldRunTests.sh && SKIP_TESTS=true && echo "Only non-code has changed!" || test true
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
@@ -225,7 +225,7 @@ jobs:
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - task: Npm@1
         inputs:
           command: publish
@@ -245,7 +245,7 @@ jobs:
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: |
           git config user.name "Website Build Bot"
           git config user.email "<>"
@@ -284,7 +284,7 @@ jobs:
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: yarn install
         displayName: yarn install
       - bash: ./scripts/pipeline/checkBetaEligibility.js
@@ -312,7 +312,7 @@ jobs:
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: yarn install
         displayName: yarn install
       - bash: ./scripts/pipeline/generateBetaReleaseVersion.js
@@ -359,7 +359,7 @@ jobs:
     steps:
       - task: NodeTool@0
         inputs:
-          versionSpec: '10.x'
+          versionSpec: '14.x'
       - bash: git config core.autocrlf true || test true
         displayName: git config core.autocrlf
       - bash: git config --global user.name "${GH_NAME}" || test true

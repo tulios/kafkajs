@@ -45,7 +45,7 @@ module.exports = class Client {
     authenticationTimeout,
     reauthenticationThreshold,
     requestTimeout,
-    enforceRequestTimeout = false,
+    enforceRequestTimeout = true,
     retry,
     socketFactory = defaultSocketFactory(),
     logLevel = INFO,

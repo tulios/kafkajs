@@ -6,7 +6,6 @@ import {
   logLevel,
   CompressionTypes,
   CompressionCodecs,
-  ResourceTypes,
   ConfigResourceTypes,
   AclResourceTypes,
   AclOperationTypes,
@@ -183,24 +182,12 @@ const runAdmin = async () => {
   await admin.listTopics()
 
   await admin.fetchOffsets({ groupId: 'test-group' })
-  await admin.fetchOffsets({ groupId: 'test-group', topic: 'topic1' })
   await admin.fetchOffsets({ groupId: 'test-group', topics: ['topic1', 'topic2'] })
 
   await admin.createTopics({
     topics: [{ topic, numPartitions: 10, replicationFactor: 1 }],
     timeout: 30000,
     waitForLeaders: true,
-  })
-
-  // @deprecated
-  await admin.describeConfigs({
-    includeSynonyms: false,
-    resources: [
-      {
-        type: ResourceTypes.TOPIC,
-        name: topic,
-      },
-    ],
   })
 
   await admin.describeConfigs({

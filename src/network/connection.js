@@ -65,7 +65,7 @@ module.exports = class Connection {
     sasl = null,
     clientId = 'kafkajs',
     connectionTimeout,
-    enforceRequestTimeout = false,
+    enforceRequestTimeout = true,
     maxInFlightRequests = null,
     instrumentationEmitter = null,
   }) {

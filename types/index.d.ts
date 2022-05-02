@@ -108,7 +108,7 @@ export type PartitionMetadata = {
 }
 
 export interface IHeaders {
-  [key: string]: Buffer | string | undefined
+  [key: string]: Buffer | string | (Buffer | string)[] | undefined
 }
 
 export interface ConsumerConfig {
@@ -219,20 +219,6 @@ export interface ITopicMetadata {
   partitions: PartitionMetadata[]
 }
 
-/**
- * @deprecated
- * Use ConfigResourceTypes or AclResourceTypes
- */
-export enum ResourceTypes {
-  UNKNOWN = 0,
-  ANY = 1,
-  TOPIC = 2,
-  GROUP = 3,
-  CLUSTER = 4,
-  TRANSACTIONAL_ID = 5,
-  DELEGATION_TOKEN = 6,
-}
-
 export enum AclResourceTypes {
   UNKNOWN = 0,
   ANY = 1,
@@ -292,7 +278,7 @@ export enum ResourcePatternTypes {
 }
 
 export interface ResourceConfigQuery {
-  type: ResourceTypes | ConfigResourceTypes
+  type: ConfigResourceTypes
   name: string
   configNames?: string[]
 }
@@ -319,7 +305,7 @@ export interface DescribeConfigResponse {
     errorCode: number
     errorMessage: string
     resourceName: string
-    resourceType: ResourceTypes | ConfigResourceTypes
+    resourceType: ConfigResourceTypes
   }[]
   throttleTime: number
 }
@@ -330,7 +316,7 @@ export interface IResourceConfigEntry {
 }
 
 export interface IResourceConfig {
-  type: ResourceTypes | ConfigResourceTypes
+  type: ConfigResourceTypes
   name: string
   configEntries: IResourceConfigEntry[]
 }
@@ -465,14 +451,6 @@ export type Admin = {
     topicPartitions: ITopicPartitionConfig[]
   }): Promise<boolean>
   fetchTopicMetadata(options?: { topics: string[] }): Promise<{ topics: Array<ITopicMetadata> }>
-  /**
-   * @deprecated "topic: string" replaced by "topics: string[]"
-   */
-  fetchOffsets(options: {
-    groupId: string
-    topic: string
-    resolveOffsets?: boolean
-  }): Promise<FetchOffsetsPartition[]>
   fetchOffsets(options: {
     groupId: string
     topics?: string[]
@@ -802,9 +780,6 @@ export type TopicPartitionOffset = TopicPartition & {
 export type TopicPartitionOffsetAndMetadata = TopicPartitionOffset & {
   metadata?: string | null
 }
-
-// TODO: Remove with 2.x
-export type TopicPartitionOffsetAndMedata = TopicPartitionOffsetAndMetadata
 
 export type Batch = {
   topic: string
