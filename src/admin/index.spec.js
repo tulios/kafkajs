@@ -4,6 +4,12 @@ const { createCluster, newLogger, secureRandom } = require('testHelpers')
 const createRetry = require('../retry')
 
 describe('Admin', () => {
+  let admin
+
+  afterEach(async () => {
+    admin && (await admin.disconnect())
+  })
+
   it('gives access to its logger', () => {
     expect(
       createAdmin({
@@ -14,7 +20,7 @@ describe('Admin', () => {
   })
 
   it('emits connection events', async () => {
-    const admin = createAdmin({
+    admin = createAdmin({
       cluster: createCluster(),
       logger: newLogger(),
     })
@@ -33,7 +39,7 @@ describe('Admin', () => {
 
   test('emits the request event', async () => {
     const emitter = new InstrumentationEventEmitter()
-    const admin = createAdmin({
+    admin = createAdmin({
       cluster: createCluster({ instrumentationEmitter: emitter }),
       logger: newLogger(),
       instrumentationEmitter: emitter,
@@ -72,7 +78,7 @@ describe('Admin', () => {
       instrumentationEmitter: emitter,
     })
 
-    const admin = createAdmin({
+    admin = createAdmin({
       cluster,
       logger: newLogger(),
       instrumentationEmitter: emitter,
@@ -121,7 +127,7 @@ describe('Admin', () => {
       maxInFlightRequests: 1,
     })
 
-    const admin = createAdmin({
+    admin = createAdmin({
       cluster,
       logger: newLogger(),
       instrumentationEmitter: emitter,
@@ -155,7 +161,7 @@ describe('Admin', () => {
   })
 
   test('on throws an error when provided with an invalid event name', () => {
-    const admin = createAdmin({
+    admin = createAdmin({
       cluster: createCluster(),
       logger: newLogger(),
     })
