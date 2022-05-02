@@ -256,7 +256,16 @@ module.exports = ({
 
       await disconnect()
 
-      const isErrorRetriable = e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true
+      const getOriginalCause = error => {
+        if (error.cause) {
+          return getOriginalCause(error.cause)
+        }
+
+        return error
+      }
+
+      const isErrorRetriable =
+        e.name === 'KafkaJSNumberOfRetriesExceeded' || getOriginalCause(e).retriable === true
       const shouldRestart =
         isErrorRetriable &&
         (!retry ||
@@ -266,7 +275,7 @@ module.exports = ({
               'Caught error when invoking user-provided "restartOnFailure" callback. Defaulting to restarting.',
               {
                 error: error.message || error,
-                originalError: e.message || e,
+                cause: e.message || e,
                 groupId,
               }
             )
