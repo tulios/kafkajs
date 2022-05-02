@@ -212,7 +212,7 @@ The method will throw exceptions in case of errors.</p>
 <p>Omit <code>topics</code> altogether if you want to get the consumer group offsets for all topics with committed offsets.</p>
 <p>Include the optional <code>resolveOffsets</code> flag to resolve the offsets without having to start a consumer, useful when fetching directly after calling <a href="#a-name-reset-offsets-a-reset-consumer-group-offsets">resetOffsets</a>:</p>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.resetOffsets({ groupId, topic })
-<span class="hljs-keyword">await</span> admin.fetchOffsets({ groupId, topic, <span class="hljs-attr">resolveOffsets</span>: <span class="hljs-literal">false</span> })
+<span class="hljs-keyword">await</span> admin.fetchOffsets({ groupId, <span class="hljs-attr">topics</span>: [topic], <span class="hljs-attr">resolveOffsets</span>: <span class="hljs-literal">false</span> })
 <span class="hljs-comment">// [</span>
 <span class="hljs-comment">//   { partition: 0, offset: '-1' },</span>
 <span class="hljs-comment">//   { partition: 1, offset: '-1' },</span>
@@ -221,7 +221,7 @@ The method will throw exceptions in case of errors.</p>
 <span class="hljs-comment">// ]</span>
 
 <span class="hljs-keyword">await</span> admin.resetOffsets({ groupId, topic })
-<span class="hljs-keyword">await</span> admin.fetchOffsets({ groupId, topic, <span class="hljs-attr">resolveOffsets</span>: <span class="hljs-literal">true</span> })
+<span class="hljs-keyword">await</span> admin.fetchOffsets({ groupId, <span class="hljs-attr">topics</span>: [topic], <span class="hljs-attr">resolveOffsets</span>: <span class="hljs-literal">true</span> })
 <span class="hljs-comment">// [</span>
 <span class="hljs-comment">//   { partition: 0, offset: '31004' },</span>
 <span class="hljs-comment">//   { partition: 1, offset: '54312' },</span>
