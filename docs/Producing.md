@@ -213,16 +213,20 @@ kafka.producer({ createPartitioner: MyPartitioner })
 
 ### Default Partitioners
 
-KafkaJS ships with 2 partitioners: `DefaultPartitioner` and `JavaCompatiblePartitioner`.
+KafkaJS ships with 2 partitioners: `DefaultPartitioner` and `LegacyPartitioner`.
 
-The `JavaCompatiblePartitioner` should be compatible with the default partitioner that ships with the Java Kafka client. This can be important to meet the [co-partitioning requirement](https://docs.confluent.io/current/ksql/docs/developer-guide/partition-data.html#co-partitioning-requirements) when joining multiple topics.
+The `DefaultPartitioner` should be compatible with the default partitioner that ships with the Java Kafka client. This can be important to meet the [co-partitioning requirement](https://docs.confluent.io/current/ksql/docs/developer-guide/partition-data.html#co-partitioning-requirements) when joining multiple topics.
 
-Use the `JavaCompatiblePartitioner` by importing it and providing it to the Producer constructor:
-
-```javascript
-const { Partitioners } = require('kafkajs')
-kafka.producer({ createPartitioner: Partitioners.JavaCompatiblePartitioner })
-```
+> 🚨 **Important**  🚨
+> 
+> **The `LegacyPartitioner` was the default until v2.0.0. If you are upgrading from a version
+older and want to retain the previous partitioning behavior, use the `LegacyPartitioner`
+by importing it and providing it to the Producer constructor:**
+> 
+> ```javascript
+> const { Partitioners } = require('kafkajs')
+> kafka.producer({ createPartitioner: Partitioners.LegacyPartitioner })
+> ```
 
 ## <a name="retry"></a> Retry
 

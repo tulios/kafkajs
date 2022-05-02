@@ -91,11 +91,11 @@ export interface PartitionerArgs {
 
 export type ICustomPartitioner = () => (args: PartitionerArgs) => number
 export type DefaultPartitioner = ICustomPartitioner
-export type JavaCompatiblePartitioner = ICustomPartitioner
+export type LegacyPartitioner = ICustomPartitioner
 
 export const Partitioners: {
-  DefaultPartitioner: DefaultPartitioner
-  JavaCompatiblePartitioner: JavaCompatiblePartitioner
+  DefaultPartitioner: DefaultPartitioner,
+  LegacyPartitioner: LegacyPartitioner,
 }
 
 export type PartitionMetadata = {
