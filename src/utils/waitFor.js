@@ -11,6 +11,10 @@ module.exports = (
 
   const checkCondition = async (resolve, reject) => {
     totalWait += delay
+    if (fulfilled) {
+      return
+    }
+
     await sleep(delay)
 
     try {
@@ -38,6 +42,7 @@ module.exports = (
 
     timeoutId = setTimeout(() => {
       if (!fulfilled) {
+        fulfilled = true
         return reject(new KafkaJSTimeout(timeoutMessage))
       }
     }, maxWait)
