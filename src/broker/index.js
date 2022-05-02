@@ -28,7 +28,7 @@ module.exports = class Broker {
    * @param {number} [options.nodeId]
    * @param {import("../../types").ApiVersions} [options.versions=null] The object with all available versions and APIs
    *                                 supported by this cluster. The output of broker#apiVersions
-   * @param {number} [options.authenticationTimeout=1000]
+   * @param {number} [options.authenticationTimeout=10000]
    * @param {boolean} [options.allowAutoTopicCreation=true] If this and the broker config 'auto.create.topics.enable'
    *                                                are true, topics that don't exist will be created when
    *                                                fetching metadata.
@@ -38,7 +38,7 @@ module.exports = class Broker {
     logger,
     nodeId = null,
     versions = null,
-    authenticationTimeout = 1000,
+    authenticationTimeout = 10000,
     allowAutoTopicCreation = true,
   }) {
     this.connectionPool = connectionPool
