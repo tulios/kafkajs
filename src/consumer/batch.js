@@ -42,7 +42,7 @@ module.exports = class Batch {
   }
 
   /**
-   * If the batch contained raw messages (i.e was not truely empty) but all messages were filtered out due to
+   * If the batch contained raw messages (i.e was not truly empty) but all messages were filtered out due to
    * log compaction, control records or other reasons
    */
   isEmptyDueToFiltering() {

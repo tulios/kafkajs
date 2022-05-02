@@ -9,7 +9,7 @@ describe('Utils > waitFor', () => {
       conditionValid = true
     }, 6)
 
-    await expect(waitFor(() => conditionValid, { delay: 5 }))
+    await expect(waitFor(() => conditionValid, { delay: 5 })).resolves.toBe(true)
   })
 
   it('rejects the promise if the callback fail', async () => {

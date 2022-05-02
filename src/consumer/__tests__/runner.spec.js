@@ -260,7 +260,7 @@ describe('Consumer > Runner', () => {
 
       consumerGroup.joinAndSync.mockClear()
 
-      expect(runner.commitOffsets(offsets)).rejects.toThrow(error.message)
+      await expect(runner.commitOffsets(offsets)).rejects.toThrow(error.message)
     })
 
     it('correctly catch exceptions in parallel "eachBatch" processing', async () => {
