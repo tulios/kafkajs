@@ -6,7 +6,6 @@ import {
   logLevel,
   CompressionTypes,
   CompressionCodecs,
-  ResourceTypes,
   ConfigResourceTypes,
   AclResourceTypes,
   AclOperationTypes,
@@ -190,17 +189,6 @@ const runAdmin = async () => {
     topics: [{ topic, numPartitions: 10, replicationFactor: 1 }],
     timeout: 30000,
     waitForLeaders: true,
-  })
-
-  // @deprecated
-  await admin.describeConfigs({
-    includeSynonyms: false,
-    resources: [
-      {
-        type: ResourceTypes.TOPIC,
-        name: topic,
-      },
-    ],
   })
 
   await admin.describeConfigs({

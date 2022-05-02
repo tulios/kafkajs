@@ -1,5 +1,5 @@
 const { decode, parse } = require('./response')
-const RESOURCE_TYPES = require('../../../resourceTypes')
+const CONFIG_RESOURCE_TYPES = require('../../../configResourceTypes')
 
 describe('Protocol > Requests > AlterConfigs > v1', () => {
   test('response', async () => {
@@ -11,7 +11,7 @@ describe('Protocol > Requests > AlterConfigs > v1', () => {
           errorMessage: null,
           resourceName:
             'test-topic-d7fa92c03177d87573b1-38076-21364f66-8613-47e0-b273-bc9de397515e',
-          resourceType: RESOURCE_TYPES.TOPIC,
+          resourceType: CONFIG_RESOURCE_TYPES.TOPIC,
         },
       ],
       clientSideThrottleTime: 0,
