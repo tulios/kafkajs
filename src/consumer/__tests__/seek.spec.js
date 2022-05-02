@@ -202,11 +202,16 @@ describe('Consumer', () => {
           }),
         ])
 
-        await expect(admin.fetchOffsets({ groupId, topic: topicName })).resolves.toEqual([
-          expect.objectContaining({
-            partition: 0,
-            offset: '-1',
-          }),
+        await expect(admin.fetchOffsets({ groupId, topics: [topicName] })).resolves.toEqual([
+          {
+            topic: topicName,
+            partitions: expect.arrayContaining([
+              expect.objectContaining({
+                partition: 0,
+                offset: '-1',
+              }),
+            ]),
+          },
         ])
 
         messagesConsumed = []

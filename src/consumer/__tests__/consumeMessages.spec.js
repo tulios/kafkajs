@@ -413,7 +413,9 @@ describe('Consumer', () => {
 
     // check if all offsets are present
     expect(messagesConsumed.map(m => m.message.offset)).toEqual(messages.map((_, i) => `${i}`))
-    const [partition] = await admin.fetchOffsets({ groupId, topic: topicName })
+    const response = await admin.fetchOffsets({ groupId, topics: [topicName] })
+    const { partitions } = response.find(({ topic }) => topic === topicName)
+    const partition = partitions.find(({ partition }) => partition === 0)
     expect(partition.offset).toEqual('100') // check if offsets were committed
   })
 
@@ -631,7 +633,6 @@ describe('Consumer', () => {
     await producer.connect()
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
-    const sleep = value => waitFor(delay => delay >= value)
     let calls = 0
 
     consumer.run({
@@ -649,7 +650,7 @@ describe('Consumer', () => {
     const message2 = { key: `key-${key2}`, value: `value-${key2}` }
 
     await producer.send({ acks: 1, topic: topicName, messages: [message1, message2] })
-    await sleep(80) // wait for 1 message
+    await waitFor(() => calls > 0, {})
     await consumer.disconnect() // don't give the consumer the chance to consume the 2nd message
 
     expect(calls).toEqual(1)

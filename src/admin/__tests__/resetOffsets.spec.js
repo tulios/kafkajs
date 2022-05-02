@@ -59,10 +59,12 @@ describe('Admin', () => {
 
       const offsets = await admin.fetchOffsets({
         groupId,
-        topic: topicName,
+        topics: [topicName],
       })
 
-      expect(offsets).toEqual([{ partition: 0, offset: '-1', metadata: null }])
+      expect(offsets).toEqual([
+        { topic: topicName, partitions: [{ partition: 0, offset: '-1', metadata: null }] },
+      ])
     })
 
     test('set the consumer group offsets to the earliest offsets', async () => {
@@ -84,10 +86,12 @@ describe('Admin', () => {
 
       const offsets = await admin.fetchOffsets({
         groupId,
-        topic: topicName,
+        topics: [topicName],
       })
 
-      expect(offsets).toEqual([{ partition: 0, offset: '-2', metadata: null }])
+      expect(offsets).toEqual([
+        { topic: topicName, partitions: [{ partition: 0, offset: '-2', metadata: null }] },
+      ])
     })
 
     test('throws an error if the consumer group is running', async () => {

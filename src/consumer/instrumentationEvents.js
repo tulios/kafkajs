@@ -3,6 +3,7 @@ const InstrumentationEventType = require('../instrumentation/eventType')
 const networkEvents = require('../network/instrumentationEvents')
 const consumerType = InstrumentationEventType('consumer')
 
+/** @type {import('types').ConsumerEvents} */
 const events = {
   HEARTBEAT: consumerType('heartbeat'),
   COMMIT_OFFSETS: consumerType('commit_offsets'),

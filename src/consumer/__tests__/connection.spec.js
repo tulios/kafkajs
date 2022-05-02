@@ -29,6 +29,7 @@ describe('Consumer', () => {
 
   afterEach(async () => {
     consumer && (await consumer.disconnect())
+    producer && (await producer.disconnect())
   })
 
   test('support SSL connections', async () => {
@@ -91,15 +92,11 @@ describe('Consumer', () => {
     await cluster.disconnect()
     expect(cluster.isConnected()).toEqual(false)
 
-    try {
-      await producer.send({
-        acks: 1,
-        topic: topicName,
-        messages: [{ key: `key-${secureRandom()}`, value: `value-${secureRandom()}` }],
-      })
-    } finally {
-      await producer.disconnect()
-    }
+    await producer.send({
+      acks: 1,
+      topic: topicName,
+      messages: [{ key: `key-${secureRandom()}`, value: `value-${secureRandom()}` }],
+    })
 
     await waitFor(() => cluster.isConnected())
     await expect(waitFor(() => messages.length > 0)).resolves.toBeTruthy()

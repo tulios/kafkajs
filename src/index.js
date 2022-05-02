@@ -28,7 +28,7 @@ module.exports = class Client {
    * @param {Object} options.ssl
    * @param {Object} options.sasl
    * @param {string} options.clientId
-   * @param {number} options.connectionTimeout - in milliseconds
+   * @param {number} [options.connectionTimeout=1000] - in milliseconds
    * @param {number} options.authenticationTimeout - in milliseconds
    * @param {number} options.reauthenticationThreshold - in milliseconds
    * @param {number} [options.requestTimeout=30000] - in milliseconds
@@ -41,11 +41,11 @@ module.exports = class Client {
     ssl,
     sasl,
     clientId,
-    connectionTimeout,
+    connectionTimeout = 1000,
     authenticationTimeout,
     reauthenticationThreshold,
     requestTimeout,
-    enforceRequestTimeout = false,
+    enforceRequestTimeout = true,
     retry,
     socketFactory = defaultSocketFactory(),
     logLevel = INFO,

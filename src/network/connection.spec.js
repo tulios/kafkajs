@@ -24,14 +24,14 @@ describe('Network > Connection', () => {
 
       test('resolves the Promise when connected', async () => {
         await expect(connection.connect()).resolves.toEqual(true)
-        expect(connection.connected).toEqual(true)
+        expect(connection.isConnected()).toEqual(true)
       })
 
       test('rejects the Promise in case of errors', async () => {
         connection.host = invalidHost
         const messagePattern = /Connection error: getaddrinfo ENOTFOUND kafkajs.test/
         await expect(connection.connect()).rejects.toThrow(messagePattern)
-        expect(connection.connected).toEqual(false)
+        expect(connection.isConnected()).toEqual(false)
       })
     })
 
@@ -42,7 +42,7 @@ describe('Network > Connection', () => {
 
       test('resolves the Promise when connected', async () => {
         await expect(connection.connect()).resolves.toEqual(true)
-        expect(connection.connected).toEqual(true)
+        expect(connection.isConnected()).toEqual(true)
       })
 
       test('rejects the Promise in case of timeouts', async () => {
@@ -58,14 +58,20 @@ describe('Network > Connection', () => {
         })
 
         await expect(connection.connect()).rejects.toHaveProperty('message', 'Connection timeout')
-        expect(connection.connected).toEqual(false)
+        expect(connection.isConnected()).toEqual(false)
       })
 
       test('rejects the Promise in case of errors', async () => {
         connection.ssl.cert = 'invalid'
         const messagePattern = /Failed to connect/
         await expect(connection.connect()).rejects.toThrow(messagePattern)
-        expect(connection.connected).toEqual(false)
+        expect(connection.isConnected()).toEqual(false)
+      })
+
+      test('sets the authenticatedAt timer', async () => {
+        connection.authenticatedAt = process.hrtime()
+        await connection.connect()
+        expect(connection.authenticatedAt).toBe(null)
       })
     })
   })
@@ -77,13 +83,13 @@ describe('Network > Connection', () => {
 
     test('disconnects an active connection', async () => {
       await connection.connect()
-      expect(connection.connected).toEqual(true)
+      expect(connection.isConnected()).toEqual(true)
       await expect(connection.disconnect()).resolves.toEqual(true)
-      expect(connection.connected).toEqual(false)
+      expect(connection.isConnected()).toEqual(false)
     })
 
     test('trigger "end" and "unref" function on not active connection', async () => {
-      expect(connection.connected).toEqual(false)
+      expect(connection.isConnected()).toEqual(false)
       connection.socket = {
         end: jest.fn(),
         unref: jest.fn(),
@@ -109,7 +115,7 @@ describe('Network > Connection', () => {
     })
 
     test('rejects the Promise if it is not connected', async () => {
-      expect(connection.connected).toEqual(false)
+      expect(connection.isConnected()).toEqual(false)
       await expect(connection.send(apiVersions())).rejects.toEqual(new Error('Not connected'))
     })
 
@@ -320,14 +326,14 @@ describe('Network > Connection', () => {
       expect(connection.correlationId).toEqual(2)
     })
 
-    test('resets to 0 when correlationId is equal to Number.MAX_VALUE', () => {
+    test('resets to 0 when correlationId is equal to max signed int32', () => {
       expect(connection.correlationId).toEqual(0)
 
       connection.nextCorrelationId()
       connection.nextCorrelationId()
       expect(connection.correlationId).toEqual(2)
 
-      connection.correlationId = Number.MAX_VALUE
+      connection.correlationId = Math.pow(2, 31) - 1
       const id1 = connection.nextCorrelationId()
       expect(id1).toEqual(0)
       expect(connection.correlationId).toEqual(1)

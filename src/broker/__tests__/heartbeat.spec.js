@@ -3,7 +3,7 @@ const { MemberMetadata, MemberAssignment } = require('../../consumer/assignerPro
 
 const {
   secureRandom,
-  createConnection,
+  createConnectionPool,
   newLogger,
   createTopic,
   retryProtocol,
@@ -17,7 +17,7 @@ describe('Broker > Heartbeat', () => {
     groupId = `consumer-group-id-${secureRandom()}`
 
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -34,7 +34,7 @@ describe('Broker > Heartbeat', () => {
 
     // Connect to the correct broker to produce message
     broker = new Broker({
-      connection: createConnection(newBrokerData),
+      connectionPool: createConnectionPool(newBrokerData),
       logger: newLogger(),
     })
     await broker.connect()
@@ -47,7 +47,7 @@ describe('Broker > Heartbeat', () => {
     )
 
     groupCoordinator = new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
     await groupCoordinator.connect()

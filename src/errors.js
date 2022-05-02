@@ -61,6 +61,12 @@ class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
 }
 
 class KafkaJSConnectionError extends KafkaJSError {
+  /**
+   * @param {string} e
+   * @param {object} options
+   * @param {string} [options.broker]
+   * @param {string} [options.code]
+   */
   constructor(e, { broker, code } = {}) {
     super(e)
     this.broker = broker
@@ -244,6 +250,13 @@ class KafkaJSAggregateError extends Error {
   }
 }
 
+class KafkaJSFetcherRebalanceError extends Error {}
+
+const isRebalancing = e =>
+  e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
+
+const isKafkaJSError = e => e instanceof KafkaJSError
+
 module.exports = {
   KafkaJSError,
   KafkaJSNonRetriableError,
@@ -273,4 +286,7 @@ module.exports = {
   KafkaJSInvalidLongError,
   KafkaJSCreateTopicError,
   KafkaJSAggregateError,
+  KafkaJSFetcherRebalanceError,
+  isRebalancing,
+  isKafkaJSError,
 }
