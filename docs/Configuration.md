@@ -94,7 +94,7 @@ Note that the broker may be configured to reject your authentication attempt if 
 
 | option                    | description                                                                                                                                                                             | default |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| authenticationTimeout     | Timeout in ms for authentication requests                                                                                                                                               | `1000`  |
+| authenticationTimeout     | Timeout in ms for authentication requests                                                                                                                                               | `10000`  |
 | reauthenticationThreshold | When periodic reauthentication (`connections.max.reauth.ms`) is configured on the broker side, reauthenticate when `reauthenticationThreshold` milliseconds remain of session lifetime. | `10000` |
 
 ### PLAIN/SCRAM Example
@@ -103,7 +103,7 @@ Note that the broker may be configured to reject your authentication attempt if 
 new Kafka({
   clientId: 'my-app',
   brokers: ['kafka1:9092', 'kafka2:9092'],
-  // authenticationTimeout: 1000,
+  // authenticationTimeout: 10000,
   // reauthenticationThreshold: 10000,
   ssl: true,
   sasl: {
@@ -120,7 +120,7 @@ new Kafka({
 new Kafka({
   clientId: 'my-app',
   brokers: ['kafka1:9092', 'kafka2:9092'],
-  // authenticationTimeout: 1000,
+  // authenticationTimeout: 10000,
   // reauthenticationThreshold: 10000,
   ssl: true,
   sasl: {
@@ -229,7 +229,7 @@ const kafka = new Kafka({
 new Kafka({
   clientId: 'my-app',
   brokers: ['kafka1:9092', 'kafka2:9092'],
-  // authenticationTimeout: 1000,
+  // authenticationTimeout: 10000,
   // reauthenticationThreshold: 10000,
   ssl: true,
   sasl: {
