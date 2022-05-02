@@ -131,20 +131,18 @@ module.exports = ({
   })
 
   /** @type {import("../../types").Consumer["subscribe"]} */
-  const subscribe = async ({ topic, topics: subscriptionTopics, fromBeginning = false }) => {
+  const subscribe = async ({ topics: subscriptions, fromBeginning = false }) => {
     if (consumerGroup) {
       throw new KafkaJSNonRetriableError('Cannot subscribe to topic while consumer is running')
     }
 
-    if (!topic && !subscriptionTopics) {
+    if (!subscriptions) {
       throw new KafkaJSNonRetriableError('Missing required argument "topics"')
     }
 
-    if (subscriptionTopics != null && !Array.isArray(subscriptionTopics)) {
+    if (subscriptions != null && !Array.isArray(subscriptions)) {
       throw new KafkaJSNonRetriableError('Argument "topics" must be an array')
     }
-
-    const subscriptions = subscriptionTopics || [topic]
 
     for (const subscription of subscriptions) {
       if (typeof subscription !== 'string' && !(subscription instanceof RegExp)) {

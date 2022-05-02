@@ -35,9 +35,7 @@ describe('Consumer', () => {
 
   it('handles receiving assignments for unsubscribed topics', async () => {
     await consumer1.connect()
-    await Promise.all(
-      topicNames.map(topicName => consumer1.subscribe({ topic: topicName, fromBeginning: true }))
-    )
+    await consumer1.subscribe({ topic: topicNames, fromBeginning: true })
 
     consumer1.run({ eachMessage: () => {} })
     await waitForConsumerToJoinGroup(consumer1, { label: 'consumer1' })
@@ -53,7 +51,7 @@ describe('Consumer', () => {
     })
 
     await consumer2.connect()
-    await consumer2.subscribe({ topic: topicNames[0], fromBeginning: true })
+    await consumer2.subscribe({ topics: topicNames.slice(0, 1), fromBeginning: true })
 
     consumer2.run({ eachMessage: () => {} })
     const event = await waitForConsumerToJoinGroup(consumer2, { label: 'consumer2' })
@@ -76,7 +74,7 @@ describe('Consumer', () => {
     let assignments = await Promise.all(
       [consumer1, consumer2].map(async consumer => {
         await consumer.connect()
-        await consumer.subscribe({ topic: topicNames[0] })
+        await consumer.subscribe({ topics: topicNames.slice(0, 1) })
         consumer.run({ eachMessage: () => {} })
         return waitForConsumerToJoinGroup(consumer)
       })
@@ -98,7 +96,7 @@ describe('Consumer', () => {
     })
 
     await consumer1.connect()
-    await Promise.all(topicNames.map(topic => consumer1.subscribe({ topic })))
+    await consumer1.subscribe({ topics: topicNames })
 
     // Second consumer is also replaced, subscribing to both topics
     await consumer2.disconnect()
@@ -112,7 +110,7 @@ describe('Consumer', () => {
     })
 
     await consumer2.connect()
-    await Promise.all(topicNames.map(topic => consumer2.subscribe({ topic })))
+    await consumer2.subscribe({ topics: topicNames })
 
     consumer1.run({ eachMessage: () => {} })
     consumer2.run({ eachMessage: () => {} })

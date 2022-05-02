@@ -71,7 +71,7 @@ describe('Consumer > Instrumentation Events', () => {
 
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     await consumer.run({ eachMessage: () => true })
     await producer.send({ acks: 1, topic: topicName, messages: [message] })
@@ -101,7 +101,7 @@ describe('Consumer > Instrumentation Events', () => {
 
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
     await consumer.run({ eachMessage: () => true })
     await producer.send({ acks: 1, topic: topicName, messages: [message] })
 
@@ -140,7 +140,7 @@ describe('Consumer > Instrumentation Events', () => {
     })
 
     await consumer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     await consumer.run({ eachMessage: () => true })
 
@@ -172,7 +172,7 @@ describe('Consumer > Instrumentation Events', () => {
     })
 
     await consumer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     await consumer.run({ eachMessage: () => true })
 
@@ -200,7 +200,7 @@ describe('Consumer > Instrumentation Events', () => {
     })
 
     await consumer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     await consumer.run({ eachMessage: () => true })
 
@@ -227,7 +227,7 @@ describe('Consumer > Instrumentation Events', () => {
 
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
     await consumer.run({ eachMessage: () => true })
     await producer.send({ acks: 1, topic: topicName, messages: [message] })
 
@@ -261,7 +261,7 @@ describe('Consumer > Instrumentation Events', () => {
 
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
     await consumer.run({ eachMessage: () => true })
     await producer.send({ acks: 1, topic: topicName, messages: [message] })
 
@@ -295,7 +295,7 @@ describe('Consumer > Instrumentation Events', () => {
       consumer.on(consumer.events.END_BATCH_PROCESS, endBatchProcessSpy)
 
       await consumer.connect()
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
       await consumer.run({ eachMessage: async () => {} })
 
       producer = createProducer({
@@ -394,7 +394,7 @@ describe('Consumer > Instrumentation Events', () => {
     consumer.on(consumer.events.CRASH, crashListener)
 
     await consumer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
     await consumer.run({ eachMessage })
 
     await producer.connect()
@@ -421,7 +421,7 @@ describe('Consumer > Instrumentation Events', () => {
     consumer.on(consumer.events.CRASH, crashListener)
 
     await consumer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
     await consumer.run({ eachMessage })
 
     await producer.connect()
@@ -468,14 +468,14 @@ describe('Consumer > Instrumentation Events', () => {
     })
 
     await consumer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     consumer.run({ eachMessage: () => true })
 
     await waitForConsumerToJoinGroup(consumer, { label: 'consumer1' })
 
     await consumer2.connect()
-    await consumer2.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer2.subscribe({ topics: [topicName], fromBeginning: true })
 
     consumer2.run({ eachMessage: () => true })
 
@@ -628,9 +628,7 @@ describe('Consumer > Instrumentation Events', () => {
     })
 
     await consumer.connect()
-    await Promise.all(
-      topicNames.map(topicName => consumer.subscribe({ topic: topicName, fromBeginning: true }))
-    )
+    await consumer.subscribe({ topics: topicNames, fromBeginning: true })
 
     consumer.run({ eachMessage: () => {} })
     await waitForConsumerToJoinGroup(consumer, { label: 'consumer1' })
@@ -654,7 +652,7 @@ describe('Consumer > Instrumentation Events', () => {
     await consumer2.connect()
     await Promise.all(
       [topicNames[1], otherTopic].map(topicName =>
-        consumer2.subscribe({ topic: topicName, fromBeginning: true })
+        consumer2.subscribe({ topics: [topicName], fromBeginning: true })
       )
     )
 

@@ -95,7 +95,7 @@ describe('Consumer', () => {
     const message1 = { key: `key-${key1}`, value: `value-${key1}` }
     await producer.send({ acks: 1, topic: topicName, messages: [message1] })
 
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     const messagesConsumed = []
     consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
@@ -133,7 +133,7 @@ describe('Consumer', () => {
     const error = new KafkaJSError(new Error('💣'), { retriable: true })
 
     await consumer2.connect()
-    await consumer2.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer2.subscribe({ topics: [topicName], fromBeginning: true })
 
     const coordinator = await cluster.findGroupCoordinator({ groupId })
     const original = coordinator.joinGroup
@@ -179,7 +179,7 @@ describe('Consumer', () => {
     const error = new KafkaJSError(new Error('💣'), { retriable: false })
 
     await consumer2.connect()
-    await consumer2.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer2.subscribe({ topics: [topicName], fromBeginning: true })
 
     const coordinator = await cluster.findGroupCoordinator({ groupId })
     const original = coordinator.joinGroup
@@ -232,7 +232,7 @@ describe('Consumer', () => {
     consumer.on(consumer.events.CRASH, crashListener)
 
     await consumer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     const runOpts = {
       eachMessage: async () => {
@@ -289,7 +289,7 @@ describe('Consumer', () => {
     const error = new KafkaJSError(new Error('💣'), { retriable: true })
 
     await consumer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     const coordinator = await cluster.findGroupCoordinator({ groupId })
     const original = coordinator.joinGroup

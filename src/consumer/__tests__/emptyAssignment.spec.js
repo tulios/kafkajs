@@ -82,8 +82,8 @@ describe('Consumer', () => {
 
     await Promise.all([consumer1.connect(), consumer2.connect()])
 
-    consumer1.subscribe({ topic })
-    consumer2.subscribe({ topic })
+    consumer1.subscribe({ topics: [topic] })
+    consumer2.subscribe({ topics: [topic] })
 
     consumer1.run({ eachMessage: () => {} })
     consumer2.run({ eachMessage: () => {} })

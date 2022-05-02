@@ -97,7 +97,7 @@ describe('Admin', () => {
     test('throws an error if the consumer group is running', async () => {
       consumer = createConsumer({ groupId, cluster: createCluster(), logger: newLogger() })
       await consumer.connect()
-      await consumer.subscribe({ topic: topicName })
+      await consumer.subscribe({ topics: [topicName] })
       consumer.run({ eachMessage: () => true })
       await waitForConsumerToJoinGroup(consumer)
 

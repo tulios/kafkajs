@@ -23,13 +23,13 @@ const kafka = new Kafka({
   },
 })
 
-const topic = 'topic-test'
+const topics = ['topic-test']
 const consumer = kafka.consumer({ groupId: 'test-group' })
 
 let msgNumber = 0
 const run = async () => {
   await consumer.connect()
-  await consumer.subscribe({ topic, fromBeginning: true })
+  await consumer.subscribe({ topics, fromBeginning: true })
   await consumer.run({
     // eachBatch: async ({ batch }) => {
     //   console.log(batch)

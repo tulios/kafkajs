@@ -43,7 +43,7 @@ describe('Consumer', () => {
   describe('describe group', () => {
     it('returns the group description', async () => {
       await consumer.connect()
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
       consumer.run({ eachMessage: jest.fn() })
       await waitForConsumerToJoinGroup(consumer)

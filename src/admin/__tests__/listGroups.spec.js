@@ -49,7 +49,7 @@ describe('Admin', () => {
       await createTopic({ topic: topicName })
 
       const messagesConsumed = []
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
       consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
       await waitForConsumerToJoinGroup(consumer)
 

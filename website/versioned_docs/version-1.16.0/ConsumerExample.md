@@ -70,7 +70,7 @@ signalTraps.forEach(type => {
 A similar example in TypeScript
 
 ```typescript
-import { Consumer, ConsumerSubscribeTopic, EachBatchPayload, Kafka, EachMessagePayload } from 'kafkajs'
+import { Consumer, ConsumerSubscribeTopics, EachBatchPayload, Kafka, EachMessagePayload } from 'kafkajs'
 
 export default class ExampleConsumer {
   private kafkaConsumer: Consumer
@@ -82,14 +82,14 @@ export default class ExampleConsumer {
   }
 
   public async startConsumer(): Promise<void> {
-    const topic: ConsumerSubscribeTopic = {
-      topic: 'example-topic',
+    const subscription: ConsumerSubscribeTopics = {
+      topics: ['example-topic'],
       fromBeginning: false
     }
 
     try {
       await this.kafkaConsumer.connect()
-      await this.kafkaConsumer.subscribe(topic)
+      await this.kafkaConsumer.subscribe(subscription)
 
       await this.kafkaConsumer.run({
         eachMessage: async (messagePayload: EachMessagePayload) => {
@@ -104,8 +104,8 @@ export default class ExampleConsumer {
   }
 
   public async startBatchConsumer(): Promise<void> {
-    const topic: ConsumerSubscribeTopic = {
-      topic: 'example-topic',
+    const subscription: ConsumerSubscribeTopics = {
+      topics: ['example-topic'],
       fromBeginning: false
     }
 

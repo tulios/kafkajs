@@ -513,7 +513,7 @@ describe('Producer', () => {
         logger: newLogger(),
       })
       await consumer.connect()
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
       await consumer.run({
         eachMessage: async event => {
           messagesConsumed.push(event)

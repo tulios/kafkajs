@@ -45,7 +45,7 @@ describe('Producer > Idempotent producer', () => {
     })
     await createTopic({ topic: topicName, partitions: 1 })
     await Promise.all([producer.connect(), consumer.connect()])
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
   })
 
   afterEach(

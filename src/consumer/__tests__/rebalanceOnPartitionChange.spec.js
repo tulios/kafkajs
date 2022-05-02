@@ -55,8 +55,8 @@ describe('Consumer', () => {
     await consumer2.connect()
     await producer.connect()
 
-    await consumer1.subscribe({ topic: topicName, fromBeginning: true })
-    await consumer2.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer1.subscribe({ topics: [topicName], fromBeginning: true })
+    await consumer2.subscribe({ topics: [topicName], fromBeginning: true })
 
     const messagesConsumed = []
     consumer1.run({ eachMessage: async event => messagesConsumed.push(event) })

@@ -84,9 +84,9 @@ describe('Consumer > assignerProtocol > integration', () => {
     await Promise.all([consumer1.connect(), consumer2.connect()])
 
     // Subscribe both consumers to the same topic, and start the consumer groups
-    consumer1.subscribe({ topic: topicName })
+    consumer1.subscribe({ topics: [topicName] })
     consumer1.run({ eachMessage: () => {} })
-    consumer2.subscribe({ topic: topicName })
+    consumer2.subscribe({ topics: [topicName] })
     consumer2.run({ eachMessage: () => {} })
 
     await Promise.all([

@@ -52,7 +52,7 @@ describe('Consumer', () => {
     describe('when the consumer is already running', () => {
       it('ignores the call', async () => {
         await consumer.connect()
-        await consumer.subscribe({ topic: topicName, fromBeginning: true })
+        await consumer.subscribe({ topics: [topicName], fromBeginning: true })
         const eachMessage = jest.fn()
 
         Promise.all([
@@ -86,7 +86,7 @@ describe('Consumer', () => {
 
       const consumerMessages = []
       await consumer.connect()
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
       await consumer.run({
         eachMessage: async event => {
           await sleep(100)
@@ -98,7 +98,7 @@ describe('Consumer', () => {
 
       const consumer2Messages = []
       await consumer2.connect()
-      await consumer2.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer2.subscribe({ topics: [topicName], fromBeginning: true })
       await consumer2.run({
         eachMessage: async event => {
           await sleep(100)

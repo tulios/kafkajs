@@ -91,7 +91,7 @@ describe('Consumer', () => {
 
       const offsetsConsumed = []
 
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
       consumer.run({
         autoCommit: false,
         eachMessage: async event => {

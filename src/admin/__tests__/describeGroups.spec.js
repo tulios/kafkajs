@@ -57,7 +57,7 @@ describe('Admin', () => {
     const messagesConsumed = []
     await Promise.all(
       consumers.map(async consumer => {
-        await consumer.subscribe({ topic: topicName, fromBeginning: true })
+        await consumer.subscribe({ topics: [topicName], fromBeginning: true })
         consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
         await waitForConsumerToJoinGroup(consumer)
       })

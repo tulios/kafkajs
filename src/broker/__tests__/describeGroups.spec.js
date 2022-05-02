@@ -50,7 +50,7 @@ describe('Broker > DescribeGroups', () => {
 
   test('request', async () => {
     await consumer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
     await consumer.run({ eachMessage: jest.fn() })
     const response = await broker.describeGroups({ groupIds: [groupId] })
 

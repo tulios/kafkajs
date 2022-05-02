@@ -82,7 +82,7 @@ describe('Admin > deleteTopicRecords', () => {
       maxWaitTimeInMs: 100,
       logger,
     })
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     // validate the modulus partitioner allocates 20 messages 13:7
     expect(

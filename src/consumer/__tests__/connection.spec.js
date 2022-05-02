@@ -77,7 +77,7 @@ describe('Consumer', () => {
 
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     const messages = []
     consumer.run({

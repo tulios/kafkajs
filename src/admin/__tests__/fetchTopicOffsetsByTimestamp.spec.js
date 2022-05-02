@@ -81,7 +81,7 @@ describe('Admin', () => {
         logger: newLogger(),
       })
       await consumer.connect()
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
       /** real timestamp in messages after `fromTimestamp` */
       let realTimestamp = 0
       consumer.run({

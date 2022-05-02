@@ -929,16 +929,12 @@ export type ConsumerRunConfig = {
   eachMessage?: EachMessageHandler
 }
 
-/**
- * @deprecated Replaced by ConsumerSubscribeTopics
- */
-export type ConsumerSubscribeTopic = { topic: string | RegExp; fromBeginning?: boolean }
 export type ConsumerSubscribeTopics = { topics: (string | RegExp)[]; fromBeginning?: boolean }
 
 export type Consumer = {
   connect(): Promise<void>
   disconnect(): Promise<void>
-  subscribe(subscription: ConsumerSubscribeTopics | ConsumerSubscribeTopic): Promise<void>
+  subscribe(subscription: ConsumerSubscribeTopics): Promise<void>
   stop(): Promise<void>
   run(config?: ConsumerRunConfig): Promise<void>
   commitOffsets(topicPartitions: Array<TopicPartitionOffsetAndMetadata>): Promise<void>

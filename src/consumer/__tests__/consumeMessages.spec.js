@@ -61,7 +61,7 @@ describe('Consumer', () => {
 
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     const messagesConsumed = []
     consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
@@ -116,7 +116,7 @@ describe('Consumer', () => {
     })
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     let inProgress = 0
     let hitConcurrencyLimit = false
@@ -172,7 +172,7 @@ describe('Consumer', () => {
 
     let then = Date.now()
     const heartbeats = []
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
     consumer.on(consumer.events.HEARTBEAT, () => {
       const now = Date.now()
       heartbeats.push(now - then)
@@ -225,7 +225,7 @@ describe('Consumer', () => {
 
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     const messagesConsumed = []
 
@@ -260,7 +260,7 @@ describe('Consumer', () => {
   it('consume GZIP messages', async () => {
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     const messagesConsumed = []
     consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
@@ -303,7 +303,7 @@ describe('Consumer', () => {
   it('consume batches', async () => {
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     const batchesConsumed = []
     const functionsExposed = []
@@ -363,7 +363,7 @@ describe('Consumer', () => {
     jest.spyOn(cluster, 'refreshMetadataIfNecessary')
 
     await Promise.all([admin.connect(), consumer.connect(), producer.connect()])
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     const messagesConsumed = []
     consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
@@ -441,8 +441,7 @@ describe('Consumer', () => {
 
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
-    await consumer.subscribe({ topic: topicName2, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName, topicName2], fromBeginning: true })
 
     const messagesConsumed = []
     consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
@@ -572,7 +571,7 @@ describe('Consumer', () => {
 
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     const messagesConsumed = []
     consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
@@ -631,7 +630,7 @@ describe('Consumer', () => {
   it('stops consuming messages when running = false', async () => {
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     let calls = 0
 
@@ -678,7 +677,7 @@ describe('Consumer', () => {
       await consumer.connect()
       await producer.connect()
       await producer.send({ acks: 1, topic: topicName, messages })
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
       const offsetsConsumed = []
 
@@ -718,7 +717,7 @@ describe('Consumer', () => {
       await consumer.connect()
       await producer.connect()
       await producer.send({ acks: 1, topic: topicName, messages })
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
       const offsetsConsumed = []
 
@@ -763,7 +762,7 @@ describe('Consumer', () => {
 
       await consumer.connect()
 
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
       const offsetsConsumed = []
 
@@ -813,7 +812,7 @@ describe('Consumer', () => {
 
     await consumer.connect()
 
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     const offsetsConsumed = []
 
@@ -864,7 +863,7 @@ describe('Consumer', () => {
 
       await consumer.connect()
       await producer.connect()
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
       const messagesConsumed = []
       const idempotentMessages = generateMessages({ prefix: 'idempotent' })
@@ -909,7 +908,7 @@ describe('Consumer', () => {
 
       await consumer.connect()
       await producer.connect()
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
       const messagesConsumed = []
 
@@ -985,7 +984,7 @@ describe('Consumer', () => {
 
       await consumer.connect()
       await producer.connect()
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
       const messagesConsumed = []
 
@@ -1058,7 +1057,7 @@ describe('Consumer', () => {
 
         await consumer.connect()
         await producer.connect()
-        await consumer.subscribe({ topic: topicName, fromBeginning: true })
+        await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
         const messagesConsumed = []
 
@@ -1108,7 +1107,7 @@ describe('Consumer', () => {
 
         await consumer.connect()
         await producer.connect()
-        await consumer.subscribe({ topic: topicName, fromBeginning: true })
+        await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
         // 1. Run consumer with "autoCommit=false"
 
@@ -1226,7 +1225,7 @@ describe('Consumer', () => {
 
         await consumer.connect()
         await producer.connect()
-        await consumer.subscribe({ topic: topicName, fromBeginning: true })
+        await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
         // 1. Run consumer with "autoCommit=false"
 

@@ -89,7 +89,7 @@ describe('Consumer', () => {
       const message3 = { key: `key-${key3}`, value: `value-${key3}` }
 
       await producer.send({ acks: 1, topic: topicName, messages: [message1, message2, message3] })
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
       const messagesConsumed = []
       // must be called after run because the ConsumerGroup must be initialized
@@ -123,7 +123,7 @@ describe('Consumer', () => {
       const message3 = { key: `key-${key3}`, value: `value-${key3}` }
 
       await producer.send({ acks: 1, topic: topicName, messages: [message1, message2, message3] })
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
       const messagesConsumed = []
       consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
@@ -149,7 +149,7 @@ describe('Consumer', () => {
       const message1 = { key: `key-${key1}`, value: `value-${key1}` }
 
       await producer.send({ acks: 1, topic: topicName, messages: [message1] })
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
       const messagesConsumed = []
       consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
@@ -184,7 +184,7 @@ describe('Consumer', () => {
           topic: topicName,
           messages: [1, 2, 3].map(n => ({ key: `key-${n}`, value: `value-${n}` })),
         })
-        await consumer.subscribe({ topic: topicName, fromBeginning: true })
+        await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
         let messagesConsumed = []
         consumer.run({

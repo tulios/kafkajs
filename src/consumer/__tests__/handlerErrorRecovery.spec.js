@@ -55,7 +55,7 @@ describe('Consumer', () => {
       const message3 = { key: `key-${key3}`, value: `value-${key3}` }
 
       await producer.send({ acks: 1, topic: topicName, messages: [message1, message2, message3] })
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
     })
 
     it('retries the same message', async () => {
@@ -172,7 +172,7 @@ describe('Consumer', () => {
       const message3 = { key: `key-${key3}`, value: `value-${key3}` }
 
       await producer.send({ acks: 1, topic: topicName, messages: [message1, message2, message3] })
-      await consumer.subscribe({ topic: topicName, fromBeginning: true })
+      await consumer.subscribe({ topics: [topicName], fromBeginning: true })
     })
 
     it('retries the same batch', async () => {

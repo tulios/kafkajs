@@ -23,7 +23,7 @@ const consumer = kafka.consumer({ groupId: 'test-group' })
 
 const run = async () => {
   await consumer.connect()
-  await consumer.subscribe({ topic, fromBeginning: true })
+  await consumer.subscribe({ topics: [topic], fromBeginning: true })
   await consumer.run({
     // eachBatch: async ({ batch }) => {
     //   console.log(batch)
@@ -69,7 +69,7 @@ signalTraps.forEach(type => {
 A similar example in TypeScript
 
 ```typescript
-import { Consumer, ConsumerSubscribeTopic, EachBatchPayload, Kafka, EachMessagePayload } from 'kafkajs'
+import { Consumer, ConsumerSubscribeTopics, EachBatchPayload, Kafka, EachMessagePayload } from 'kafkajs'
 
 export default class ExampleConsumer {
   private kafkaConsumer: Consumer
@@ -81,14 +81,14 @@ export default class ExampleConsumer {
   }
 
   public async startConsumer(): Promise<void> {
-    const topic: ConsumerSubscribeTopic = {
-      topic: 'example-topic',
+    const subscription: ConsumerSubscribeTopics = {
+      topics: ['example-topic'],
       fromBeginning: false
     }
 
     try {
       await this.kafkaConsumer.connect()
-      await this.kafkaConsumer.subscribe(topic)
+      await this.kafkaConsumer.subscribe(subscription)
 
       await this.kafkaConsumer.run({
         eachMessage: async (messagePayload: EachMessagePayload) => {
@@ -103,14 +103,14 @@ export default class ExampleConsumer {
   }
 
   public async startBatchConsumer(): Promise<void> {
-    const topic: ConsumerSubscribeTopic = {
-      topic: 'example-topic',
+    const subscription: ConsumerSubscribeTopics = {
+      topics: ['example-topic'],
       fromBeginning: false
     }
 
     try {
       await this.kafkaConsumer.connect()
-      await this.kafkaConsumer.subscribe(topic)
+      await this.kafkaConsumer.subscribe(subscription)
       await this.kafkaConsumer.run({
         eachBatch: async (eatchBatchPayload: EachBatchPayload) => {
           const { topic, partition, batch } = eachBatchPayload
@@ -165,12 +165,12 @@ const kafka = new Kafka({
   },
 })
 
-const topic = 'topic-test'
+const topics = ['topic-test']
 const consumer = kafka.consumer({ groupId: 'test-group' })
 
 const run = async () => {
   await consumer.connect()
-  await consumer.subscribe({ topic, fromBeginning: true })
+  await consumer.subscribe({ topics, fromBeginning: true })
   await consumer.run({
     // eachBatch: async ({ batch }) => {
     //   console.log(batch)

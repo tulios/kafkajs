@@ -75,7 +75,7 @@ describe('Consumer', () => {
 
       for (const topic of topics) {
         await producer.send({ acks: 1, topic, messages: [message1] })
-        await consumer.subscribe({ topic, fromBeginning: true })
+        await consumer.subscribe({ topics: [topic], fromBeginning: true })
       }
 
       const messagesConsumed = []
@@ -144,7 +144,7 @@ describe('Consumer', () => {
       for (const partition of partitions) {
         await producer.send({ acks: 1, topic, messages: messages.map(forPartition(partition)) })
       }
-      await consumer.subscribe({ topic, fromBeginning: true })
+      await consumer.subscribe({ topics: [topic], fromBeginning: true })
 
       const messagesConsumed = []
       consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
@@ -208,8 +208,7 @@ describe('Consumer', () => {
       await consumer.connect()
 
       const [topic1, topic2] = topics
-      await consumer.subscribe({ topic: topic1, fromBeginning: true })
-      await consumer.subscribe({ topic: topic2, fromBeginning: true })
+      await consumer.subscribe({ topics, fromBeginning: true })
 
       const eachMessage = jest.fn()
       consumer.run({ eachMessage })
@@ -249,9 +248,7 @@ describe('Consumer', () => {
       const key = secureRandom()
       const message = { key: `key-${key}`, value: `value-${key}`, partition: 0 }
 
-      for (const topic of topics) {
-        await consumer.subscribe({ topic, fromBeginning: true })
-      }
+      await consumer.subscribe({ topics, fromBeginning: true })
 
       const messagesConsumed = []
       consumer.run({ eachMessage: async event => messagesConsumed.push(event) })

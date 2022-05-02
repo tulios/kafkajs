@@ -59,7 +59,7 @@ describe('Consumer', () => {
 
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
 
     const messagesConsumed = []
     consumer.run({
@@ -92,7 +92,7 @@ describe('Consumer', () => {
   testIfKafkaAtLeast_0_11('can process transactions across multiple batches', async () => {
     await consumer.connect()
     await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topics: [topicName], fromBeginning: true })
     const endBatchProcessSpy = jest.fn()
     consumer.on(consumer.events.END_BATCH_PROCESS, endBatchProcessSpy)
 

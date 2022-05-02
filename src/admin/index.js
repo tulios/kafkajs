@@ -531,7 +531,7 @@ module.exports = ({
       groupId,
     })
 
-    await consumer.subscribe({ topic, fromBeginning: true })
+    await consumer.subscribe({ topics: [topic], fromBeginning: true })
     const description = await consumer.describeGroup()
 
     if (!isConsumerGroupRunning(description)) {
