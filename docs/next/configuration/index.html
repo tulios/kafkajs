@@ -133,7 +133,7 @@ a broker in this list, Kafka has its own mechanism for discovering the rest of t
 <tr><th>option</th><th>description</th><th>default</th></tr>
 </thead>
 <tbody>
-<tr><td>authenticationTimeout</td><td>Timeout in ms for authentication requests</td><td><code>1000</code></td></tr>
+<tr><td>authenticationTimeout</td><td>Timeout in ms for authentication requests</td><td><code>10000</code></td></tr>
 <tr><td>reauthenticationThreshold</td><td>When periodic reauthentication (<code>connections.max.reauth.ms</code>) is configured on the broker side, reauthenticate when <code>reauthenticationThreshold</code> milliseconds remain of session lifetime.</td><td><code>10000</code></td></tr>
 </tbody>
 </table>
@@ -141,7 +141,7 @@ a broker in this list, Kafka has its own mechanism for discovering the rest of t
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">new</span> Kafka({
   <span class="hljs-attr">clientId</span>: <span class="hljs-string">'my-app'</span>,
   <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
-  <span class="hljs-comment">// authenticationTimeout: 1000,</span>
+  <span class="hljs-comment">// authenticationTimeout: 10000,</span>
   <span class="hljs-comment">// reauthenticationThreshold: 10000,</span>
   <span class="hljs-attr">ssl</span>: <span class="hljs-literal">true</span>,
   <span class="hljs-attr">sasl</span>: {
@@ -155,7 +155,7 @@ a broker in this list, Kafka has its own mechanism for discovering the rest of t
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">new</span> Kafka({
   <span class="hljs-attr">clientId</span>: <span class="hljs-string">'my-app'</span>,
   <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
-  <span class="hljs-comment">// authenticationTimeout: 1000,</span>
+  <span class="hljs-comment">// authenticationTimeout: 10000,</span>
   <span class="hljs-comment">// reauthenticationThreshold: 10000,</span>
   <span class="hljs-attr">ssl</span>: <span class="hljs-literal">true</span>,
   <span class="hljs-attr">sasl</span>: {
@@ -256,7 +256,7 @@ like the following:</p>
 <pre><code class="hljs css language-javascript"><span class="hljs-keyword">new</span> Kafka({
   <span class="hljs-attr">clientId</span>: <span class="hljs-string">'my-app'</span>,
   <span class="hljs-attr">brokers</span>: [<span class="hljs-string">'kafka1:9092'</span>, <span class="hljs-string">'kafka2:9092'</span>],
-  <span class="hljs-comment">// authenticationTimeout: 1000,</span>
+  <span class="hljs-comment">// authenticationTimeout: 10000,</span>
   <span class="hljs-comment">// reauthenticationThreshold: 10000,</span>
   <span class="hljs-attr">ssl</span>: <span class="hljs-literal">true</span>,
   <span class="hljs-attr">sasl</span>: {
