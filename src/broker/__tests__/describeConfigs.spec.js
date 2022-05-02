@@ -1,5 +1,5 @@
 const { createConnectionPool, connectionOpts, secureRandom, newLogger } = require('testHelpers')
-const RESOURCE_TYPES = require('../../protocol/resourceTypes')
+const CONFIG_RESOURCE_TYPES = require('../../protocol/configResourceTypes')
 const ConfigSource = require('../../protocol/configSource')
 const Broker = require('../index')
 
@@ -42,7 +42,7 @@ describe('Broker > describeConfigs', () => {
       includeSynonyms: true,
       resources: [
         {
-          type: RESOURCE_TYPES.TOPIC,
+          type: CONFIG_RESOURCE_TYPES.TOPIC,
           name: topicName1,
           configNames: ['compression.type', 'retention.ms'],
         },
@@ -81,7 +81,7 @@ describe('Broker > describeConfigs', () => {
           errorCode: 0,
           errorMessage: null,
           resourceName: topicName1,
-          resourceType: RESOURCE_TYPES.TOPIC,
+          resourceType: CONFIG_RESOURCE_TYPES.TOPIC,
         },
       ],
       clientSideThrottleTime: expect.optional(0),
@@ -102,7 +102,7 @@ describe('Broker > describeConfigs', () => {
       const response = await broker.describeConfigs({
         resources: [
           {
-            type: RESOURCE_TYPES.TOPIC,
+            type: CONFIG_RESOURCE_TYPES.TOPIC,
             name: topicName1,
             configNames: [],
           },
@@ -354,7 +354,7 @@ describe('Broker > describeConfigs', () => {
               errorCode: 0,
               errorMessage: null,
               resourceName: topicName1,
-              resourceType: RESOURCE_TYPES.TOPIC,
+              resourceType: CONFIG_RESOURCE_TYPES.TOPIC,
             }),
           ],
           clientSideThrottleTime: expect.optional(0),

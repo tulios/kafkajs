@@ -1,12 +1,12 @@
 const { createConnectionPool, connectionOpts, secureRandom, newLogger } = require('testHelpers')
-const RESOURCE_TYPES = require('../../protocol/resourceTypes')
+const CONFIG_RESOURCE_TYPES = require('../../protocol/configResourceTypes')
 const Broker = require('../index')
 
 describe('Broker > alterConfigs', () => {
   let seedBroker, broker
 
   const getConfigEntries = response =>
-    response.resources.find(r => r.resourceType === RESOURCE_TYPES.TOPIC).configEntries
+    response.resources.find(r => r.resourceType === CONFIG_RESOURCE_TYPES.TOPIC).configEntries
 
   const getConfigValue = (configEntries, name) =>
     configEntries.find(c => c.configName === name).configValue
@@ -45,7 +45,7 @@ describe('Broker > alterConfigs', () => {
     let describeResponse = await broker.describeConfigs({
       resources: [
         {
-          type: RESOURCE_TYPES.TOPIC,
+          type: CONFIG_RESOURCE_TYPES.TOPIC,
           name: topicName1,
           configNames: [CONFIG_NAME],
         },
@@ -59,7 +59,7 @@ describe('Broker > alterConfigs', () => {
     const response = await broker.alterConfigs({
       resources: [
         {
-          type: RESOURCE_TYPES.TOPIC,
+          type: CONFIG_RESOURCE_TYPES.TOPIC,
           name: topicName1,
           configEntries: [
             {
@@ -77,7 +77,7 @@ describe('Broker > alterConfigs', () => {
           errorCode: 0,
           errorMessage: null,
           resourceName: topicName1,
-          resourceType: RESOURCE_TYPES.TOPIC,
+          resourceType: CONFIG_RESOURCE_TYPES.TOPIC,
         },
       ],
       clientSideThrottleTime: expect.optional(0),
@@ -87,7 +87,7 @@ describe('Broker > alterConfigs', () => {
     describeResponse = await broker.describeConfigs({
       resources: [
         {
-          type: RESOURCE_TYPES.TOPIC,
+          type: CONFIG_RESOURCE_TYPES.TOPIC,
           name: topicName1,
           configNames: [CONFIG_NAME],
         },

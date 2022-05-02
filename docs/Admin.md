@@ -377,8 +377,6 @@ Example response:
 }
 ```
 
-*NOTE:* [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) is deprecated as it mistakenly  has the ACL resource types instead of the config resource types.
-
 ## <a name="alter-configs"></a> Alter configs
 
 Update the configuration for the specified resources.
@@ -438,8 +436,6 @@ Example response:
     throttleTime: 0,
 }
 ```
-
-*NOTE:* [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) is deprecated as it mistakenly  has the ACL resource types instead of the config resource types.
 
 ## <a name="list-groups"></a> List groups
 
