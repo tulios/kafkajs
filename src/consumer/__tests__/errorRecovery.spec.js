@@ -224,13 +224,13 @@ describe('Consumer', () => {
     const crashListener = jest.fn()
     consumer2.on(consumer.events.CRASH, crashListener)
 
-    const originalError = new KafkaJSError(new Error('💣'), { retriable: true })
-    const retryError = new KafkaJSNumberOfRetriesExceeded(originalError, {
+    const cause = new KafkaJSError(new Error('💣'), { retriable: true })
+    const retryError = new KafkaJSNumberOfRetriesExceeded(cause, {
       retryCount: 5,
       retryTime: 10000,
-      cause: originalError,
+      cause,
     })
-    const error = new KafkaJSNonRetriableError(retryError, { cause: originalError })
+    const error = new KafkaJSNonRetriableError(retryError, { cause })
 
     await consumer2.connect()
     await consumer2.subscribe({ topic: topicName, fromBeginning: true })
