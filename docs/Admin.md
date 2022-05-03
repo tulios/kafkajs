@@ -105,10 +105,6 @@ await admin.createPartitions({
 | count          | New partition count, mandatory                                                                                   |         |
 | assignments    | Assigned brokers for each new partition                                                               | null    |
 
-## <a name="get-topic-metadata"></a> Get topic metadata
-
-Deprecated, see [Fetch topic metadata](#fetch-topic-metadata)
-
 ## <a name="fetch-topic-metadata"></a> Fetch topic metadata
 
 ```javascript
