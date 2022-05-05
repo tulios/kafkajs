@@ -26,7 +26,8 @@ const warnOfDefaultPartitioner = once(logger => {
   if (process.env.KAFKAJS_NO_PARTITIONER_WARNING == null) {
     logger.warn(
       `KafkaJS v2.0.0 switched default partitioner. To retain the same partitioning behavior as in previous versions, create the producer with the option "createPartitioner: Partitioners.LegacyPartitioner". See ${websiteUrl(
-        '/docs/2.0.0/migration-guide-v2.0.0'
+        'docs/producing',
+        'default-partitioners'
       )} for details. Silence this warning by setting the environment variable "KAFKAJS_NO_PARTITIONER_WARNING=1"`
     )
   }
