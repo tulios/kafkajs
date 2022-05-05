@@ -17,8 +17,6 @@ class KafkaJSNonRetriableError extends KafkaJSError {
   constructor(e, { cause } = {}) {
     super(e, { retriable: false, cause })
     this.name = 'KafkaJSNonRetriableError'
-    // Kept for backwards compatibility. Introduced in v1.16.0
-    this.originalError = e
   }
 }
 
@@ -52,8 +50,6 @@ class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
   constructor(e, { retryCount, retryTime }) {
     super(e, { cause: e })
     this.stack = `${this.name}\n  Caused by: ${e.stack}`
-    // Kept for backwards compatibility. Introduced in v1.16.0
-    this.originalError = e
     this.retryCount = retryCount
     this.retryTime = retryTime
     this.name = 'KafkaJSNumberOfRetriesExceeded'

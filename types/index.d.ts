@@ -1062,10 +1062,6 @@ export class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
 
 export class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {
   readonly stack: string
-  /**
-   * @deprecated Use `cause` instead
-   */
-  readonly originalError: Error
   readonly retryCount: number
   readonly retryTime: number
   constructor(e: Error | string, metadata?: KafkaJSNumberOfRetriesExceededMetadata)
