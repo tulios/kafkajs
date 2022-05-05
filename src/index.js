@@ -11,6 +11,8 @@ const createConsumer = require('./consumer')
 const createAdmin = require('./admin')
 const ISOLATION_LEVEL = require('./protocol/isolationLevel')
 const defaultSocketFactory = require('./network/socketFactory')
+const once = require('./utils/once')
+const websiteUrl = require('./utils/websiteUrl')
 
 const PRIVATE = {
   CREATE_CLUSTER: Symbol('private:Kafka:createCluster'),
@@ -20,6 +22,16 @@ const PRIVATE = {
 }
 
 const DEFAULT_METADATA_MAX_AGE = 300000
+const warnOfDefaultPartitioner = once(logger => {
+  if (process.env.KAFKAJS_NO_PARTITIONER_WARNING == null) {
+    logger.warn(
+      `KafkaJS v2.0.0 switched default partitioner. To retain the same partitioning behavior as in previous versions, create the producer with the option "createPartitioner: Partitioners.LegacyPartitioner". See ${websiteUrl(
+        'docs/producing',
+        'default-partitioners'
+      )} for details. Silence this warning by setting the environment variable "KAFKAJS_NO_PARTITIONER_WARNING=1"`
+    )
+  }
+})
 
 module.exports = class Client {
   /**
@@ -103,6 +115,10 @@ module.exports = class Client {
       maxInFlightRequests,
       instrumentationEmitter,
     })
+
+    if (createPartitioner == null) {
+      warnOfDefaultPartitioner(this[PRIVATE.LOGGER])
+    }
 
     return createProducer({
       retry: { ...this[PRIVATE.CLUSTER_RETRY], ...retry },
