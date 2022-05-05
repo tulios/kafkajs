@@ -19,6 +19,8 @@ The default partitioner distributes messages consistently based on a hash of the
 * The partitioner previously called `JavaCompatiblePartitioner` is selected as the default partitioner if no partitioner is configured.
 * The old `DefaultPartitioner` is renamed `LegacyPartitioner`
 
+If no partitioner is selected when creating the producer, a warning will be logged. This warning can be silenced either by specifying a partitioner to use or by setting the environment variable `KAFKAJS_NO_PARTITIONER_WARNING`. This warning will be removed in a future version.
+
 ### What do I need to do?
 
 What you need to do depends on what partitioner you were previously using and whether or not co-partitioning is important to you.
@@ -34,7 +36,7 @@ kafka.producer({ createPartitioner: Partitioners.LegacyPartitioner })
 
 #### "I was previously using the `JavaCompatiblePartitioner` and I want to keep that behavior"
 
-Either remove the partitioner from the configuration or explicitly configure it to use what is now the default partitioner:
+The new `DefaultPartitioner` is re-exported as `JavaCompatiblePartitioner`, so existing code will continue to work. However, that export will be removed in a future version, so it's recommended to either remove the partitioner from the configuration or explicitly configure it to use what is now the default partitioner:
 
 ```js
 // Rely on the default partitioner being compatible with the Java partitioner
@@ -184,6 +186,6 @@ await admin.describeConfigs({
 })
 ```
 
-## Typescript: Remove typo'd type `TopicPartitionOffsetAndMedata`
+## Typescript: `TopicPartitionOffsetAndMedata` removed
 
 Use `TopicPartitionOffsetAndMetadata` instead.
