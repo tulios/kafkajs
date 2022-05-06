@@ -46,8 +46,8 @@ await admin.createTopics({
 ```javascript
 {
     topic: <String>,
-    numPartitions: <Number>,     // default: 1
-    replicationFactor: <Number>, // default: 1
+    numPartitions: <Number>,     // default: -1 (uses broker `num.partitions` configuration)
+    replicationFactor: <Number>, // default: -1 (uses broker `default.replication.factor` configuration)
     replicaAssignment: <Array>,  // Example: [{ partition: 0, replicas: [0,1,2] }] - default: []
     configEntries: <Array>       // Example: [{ name: 'cleanup.policy', value: 'compact' }] - default: []
 }
@@ -104,10 +104,6 @@ await admin.createPartitions({
 | timeout        | The time in ms to wait for a topic to be completely created on the controller node                    | 5000    |
 | count          | New partition count, mandatory                                                                                   |         |
 | assignments    | Assigned brokers for each new partition                                                               | null    |
-
-## <a name="get-topic-metadata"></a> Get topic metadata
-
-Deprecated, see [Fetch topic metadata](#fetch-topic-metadata)
 
 ## <a name="fetch-topic-metadata"></a> Fetch topic metadata
 
@@ -206,11 +202,11 @@ await admin.fetchOffsets({ groupId, topics: ['topic1', 'topic2'] })
 
 Omit `topics` altogether if you want to get the consumer group offsets for all topics with committed offsets.
 
-Include the optional `resolveOffsets` flag to resolve the offsets without having to start a consumer, useful when fetching directly after calling [resetOffets](#a-name-reset-offsets-a-reset-consumer-group-offsets):
+Include the optional `resolveOffsets` flag to resolve the offsets without having to start a consumer, useful when fetching directly after calling [resetOffsets](#a-name-reset-offsets-a-reset-consumer-group-offsets):
 
 ```javascript
 await admin.resetOffsets({ groupId, topic })
-await admin.fetchOffsets({ groupId, topic, resolveOffsets: false })
+await admin.fetchOffsets({ groupId, topics: [topic], resolveOffsets: false })
 // [
 //   { partition: 0, offset: '-1' },
 //   { partition: 1, offset: '-1' },
@@ -219,7 +215,7 @@ await admin.fetchOffsets({ groupId, topic, resolveOffsets: false })
 // ]
 
 await admin.resetOffsets({ groupId, topic })
-await admin.fetchOffsets({ groupId, topic, resolveOffsets: true })
+await admin.fetchOffsets({ groupId, topics: [topic], resolveOffsets: true })
 // [
 //   { partition: 0, offset: '31004' },
 //   { partition: 1, offset: '54312' },
@@ -377,8 +373,6 @@ Example response:
 }
 ```
 
-*NOTE:* [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) is deprecated as it mistakenly  has the ACL resource types instead of the config resource types.
-
 ## <a name="alter-configs"></a> Alter configs
 
 Update the configuration for the specified resources.
@@ -438,8 +432,6 @@ Example response:
     throttleTime: 0,
 }
 ```
-
-*NOTE:* [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) is deprecated as it mistakenly  has the ACL resource types instead of the config resource types.
 
 ## <a name="list-groups"></a> List groups
 

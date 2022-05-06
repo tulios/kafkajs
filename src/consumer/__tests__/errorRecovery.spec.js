@@ -1,7 +1,11 @@
 const createProducer = require('../../producer')
 const createConsumer = require('../index')
 const { MemberMetadata, MemberAssignment } = require('../../consumer/assignerProtocol')
-const { KafkaJSError, KafkaJSNumberOfRetriesExceeded } = require('../../errors')
+const {
+  KafkaJSError,
+  KafkaJSNumberOfRetriesExceeded,
+  KafkaJSNonRetriableError,
+} = require('../../errors')
 
 const sleep = require('../../utils/sleep')
 const {
@@ -202,6 +206,58 @@ describe('Consumer', () => {
       type: 'consumer.crash',
       payload: { error, groupId, restart: false },
     })
+  })
+
+  it('recovers from crashes due to retriable errors exhausting the number of retries', async () => {
+    const groupId = `consumer-group-id-${secureRandom()}`
+    consumer2 = createConsumer({
+      cluster,
+      groupId,
+      logger: newLogger(),
+      heartbeatInterval: 100,
+      maxWaitTimeInMs: 1,
+      maxBytesPerPartition: 180,
+      retry: {
+        retries: 0,
+      },
+    })
+    const crashListener = jest.fn()
+    consumer2.on(consumer.events.CRASH, crashListener)
+
+    const cause = new KafkaJSError(new Error('💣'), { retriable: true })
+    const retryError = new KafkaJSNumberOfRetriesExceeded(cause, {
+      retryCount: 5,
+      retryTime: 10000,
+      cause,
+    })
+    const error = new KafkaJSNonRetriableError(retryError, { cause })
+
+    await consumer2.connect()
+    await consumer2.subscribe({ topic: topicName, fromBeginning: true })
+
+    const coordinator = await cluster.findGroupCoordinator({ groupId })
+    const original = coordinator.joinGroup
+    coordinator.joinGroup = async () => {
+      coordinator.joinGroup = original
+      throw error
+    }
+
+    const eachMessage = jest.fn()
+    await consumer2.run({ eachMessage })
+
+    const key = secureRandom()
+    const message = { key: `key-${key}`, value: `value-${key}` }
+    await producer.send({ acks: 1, topic: topicName, messages: [message] })
+
+    await waitFor(() => crashListener.mock.calls.length > 0)
+    expect(crashListener).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.crash',
+      payload: { error, groupId, restart: true },
+    })
+
+    await expect(waitFor(() => eachMessage.mock.calls.length)).resolves.toBe(1)
   })
 
   it('recovers from retriable failures when "restartOnFailure" returns true', async () => {

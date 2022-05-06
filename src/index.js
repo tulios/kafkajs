@@ -11,6 +11,8 @@ const createConsumer = require('./consumer')
 const createAdmin = require('./admin')
 const ISOLATION_LEVEL = require('./protocol/isolationLevel')
 const defaultSocketFactory = require('./network/socketFactory')
+const once = require('./utils/once')
+const websiteUrl = require('./utils/websiteUrl')
 
 const PRIVATE = {
   CREATE_CLUSTER: Symbol('private:Kafka:createCluster'),
@@ -20,6 +22,16 @@ const PRIVATE = {
 }
 
 const DEFAULT_METADATA_MAX_AGE = 300000
+const warnOfDefaultPartitioner = once(logger => {
+  if (process.env.KAFKAJS_NO_PARTITIONER_WARNING == null) {
+    logger.warn(
+      `KafkaJS v2.0.0 switched default partitioner. To retain the same partitioning behavior as in previous versions, create the producer with the option "createPartitioner: Partitioners.LegacyPartitioner". See the migration guide at ${websiteUrl(
+        'docs/migration-guide-v2.0.0',
+        'producer-new-default-partitioner'
+      )} for details. Silence this warning by setting the environment variable "KAFKAJS_NO_PARTITIONER_WARNING=1"`
+    )
+  }
+})
 
 module.exports = class Client {
   /**
@@ -28,7 +40,7 @@ module.exports = class Client {
    * @param {Object} options.ssl
    * @param {Object} options.sasl
    * @param {string} options.clientId
-   * @param {number} options.connectionTimeout - in milliseconds
+   * @param {number} [options.connectionTimeout=1000] - in milliseconds
    * @param {number} options.authenticationTimeout - in milliseconds
    * @param {number} options.reauthenticationThreshold - in milliseconds
    * @param {number} [options.requestTimeout=30000] - in milliseconds
@@ -41,11 +53,11 @@ module.exports = class Client {
     ssl,
     sasl,
     clientId,
-    connectionTimeout,
+    connectionTimeout = 1000,
     authenticationTimeout,
     reauthenticationThreshold,
     requestTimeout,
-    enforceRequestTimeout = false,
+    enforceRequestTimeout = true,
     retry,
     socketFactory = defaultSocketFactory(),
     logLevel = INFO,
@@ -103,6 +115,10 @@ module.exports = class Client {
       maxInFlightRequests,
       instrumentationEmitter,
     })
+
+    if (createPartitioner == null) {
+      warnOfDefaultPartitioner(this[PRIVATE.LOGGER])
+    }
 
     return createProducer({
       retry: { ...this[PRIVATE.CLUSTER_RETRY], ...retry },

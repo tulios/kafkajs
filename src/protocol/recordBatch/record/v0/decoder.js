@@ -42,9 +42,18 @@ module.exports = (decoder, batchContext = {}) => {
 
   const key = decoder.readVarIntBytes()
   const value = decoder.readVarIntBytes()
-  const headers = decoder
-    .readVarIntArray(HeaderDecoder)
-    .reduce((obj, { key, value }) => ({ ...obj, [key]: value }), {})
+  const headers = decoder.readVarIntArray(HeaderDecoder).reduce(
+    (obj, { key, value }) => ({
+      ...obj,
+      [key]:
+        obj[key] === undefined
+          ? value
+          : Array.isArray(obj[key])
+          ? obj[key].concat([value])
+          : [obj[key], value],
+    }),
+    {}
+  )
 
   return {
     magicByte,

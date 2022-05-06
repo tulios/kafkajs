@@ -43,6 +43,9 @@
         "title": "A Brief Intro to Kafka",
         "sidebar_label": "Intro to Kafka"
       },
+      "migration-guide-v2.0.0": {
+        "title": "Migrating to v2.0.0"
+      },
       "pre-releases": {
         "title": "Pre-releases"
       },
@@ -285,6 +288,41 @@
       },
       "version-1.15.0/version-1.15.0-producing": {
         "title": "Producing Messages"
+      },
+      "version-1.16.0/version-1.16.0-admin": {
+        "title": "Admin Client"
+      },
+      "version-1.16.0/version-1.16.0-configuration": {
+        "title": "Client Configuration"
+      },
+      "version-1.16.0/version-1.16.0-consumer-example": {
+        "title": "Consumer"
+      },
+      "version-1.16.0/version-1.16.0-consuming": {
+        "title": "Consuming Messages"
+      },
+      "version-1.16.0/version-1.16.0-faq": {
+        "title": "FAQ"
+      },
+      "version-1.16.0/version-1.16.0-getting-started": {
+        "title": "Getting Started",
+        "sidebar_label": "Getting Started"
+      },
+      "version-1.16.0/version-1.16.0-instrumentation-events": {
+        "title": "Instrumentation Events"
+      },
+      "version-1.16.0/version-1.16.0-introduction": {
+        "title": "A Brief Intro to Kafka",
+        "sidebar_label": "Intro to Kafka"
+      },
+      "version-1.16.0/version-1.16.0-producer-example": {
+        "title": "Producer"
+      },
+      "version-1.16.0/version-1.16.0-producing": {
+        "title": "Producing Messages"
+      },
+      "version-1.16.0/version-1.16.0-transactions": {
+        "title": "Transactions"
       }
     },
     "links": {
@@ -296,6 +334,7 @@
       "Usage": "Usage",
       "Examples": "Examples",
       "API Reference": "API Reference",
+      "Migration Guides": "Migration Guides",
       "Developing KafkaJS": "Developing KafkaJS"
     }
   },

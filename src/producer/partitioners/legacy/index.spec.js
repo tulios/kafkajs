@@ -1,6 +1,6 @@
 const createPartitioner = require('./index')
 
-describe('Producer > Partitioner > Default', () => {
+describe('Producer > Partitioner > Legacy', () => {
   let topic, partitioner, partitionMetadata
 
   beforeEach(() => {

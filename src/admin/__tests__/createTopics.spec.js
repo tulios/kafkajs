@@ -54,6 +54,33 @@ describe('Admin', () => {
       )
     })
 
+    test.each([
+      [
+        'are not an array',
+        'this-is-not-an-array',
+        'Invalid configEntries for topic "topic-123", must be an array',
+      ],
+      [
+        'contain a non-object',
+        ['this-is-not-an-object'],
+        'Invalid configEntries for topic "topic-123". Entry 0 must be an object',
+      ],
+      [
+        'contain an entry with missing value property',
+        [{ name: 'missing-value' }],
+        'Invalid configEntries for topic "topic-123". Entry 0 must have a valid "value" property',
+      ],
+      [
+        'contain an entry with missing name property',
+        [{ value: 'missing-name' }],
+        'Invalid configEntries for topic "topic-123". Entry 0 must have a valid "name" property',
+      ],
+    ])('throws an error if the config entries %s', async (_, configEntries, errorMessage) => {
+      admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
+      const topics = [{ topic: 'topic-123', configEntries }]
+      await expect(admin.createTopics({ topics })).rejects.toHaveProperty('message', errorMessage)
+    })
+
     test('create the new topics and return true', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
 

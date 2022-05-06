@@ -1,6 +1,6 @@
 {
   "name": "kafkajs",
-  "version": "1.16.0",
+  "version": "2.0.0",
   "description": "A modern Apache Kafka client for node.js",
   "author": "Tulio Ornelas <ornelas.tulio@gmail.com>",
   "main": "index.js",
@@ -12,7 +12,7 @@
     "scram"
   ],
   "engines": {
-    "node": ">=10.13.0"
+    "node": ">=14.0.0"
   },
   "repository": {
     "type": "git",
@@ -46,12 +46,14 @@
     "test:types": "tsc -p types/"
   },
   "devDependencies": {
+    "@types/jest": "^27.4.0",
     "@types/node": "^12.0.8",
     "@typescript-eslint/typescript-estree": "^1.10.2",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.0.0",
     "eslint-config-standard": "^13.0.1",
     "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jest": "^26.1.0",
     "eslint-plugin-node": "^11.0.0",
     "eslint-plugin-prettier": "^3.1.0",
     "eslint-plugin-promise": "^4.2.1",

@@ -1,31 +1,17 @@
-const Long = require('../utils/long')
 const Lock = require('../utils/lock')
 const { Types: Compression } = require('../protocol/message/compression')
 const { requests, lookup } = require('../protocol/requests')
 const { KafkaJSNonRetriableError } = require('../errors')
 const apiKeys = require('../protocol/requests/apiKeys')
-const SASLAuthenticator = require('./saslAuthenticator')
 const shuffle = require('../utils/shuffle')
-const { ApiVersions: apiVersionsApiKey } = require('../protocol/requests/apiKeys')
-const sharedPromiseTo = require('../utils/sharedPromiseTo')
 
 const PRIVATE = {
-  SHOULD_REAUTHENTICATE: Symbol('private:Broker:shouldReauthenticate'),
   SEND_REQUEST: Symbol('private:Broker:sendRequest'),
-  AUTHENTICATE: Symbol('private:Broker:authenticate'),
 }
 
 /** @type {import("../protocol/requests").Lookup} */
 const notInitializedLookup = () => {
   throw new Error('Broker not connected')
-}
-
-/**
- * @param request - request from protocol
- * @returns {boolean}
- */
-const isAuthenticatedRequest = request => {
-  return request.apiKey !== apiVersionsApiKey
 }
 
 /**
@@ -37,45 +23,36 @@ const isAuthenticatedRequest = request => {
 module.exports = class Broker {
   /**
    * @param {Object} options
-   * @param {import("../network/connection")} options.connection
+   * @param {import("../network/connectionPool")} options.connectionPool
    * @param {import("../../types").Logger} options.logger
    * @param {number} [options.nodeId]
    * @param {import("../../types").ApiVersions} [options.versions=null] The object with all available versions and APIs
    *                                 supported by this cluster. The output of broker#apiVersions
-   * @param {number} [options.authenticationTimeout=1000]
-   * @param {number} [options.reauthenticationThreshold=10000]
+   * @param {number} [options.authenticationTimeout=10000]
    * @param {boolean} [options.allowAutoTopicCreation=true] If this and the broker config 'auto.create.topics.enable'
    *                                                are true, topics that don't exist will be created when
    *                                                fetching metadata.
-   * @param {boolean} [options.supportAuthenticationProtocol=null] If the server supports the SASLAuthenticate protocol
    */
   constructor({
-    connection,
+    connectionPool,
     logger,
     nodeId = null,
     versions = null,
-    authenticationTimeout = 1000,
-    reauthenticationThreshold = 10000,
+    authenticationTimeout = 10000,
     allowAutoTopicCreation = true,
-    supportAuthenticationProtocol = null,
   }) {
-    this.connection = connection
+    this.connectionPool = connectionPool
     this.nodeId = nodeId
     this.rootLogger = logger
     this.logger = logger.namespace('Broker')
     this.versions = versions
     this.authenticationTimeout = authenticationTimeout
-    this.reauthenticationThreshold = reauthenticationThreshold
     this.allowAutoTopicCreation = allowAutoTopicCreation
-    this.supportAuthenticationProtocol = supportAuthenticationProtocol
-
-    this.authenticatedAt = null
-    this.sessionLifetime = Long.ZERO
 
     // The lock timeout has twice the connectionTimeout because the same timeout is used
     // for the first apiVersions call
-    const lockTimeout = 2 * this.connection.connectionTimeout + this.authenticationTimeout
-    this.brokerAddress = `${this.connection.host}:${this.connection.port}`
+    const lockTimeout = 2 * this.connectionPool.connectionTimeout + this.authenticationTimeout
+    this.brokerAddress = `${this.connectionPool.host}:${this.connectionPool.port}`
 
     this.lock = new Lock({
       timeout: lockTimeout,
@@ -83,33 +60,6 @@ module.exports = class Broker {
     })
 
     this.lookupRequest = notInitializedLookup
-
-    /**
-     * @private
-     * @returns {Promise}
-     */
-    this[PRIVATE.AUTHENTICATE] = sharedPromiseTo(async () => {
-      if (this.connection.sasl && !this.isAuthenticated()) {
-        const authenticator = new SASLAuthenticator(
-          this.connection,
-          this.rootLogger,
-          this.versions,
-          this.supportAuthenticationProtocol
-        )
-
-        await authenticator.authenticate()
-        this.authenticatedAt = process.hrtime()
-        this.sessionLifetime = Long.fromValue(authenticator.sessionLifetime)
-      }
-    })
-  }
-
-  /**
-   * @public
-   * @returns {boolean}
-   */
-  isAuthenticated() {
-    return this.authenticatedAt != null && !this[PRIVATE.SHOULD_REAUTHENTICATE]()
   }
 
   /**
@@ -117,8 +67,9 @@ module.exports = class Broker {
    * @returns {boolean}
    */
   isConnected() {
-    const { connected, sasl } = this.connection
-    return sasl ? connected && this.isAuthenticated() : connected
+    return this.connectionPool.sasl
+      ? this.connectionPool.isConnected() && this.connectionPool.isAuthenticated()
+      : this.connectionPool.isConnected()
   }
 
   /**
@@ -132,30 +83,32 @@ module.exports = class Broker {
         return
       }
 
-      this.authenticatedAt = null
-      await this.connection.connect()
+      const connection = await this.connectionPool.getConnection()
 
       if (!this.versions) {
         this.versions = await this.apiVersions()
       }
+      this.connectionPool.setVersions(this.versions)
 
       this.lookupRequest = lookup(this.versions)
 
-      if (this.supportAuthenticationProtocol === null) {
+      if (connection.getSupportAuthenticationProtocol() === null) {
+        let supportAuthenticationProtocol = false
         try {
           this.lookupRequest(apiKeys.SaslAuthenticate, requests.SaslAuthenticate)
-          this.supportAuthenticationProtocol = true
+          supportAuthenticationProtocol = true
         } catch (_) {
-          this.supportAuthenticationProtocol = false
+          supportAuthenticationProtocol = false
         }
+        this.connectionPool.setSupportAuthenticationProtocol(supportAuthenticationProtocol)
 
         this.logger.debug(`Verified support for SaslAuthenticate`, {
           broker: this.brokerAddress,
-          supportAuthenticationProtocol: this.supportAuthenticationProtocol,
+          supportAuthenticationProtocol,
         })
       }
 
-      await this[PRIVATE.AUTHENTICATE]()
+      await connection.authenticate()
     } finally {
       await this.lock.release()
     }
@@ -166,8 +119,7 @@ module.exports = class Broker {
    * @returns {Promise}
    */
   async disconnect() {
-    this.authenticatedAt = null
-    await this.connection.disconnect()
+    await this.connectionPool.destroy()
   }
 
   /**
@@ -187,7 +139,7 @@ module.exports = class Broker {
         const apiVersions = requests.ApiVersions.protocol({ version: candidateVersion })
         response = await this[PRIVATE.SEND_REQUEST]({
           ...apiVersions(),
-          requestTimeout: this.connection.connectionTimeout,
+          requestTimeout: this.connectionPool.connectionTimeout,
         })
         break
       } catch (e) {
@@ -915,36 +867,12 @@ module.exports = class Broker {
     return await this[PRIVATE.SEND_REQUEST](deleteAcls({ filters }))
   }
 
-  /***
-   * @private
-   */
-  [PRIVATE.SHOULD_REAUTHENTICATE]() {
-    if (this.sessionLifetime.equals(Long.ZERO)) {
-      return false
-    }
-
-    if (this.authenticatedAt == null) {
-      return true
-    }
-
-    const [secondsSince, remainingNanosSince] = process.hrtime(this.authenticatedAt)
-    const millisSince = Long.fromValue(secondsSince)
-      .multiply(1000)
-      .add(Long.fromValue(remainingNanosSince).divide(1000000))
-
-    const reauthenticateAt = millisSince.add(this.reauthenticationThreshold)
-    return reauthenticateAt.greaterThanOrEqual(this.sessionLifetime)
-  }
-
   /**
    * @private
    */
   async [PRIVATE.SEND_REQUEST](protocolRequest) {
-    if (!this.isAuthenticated() && isAuthenticatedRequest(protocolRequest.request)) {
-      await this[PRIVATE.AUTHENTICATE]()
-    }
     try {
-      return await this.connection.send(protocolRequest)
+      return await this.connectionPool.send(protocolRequest)
     } catch (e) {
       if (e.name === 'KafkaJSConnectionClosedError') {
         await this.disconnect()

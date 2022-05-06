@@ -7,7 +7,7 @@ const {
   createTopic,
   secureRandom,
   createModPartitioner,
-  createConnection,
+  createConnectionPool,
   retryProtocol,
 } = require('testHelpers')
 
@@ -22,7 +22,7 @@ describe('Broker > deleteRecords', () => {
     cluster = createCluster()
 
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
 
@@ -106,7 +106,7 @@ describe('Broker > deleteRecords', () => {
     const brokerData = metadata.brokers.find(b => b.nodeId === partitionLeader)
 
     broker = new Broker({
-      connection: createConnection(brokerData),
+      connectionPool: createConnectionPool(brokerData),
       logger: newLogger(),
     })
     await broker.connect()
@@ -135,7 +135,7 @@ describe('Broker > deleteRecords', () => {
     recordsToDelete[0].partitions[0].offset = '11'
     const brokerData = metadata.brokers.find(b => b.nodeId === partitionLeader)
     broker = new Broker({
-      connection: createConnection(brokerData),
+      connectionPool: createConnectionPool(brokerData),
       logger: newLogger(),
     })
     await broker.connect()
@@ -159,7 +159,7 @@ describe('Broker > deleteRecords', () => {
   test('rejects the promise when broker is not the partition leader', async () => {
     const brokerData = metadata.brokers.find(b => b.nodeId !== partitionLeader)
     broker = new Broker({
-      connection: createConnection(brokerData),
+      connectionPool: createConnectionPool(brokerData),
       logger: newLogger(),
     })
     await broker.connect()
@@ -235,7 +235,7 @@ describe('Broker > deleteRecords', () => {
     test('rejects the promise with all partition errors', async () => {
       const brokerData = metadata.brokers.find(b => b.nodeId === partitionLeader)
       broker = new Broker({
-        connection: createConnection(brokerData),
+        connectionPool: createConnectionPool(brokerData),
         logger: newLogger(),
       })
       await broker.connect()

@@ -46,18 +46,12 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
         })
 
         const partitions = keys(messagesPerPartition)
-        const sequencePerPartition = partitions.reduce((result, partition) => {
-          result[partition] = eosManager.getSequence(topic, partition)
-          return result
-        }, {})
-
         const partitionsPerLeader = cluster.findLeaderForPartitions(topic, partitions)
         const leaders = keys(partitionsPerLeader)
 
         topicMetadata.set(topic, {
           partitionsPerLeader,
           messagesPerPartition,
-          sequencePerPartition,
         })
 
         for (const nodeId of leaders) {
@@ -78,42 +72,55 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
           .map(([topic, { partitionsPerLeader, messagesPerPartition, sequencePerPartition }]) => ({
             topic,
             partitions: partitionsPerLeader[broker.nodeId],
-            sequencePerPartition,
             messagesPerPartition,
           }))
 
         const topicData = createTopicData(topicDataForBroker)
 
+        await eosManager.acquireBrokerLock(broker)
         try {
           if (eosManager.isTransactional()) {
             await eosManager.addPartitionsToTransaction(topicData)
           }
 
-          const response = await broker.produce({
-            transactionalId: eosManager.isTransactional()
-              ? eosManager.getTransactionalId()
-              : undefined,
-            producerId: eosManager.getProducerId(),
-            producerEpoch: eosManager.getProducerEpoch(),
-            acks,
-            timeout,
-            compression,
-            topicData,
+          topicData.forEach(({ topic, partitions }) => {
+            partitions.forEach(entry => {
+              entry['firstSequence'] = eosManager.getSequence(topic, entry.partition)
+              eosManager.updateSequence(topic, entry.partition, entry.messages.length)
+            })
           })
+
+          let response
+          try {
+            response = await broker.produce({
+              transactionalId: eosManager.isTransactional()
+                ? eosManager.getTransactionalId()
+                : undefined,
+              producerId: eosManager.getProducerId(),
+              producerEpoch: eosManager.getProducerEpoch(),
+              acks,
+              timeout,
+              compression,
+              topicData,
+            })
+          } catch (e) {
+            topicData.forEach(({ topic, partitions }) => {
+              partitions.forEach(entry => {
+                eosManager.updateSequence(topic, entry.partition, -entry.messages.length)
+              })
+            })
+            throw e
+          }
 
           const expectResponse = acks !== 0
           const formattedResponse = expectResponse ? responseSerializer(response) : []
-
-          formattedResponse.forEach(({ topicName, partition }) => {
-            const increment = topicMetadata.get(topicName).messagesPerPartition[partition].length
-
-            eosManager.updateSequence(topicName, partition, increment)
-          })
 
           responsePerBroker.set(broker, formattedResponse)
         } catch (e) {
           responsePerBroker.delete(broker)
           throw e
+        } finally {
+          await eosManager.releaseBrokerLock(broker)
         }
       })
     }

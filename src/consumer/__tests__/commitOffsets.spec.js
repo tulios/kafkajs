@@ -42,33 +42,35 @@ describe('Consumer', () => {
 
   describe('when commitOffsets', () => {
     it('throws an error if any of the topics is invalid', async () => {
-      expect(consumer.commitOffsets([{ topic: null }])).rejects.toThrow(
+      await expect(consumer.commitOffsets([{ topic: null }])).rejects.toThrow(
         KafkaJSNonRetriableError,
         'Invalid topic null'
       )
     })
 
     it('throws an error if any of the partitions is not a number', async () => {
-      expect(consumer.commitOffsets([{ topic: topicName, partition: 'ABC' }])).rejects.toThrow(
+      await expect(
+        consumer.commitOffsets([{ topic: topicName, partition: 'ABC' }])
+      ).rejects.toThrow(
         KafkaJSNonRetriableError,
         'Invalid partition, expected a number received ABC'
       )
     })
 
     it('throws an error if any of the offsets is not a number', async () => {
-      expect(
+      await expect(
         consumer.commitOffsets([{ topic: topicName, partition: 0, offset: 'ABC' }])
       ).rejects.toThrow(KafkaJSNonRetriableError, 'Invalid offset, expected a long received ABC')
     })
 
     it('throws an error if any of the offsets is not an absolute offset', async () => {
-      expect(
+      await expect(
         consumer.commitOffsets([{ topic: topicName, partition: 0, offset: '-1' }])
       ).rejects.toThrow(KafkaJSNonRetriableError, 'Offset must not be a negative number')
     })
 
     it('throws an error if called before consumer run', async () => {
-      expect(
+      await expect(
         consumer.commitOffsets([{ topic: topicName, partition: 0, offset: '1' }])
       ).rejects.toThrow(
         KafkaJSNonRetriableError,

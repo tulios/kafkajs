@@ -22,7 +22,10 @@ describe('Protocol > RecordBatch > Record > v0', () => {
         magicByte: 2,
       },
       timestamp: '1509827900073',
-      headers: { 'header-key-0': Buffer.from('header-value-0') },
+      headers: {
+        'header-key-0': Buffer.from('header-value-0'),
+        'header-key-1': [Buffer.from('header-value-1'), Buffer.from('header-value-2')],
+      },
       key: Buffer.from('key-0'),
       value: Buffer.from('some-value-0'),
       isControlRecord: false, // Default to false
@@ -66,7 +69,10 @@ describe('Protocol > RecordBatch > Record > v0', () => {
         magicByte: 2,
       },
       timestamp: '1509827900073',
-      headers: { 'header-key-0': Buffer.from('header-value-0') },
+      headers: {
+        'header-key-0': Buffer.from('header-value-0'),
+        'header-key-1': [Buffer.from('header-value-1'), Buffer.from('header-value-2')],
+      },
       key: Buffer.from('key-0'),
       value: Buffer.from('some-value-0'),
       isControlRecord: true,

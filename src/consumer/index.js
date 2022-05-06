@@ -9,6 +9,7 @@ const { KafkaJSNonRetriableError } = require('../errors')
 const { roundRobin } = require('./assigners')
 const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
 const ISOLATION_LEVEL = require('../protocol/isolationLevel')
+const sharedPromiseTo = require('../utils/sharedPromiseTo')
 
 const { keys, values } = Object
 const { CONNECT, DISCONNECT, STOP, CRASH } = events
@@ -72,62 +73,17 @@ module.exports = ({
     createAssigner({ groupId, logger, cluster })
   )
 
+  /** @type {Record<string, { fromBeginning?: boolean }>} */
   const topics = {}
   let runner = null
+  /** @type {ConsumerGroup} */
   let consumerGroup = null
+  let restartTimeout = null
 
   if (heartbeatInterval >= sessionTimeout) {
     throw new KafkaJSNonRetriableError(
       `Consumer heartbeatInterval (${heartbeatInterval}) must be lower than sessionTimeout (${sessionTimeout}). It is recommended to set heartbeatInterval to approximately a third of the sessionTimeout.`
     )
-  }
-
-  const createConsumerGroup = ({ autoCommit, autoCommitInterval, autoCommitThreshold }) => {
-    return new ConsumerGroup({
-      logger: rootLogger,
-      topics: keys(topics),
-      topicConfigurations: topics,
-      retry,
-      cluster,
-      groupId,
-      assigners,
-      sessionTimeout,
-      rebalanceTimeout,
-      maxBytesPerPartition,
-      minBytes,
-      maxBytes,
-      maxWaitTimeInMs,
-      instrumentationEmitter,
-      autoCommit,
-      autoCommitInterval,
-      autoCommitThreshold,
-      isolationLevel,
-      rackId,
-      metadataMaxAge,
-    })
-  }
-
-  const createRunner = ({
-    eachBatchAutoResolve,
-    eachBatch,
-    eachMessage,
-    onCrash,
-    autoCommit,
-    partitionsConsumedConcurrently,
-  }) => {
-    return new Runner({
-      autoCommit,
-      logger: rootLogger,
-      consumerGroup,
-      instrumentationEmitter,
-      eachBatchAutoResolve,
-      eachBatch,
-      eachMessage,
-      heartbeatInterval,
-      retry,
-      onCrash,
-      partitionsConsumedConcurrently,
-    })
   }
 
   /** @type {import("../../types").Consumer["connect"]} */
@@ -153,7 +109,7 @@ module.exports = ({
   }
 
   /** @type {import("../../types").Consumer["stop"]} */
-  const stop = async () => {
+  const stop = sharedPromiseTo(async () => {
     try {
       if (runner) {
         await runner.stop()
@@ -162,6 +118,7 @@ module.exports = ({
         instrumentationEmitter.emit(STOP)
       }
 
+      clearTimeout(restartTimeout)
       logger.info('Stopped', { groupId })
     } catch (e) {
       logger.error(`Caught error when stopping the consumer: ${e.message}`, {
@@ -171,42 +128,54 @@ module.exports = ({
 
       throw e
     }
-  }
+  })
 
   /** @type {import("../../types").Consumer["subscribe"]} */
-  const subscribe = async ({ topic, fromBeginning = false }) => {
+  const subscribe = async ({ topic, topics: subscriptionTopics, fromBeginning = false }) => {
     if (consumerGroup) {
       throw new KafkaJSNonRetriableError('Cannot subscribe to topic while consumer is running')
     }
 
-    if (!topic) {
-      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    if (!topic && !subscriptionTopics) {
+      throw new KafkaJSNonRetriableError('Missing required argument "topics"')
     }
 
-    const isRegExp = topic instanceof RegExp
-    if (typeof topic !== 'string' && !isRegExp) {
-      throw new KafkaJSNonRetriableError(
-        `Invalid topic ${topic} (${typeof topic}), the topic name has to be a String or a RegExp`
-      )
+    if (subscriptionTopics != null && !Array.isArray(subscriptionTopics)) {
+      throw new KafkaJSNonRetriableError('Argument "topics" must be an array')
     }
+
+    const subscriptions = subscriptionTopics || [topic]
+
+    for (const subscription of subscriptions) {
+      if (typeof subscription !== 'string' && !(subscription instanceof RegExp)) {
+        throw new KafkaJSNonRetriableError(
+          `Invalid topic ${subscription} (${typeof subscription}), the topic name has to be a String or a RegExp`
+        )
+      }
+    }
+
+    const hasRegexSubscriptions = subscriptions.some(subscription => subscription instanceof RegExp)
+    const metadata = hasRegexSubscriptions ? await cluster.metadata() : undefined
 
     const topicsToSubscribe = []
-    if (isRegExp) {
-      const topicRegExp = topic
-      const metadata = await cluster.metadata()
-      const matchedTopics = metadata.topicMetadata
-        .map(({ topic: topicName }) => topicName)
-        .filter(topicName => topicRegExp.test(topicName))
+    for (const subscription of subscriptions) {
+      const isRegExp = subscription instanceof RegExp
+      if (isRegExp) {
+        const topicRegExp = subscription
+        const matchedTopics = metadata.topicMetadata
+          .map(({ topic: topicName }) => topicName)
+          .filter(topicName => topicRegExp.test(topicName))
 
-      logger.debug('Subscription based on RegExp', {
-        groupId,
-        topicRegExp: topicRegExp.toString(),
-        matchedTopics,
-      })
+        logger.debug('Subscription based on RegExp', {
+          groupId,
+          topicRegExp: topicRegExp.toString(),
+          matchedTopics,
+        })
 
-      topicsToSubscribe.push(...matchedTopics)
-    } else {
-      topicsToSubscribe.push(topic)
+        topicsToSubscribe.push(...matchedTopics)
+      } else {
+        topicsToSubscribe.push(subscription)
+      }
     }
 
     for (const t of topicsToSubscribe) {
@@ -222,7 +191,7 @@ module.exports = ({
     autoCommitInterval = null,
     autoCommitThreshold = null,
     eachBatchAutoResolve = true,
-    partitionsConsumedConcurrently = 1,
+    partitionsConsumedConcurrently: concurrency = 1,
     eachBatch = null,
     eachMessage = null,
   } = {}) => {
@@ -231,33 +200,47 @@ module.exports = ({
       return
     }
 
-    consumerGroup = createConsumerGroup({
-      autoCommit,
-      autoCommitInterval,
-      autoCommitThreshold,
-    })
-
     const start = async onCrash => {
       logger.info('Starting', { groupId })
-      runner = createRunner({
+
+      consumerGroup = new ConsumerGroup({
+        logger: rootLogger,
+        topics: keys(topics),
+        topicConfigurations: topics,
+        retry,
+        cluster,
+        groupId,
+        assigners,
+        sessionTimeout,
+        rebalanceTimeout,
+        maxBytesPerPartition,
+        minBytes,
+        maxBytes,
+        maxWaitTimeInMs,
+        instrumentationEmitter,
+        isolationLevel,
+        rackId,
+        metadataMaxAge,
+        autoCommit,
+        autoCommitInterval,
+        autoCommitThreshold,
+      })
+
+      runner = new Runner({
+        logger: rootLogger,
+        consumerGroup,
+        instrumentationEmitter,
+        heartbeatInterval,
+        retry,
         autoCommit,
         eachBatchAutoResolve,
         eachBatch,
         eachMessage,
         onCrash,
-        partitionsConsumedConcurrently,
+        concurrency,
       })
 
       await runner.start()
-    }
-
-    const restart = onCrash => {
-      consumerGroup = createConsumerGroup({
-        autoCommitInterval,
-        autoCommitThreshold,
-      })
-
-      start(onCrash)
     }
 
     const onCrash = async e => {
@@ -273,7 +256,16 @@ module.exports = ({
 
       await disconnect()
 
-      const isErrorRetriable = e.name === 'KafkaJSNumberOfRetriesExceeded' || e.retriable === true
+      const getOriginalCause = error => {
+        if (error.cause) {
+          return getOriginalCause(error.cause)
+        }
+
+        return error
+      }
+
+      const isErrorRetriable =
+        e.name === 'KafkaJSNumberOfRetriesExceeded' || getOriginalCause(e).retriable === true
       const shouldRestart =
         isErrorRetriable &&
         (!retry ||
@@ -283,7 +275,7 @@ module.exports = ({
               'Caught error when invoking user-provided "restartOnFailure" callback. Defaulting to restarting.',
               {
                 error: error.message || error,
-                originalError: e.message || e,
+                cause: e.message || e,
                 groupId,
               }
             )
@@ -305,7 +297,7 @@ module.exports = ({
           groupId,
         })
 
-        setTimeout(() => restart(onCrash), retryTime)
+        restartTimeout = setTimeout(() => start(onCrash), retryTime)
       }
     }
 

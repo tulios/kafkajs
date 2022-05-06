@@ -1,4 +1,4 @@
-const { createConnection, connectionOpts, saslEntries, newLogger } = require('testHelpers')
+const { createConnectionPool, connectionOpts, saslEntries, newLogger } = require('testHelpers')
 
 const Broker = require('../index')
 
@@ -7,7 +7,7 @@ describe('Broker > disconnect', () => {
 
   beforeEach(() => {
     broker = new Broker({
-      connection: createConnection(connectionOpts()),
+      connectionPool: createConnectionPool(connectionOpts()),
       logger: newLogger(),
     })
   })
@@ -18,21 +18,22 @@ describe('Broker > disconnect', () => {
 
   test('disconnect', async () => {
     await broker.connect()
-    expect(broker.connection.connected).toEqual(true)
+    expect(broker.connectionPool.isConnected()).toEqual(true)
     await broker.disconnect()
-    expect(broker.connection.connected).toEqual(false)
+    expect(broker.connectionPool.isConnected()).toEqual(false)
   })
 
   for (const e of saslEntries) {
     test(`when authenticated with SASL ${e.name} set authenticated to false`, async () => {
-      broker = new Broker({
-        connection: createConnection(e.opts()),
-        logger: newLogger(),
-      })
+      const connectionPool = createConnectionPool(e.opts())
+      broker = new Broker({ connectionPool, logger: newLogger() })
       await broker.connect()
-      expect(broker.authenticatedAt).not.toBe(null)
+
+      const connection = await connectionPool.getConnection()
+      expect(connection.authenticatedAt).not.toBe(null)
+
       await broker.disconnect()
-      expect(broker.authenticatedAt).toBe(null)
+      expect(connection.authenticatedAt).toBe(null)
     })
   }
 })

@@ -1,3 +1,4 @@
+const sleep = require('./sleep')
 const waitFor = require('./waitFor')
 
 describe('Utils > waitFor', () => {
@@ -8,7 +9,7 @@ describe('Utils > waitFor', () => {
       conditionValid = true
     }, 6)
 
-    await expect(waitFor(() => conditionValid, { delay: 5 }))
+    await expect(waitFor(() => conditionValid, { delay: 5 })).resolves.toBe(true)
   })
 
   it('rejects the promise if the callback fail', async () => {
@@ -23,10 +24,15 @@ describe('Utils > waitFor', () => {
   })
 
   it('rejects the promise if the callback never succeeds', async () => {
-    await expect(waitFor(() => false, { delay: 1, maxWait: 2 })).rejects.toHaveProperty(
+    const condition = jest.fn().mockReturnValue(false)
+    await expect(waitFor(condition, { delay: 1, maxWait: 2 })).rejects.toHaveProperty(
       'message',
       'Timeout'
     )
+
+    // Verify that the check is not rescheduled after a timeout
+    await sleep(10)
+    expect(condition).toHaveBeenCalledTimes(2)
   })
 
   it('rejects the promise with a custom timeout message', async () => {
