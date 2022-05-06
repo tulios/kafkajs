@@ -1,5 +1,3 @@
-const allSettled = require('../utils/promiseAllSettled')
-
 /**
  * @typedef {ReturnType<typeof createWorkerQueue>} WorkerQueue
  */
@@ -28,7 +26,7 @@ const createWorkerQueue = ({ workers }) => {
 
     workers.forEach(worker => worker.run({ next: () => queue.shift() }))
 
-    const results = await allSettled(promises)
+    const results = await Promise.allSettled(promises)
     const rejected = results.find(result => result.status === 'rejected')
     if (rejected) {
       // @ts-ignore

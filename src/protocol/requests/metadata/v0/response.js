@@ -1,6 +1,5 @@
 const Decoder = require('../../../decoder')
 const { failure, createErrorFromCode } = require('../../../error')
-const flatten = require('../../../../utils/flatten')
 
 /**
  * Metadata Response (Version: 0) => [brokers] [topic_metadata]
@@ -56,11 +55,10 @@ const parse = async data => {
     throw createErrorFromCode(topicErrorCode)
   }
 
-  const partitionsWithErrors = data.topicMetadata.map(topic => {
+  const errors = data.topicMetadata.flatMap(topic => {
     return topic.partitionMetadata.filter(partition => failure(partition.partitionErrorCode))
   })
 
-  const errors = flatten(partitionsWithErrors)
   if (errors.length > 0) {
     const { partitionErrorCode } = errors[0]
     throw createErrorFromCode(partitionErrorCode)
