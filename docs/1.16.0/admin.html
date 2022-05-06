@@ -1,0 +1,599 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Admin Client · KafkaJS</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="The admin client hosts all the cluster operations, such as: `createTopics`, `createPartitions`, etc."/><meta name="docsearch:version" content="1.16.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Admin Client · KafkaJS"/><meta property="og:type" content="website"/><meta property="og:url" content="https://kafka.js.org/"/><meta property="og:description" content="The admin client hosts all the cluster operations, such as: `createTopics`, `createPartitions`, etc."/><meta property="og:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"/><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-133751873-1"></script><script>
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments); }
+              gtag('js', new Date());
+              gtag('config', 'UA-133751873-1');
+            </script><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/kafkajs-logoV2.svg" alt="KafkaJS"/><h2 class="headerTitleWithLogo">KafkaJS</h2></a><a href="/versions"><h3>1.16.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/1.16.0/getting-started" target="_self">Docs</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class=""><a href="https://github.com/tulios/kafkajs" target="_self">GitHub</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Usage</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Usage</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/1.16.0/introduction">Intro to Kafka</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/getting-started">Getting Started</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/configuration">Client Configuration</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/producing">Producing Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/transactions">Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/consuming">Consuming Messages</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/1.16.0/admin">Admin Client</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/instrumentation-events">Instrumentation Events</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/custom-logger">Custom Logger</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/retry-detailed">Retry Mechanism Explained</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/faq">FAQ</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/pre-releases">Pre-releases</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Examples</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/1.16.0/running-kafka-in-development">Running Kafka in Development</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/producer-example">Producer</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/consumer-example">Consumer</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Developing KafkaJS</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/1.16.0/contribution-guide">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/development-environment">Development Environment</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/testing">Testing</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/development-resources">Resources</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/tulios/kafkajs/edit/master/docs/Admin.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">Admin Client</h1></header><article><div><span><p>The admin client hosts all the cluster operations, such as: <code>createTopics</code>, <code>createPartitions</code>, etc.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> kafka = <span class="hljs-keyword">new</span> Kafka(...)
+<span class="hljs-keyword">const</span> admin = kafka.admin()
+
+<span class="hljs-comment">// remember to connect and disconnect when you are done</span>
+<span class="hljs-keyword">await</span> admin.connect()
+<span class="hljs-keyword">await</span> admin.disconnect()
+</code></pre>
+<p>The option <code>retry</code> can be used to customize the configuration for the admin.</p>
+<p>Take a look at <a href="/docs/1.16.0/configuration#default-retry">Retry</a> for more information.</p>
+<h2><a class="anchor" aria-hidden="true" id="a-name-list-topics-a-list-topics"></a><a href="#a-name-list-topics-a-list-topics" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="list-topics"></a> List topics</h2>
+<p><code>listTopics</code> lists the names of all existing topics, and returns an array of strings.
+The method will throw exceptions in case of errors.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.listTopics()
+<span class="hljs-comment">// [ 'topic-1', 'topic-2', 'topic-3', ... ]</span>
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-create-topics-a-create-topics"></a><a href="#a-name-create-topics-a-create-topics" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="create-topics"></a> Create topics</h2>
+<p><code>createTopics</code> will resolve to <code>true</code> if the topic was created successfully or <code>false</code> if it already exists. The method will throw exceptions in case of errors.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.createTopics({
+    <span class="hljs-attr">validateOnly</span>: &lt;boolean&gt;,
+    waitForLeaders: &lt;boolean&gt;
+    timeout: &lt;Number&gt;,
+    topics: &lt;ITopicConfig[]&gt;,
+})
+</code></pre>
+<p><code>ITopicConfig</code> structure:</p>
+<pre><code class="hljs css language-javascript">{
+    <span class="hljs-attr">topic</span>: &lt;String&gt;,
+    numPartitions: &lt;Number&gt;,     // default: 1
+    replicationFactor: &lt;Number&gt;, // default: 1
+    replicaAssignment: &lt;Array&gt;,  // Example: [{ partition: 0, replicas: [0,1,2] }] - default: []
+    configEntries: &lt;Array&gt;       // Example: [{ name: 'cleanup.policy', value: 'compact' }] - default: []
+}
+</code></pre>
+<table>
+<thead>
+<tr><th>property</th><th>description</th><th>default</th></tr>
+</thead>
+<tbody>
+<tr><td>topics</td><td>Topic definition</td><td></td></tr>
+<tr><td>validateOnly</td><td>If this is <code>true</code>, the request will be validated, but the topic won't be created.</td><td>false</td></tr>
+<tr><td>timeout</td><td>The time in ms to wait for a topic to be completely created on the controller node</td><td>5000</td></tr>
+<tr><td>waitForLeaders</td><td>If this is <code>true</code> it will wait until metadata for the new topics doesn't throw <code>LEADER_NOT_AVAILABLE</code></td><td>true</td></tr>
+</tbody>
+</table>
+<h2><a class="anchor" aria-hidden="true" id="a-name-delete-topics-a-delete-topics"></a><a href="#a-name-delete-topics-a-delete-topics" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="delete-topics"></a> Delete topics</h2>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.deleteTopics({
+    <span class="hljs-attr">topics</span>: &lt;String[]&gt;,
+    timeout: &lt;Number&gt;,
+})
+</code></pre>
+<p>Topic deletion is disabled by default in Apache Kafka versions prior to <code>1.0.0</code>. To enable it set the server config.</p>
+<pre><code class="hljs css language-yml"><span class="hljs-string">delete.topic.enable=true</span>
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-create-partitions-a-create-partitions"></a><a href="#a-name-create-partitions-a-create-partitions" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="create-partitions"></a> Create partitions</h2>
+<p><code>createPartitions</code> will resolve in case of success. The method will throw exceptions in case of errors.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.createPartitions({
+    <span class="hljs-attr">validateOnly</span>: &lt;boolean&gt;,
+    timeout: &lt;Number&gt;,
+    topicPartitions: &lt;TopicPartition[]&gt;,
+})
+</code></pre>
+<p><code>TopicPartition</code> structure:</p>
+<pre><code class="hljs css language-javascript">{
+    <span class="hljs-attr">topic</span>: &lt;String&gt;,
+    count: &lt;Number&gt;,     // partition count
+    assignments: &lt;Array&lt;Array&lt;Number&gt;&gt;&gt; // Example: [[0,1],[1,2],[2,0]]
+}
+</code></pre>
+<table>
+<thead>
+<tr><th>property</th><th>description</th><th>default</th></tr>
+</thead>
+<tbody>
+<tr><td>topicPartitions</td><td>Topic partition definition</td><td></td></tr>
+<tr><td>validateOnly</td><td>If this is <code>true</code>, the request will be validated, but the topic won't be created.</td><td>false</td></tr>
+<tr><td>timeout</td><td>The time in ms to wait for a topic to be completely created on the controller node</td><td>5000</td></tr>
+<tr><td>count</td><td>New partition count, mandatory</td><td></td></tr>
+<tr><td>assignments</td><td>Assigned brokers for each new partition</td><td>null</td></tr>
+</tbody>
+</table>
+<h2><a class="anchor" aria-hidden="true" id="a-name-get-topic-metadata-a-get-topic-metadata"></a><a href="#a-name-get-topic-metadata-a-get-topic-metadata" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="get-topic-metadata"></a> Get topic metadata</h2>
+<p>Deprecated, see <a href="#fetch-topic-metadata">Fetch topic metadata</a></p>
+<h2><a class="anchor" aria-hidden="true" id="a-name-fetch-topic-metadata-a-fetch-topic-metadata"></a><a href="#a-name-fetch-topic-metadata-a-fetch-topic-metadata" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="fetch-topic-metadata"></a> Fetch topic metadata</h2>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.fetchTopicMetadata({ <span class="hljs-attr">topics</span>: &lt;Array&lt;String&gt;&gt; })
+</code></pre>
+<p><code>TopicsMetadata</code> structure:</p>
+<pre><code class="hljs css language-javascript">{
+    <span class="hljs-attr">topics</span>: &lt;Array&lt;TopicMetadata&gt;&gt;,
+}
+</code></pre>
+<p><code>TopicMetadata</code> structure:</p>
+<pre><code class="hljs css language-javascript">{
+    <span class="hljs-attr">name</span>: &lt;String&gt;,
+    partitions: &lt;Array&lt;PartitionMetadata&gt;&gt; // default: 1
+}
+</code></pre>
+<p><code>PartitionMetadata</code> structure:</p>
+<pre><code class="hljs css language-javascript">{
+    <span class="hljs-attr">partitionErrorCode</span>: &lt;Number&gt;, // default: 0
+    partitionId: &lt;Number&gt;,
+    leader: &lt;Number&gt;,
+    replicas: &lt;Array&lt;Number&gt;&gt;,
+    isr: &lt;Array&lt;Number&gt;&gt;,
+}
+</code></pre>
+<p>The admin client will throw an exception if any of the provided topics do not already exist.</p>
+<p>If you omit the <code>topics</code> argument the admin client will fetch metadata for all topics:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.fetchTopicMetadata()
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-fetch-topic-offsets-a-fetch-topic-offsets"></a><a href="#a-name-fetch-topic-offsets-a-fetch-topic-offsets" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="fetch-topic-offsets"></a> Fetch topic offsets</h2>
+<p><code>fetchTopicOffsets</code> returns most recent offset for a topic.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.fetchTopicOffsets(topic)
+<span class="hljs-comment">// [</span>
+<span class="hljs-comment">//   { partition: 0, offset: '31004', high: '31004', low: '421' },</span>
+<span class="hljs-comment">//   { partition: 1, offset: '54312', high: '54312', low: '3102' },</span>
+<span class="hljs-comment">//   { partition: 2, offset: '32103', high: '32103', low: '518' },</span>
+<span class="hljs-comment">//   { partition: 3, offset: '28', high: '28', low: '0' },</span>
+<span class="hljs-comment">// ]</span>
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-fetch-topic-offsets-by-timestamp-a-fetch-topic-offsets-by-timestamp"></a><a href="#a-name-fetch-topic-offsets-by-timestamp-a-fetch-topic-offsets-by-timestamp" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="fetch-topic-offsets-by-timestamp"></a> Fetch topic offsets by timestamp</h2>
+<p>Specify a <code>timestamp</code> to get the earliest offset on each partition where the message's timestamp is greater than or equal to the given timestamp.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.fetchTopicOffsetsByTimestamp(topic, timestamp)
+<span class="hljs-comment">// [</span>
+<span class="hljs-comment">//   { partition: 0, offset: '3244' },</span>
+<span class="hljs-comment">//   { partition: 1, offset: '3113' },</span>
+<span class="hljs-comment">// ]</span>
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-fetch-offsets-a-fetch-consumer-group-offsets"></a><a href="#a-name-fetch-offsets-a-fetch-consumer-group-offsets" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="fetch-offsets"></a> Fetch consumer group offsets</h2>
+<p><code>fetchOffsets</code> returns the consumer group offset for a list of topics.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.fetchOffsets({ groupId, <span class="hljs-attr">topics</span>: [<span class="hljs-string">'topic1'</span>, <span class="hljs-string">'topic2'</span>] })
+<span class="hljs-comment">// [</span>
+<span class="hljs-comment">//   {</span>
+<span class="hljs-comment">//     topic: 'topic1',</span>
+<span class="hljs-comment">//     partitions: [</span>
+<span class="hljs-comment">//       { partition: 0, offset: '31004' },</span>
+<span class="hljs-comment">//       { partition: 1, offset: '54312' },</span>
+<span class="hljs-comment">//       { partition: 2, offset: '32103' },</span>
+<span class="hljs-comment">//       { partition: 3, offset: '28' },</span>
+<span class="hljs-comment">//     ],</span>
+<span class="hljs-comment">//   },</span>
+<span class="hljs-comment">//   {</span>
+<span class="hljs-comment">//     topic: 'topic2',</span>
+<span class="hljs-comment">//     partitions: [</span>
+<span class="hljs-comment">//       { partition: 0, offset: '1234' },</span>
+<span class="hljs-comment">//       { partition: 1, offset: '4567' },</span>
+<span class="hljs-comment">//     ],</span>
+<span class="hljs-comment">//   },</span>
+<span class="hljs-comment">// ]</span>
+</code></pre>
+<p>Omit <code>topics</code> altogether if you want to get the consumer group offsets for all topics with committed offsets.</p>
+<p>Include the optional <code>resolveOffsets</code> flag to resolve the offsets without having to start a consumer, useful when fetching directly after calling <a href="#a-name-reset-offsets-a-reset-consumer-group-offsets">resetOffets</a>:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.resetOffsets({ groupId, topic })
+<span class="hljs-keyword">await</span> admin.fetchOffsets({ groupId, topic, <span class="hljs-attr">resolveOffsets</span>: <span class="hljs-literal">false</span> })
+<span class="hljs-comment">// [</span>
+<span class="hljs-comment">//   { partition: 0, offset: '-1' },</span>
+<span class="hljs-comment">//   { partition: 1, offset: '-1' },</span>
+<span class="hljs-comment">//   { partition: 2, offset: '-1' },</span>
+<span class="hljs-comment">//   { partition: 3, offset: '-1' },</span>
+<span class="hljs-comment">// ]</span>
+
+<span class="hljs-keyword">await</span> admin.resetOffsets({ groupId, topic })
+<span class="hljs-keyword">await</span> admin.fetchOffsets({ groupId, topic, <span class="hljs-attr">resolveOffsets</span>: <span class="hljs-literal">true</span> })
+<span class="hljs-comment">// [</span>
+<span class="hljs-comment">//   { partition: 0, offset: '31004' },</span>
+<span class="hljs-comment">//   { partition: 1, offset: '54312' },</span>
+<span class="hljs-comment">//   { partition: 2, offset: '32103' },</span>
+<span class="hljs-comment">//   { partition: 3, offset: '28' },</span>
+<span class="hljs-comment">// ]</span>
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-reset-offsets-a-reset-consumer-group-offsets"></a><a href="#a-name-reset-offsets-a-reset-consumer-group-offsets" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="reset-offsets"></a> Reset consumer group offsets</h2>
+<p><code>resetOffsets</code> resets the consumer group offset to the earliest or latest offset (latest by default).
+The consumer group must have no running instances when performing the reset. Otherwise, the command will be rejected.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.resetOffsets({ groupId, topic }) <span class="hljs-comment">// latest by default</span>
+<span class="hljs-comment">// await admin.resetOffsets({ groupId, topic, earliest: true })</span>
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-set-offsets-a-set-consumer-group-offsets"></a><a href="#a-name-set-offsets-a-set-consumer-group-offsets" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="set-offsets"></a> Set consumer group offsets</h2>
+<p><code>setOffsets</code> allows you to set the consumer group offset to any value.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.setOffsets({
+    <span class="hljs-attr">groupId</span>: &lt;String&gt;,
+    topic: &lt;String&gt;,
+    partitions: &lt;SeekEntry[]&gt;,
+})
+</code></pre>
+<p><code>SeekEntry</code> structure:</p>
+<pre><code class="hljs css language-javascript">{
+    <span class="hljs-attr">partition</span>: &lt;Number&gt;,
+    offset: &lt;String&gt;,
+}
+</code></pre>
+<p>Example:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.setOffsets({
+    <span class="hljs-attr">groupId</span>: <span class="hljs-string">'my-consumer-group'</span>,
+    <span class="hljs-attr">topic</span>: <span class="hljs-string">'custom-topic'</span>,
+    <span class="hljs-attr">partitions</span>: [
+        { <span class="hljs-attr">partition</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">offset</span>: <span class="hljs-string">'35'</span> },
+        { <span class="hljs-attr">partition</span>: <span class="hljs-number">3</span>, <span class="hljs-attr">offset</span>: <span class="hljs-string">'19'</span> },
+    ]
+})
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-reset-offsets-by-timestamp-a-reset-consumer-group-offsets-by-timestamp"></a><a href="#a-name-reset-offsets-by-timestamp-a-reset-consumer-group-offsets-by-timestamp" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="reset-offsets-by-timestamp"></a> Reset consumer group offsets by timestamp</h2>
+<p>Combining <code>fetchTopicOffsetsByTimestamp</code> and <code>setOffsets</code> can reset a consumer group's offsets on each partition to the earliest offset whose timestamp is greater than or equal to the given timestamp.
+The consumer group must have no running instances when performing the reset. Otherwise, the command will be rejected.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.setOffsets({ groupId, topic, <span class="hljs-attr">partitions</span>: <span class="hljs-keyword">await</span> admin.fetchTopicOffsetsByTimestamp(topic, timestamp) })
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-describe-cluster-a-describe-cluster"></a><a href="#a-name-describe-cluster-a-describe-cluster" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="describe-cluster"></a> Describe cluster</h2>
+<p>Allows you to get information about the broker cluster. This is mostly useful
+for monitoring or operations, and is usually not relevant for typical event processing.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.describeCluster()
+<span class="hljs-comment">// {</span>
+<span class="hljs-comment">//   brokers: [</span>
+<span class="hljs-comment">//     { nodeId: 0, host: 'localhost', port: 9092 }</span>
+<span class="hljs-comment">//   ],</span>
+<span class="hljs-comment">//   controller: 0,</span>
+<span class="hljs-comment">//   clusterId: 'f8QmWTB8SQSLE6C99G4qzA'</span>
+<span class="hljs-comment">// }</span>
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-describe-configs-a-describe-configs"></a><a href="#a-name-describe-configs-a-describe-configs" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="describe-configs"></a> Describe configs</h2>
+<p>Get the configuration for the specified resources.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.describeConfigs({
+  <span class="hljs-attr">includeSynonyms</span>: &lt;boolean&gt;,
+  resources: &lt;ResourceConfigQuery[]&gt;
+})
+</code></pre>
+<p><code>ResourceConfigQuery</code> structure:</p>
+<pre><code class="hljs css language-javascript">{
+    <span class="hljs-attr">type</span>: &lt;ConfigResourceType&gt;,
+    name: &lt;String&gt;,
+    configNames: &lt;String[]&gt;
+}
+</code></pre>
+<p>Returning all configs for a given resource:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { ConfigResourceTypes } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+
+<span class="hljs-keyword">await</span> admin.describeConfigs({
+  <span class="hljs-attr">includeSynonyms</span>: <span class="hljs-literal">false</span>,
+  <span class="hljs-attr">resources</span>: [
+    {
+      <span class="hljs-attr">type</span>: ConfigResourceTypes.TOPIC,
+      <span class="hljs-attr">name</span>: <span class="hljs-string">'topic-name'</span>
+    }
+  ]
+})
+</code></pre>
+<p>Returning specific configs for a given resource:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { ConfigResourceTypes } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+
+<span class="hljs-keyword">await</span> admin.describeConfigs({
+  <span class="hljs-attr">includeSynonyms</span>: <span class="hljs-literal">false</span>,
+  <span class="hljs-attr">resources</span>: [
+    {
+      <span class="hljs-attr">type</span>: ConfigResourceTypes.TOPIC,
+      <span class="hljs-attr">name</span>: <span class="hljs-string">'topic-name'</span>,
+      <span class="hljs-attr">configNames</span>: [<span class="hljs-string">'cleanup.policy'</span>]
+    }
+  ]
+})
+</code></pre>
+<p>Take a look at <a href="https://github.com/tulios/kafkajs/blob/master/src/protocol/configResourceTypes.js">configResourceTypes</a> for a complete list of resources.</p>
+<p>Example response:</p>
+<pre><code class="hljs css language-javascript">{
+    <span class="hljs-attr">resources</span>: [
+        {
+            <span class="hljs-attr">configEntries</span>: [{
+                <span class="hljs-attr">configName</span>: <span class="hljs-string">'cleanup.policy'</span>,
+                <span class="hljs-attr">configValue</span>: <span class="hljs-string">'delete'</span>,
+                <span class="hljs-attr">isDefault</span>: <span class="hljs-literal">true</span>,
+                <span class="hljs-attr">configSource</span>: <span class="hljs-number">5</span>,
+                <span class="hljs-attr">isSensitive</span>: <span class="hljs-literal">false</span>,
+                <span class="hljs-attr">readOnly</span>: <span class="hljs-literal">false</span>
+            }],
+            <span class="hljs-attr">errorCode</span>: <span class="hljs-number">0</span>,
+            <span class="hljs-attr">errorMessage</span>: <span class="hljs-literal">null</span>,
+            <span class="hljs-attr">resourceName</span>: <span class="hljs-string">'topic-name'</span>,
+            <span class="hljs-attr">resourceType</span>: <span class="hljs-number">2</span>
+        }
+    ],
+    <span class="hljs-attr">throttleTime</span>: <span class="hljs-number">0</span>
+}
+</code></pre>
+<p><em>NOTE:</em> <a href="https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js">resourceTypes</a> is deprecated as it mistakenly  has the ACL resource types instead of the config resource types.</p>
+<h2><a class="anchor" aria-hidden="true" id="a-name-alter-configs-a-alter-configs"></a><a href="#a-name-alter-configs-a-alter-configs" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="alter-configs"></a> Alter configs</h2>
+<p>Update the configuration for the specified resources.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.alterConfigs({
+    <span class="hljs-attr">validateOnly</span>: <span class="hljs-literal">false</span>,
+    <span class="hljs-attr">resources</span>: <span class="xml"><span class="hljs-tag">&lt;<span class="hljs-name">ResourceConfig[]</span>&gt;</span>
+})
+</span></code></pre>
+<p><code>ResourceConfig</code> structure:</p>
+<pre><code class="hljs css language-javascript">{
+    <span class="hljs-attr">type</span>: &lt;ConfigResourceType&gt;,
+    name: &lt;String&gt;,
+    configEntries: &lt;ResourceConfigEntry[]&gt;
+}
+</code></pre>
+<p><code>ResourceConfigEntry</code> structure:</p>
+<pre><code class="hljs css language-javascript">{
+    <span class="hljs-attr">name</span>: &lt;String&gt;,
+    value: &lt;String&gt;
+}
+</code></pre>
+<p>Example:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { ConfigResourceTypes } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+
+<span class="hljs-keyword">await</span> admin.alterConfigs({
+    <span class="hljs-attr">resources</span>: [{
+        <span class="hljs-attr">type</span>: ConfigResourceTypes.TOPIC,
+        <span class="hljs-attr">name</span>: <span class="hljs-string">'topic-name'</span>,
+        <span class="hljs-attr">configEntries</span>: [{ <span class="hljs-attr">name</span>: <span class="hljs-string">'cleanup.policy'</span>, <span class="hljs-attr">value</span>: <span class="hljs-string">'compact'</span> }]
+    }]
+})
+</code></pre>
+<p>Take a look at <a href="https://github.com/tulios/kafkajs/blob/master/src/protocol/configResourceTypes.js">configResourceTypes</a> for a complete list of resources.</p>
+<p>Example response:</p>
+<pre><code class="hljs css language-javascript">{
+    <span class="hljs-attr">resources</span>: [{
+        <span class="hljs-attr">errorCode</span>: <span class="hljs-number">0</span>,
+        <span class="hljs-attr">errorMessage</span>: <span class="hljs-literal">null</span>,
+        <span class="hljs-attr">resourceName</span>: <span class="hljs-string">'topic-name'</span>,
+        <span class="hljs-attr">resourceType</span>: <span class="hljs-number">2</span>,
+    }],
+    <span class="hljs-attr">throttleTime</span>: <span class="hljs-number">0</span>,
+}
+</code></pre>
+<p><em>NOTE:</em> <a href="https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js">resourceTypes</a> is deprecated as it mistakenly  has the ACL resource types instead of the config resource types.</p>
+<h2><a class="anchor" aria-hidden="true" id="a-name-list-groups-a-list-groups"></a><a href="#a-name-list-groups-a-list-groups" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="list-groups"></a> List groups</h2>
+<p>List groups available on the broker.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.listGroups()
+</code></pre>
+<p>Example response:</p>
+<pre><code class="hljs css language-javascript">{
+    <span class="hljs-attr">groups</span>: [
+        {<span class="hljs-attr">groupId</span>: <span class="hljs-string">'testgroup'</span>, <span class="hljs-attr">protocolType</span>: <span class="hljs-string">'consumer'</span>}
+    ]
+}
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-describe-groups-a-describe-groups"></a><a href="#a-name-describe-groups-a-describe-groups" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="describe-groups"></a> Describe groups</h2>
+<p>Describe consumer groups by <code>groupId</code>s. This is similar to <a href="/docs/1.16.0/consuming#describe-group">consumer.describeGroup()</a>, except
+it allows you to describe multiple groups and does not require you to have a consumer be part of any of those groups.</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">await</span> admin.describeGroups([ <span class="hljs-string">'testgroup'</span> ])
+<span class="hljs-comment">// {</span>
+<span class="hljs-comment">//   groups: [{</span>
+<span class="hljs-comment">//     errorCode: 0,</span>
+<span class="hljs-comment">//     groupId: 'testgroup',</span>
+<span class="hljs-comment">//     members: [</span>
+<span class="hljs-comment">//       {</span>
+<span class="hljs-comment">//         clientHost: '/172.19.0.1',</span>
+<span class="hljs-comment">//         clientId: 'test-3e93246fe1f4efa7380a',</span>
+<span class="hljs-comment">//         memberAssignment: Buffer,</span>
+<span class="hljs-comment">//         memberId: 'test-3e93246fe1f4efa7380a-ff87d06d-5c87-49b8-a1f1-c4f8e3ffe7eb',</span>
+<span class="hljs-comment">//         memberMetadata: Buffer,</span>
+<span class="hljs-comment">//       },</span>
+<span class="hljs-comment">//     ],</span>
+<span class="hljs-comment">//     protocol: 'RoundRobinAssigner',</span>
+<span class="hljs-comment">//     protocolType: 'consumer',</span>
+<span class="hljs-comment">//     state: 'Stable',</span>
+<span class="hljs-comment">//   }]</span>
+<span class="hljs-comment">// }</span>
+</code></pre>
+<p>Helper function to decode <code>memeberMetadata</code> and <code>memberAssignment</code> is available in <code>AssignerProtocol</code></p>
+<p>Example:</p>
+<p><code>const memberMetadata = AssignerProtocol.MemberMetadata.decode(memberMetadata)</code></p>
+<p><code>const memberAssignment = AssignerProtocol.MemberAssignment.decode(memberAssignment)</code></p>
+<h2><a class="anchor" aria-hidden="true" id="a-name-delete-groups-a-delete-groups"></a><a href="#a-name-delete-groups-a-delete-groups" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="delete-groups"></a> Delete groups</h2>
+<p>Delete groups by <code>groupId</code>.</p>
+<p>Note that you can only delete groups with no connected consumers.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.deleteGroups([groupId])
+</code></pre>
+<p>Example:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.deleteGroups([<span class="hljs-string">'group-test'</span>])
+</code></pre>
+<p>Example response:</p>
+<pre><code class="hljs css language-javascript">[
+    {<span class="hljs-attr">groupId</span>: <span class="hljs-string">'testgroup'</span>, <span class="hljs-attr">errorCode</span>: <span class="hljs-string">'consumer'</span>}
+]
+</code></pre>
+<p>Because this method accepts multiple <code>groupId</code>s, it can fail to delete one or more of the provided groups. In case of failure, it will throw an error containing the failed groups:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">try</span> {
+    <span class="hljs-keyword">await</span> admin.deleteGroups([<span class="hljs-string">'a'</span>, <span class="hljs-string">'b'</span>, <span class="hljs-string">'c'</span>])
+} <span class="hljs-keyword">catch</span> (error) {
+  <span class="hljs-comment">// error.name 'KafkaJSDeleteGroupsError'</span>
+  <span class="hljs-comment">// error.groups = [{</span>
+  <span class="hljs-comment">//   groupId: a</span>
+  <span class="hljs-comment">//   error: KafkaJSProtocolError</span>
+  <span class="hljs-comment">// }]</span>
+}
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-delete-topic-records-a-delete-topic-records"></a><a href="#a-name-delete-topic-records-a-delete-topic-records" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="delete-topic-records"></a> Delete Topic Records</h2>
+<p>Delete records for a selected topic. This will delete all records from the earliest offset up to - but not including - the provided target offset for the given partition(s). To delete all records in a partition, use a target offset of <code>-1</code>.</p>
+<p>Note that you cannot delete records in an arbitrary range (it will always be from the earliest available offset)</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.deleteTopicRecords({
+    <span class="hljs-attr">topic</span>: &lt;String&gt;,
+    partitions: &lt;SeekEntry[]&gt;,
+})
+</code></pre>
+<p>Example:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> admin.deleteTopicRecords({
+    <span class="hljs-attr">topic</span>: <span class="hljs-string">'custom-topic'</span>,
+    <span class="hljs-attr">partitions</span>: [
+        { <span class="hljs-attr">partition</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">offset</span>: <span class="hljs-string">'30'</span> }, <span class="hljs-comment">// delete up to and including offset 29</span>
+        { <span class="hljs-attr">partition</span>: <span class="hljs-number">3</span>, <span class="hljs-attr">offset</span>: <span class="hljs-string">'-1'</span> }, <span class="hljs-comment">// delete all available records on this partition</span>
+    ]
+})
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-create-acl-a-create-acl"></a><a href="#a-name-create-acl-a-create-acl" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="create-acl"></a> Create ACL</h2>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> {
+  AclResourceTypes,
+  AclOperationTypes,
+  AclPermissionTypes,
+  ResourcePatternTypes,
+} = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+
+<span class="hljs-keyword">const</span> acl = [
+  {
+    <span class="hljs-attr">resourceType</span>: AclResourceTypes.TOPIC,
+    <span class="hljs-attr">resourceName</span>: <span class="hljs-string">'topic-name'</span>,
+    <span class="hljs-attr">resourcePatternType</span>: ResourcePatternTypes.LITERAL,
+    <span class="hljs-attr">principal</span>: <span class="hljs-string">'User:bob'</span>,
+    <span class="hljs-attr">host</span>: <span class="hljs-string">'*'</span>,
+    <span class="hljs-attr">operation</span>: AclOperationTypes.ALL,
+    <span class="hljs-attr">permissionType</span>: AclPermissionTypes.DENY,
+  },
+  {
+    <span class="hljs-attr">resourceType</span>: AclResourceTypes.TOPIC,
+    <span class="hljs-attr">resourceName</span>: <span class="hljs-string">'topic-name'</span>,
+    <span class="hljs-attr">resourcePatternType</span>: ResourcePatternTypes.LITERAL,
+    <span class="hljs-attr">principal</span>: <span class="hljs-string">'User:alice'</span>,
+    <span class="hljs-attr">host</span>: <span class="hljs-string">'*'</span>,
+    <span class="hljs-attr">operation</span>: AclOperationTypes.ALL,
+    <span class="hljs-attr">permissionType</span>: AclPermissionTypes.ALLOW,
+  },
+]
+
+<span class="hljs-keyword">await</span> admin.createAcls({ acl })
+</code></pre>
+<p>Be aware that the security features might be disabled in your cluster. In that case, the operation will throw an error:</p>
+<pre><code class="hljs css language-sh">KafkaJSProtocolError: Security features are disabled
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-delete-acl-a-delete-acl"></a><a href="#a-name-delete-acl-a-delete-acl" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="delete-acl"></a> Delete ACL</h2>
+<pre><code class="hljs css language-javascript">const {
+  AclResourceTypes,
+  AclOperationTypes,
+  AclPermissionTypes,
+  ResourcePatternTypes,
+} = require('kafkajs')
+
+const acl = {
+  resourceName: 'topic-name,
+  resourceType: AclResourceTypes.TOPIC,
+  host: '*',
+  permissionType: AclPermissionTypes.ALLOW,
+  operation: AclOperationTypes.ANY,
+  resourcePatternType: ResourcePatternTypes.LITERAL,
+}
+
+await admin.deleteAcls({ filters: [acl] })
+// {
+//   filterResponses: [
+//     {
+//     errorCode: 0,
+//     errorMessage: null,
+//     matchingAcls: [
+//         {
+//         errorCode: 0,
+//         errorMessage: null,
+//         resourceType: AclResourceTypes.TOPIC,
+//         resourceName: 'topic-name',
+//         resourcePatternType: ResourcePatternTypes.LITERAL,
+//         principal: 'User:alice',
+//         host: '*',
+//         operation: AclOperationTypes.ALL,
+//         permissionType: AclPermissionTypes.ALLOW,
+//         },
+//     ],
+//     },
+//   ],
+// }
+</code></pre>
+<p>Be aware that the security features might be disabled in your cluster. In that case, the operation will throw an error:</p>
+<pre><code class="hljs css language-sh">KafkaJSProtocolError: Security features are disabled
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-describe-acl-a-describe-acl"></a><a href="#a-name-describe-acl-a-describe-acl" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="describe-acl"></a> Describe ACL</h2>
+<pre><code class="hljs css language-javascript">const {
+  AclResourceTypes,
+  AclOperationTypes,
+  AclPermissionTypes,
+  ResourcePatternTypes,
+} = require('kafkajs')
+
+await admin.describeAcls({
+  resourceName: 'topic-name,
+  resourceType: AclResourceTypes.TOPIC,
+  host: '*',
+  permissionType: AclPermissionTypes.ALLOW,
+  operation: AclOperationTypes.ANY,
+  resourcePatternTypeFilter: ResourcePatternTypes.LITERAL,
+})
+// {
+//   resources: [
+//     {
+//       resourceType: AclResourceTypes.TOPIC,
+//       resourceName: 'topic-name,
+//       resourcePatternType: ResourcePatternTypes.LITERAL,
+//       acls: [
+//         {
+//           principal: 'User:alice',
+//           host: '*',
+//           operation: AclOperationTypes.ALL,
+//           permissionType: AclPermissionTypes.ALLOW,
+//         },
+//       ],
+//     },
+//   ],
+// }
+</code></pre>
+<p>Be aware that the security features might be disabled in your cluster. In that case, the operation will throw an error:</p>
+<pre><code class="hljs css language-sh">KafkaJSProtocolError: Security features are disabled
+</code></pre>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/1.16.0/consuming"><span class="arrow-prev">← </span><span>Consuming Messages</span></a><a class="docs-next button" href="/docs/1.16.0/instrumentation-events"><span>Instrumentation Events</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#list-topics">List topics</a></li><li><a href="#create-topics">Create topics</a></li><li><a href="#delete-topics">Delete topics</a></li><li><a href="#create-partitions">Create partitions</a></li><li><a href="#get-topic-metadata">Get topic metadata</a></li><li><a href="#fetch-topic-metadata">Fetch topic metadata</a></li><li><a href="#fetch-topic-offsets">Fetch topic offsets</a></li><li><a href="#fetch-topic-offsets-by-timestamp">Fetch topic offsets by timestamp</a></li><li><a href="#fetch-consumer-group-offsets">Fetch consumer group offsets</a></li><li><a href="#reset-consumer-group-offsets">Reset consumer group offsets</a></li><li><a href="#set-consumer-group-offsets">Set consumer group offsets</a></li><li><a href="#reset-consumer-group-offsets-by-timestamp">Reset consumer group offsets by timestamp</a></li><li><a href="#describe-cluster">Describe cluster</a></li><li><a href="#describe-configs">Describe configs</a></li><li><a href="#alter-configs">Alter configs</a></li><li><a href="#list-groups">List groups</a></li><li><a href="#describe-groups">Describe groups</a></li><li><a href="#delete-groups">Delete groups</a></li><li><a href="#delete-topic-records">Delete Topic Records</a></li><li><a href="#create-acl">Create ACL</a></li><li><a href="#delete-acl">Delete ACL</a></li><li><a href="#describe-acl">Describe ACL</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/kafkajs-logoV2.svg" alt="KafkaJS" width="52" height="84"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Usage</a></div><div><h5>Community</h5><a href="https://kafkajs-slackin.herokuapp.com">Slack</a></div><div><h5>More</h5><a href="https://github.com/tulios/kafkajs">GitHub</a><a class="github-button" href="https://github.com/tulios/kafkajs" data-icon="octicon-star" data-count-href="/tulios/kafkajs/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><a href="https://badge.fury.io/js/kafkajs"><img src="https://badge.fury.io/js/kafkajs.svg" alt="npm version" height="18"/></a></div></section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '7c56b6be30976fce32eb287e2af6cf06',
+                indexName: 'kafka_js',
+                inputSelector: '#search_input_react',
+                algoliaOptions: {}
+              });
+            </script></body></html>

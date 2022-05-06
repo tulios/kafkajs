@@ -1,0 +1,435 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Consuming Messages · KafkaJS</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Consumer groups allow a group of machines or processes to coordinate access to a list of topics, distributing the load among the consumers. When a consumer fails the load is automatically distributed to other members of the group. Consumer groups __must have__ unique group ids within the cluster, from a kafka broker perspective."/><meta name="docsearch:version" content="1.16.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Consuming Messages · KafkaJS"/><meta property="og:type" content="website"/><meta property="og:url" content="https://kafka.js.org/"/><meta property="og:description" content="Consumer groups allow a group of machines or processes to coordinate access to a list of topics, distributing the load among the consumers. When a consumer fails the load is automatically distributed to other members of the group. Consumer groups __must have__ unique group ids within the cluster, from a kafka broker perspective."/><meta property="og:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"/><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-133751873-1"></script><script>
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments); }
+              gtag('js', new Date());
+              gtag('config', 'UA-133751873-1');
+            </script><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/kafkajs-logoV2.svg" alt="KafkaJS"/><h2 class="headerTitleWithLogo">KafkaJS</h2></a><a href="/versions"><h3>1.16.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/1.16.0/getting-started" target="_self">Docs</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class=""><a href="https://github.com/tulios/kafkajs" target="_self">GitHub</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Usage</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Usage</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/1.16.0/introduction">Intro to Kafka</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/getting-started">Getting Started</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/configuration">Client Configuration</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/producing">Producing Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/transactions">Transactions</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/1.16.0/consuming">Consuming Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/admin">Admin Client</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/instrumentation-events">Instrumentation Events</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/custom-logger">Custom Logger</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/retry-detailed">Retry Mechanism Explained</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/faq">FAQ</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/pre-releases">Pre-releases</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Examples</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/1.16.0/running-kafka-in-development">Running Kafka in Development</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/producer-example">Producer</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/consumer-example">Consumer</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Developing KafkaJS</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/1.16.0/contribution-guide">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/development-environment">Development Environment</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/testing">Testing</a></li><li class="navListItem"><a class="navItem" href="/docs/1.16.0/development-resources">Resources</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/tulios/kafkajs/edit/master/docs/Consuming.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">Consuming Messages</h1></header><article><div><span><p>Consumer groups allow a group of machines or processes to coordinate access to a list of topics, distributing the load among the consumers. When a consumer fails the load is automatically distributed to other members of the group. Consumer groups <strong>must have</strong> unique group ids within the cluster, from a kafka broker perspective.</p>
+<p>Creating the consumer:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> consumer = kafka.consumer({ <span class="hljs-attr">groupId</span>: <span class="hljs-string">'my-group'</span> })
+</code></pre>
+<p>Subscribing to some topics:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> consumer.connect()
+
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-A'</span> })
+
+<span class="hljs-comment">// Subscribe can be called several times</span>
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-B'</span> })
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-C'</span> })
+
+<span class="hljs-comment">// It's possible to start from the beginning of the topic</span>
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-D'</span>, <span class="hljs-attr">fromBeginning</span>: <span class="hljs-literal">true</span> })
+</code></pre>
+<p>Alternatively, you can subscribe to multiple topics at once using a RegExp:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> consumer.connect()
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-regexp">/topic-(eu|us)-.*/i</span> })
+</code></pre>
+<p>The consumer will not match topics created after the subscription. If your broker has <code>topic-A</code> and <code>topic-B</code>, you subscribe to <code>/topic-.*/</code>, then <code>topic-C</code> is created, your consumer would not be automatically subscribed to <code>topic-C</code>.</p>
+<p>KafkaJS offers you two ways to process your data: <code>eachMessage</code> and <code>eachBatch</code></p>
+<h2><a class="anchor" aria-hidden="true" id="a-name-each-message-a-eachmessage"></a><a href="#a-name-each-message-a-eachmessage" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="each-message"></a> eachMessage</h2>
+<p>The <code>eachMessage</code> handler provides a convenient and easy to use API, feeding your function one message at a time. It is implemented on top of <code>eachBatch</code>, and it will automatically commit your offsets and heartbeat at the configured interval for you. If you are just looking to get started with Kafka consumers this a good place to start.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> consumer.run({
+    <span class="hljs-attr">eachMessage</span>: <span class="hljs-keyword">async</span> ({ topic, partition, message, heartbeat }) =&gt; {
+        <span class="hljs-built_in">console</span>.log({
+            <span class="hljs-attr">key</span>: message.key.toString(),
+            <span class="hljs-attr">value</span>: message.value.toString(),
+            <span class="hljs-attr">headers</span>: message.headers,
+        })
+    },
+})
+</code></pre>
+<p>Be aware that the <code>eachMessage</code> handler should not block for longer than the configured <a href="#options">session timeout</a> or else the consumer will be removed from the group. If your workload involves very slow processing times for individual messages then you should either increase the session timeout or make periodic use of the <code>heartbeat</code> function exposed in the handler payload.</p>
+<h2><a class="anchor" aria-hidden="true" id="a-name-each-batch-a-eachbatch"></a><a href="#a-name-each-batch-a-eachbatch" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="each-batch"></a> eachBatch</h2>
+<p>Some use cases require dealing with batches directly. This handler will feed your function batches and provide some utility functions to give your code more flexibility: <code>resolveOffset</code>, <code>heartbeat</code>, <code>commitOffsetsIfNecessary</code>, <code>uncommittedOffsets</code>, <code>isRunning</code>, and <code>isStale</code>. All resolved offsets will be automatically committed after the function is executed.</p>
+<blockquote>
+<p>Note: Be aware that using <code>eachBatch</code> directly is considered a more advanced use case as compared to using <code>eachMessage</code>, since you will have to understand how session timeouts and heartbeats are connected.</p>
+</blockquote>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> consumer.run({
+    <span class="hljs-attr">eachBatchAutoResolve</span>: <span class="hljs-literal">true</span>,
+    <span class="hljs-attr">eachBatch</span>: <span class="hljs-keyword">async</span> ({
+        batch,
+        resolveOffset,
+        heartbeat,
+        commitOffsetsIfNecessary,
+        uncommittedOffsets,
+        isRunning,
+        isStale,
+    }) =&gt; {
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">let</span> message <span class="hljs-keyword">of</span> batch.messages) {
+            <span class="hljs-built_in">console</span>.log({
+                <span class="hljs-attr">topic</span>: batch.topic,
+                <span class="hljs-attr">partition</span>: batch.partition,
+                <span class="hljs-attr">highWatermark</span>: batch.highWatermark,
+                <span class="hljs-attr">message</span>: {
+                    <span class="hljs-attr">offset</span>: message.offset,
+                    <span class="hljs-attr">key</span>: message.key.toString(),
+                    <span class="hljs-attr">value</span>: message.value.toString(),
+                    <span class="hljs-attr">headers</span>: message.headers,
+                }
+            })
+
+            resolveOffset(message.offset)
+            <span class="hljs-keyword">await</span> heartbeat()
+        }
+    },
+})
+</code></pre>
+<ul>
+<li><code>eachBatchAutoResolve</code> configures auto-resolve of batch processing. If set to true, KafkaJS will automatically commit the last offset of the batch if <code>eachBatch</code> doesn't throw an error. Default: true.</li>
+<li><code>batch.highWatermark</code> is the last committed offset within the topic partition. It can be useful for calculating lag.</li>
+<li><code>resolveOffset()</code> is used to mark a message in the batch as processed. In case of errors, the consumer will automatically commit the resolved offsets.</li>
+<li><code>heartbeat(): Promise&lt;void&gt;</code> can be used to send heartbeat to the broker according to the set <code>heartbeatInterval</code> value in consumer <a href="#options">configuration</a>.</li>
+<li><code>commitOffsetsIfNecessary(offsets?): Promise&lt;void&gt;</code> is used to commit offsets based on the autoCommit configurations (<code>autoCommitInterval</code> and <code>autoCommitThreshold</code>). Note that auto commit won't happen in <code>eachBatch</code> if <code>commitOffsetsIfNecessary</code> is not invoked. Take a look at <a href="#auto-commit">autoCommit</a> for more information.</li>
+<li><code>uncommittedOffsets()</code> returns all offsets by topic-partition which have not yet been committed.</li>
+<li><code>isRunning()</code> returns true if consumer is in running state, else it returns false.</li>
+<li><code>isStale()</code> returns whether the messages in the batch have been rendered stale through some other operation and should be discarded. For example, when calling <a href="#seek"><code>consumer.seek</code></a> the messages in the batch should be discarded, as they are not at the offset we seeked to.</li>
+</ul>
+<h3><a class="anchor" aria-hidden="true" id="example"></a><a href="#example" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Example</h3>
+<pre><code class="hljs css language-javascript">consumer.run({
+    <span class="hljs-attr">eachBatchAutoResolve</span>: <span class="hljs-literal">false</span>,
+    <span class="hljs-attr">eachBatch</span>: <span class="hljs-keyword">async</span> ({ batch, resolveOffset, heartbeat, isRunning, isStale }) =&gt; {
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">let</span> message <span class="hljs-keyword">of</span> batch.messages) {
+            <span class="hljs-keyword">if</span> (!isRunning() || isStale()) <span class="hljs-keyword">break</span>
+            <span class="hljs-keyword">await</span> processMessage(message)
+            resolveOffset(message.offset)
+            <span class="hljs-keyword">await</span> heartbeat()
+        }
+    }
+})
+</code></pre>
+<p>In the example above, if the consumer is shutting down in the middle of the batch, the remaining messages won't be resolved and therefore not committed. This way, you can quickly shut down the consumer without losing/skipping any messages. If the batch goes stale for some other reason (like calling <code>consumer.seek</code>) none of the remaining messages are processed either.</p>
+<h2><a class="anchor" aria-hidden="true" id="a-name-concurrent-processing-a-partition-aware-concurrency"></a><a href="#a-name-concurrent-processing-a-partition-aware-concurrency" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="concurrent-processing"></a> Partition-aware concurrency</h2>
+<p>By default, <a href="/docs/1.16.0/consuming#each-message"><code>eachMessage</code></a> is invoked sequentially for each message in each partition. In order to concurrently process several messages per once, you can increase the <code>partitionsConsumedConcurrently</code> option:</p>
+<pre><code class="hljs css language-javascript">consumer.run({
+    <span class="hljs-attr">partitionsConsumedConcurrently</span>: <span class="hljs-number">3</span>, <span class="hljs-comment">// Default: 1</span>
+    <span class="hljs-attr">eachMessage</span>: <span class="hljs-keyword">async</span> ({ topic, partition, message }) =&gt; {
+        <span class="hljs-comment">// This will be called up to 3 times concurrently</span>
+    },
+})
+</code></pre>
+<p>Messages in the same partition are still guaranteed to be processed in order, but messages from multiple partitions can be processed at the same time. If <code>eachMessage</code> consists of asynchronous work, such as network requests or other I/O, this can improve performance. If <code>eachMessage</code> is entirely synchronous, this will make no difference.</p>
+<p>The same thing applies if you are using <a href="/docs/1.16.0/consuming#each-batch"><code>eachBatch</code></a>. Given <code>partitionsConsumedConcurrently &gt; 1</code>, you will be able to process multiple batches concurrently.</p>
+<p>A guideline for setting <code>partitionsConsumedConcurrently</code> would be that it should not be larger than the number of partitions consumed. Depending on whether or not your workload is CPU bound, it may also not benefit you to set it to a higher number than the number of logical CPU cores. A recommendation is to start with a low number and measure if increasing leads to higher throughput.</p>
+<h2><a class="anchor" aria-hidden="true" id="a-name-auto-commit-a-autocommit"></a><a href="#a-name-auto-commit-a-autocommit" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="auto-commit"></a> autoCommit</h2>
+<p>The messages are always fetched in batches from Kafka, even when using the <code>eachMessage</code> handler. All resolved offsets will be committed to Kafka after processing the whole batch.</p>
+<p>Committing offsets periodically during a batch allows the consumer to recover from group rebalancing, stale metadata and other issues before it has completed the entire batch. However, committing more often increases network traffic and slows down processing. Auto-commit offers more flexibility when committing offsets; there are two flavors available:</p>
+<p><code>autoCommitInterval</code>: The consumer will commit offsets after a given period, for example, five seconds. Value in milliseconds. Default: <code>null</code></p>
+<pre><code class="hljs css language-javascript">consumer.run({
+  <span class="hljs-attr">autoCommitInterval</span>: <span class="hljs-number">5000</span>,
+  <span class="hljs-comment">// ...</span>
+})
+</code></pre>
+<p><code>autoCommitThreshold</code>: The consumer will commit offsets after resolving a given number of messages, for example, a hundred messages. Default: <code>null</code></p>
+<pre><code class="hljs css language-javascript">consumer.run({
+  <span class="hljs-attr">autoCommitThreshold</span>: <span class="hljs-number">100</span>,
+  <span class="hljs-comment">// ...</span>
+})
+</code></pre>
+<p>Having both flavors at the same time is also possible, the consumer will commit the offsets if any of the use cases (interval or number of messages) happens.</p>
+<p><code>autoCommit</code>: Advanced option to disable auto committing altogether. Instead, you can <a href="#manual-commits">manually commit offsets</a>. Default: <code>true</code></p>
+<h2><a class="anchor" aria-hidden="true" id="a-name-manual-commits-a-manual-committing"></a><a href="#a-name-manual-commits-a-manual-committing" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="manual-commits"></a> Manual committing</h2>
+<p>When disabling <a href="#auto-commit"><code>autoCommit</code></a> you can still manually commit message offsets, in a couple of different ways:</p>
+<ul>
+<li>By using the <code>commitOffsetsIfNecessary</code> method available in the <code>eachBatch</code> callback. The <code>commitOffsetsIfNecessary</code> method will still respect the other autoCommit options if set.</li>
+<li>By <a href="/docs/1.16.0/transactions#offsets">sending message offsets in a transaction</a>.</li>
+<li>By using the <code>commitOffsets</code> method of the consumer (see below).</li>
+</ul>
+<p>The <code>consumer.commitOffsets</code> is the lowest-level option and will ignore all other auto commit settings, but in doing so allows the committed offset to be set to any offset and committing various offsets at once. This can be useful, for example, for building a processing reset tool. It can only be called after <code>consumer.run</code>. Committing offsets does not change what message we'll consume next once we've started consuming, but instead is only used to determine <strong>from which place to start</strong>. To immediately change from what offset you're consuming messages, you'll want to <a href="#seek">seek</a>, instead.</p>
+<pre><code class="hljs css language-javascript">consumer.run({
+    <span class="hljs-attr">autoCommit</span>: <span class="hljs-literal">false</span>,
+    <span class="hljs-attr">eachMessage</span>: <span class="hljs-keyword">async</span> ({ topic, partition, message }) =&gt; {
+        <span class="hljs-comment">// Process the message somehow</span>
+    },
+})
+
+consumer.commitOffsets([
+  { <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-A'</span>, <span class="hljs-attr">partition</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">offset</span>: <span class="hljs-string">'1'</span> },
+  { <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-A'</span>, <span class="hljs-attr">partition</span>: <span class="hljs-number">1</span>, <span class="hljs-attr">offset</span>: <span class="hljs-string">'3'</span> },
+  { <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-B'</span>, <span class="hljs-attr">partition</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">offset</span>: <span class="hljs-string">'2'</span> }
+])
+</code></pre>
+<p>Note that you don't <em>have</em> to store consumed offsets in Kafka, but instead store it in a storage mechanism of your own choosing. That's an especially useful approach when the results of consuming a message are written to a datastore that allows atomically writing the consumed offset with it, like for example a SQL database. When possible it can make the consumption fully atomic and give &quot;exactly once&quot; semantics that are stronger than the default &quot;at-least once&quot; semantics you get with Kafka's offset commit functionality.</p>
+<p>The usual usage pattern for offsets stored outside of Kafka is as follows:</p>
+<ul>
+<li>Run the consumer with <code>autoCommit</code> disabled.</li>
+<li>Store a message's <code>offset + 1</code> in the store together with the results of processing. <code>1</code> is added to prevent that same message from being consumed again.</li>
+<li>Use the externally stored offset on restart to <a href="#seek">seek</a> the consumer to it.</li>
+</ul>
+<h2><a class="anchor" aria-hidden="true" id="a-name-from-beginning-a-frombeginning"></a><a href="#a-name-from-beginning-a-frombeginning" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="from-beginning"></a> fromBeginning</h2>
+<p>The consumer group will use the latest committed offset when starting to fetch messages. If the offset is invalid or not defined, <code>fromBeginning</code> defines the behavior of the consumer group. This can be configured when subscribing to a topic:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'test-topic'</span>, <span class="hljs-attr">fromBeginning</span>: <span class="hljs-literal">true</span> })
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'other-topic'</span>, <span class="hljs-attr">fromBeginning</span>: <span class="hljs-literal">false</span> })
+</code></pre>
+<p>When <code>fromBeginning</code> is <code>true</code>, the group will use the earliest offset. If set to <code>false</code>, it will use the latest offset. The default is <code>false</code>.</p>
+<h2><a class="anchor" aria-hidden="true" id="a-name-options-a-options"></a><a href="#a-name-options-a-options" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="options"></a> Options</h2>
+<pre><code class="hljs css language-javascript">kafka.consumer({
+  <span class="hljs-attr">groupId</span>: &lt;String&gt;,
+  partitionAssigners: &lt;Array&gt;,
+  sessionTimeout: &lt;Number&gt;,
+  rebalanceTimeout: &lt;Number&gt;,
+  heartbeatInterval: &lt;Number&gt;,
+  metadataMaxAge: &lt;Number&gt;,
+  allowAutoTopicCreation: &lt;Boolean&gt;,
+  maxBytesPerPartition: &lt;Number&gt;,
+  minBytes: &lt;Number&gt;,
+  maxBytes: &lt;Number&gt;,
+  maxWaitTimeInMs: &lt;Number&gt;,
+  retry: &lt;Object&gt;,
+  maxInFlightRequests: &lt;Number&gt;,
+  rackId: &lt;String&gt;
+})
+</code></pre>
+<table>
+<thead>
+<tr><th>option</th><th>description</th><th>default</th></tr>
+</thead>
+<tbody>
+<tr><td>partitionAssigners</td><td>List of partition assigners</td><td><code>[PartitionAssigners.roundRobin]</code></td></tr>
+<tr><td>sessionTimeout</td><td>Timeout in milliseconds used to detect failures. The consumer sends periodic heartbeats to indicate its liveness to the broker. If no heartbeats are received by the broker before the expiration of this session timeout, then the broker will remove this consumer from the group and initiate a rebalance</td><td><code>30000</code></td></tr>
+<tr><td>rebalanceTimeout</td><td>The maximum time that the coordinator will wait for each member to rejoin when rebalancing the group</td><td><code>60000</code></td></tr>
+<tr><td>heartbeatInterval</td><td>The expected time in milliseconds between heartbeats to the consumer coordinator. Heartbeats are used to ensure that the consumer's session stays active. The value must be set lower than session timeout</td><td><code>3000</code></td></tr>
+<tr><td>metadataMaxAge</td><td>The period of time in milliseconds after which we force a refresh of metadata even if we haven't seen any partition leadership changes to proactively discover any new brokers or partitions</td><td><code>300000</code> (5 minutes)</td></tr>
+<tr><td>allowAutoTopicCreation</td><td>Allow topic creation when querying metadata for non-existent topics</td><td><code>true</code></td></tr>
+<tr><td>maxBytesPerPartition</td><td>The maximum amount of data per-partition the server will return. This size must be at least as large as the maximum message size the server allows or else it is possible for the producer to send messages larger than the consumer can fetch. If that happens, the consumer can get stuck trying to fetch a large message on a certain partition</td><td><code>1048576</code> (1MB)</td></tr>
+<tr><td>minBytes</td><td>Minimum amount of data the server should return for a fetch request, otherwise wait up to <code>maxWaitTimeInMs</code> for more data to accumulate.</td><td><code>1</code></td></tr>
+<tr><td>maxBytes</td><td>Maximum amount of bytes to accumulate in the response. Supported by Kafka &gt;= <code>0.10.1.0</code></td><td><code>10485760</code> (10MB)</td></tr>
+<tr><td>maxWaitTimeInMs</td><td>The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by <code>minBytes</code></td><td><code>5000</code></td></tr>
+<tr><td>retry</td><td>See <a href="/docs/1.16.0/configuration#retry">retry</a> for more information</td><td><code>{ retries: 5 }</code></td></tr>
+<tr><td>readUncommitted</td><td>Configures the consumer isolation level. If <code>false</code> (default), the consumer will not return any transactional messages which were not committed.</td><td><code>false</code></td></tr>
+<tr><td>maxInFlightRequests</td><td>Max number of requests that may be in progress at any time. If falsey then no limit.</td><td><code>null</code> <em>(no limit)</em></td></tr>
+<tr><td>rackId</td><td>Configure the &quot;rack&quot; in which the consumer resides to enable <a href="#follower-fetching">follower fetching</a></td><td><code>null</code> <em>(fetch from the leader always)</em></td></tr>
+</tbody>
+</table>
+<h2><a class="anchor" aria-hidden="true" id="a-name-pause-resume-a-pause-resume"></a><a href="#a-name-pause-resume-a-pause-resume" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="pause-resume"></a> Pause &amp; Resume</h2>
+<p>In order to pause and resume consuming from one or more topics, the <code>Consumer</code> provides the methods <code>pause</code> and <code>resume</code>. It also provides the <code>paused</code> method to get the list of all paused topics. Note that pausing a topic means that it won't be fetched in the next cycle. You may still receive messages for the topic within the current batch.</p>
+<p>Calling <code>pause</code> with a topic that the consumer is not subscribed to is a no-op, calling <code>resume</code> with a topic that is not paused is also a no-op.</p>
+<blockquote>
+<p>Note: Calling <code>resume</code> or <code>pause</code> while the consumer is not running will throw an error.</p>
+</blockquote>
+<p>Example: A situation where this could be useful is when an external dependency used by the consumer is under too much load. Here we want to <code>pause</code> consumption from a topic when this happens, and after a predefined interval we <code>resume</code> again:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> consumer.connect()
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'jobs'</span> })
+
+<span class="hljs-keyword">await</span> consumer.run({ <span class="hljs-attr">eachMessage</span>: <span class="hljs-keyword">async</span> ({ topic, message }) =&gt; {
+    <span class="hljs-keyword">try</span> {
+        <span class="hljs-keyword">await</span> sendToDependency(message)
+    } <span class="hljs-keyword">catch</span> (e) {
+        <span class="hljs-keyword">if</span> (e <span class="hljs-keyword">instanceof</span> TooManyRequestsError) {
+            consumer.pause([{ topic }])
+            setTimeout(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> consumer.resume([{ topic }]), e.retryAfter * <span class="hljs-number">1000</span>)
+        }
+
+        <span class="hljs-keyword">throw</span> e
+    }
+}})
+</code></pre>
+<p>For finer-grained control, specific partitions of topics can also be paused, rather than the whole topic. The ability to pause and resume on a per-partition basis, means it can be used to isolate the consuming (and processing) of messages.</p>
+<p>Example: in combination with <a href="#concurrent-processing">consuming messages per partition concurrently</a>, it can prevent having to stop processing all partitions because of a slow process in one of the other partitions.</p>
+<pre><code class="hljs css language-javascript">consumer.run({
+    <span class="hljs-attr">partitionsConsumedConcurrently</span>: <span class="hljs-number">3</span>, <span class="hljs-comment">// Default: 1</span>
+    <span class="hljs-attr">eachMessage</span>: <span class="hljs-keyword">async</span> ({ topic, partition, message }) =&gt; {
+      <span class="hljs-comment">// This will be called up to 3 times concurrently</span>
+        <span class="hljs-keyword">try</span> {
+            <span class="hljs-keyword">await</span> sendToDependency(message)
+        } <span class="hljs-keyword">catch</span> (e) {
+            <span class="hljs-keyword">if</span> (e <span class="hljs-keyword">instanceof</span> TooManyRequestsError) {
+                consumer.pause([{ topic, <span class="hljs-attr">partitions</span>: [partition] }])
+                <span class="hljs-comment">// Other partitions will keep fetching and processing, until if / when</span>
+                <span class="hljs-comment">// they also get throttled</span>
+                setTimeout(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+                    consumer.resume([{ topic, <span class="hljs-attr">partitions</span>: [partition] }])
+                    <span class="hljs-comment">// Other partitions that are paused will continue to be paused</span>
+                }, e.retryAfter * <span class="hljs-number">1000</span>)
+            }
+
+            <span class="hljs-keyword">throw</span> e
+        }
+    },
+})
+</code></pre>
+<p>It's possible to access the list of paused topic partitions using the <code>paused</code> method.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> pausedTopicPartitions = consumer.paused()
+
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> topicPartitions <span class="hljs-keyword">of</span> pausedTopicPartitions) {
+  <span class="hljs-keyword">const</span> { topic, partitions } = topicPartitions
+  <span class="hljs-built_in">console</span>.log({ topic, partitions })
+}
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-seek-a-seek"></a><a href="#a-name-seek-a-seek" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="seek"></a> Seek</h2>
+<p>To move the offset position in a topic/partition the <code>Consumer</code> provides the method <code>seek</code>. This method has to be called after the consumer is initialized and is running (after consumer#run).</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">await</span> consumer.connect()
+<span class="hljs-keyword">await</span> consumer.subscribe({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'example'</span> })
+
+<span class="hljs-comment">// you don't need to await consumer#run</span>
+consumer.run({ <span class="hljs-attr">eachMessage</span>: <span class="hljs-keyword">async</span> ({ topic, message }) =&gt; <span class="hljs-literal">true</span> })
+consumer.seek({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'example'</span>, <span class="hljs-attr">partition</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">offset</span>: <span class="hljs-number">12384</span> })
+</code></pre>
+<p>Upon seeking to an offset, any messages in active batches are marked as stale and discarded, making sure the next message read for the partition is from the offset sought to. Make sure to check <code>isStale()</code> before processing a message using <a href="#each-batch">the <code>eachBatch</code> interface</a> of <code>consumer.run</code>.</p>
+<p>By default, the consumer will commit the offset seeked. To disable this, set the <a href="#auto-commit"><code>autoCommit</code></a> option to <code>false</code> on the consumer.</p>
+<pre><code class="hljs css language-javascript">consumer.run({
+    <span class="hljs-attr">autoCommit</span>: <span class="hljs-literal">false</span>,
+    <span class="hljs-attr">eachMessage</span>: <span class="hljs-keyword">async</span> ({ topic, message }) =&gt; <span class="hljs-literal">true</span>
+})
+<span class="hljs-comment">// This will now only resolve the previous offset, not commit it</span>
+consumer.seek({ <span class="hljs-attr">topic</span>: <span class="hljs-string">'example'</span>, <span class="hljs-attr">partition</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">offset</span>: <span class="hljs-string">"12384"</span> })
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-custom-partition-assigner-a-custom-partition-assigner"></a><a href="#a-name-custom-partition-assigner-a-custom-partition-assigner" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="custom-partition-assigner"></a> Custom partition assigner</h2>
+<p>It's possible to configure the strategy the consumer will use to distribute partitions amongst the consumer group. KafkaJS has a round robin assigner configured by default.</p>
+<p>A partition assigner is a function which returns an object with the following interface:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> MyPartitionAssigner = <span class="hljs-function">(<span class="hljs-params">{ cluster }</span>) =&gt;</span> ({
+    <span class="hljs-attr">name</span>: <span class="hljs-string">'MyPartitionAssigner'</span>,
+    <span class="hljs-attr">version</span>: <span class="hljs-number">1</span>,
+    <span class="hljs-keyword">async</span> assign({ members, topics }) {},
+    protocol({ topics }) {}
+})
+</code></pre>
+<p>The method <code>assign</code> has to return an assignment plan with partitions per topic. A partition plan consists of a list of <code>memberId</code> and <code>memberAssignment</code>. The member assignment has to be encoded, use the <code>MemberAssignment</code> utility for that. Example:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { <span class="hljs-attr">AssignerProtocol</span>: { MemberAssignment } } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+
+<span class="hljs-keyword">const</span> MyPartitionAssigner = <span class="hljs-function">(<span class="hljs-params">{ cluster }</span>) =&gt;</span> ({
+    <span class="hljs-attr">version</span>: <span class="hljs-number">1</span>,
+    <span class="hljs-keyword">async</span> assign({ members, topics }) {
+        <span class="hljs-comment">// perform assignment</span>
+        <span class="hljs-keyword">return</span> myCustomAssignmentArray.map(<span class="hljs-function"><span class="hljs-params">memberId</span> =&gt;</span> ({
+            memberId,
+            <span class="hljs-attr">memberAssignment</span>: MemberAssignment.encode({
+                <span class="hljs-attr">version</span>: <span class="hljs-keyword">this</span>.version,
+                <span class="hljs-attr">assignment</span>: assignment[memberId],
+            })
+        }))
+    }
+})
+</code></pre>
+<p>The method <code>protocol</code> has to return <code>name</code> and <code>metadata</code>. Metadata has to be encoded, use the <code>MemberMetadata</code> utility for that. Example:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { <span class="hljs-attr">AssignerProtocol</span>: { MemberMetadata } } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+
+<span class="hljs-keyword">const</span> MyPartitionAssigner = <span class="hljs-function">(<span class="hljs-params">{ cluster }</span>) =&gt;</span> ({
+    <span class="hljs-attr">name</span>: <span class="hljs-string">'MyPartitionAssigner'</span>,
+    <span class="hljs-attr">version</span>: <span class="hljs-number">1</span>,
+    protocol({ topics }) {
+        <span class="hljs-keyword">return</span> {
+            <span class="hljs-attr">name</span>: <span class="hljs-keyword">this</span>.name,
+            <span class="hljs-attr">metadata</span>: MemberMetadata.encode({
+            <span class="hljs-attr">version</span>: <span class="hljs-keyword">this</span>.version,
+            topics,
+            }),
+        }
+    }
+})
+</code></pre>
+<p>Your <code>protocol</code> method will probably look like the example, but it's not implemented by default because extra data can be included as <code>userData</code>. Take a look at the <code>MemberMetadata#encode</code> for more information.</p>
+<p>Once your assigner is done, add it to the list of assigners. It's important to keep the default assigner there to allow the old consumers to have a common ground with the new consumers when deploying.</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> { <span class="hljs-attr">PartitionAssigners</span>: { roundRobin } } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+
+kafka.consumer({
+    <span class="hljs-attr">groupId</span>: <span class="hljs-string">'my-group'</span>,
+    <span class="hljs-attr">partitionAssigners</span>: [
+        MyPartitionAssigner,
+        roundRobin
+    ]
+})
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-describe-group-a-describe-group"></a><a href="#a-name-describe-group-a-describe-group" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="describe-group"></a> Describe group</h2>
+<blockquote>
+<p><strong>Experimental</strong> - This feature may be removed or changed in new versions of KafkaJS</p>
+</blockquote>
+<p>Returns metadata for the configured consumer group, example:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> data = <span class="hljs-keyword">await</span> consumer.describeGroup()
+<span class="hljs-comment">// {</span>
+<span class="hljs-comment">//  errorCode: 0,</span>
+<span class="hljs-comment">//  groupId: 'consumer-group-id-f104efb0e1044702e5f6',</span>
+<span class="hljs-comment">//  members: [</span>
+<span class="hljs-comment">//    {</span>
+<span class="hljs-comment">//      clientHost: '/172.19.0.1',</span>
+<span class="hljs-comment">//      clientId: 'test-3e93246fe1f4efa7380a',</span>
+<span class="hljs-comment">//      memberAssignment: Buffer,</span>
+<span class="hljs-comment">//      memberId: 'test-3e93246fe1f4efa7380a-ff87d06d-5c87-49b8-a1f1-c4f8e3ffe7eb',</span>
+<span class="hljs-comment">//      memberMetadata: Buffer,</span>
+<span class="hljs-comment">//    },</span>
+<span class="hljs-comment">//  ],</span>
+<span class="hljs-comment">//  protocol: 'RoundRobinAssigner',</span>
+<span class="hljs-comment">//  protocolType: 'consumer',</span>
+<span class="hljs-comment">//  state: 'Stable',</span>
+<span class="hljs-comment">// },</span>
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="a-name-compression-a-compression"></a><a href="#a-name-compression-a-compression" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="compression"></a> Compression</h2>
+<p>KafkaJS only support GZIP natively, but <a href="/docs/1.16.0/producing#compression-other">other codecs can be supported</a>.</p>
+<h2><a class="anchor" aria-hidden="true" id="a-name-follower-fetching-a-follower-fetching"></a><a href="#a-name-follower-fetching-a-follower-fetching" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><a name="follower-fetching"></a> Follower Fetching</h2>
+<p>KafkaJS supports &quot;follower fetching&quot;, where the consumer tries to fetch data preferentially from a broker in the same &quot;rack&quot;, rather than always going to the leader. This can considerably reduce operational costs if data transfer across &quot;racks&quot; is metered. There may also be performance benefits if the network speed between these &quot;racks&quot; is limited.</p>
+<p>The meaning of &quot;rack&quot; is very flexible, and can be used to model setups such as data centers, regions/availability zones, or other topologies.</p>
+<p>See also <a href="https://www.confluent.io/blog/multi-region-data-replication/">this blog post</a> for the bigger context.</p>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/1.16.0/transactions"><span class="arrow-prev">← </span><span>Transactions</span></a><a class="docs-next button" href="/docs/1.16.0/admin"><span>Admin Client</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#eachmessage">eachMessage</a></li><li><a href="#eachbatch">eachBatch</a><ul class="toc-headings"><li><a href="#example">Example</a></li></ul></li><li><a href="#partition-aware-concurrency">Partition-aware concurrency</a></li><li><a href="#autocommit">autoCommit</a></li><li><a href="#manual-committing">Manual committing</a></li><li><a href="#frombeginning">fromBeginning</a></li><li><a href="#options">Options</a></li><li><a href="#pause-amp-resume">Pause &amp; Resume</a></li><li><a href="#seek">Seek</a></li><li><a href="#custom-partition-assigner">Custom partition assigner</a></li><li><a href="#describe-group">Describe group</a></li><li><a href="#compression">Compression</a></li><li><a href="#follower-fetching">Follower Fetching</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/kafkajs-logoV2.svg" alt="KafkaJS" width="52" height="84"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Usage</a></div><div><h5>Community</h5><a href="https://kafkajs-slackin.herokuapp.com">Slack</a></div><div><h5>More</h5><a href="https://github.com/tulios/kafkajs">GitHub</a><a class="github-button" href="https://github.com/tulios/kafkajs" data-icon="octicon-star" data-count-href="/tulios/kafkajs/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><a href="https://badge.fury.io/js/kafkajs"><img src="https://badge.fury.io/js/kafkajs.svg" alt="npm version" height="18"/></a></div></section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '7c56b6be30976fce32eb287e2af6cf06',
+                indexName: 'kafka_js',
+                inputSelector: '#search_input_react',
+                algoliaOptions: {}
+              });
+            </script></body></html>
