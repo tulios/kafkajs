@@ -1,9 +1,4 @@
-const flatten = require('../utils/flatten')
-
-module.exports = ({ topics }) => {
-  const partitions = topics.map(({ topicName, partitions }) =>
+module.exports = ({ topics }) =>
+  topics.flatMap(({ topicName, partitions }) =>
     partitions.map(partition => ({ topicName, ...partition }))
   )
-
-  return flatten(partitions)
-}

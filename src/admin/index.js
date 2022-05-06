@@ -1,5 +1,4 @@
 const createRetry = require('../retry')
-const flatten = require('../utils/flatten')
 const waitFor = require('../utils/waitFor')
 const groupBy = require('../utils/groupBy')
 const createConsumer = require('../consumer')
@@ -961,19 +960,19 @@ module.exports = ({
           )
         )
 
-        const errors = flatten(
-          res.map(({ results }) =>
+        const errors = res
+          .flatMap(({ results }) =>
             results.map(({ groupId, errorCode, error }) => {
               return { groupId, errorCode, error }
             })
           )
-        ).filter(({ errorCode }) => errorCode !== 0)
+          .filter(({ errorCode }) => errorCode !== 0)
 
         clonedGroupIds = errors.map(({ groupId }) => groupId)
 
         if (errors.length > 0) throw new KafkaJSDeleteGroupsError('Error in DeleteGroups', errors)
 
-        results = flatten(res.map(({ results }) => results))
+        results = res.flatMap(({ results }) => results)
 
         return results
       } catch (e) {
@@ -1012,7 +1011,7 @@ module.exports = ({
       partitions.map(p => p.partition)
     )
 
-    const partitionsFound = flatten(values(partitionsByBroker))
+    const partitionsFound = values(partitionsByBroker).flat()
     const topicOffsets = await fetchTopicOffsets(topic)
 
     const leaderNotFoundErrors = []
