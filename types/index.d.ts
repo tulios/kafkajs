@@ -16,10 +16,34 @@ export class Kafka {
 
 export type BrokersFunction = () => string[] | Promise<string[]>
 
+type SaslAuthenticationRequest = {
+  encode: () => Buffer | Promise<Buffer>
+}
+type SaslAuthenticationResponse<ParseResult> = {
+  decode: (rawResponse: Buffer) => Buffer | Promise<Buffer>
+  parse: (data: Buffer) => ParseResult
+}
+
+export type Authenticator = {
+  authenticate: () => Promise<void>
+}
+
+export type Mechanism = {
+  mechanism: string
+  authenticationProvider: (
+    connection: { host: string; port: number },
+    logger: Logger,
+    saslAuthenticate: <ParseResult>(
+      request: SaslAuthenticationRequest,
+      response?: SaslAuthenticationResponse<ParseResult>
+    ) => Promise<ParseResult | void>
+  ) => Authenticator
+}
+
 export interface KafkaConfig {
   brokers: string[] | BrokersFunction
   ssl?: tls.ConnectionOptions | boolean
-  sasl?: SASLOptions
+  sasl?: SASLOptions | Mechanism
   clientId?: string
   connectionTimeout?: number
   authenticationTimeout?: number

@@ -33,11 +33,11 @@ module.exports = class SASLAuthenticator {
 
   async authenticate() {
     const mechanism = this.connection.sasl.mechanism.toUpperCase()
-    if (!SUPPORTED_MECHANISMS.includes(mechanism)) {
-      throw new KafkaJSSASLAuthenticationError(
-        `SASL ${mechanism} mechanism is not supported by the client`
-      )
-    }
+    // if (!SUPPORTED_MECHANISMS.includes(mechanism)) {
+    //   throw new KafkaJSSASLAuthenticationError(
+    //     `SASL ${mechanism} mechanism is not supported by the client`
+    //   )
+    // }
 
     const handshake = await this.connection.send(this.saslHandshake({ mechanism }))
     if (!handshake.enabledMechanisms.includes(mechanism)) {
@@ -69,7 +69,20 @@ module.exports = class SASLAuthenticator {
       return this.connection.sendAuthRequest({ request, response, authExpectResponse })
     }
 
-    const Authenticator = AUTHENTICATORS[mechanism]
-    await new Authenticator(this.connection, this.logger, saslAuthenticate).authenticate()
+    if (SUPPORTED_MECHANISMS.includes(mechanism)) {
+      const Authenticator = AUTHENTICATORS[mechanism]
+      await new Authenticator(this.connection, this.logger, saslAuthenticate).authenticate()
+    } else {
+      await this.connection.sasl
+        .authenticationProvider(
+          {
+            host: this.connection.host,
+            port: this.connection.port,
+          },
+          this.logger.namespace(`SaslAuthenticator-${mechanism}`),
+          saslAuthenticate
+        )
+        .authenticate()
+    }
   }
 }
