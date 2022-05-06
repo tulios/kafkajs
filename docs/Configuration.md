@@ -289,6 +289,16 @@ new Kafka({
 })
 ```
 
+The request timeout can be disabled by setting `enforceRequestTimeout` to `false`.
+
+```javascript
+new Kafka({
+  clientId: 'my-app',
+  brokers: ['kafka1:9092', 'kafka2:9092'],
+  enforceRequestTimeout: false
+})
+```
+
 ## Default Retry
 
 The `retry` option can be used to set the configuration of the retry mechanism, which is used to retry connections and API calls to Kafka (when using producers or consumers).
