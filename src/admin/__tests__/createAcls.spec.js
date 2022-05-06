@@ -1,4 +1,5 @@
 const createAdmin = require('../index')
+const createProducer = require('../../producer/index')
 
 const {
   secureRandom,
@@ -13,7 +14,7 @@ const ACL_OPERATION_TYPES = require('../../protocol/aclOperationTypes')
 const ACL_PERMISSION_TYPES = require('../../protocol/aclPermissionTypes')
 const RESOURCE_PATTERN_TYPES = require('../../protocol/resourcePatternTypes')
 
-const createSASLAdminClientForUser = ({ username, password }) => {
+const createSASLClientForUser = createClient => ({ username, password }) => {
   const saslConnectionOpts = () => {
     return Object.assign(sslConnectionOpts(), {
       port: 9094,
@@ -25,7 +26,7 @@ const createSASLAdminClientForUser = ({ username, password }) => {
     })
   }
 
-  const admin = createAdmin({
+  const client = createClient({
     logger: newLogger(),
     cluster: createCluster(
       {
@@ -36,8 +37,11 @@ const createSASLAdminClientForUser = ({ username, password }) => {
     ),
   })
 
-  return admin
+  return client
 }
+
+const createSASLAdminClientForUser = createSASLClientForUser(createAdmin)
+const createSASLProducerClientForUser = createSASLClientForUser(createProducer)
 
 describe('Admin', () => {
   let admin
@@ -246,6 +250,57 @@ describe('Admin', () => {
       await admin.connect()
 
       await expect(admin.fetchTopicMetadata({ topics: [topicName] })).resolves.toBeTruthy()
+    })
+
+    test('Repro 1346: Producing to allowed topic after failing to produce to not-allowed topic', async () => {
+      const allowedTopic = `allowed-${secureRandom()}`
+      const notAllowedTopic = `disallowed-${secureRandom()}`
+
+      admin = createSASLAdminClientForUser({ username: 'test', password: 'testtest' })
+
+      await admin.connect()
+      await admin.createTopics({
+        waitForLeaders: true,
+        topics: [allowedTopic, notAllowedTopic].map(topic => ({ topic, numPartitions: 1 })),
+      })
+      await admin.createAcls({
+        acl: [
+          {
+            resourceType: ACL_RESOURCE_TYPES.TOPIC,
+            resourceName: notAllowedTopic,
+            resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
+            principal: 'User:bob',
+            host: '*',
+            operation: ACL_OPERATION_TYPES.WRITE,
+            permissionType: ACL_PERMISSION_TYPES.DENY,
+          },
+          {
+            resourceType: ACL_RESOURCE_TYPES.TOPIC,
+            resourceName: allowedTopic,
+            resourcePatternType: RESOURCE_PATTERN_TYPES.LITERAL,
+            principal: 'User:bob',
+            host: '*',
+            operation: ACL_OPERATION_TYPES.WRITE,
+            permissionType: ACL_PERMISSION_TYPES.ALLOW,
+          },
+        ],
+      })
+
+      await admin.disconnect()
+      const producer = createSASLProducerClientForUser({ username: 'bob', password: 'bobbob' })
+      await producer.connect()
+
+      await expect(
+        producer.send({ topic: allowedTopic, messages: [{ value: 'hello' }] })
+      ).resolves.not.toBeUndefined()
+      await expect(
+        producer.send({ topic: notAllowedTopic, messages: [{ value: 'whoops' }] })
+      ).rejects.not.toBeUndefined()
+      await expect(
+        producer.send({ topic: allowedTopic, messages: [{ value: 'world' }] })
+      ).resolves.not.toBeUndefined()
+
+      await producer.disconnect()
     })
   })
 })
