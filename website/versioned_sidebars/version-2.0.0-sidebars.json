@@ -1,0 +1,33 @@
+{
+  "version-2.0.0-docs": {
+    "Usage": [
+      "version-2.0.0-introduction",
+      "version-2.0.0-getting-started",
+      "version-2.0.0-configuration",
+      "version-2.0.0-producing",
+      "version-2.0.0-transactions",
+      "version-2.0.0-consuming",
+      "version-2.0.0-admin",
+      "version-2.0.0-instrumentation-events",
+      "version-2.0.0-custom-logger",
+      "version-2.0.0-retry-detailed",
+      "version-2.0.0-faq",
+      "version-2.0.0-pre-releases"
+    ],
+    "Examples": [
+      "version-2.0.0-running-kafka-in-development",
+      "version-2.0.0-producer-example",
+      "version-2.0.0-consumer-example"
+    ],
+    "API Reference": [],
+    "Migration Guides": [
+      "version-2.0.0-migration-guide-v2.0.0"
+    ],
+    "Developing KafkaJS": [
+      "version-2.0.0-contribution-guide",
+      "version-2.0.0-development-environment",
+      "version-2.0.0-testing",
+      "version-2.0.0-development-resources"
+    ]
+  }
+}
