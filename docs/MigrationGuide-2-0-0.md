@@ -145,6 +145,18 @@ for (const topic of topics) {
 }
 ```
 
+## Admin: `createTopics` respects cluster settings `num.partitions` and `default.replication.factor`
+
+Previously, `admin.createTopics` would default to creating topics with 1 partition and a replication factor of 1. It will now instead respect the cluster settings for partition count and replication factor. If the cluster does not have a default partition count or replication factor, topic creation will fail with an error.
+
+To continue to create topics with 1 partition and a replication factor of 1, either configure the cluster with those defaults or provide them when creating the topic:
+
+```js
+await admin.createTopics({
+  topics: [{ topic: 'topic-name', numPartitions: 1, replicationFactor: 1 }]
+})
+```
+
 ## Removed support for Node 10 and 12
 
 KafkaJS supports all currently supported versions of NodeJS. If you are currently using NodeJS 10 or 12, you will get a warning when installing KafkaJS, and there is no guarantee that it will function. We **strongly** encourage you to upgrade to a supported, secure version of NodeJS.
