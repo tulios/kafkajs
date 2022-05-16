@@ -26,7 +26,7 @@ This is the first major version released in 4 years, and contains a few importan
   - **BREAKING:** Change default partitioner to Java compatible #1339
   - Improve consumer performance #1258
   - **BREAKING:** Enforce request timeout by default #1337
-  - Honor default replication factor and partition count when creating topics #1305
+  - **BREAKING** Honor default replication factor and partition count when creating topics #1305
   - Increase default authentication timeout to 10 seconds #1340
 
 ### Fixed
