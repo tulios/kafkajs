@@ -314,6 +314,10 @@ module.exports = class Runner extends EventEmitter {
       nodeId,
     })
 
+    if (batches.length === 0) {
+      await this.heartbeat()
+    }
+
     return batches
   }
 
