@@ -1,7 +1,7 @@
 const { EventEmitter } = require('events')
 const Long = require('../utils/long')
 const createRetry = require('../retry')
-const { isKafkaJSError, isRebalancing } = require('../errors')
+const { isKafkaJSError, isRebalancing, KafkaJSPauseConsumerError } = require('../errors')
 
 const {
   events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS, REBALANCING },
@@ -193,8 +193,22 @@ module.exports = class Runner extends EventEmitter {
           partition,
           message,
           heartbeat: () => this.heartbeat(),
+          pause: timeout => {
+            throw new KafkaJSPauseConsumerError(timeout)
+          },
         })
       } catch (e) {
+        if (e instanceof KafkaJSPauseConsumerError) {
+          this.consumerGroup.pause([{ topic, partitions: [partition] }])
+          if (e.timeout) {
+            setTimeout(
+              () => this.consumerGroup.resume([{ topic, partitions: [partition] }]),
+              e.timeout
+            )
+          }
+          await this.autoCommitOffsets()
+          break
+        }
         if (!isKafkaJSError(e)) {
           this.logger.error(`Error when calling eachMessage`, {
             topic,
@@ -246,6 +260,12 @@ module.exports = class Runner extends EventEmitter {
         },
         heartbeat: () => this.heartbeat(),
         /**
+         * Pause consumption, committing whatever offsets have been resolved so far if auto-commit is enabled
+         */
+        pause: timeout => {
+          throw new KafkaJSPauseConsumerError(timeout)
+        },
+        /**
          * Commit offsets if provided. Otherwise commit most recent resolved offsets
          * if the autoCommit conditions are met.
          *
@@ -261,6 +281,17 @@ module.exports = class Runner extends EventEmitter {
         isStale: () => this.consumerGroup.hasSeekOffset({ topic, partition }),
       })
     } catch (e) {
+      if (e instanceof KafkaJSPauseConsumerError) {
+        this.consumerGroup.pause([{ topic, partitions: [partition] }])
+        if (e.timeout) {
+          setTimeout(
+            () => this.consumerGroup.resume([{ topic, partitions: [partition] }]),
+            e.timeout
+          )
+        }
+        await this.autoCommitOffsets()
+        return
+      }
       if (!isKafkaJSError(e)) {
         this.logger.error(`Error when calling eachBatch`, {
           topic,

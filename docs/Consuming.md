@@ -71,6 +71,7 @@ await consumer.run({
         uncommittedOffsets,
         isRunning,
         isStale,
+        pause,
     }) => {
         for (let message of batch.messages) {
             console.log({
@@ -100,6 +101,7 @@ await consumer.run({
 * `uncommittedOffsets()` returns all offsets by topic-partition which have not yet been committed.
 * `isRunning()` returns true if consumer is in running state, else it returns false.
 * `isStale()` returns whether the messages in the batch have been rendered stale through some other operation and should be discarded. For example, when calling [`consumer.seek`](#seek) the messages in the batch should be discarded, as they are not at the offset we seeked to.
+* `pause(optionalTimeout)` can be used to pause the consumer for the current topic/partition for an optional period of time. All offsets resolved up to that point will be committed (subject to [autoCommit](#auto-commit) settings) and processing of this batch will be aborted. If no timeout is specified, the consumer will be paused indefinitely until `consumer.resume()` is called with the appropriate topic/partition. See [Pause & Resyume](#pause-resume) for more information about this feature.
 
 ### Example
 
@@ -302,6 +304,25 @@ consumer.run({
         }
     },
 })
+```
+
+As a convenience, the `eachMessage` callback provides an easy means to pause the specific topic/partition for the message currently being processed. You can also specify a timeout for when that topic/partition will automatically be resumed:
+
+```javascript
+await consumer.connect()
+await consumer.subscribe({ topics: ['jobs'] })
+
+await consumer.run({ eachMessage: async ({ topic, message, pause }) => {
+    try {
+        await sendToDependency(message)
+    } catch (e) {
+        if (e instanceof TooManyRequestsError) {
+            pause(e.retryAfter * 1000) // returns control to KafkaJS until timeout has expired
+        }
+
+        throw e
+    }
+}})
 ```
 
 It's possible to access the list of paused topic partitions using the `paused` method.
