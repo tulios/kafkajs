@@ -1,5 +1,4 @@
 const Long = require('../../utils/long')
-const flatten = require('../../utils/flatten')
 const isInvalidOffset = require('./isInvalidOffset')
 const initializeConsumerOffsets = require('./initializeConsumerOffsets')
 const {
@@ -131,8 +130,8 @@ module.exports = class OffsetManager {
     const subtractTopicOffsets = topic =>
       subtractPartitionOffsets(this.resolvedOffsets[topic], committedOffsets[topic])
 
-    const offsetsDiff = this.topics.map(subtractTopicOffsets)
-    return flatten(offsetsDiff).reduce((sum, offset) => sum.add(offset), Long.fromValue(0))
+    const offsetsDiff = this.topics.flatMap(subtractTopicOffsets)
+    return offsetsDiff.reduce((sum, offset) => sum.add(offset), Long.fromValue(0))
   }
 
   /**

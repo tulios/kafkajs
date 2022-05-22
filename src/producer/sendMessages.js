@@ -1,4 +1,3 @@
-const flatten = require('../utils/flatten')
 const { KafkaJSMetadataNotLoaded } = require('../errors')
 const { staleMetadata } = require('../protocol/error')
 const groupMessagesPerPartition = require('./groupMessagesPerPartition')
@@ -132,8 +131,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
       try {
         const requests = await createProducerRequests(responsePerBroker)
         await Promise.all(requests)
-        const responses = Array.from(responsePerBroker.values())
-        return flatten(responses)
+        return Array.from(responsePerBroker.values()).flat()
       } catch (e) {
         if (e.name === 'KafkaJSConnectionClosedError') {
           cluster.removeBroker({ host: e.host, port: e.port })

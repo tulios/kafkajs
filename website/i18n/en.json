@@ -43,6 +43,9 @@
         "title": "A Brief Intro to Kafka",
         "sidebar_label": "Intro to Kafka"
       },
+      "migration-guide-v2.0.0": {
+        "title": "Migrating to v2.0.0"
+      },
       "pre-releases": {
         "title": "Pre-releases"
       },
@@ -331,6 +334,7 @@
       "Usage": "Usage",
       "Examples": "Examples",
       "API Reference": "API Reference",
+      "Migration Guides": "Migration Guides",
       "Developing KafkaJS": "Developing KafkaJS"
     }
   },

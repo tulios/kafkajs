@@ -3,7 +3,6 @@ const Lock = require('../utils/lock')
 const sharedPromiseTo = require('../utils/sharedPromiseTo')
 const createRetry = require('../retry')
 const connectionPoolBuilder = require('./connectionPoolBuilder')
-const flatten = require('../utils/flatten')
 const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
 const {
   KafkaJSError,
@@ -493,7 +492,7 @@ module.exports = class Cluster {
 
     // Execute all requests, merge and normalize the responses
     const responses = await Promise.all(requests)
-    const partitionsPerTopic = flatten(responses).reduce(mergeTopics, {})
+    const partitionsPerTopic = responses.flat().reduce(mergeTopics, {})
 
     return keys(partitionsPerTopic).map(topic => ({
       topic,

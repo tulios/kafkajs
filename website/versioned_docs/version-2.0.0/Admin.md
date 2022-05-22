@@ -1,6 +1,7 @@
 ---
-id: admin
+id: version-2.0.0-admin
 title: Admin Client
+original_id: admin
 ---
 
 The admin client hosts all the cluster operations, such as: `createTopics`, `createPartitions`, etc.

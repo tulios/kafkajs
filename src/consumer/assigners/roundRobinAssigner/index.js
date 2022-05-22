@@ -1,5 +1,4 @@
 const { MemberMetadata, MemberAssignment } = require('../../assignerProtocol')
-const flatten = require('../../../utils/flatten')
 
 /**
  * RoundRobinAssigner
@@ -42,11 +41,10 @@ module.exports = ({ cluster }) => ({
     const sortedMembers = members.map(({ memberId }) => memberId).sort()
     const assignment = {}
 
-    const topicsPartionArrays = topics.map(topic => {
+    const topicsPartitions = topics.flatMap(topic => {
       const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
       return partitionMetadata.map(m => ({ topic: topic, partitionId: m.partitionId }))
     })
-    const topicsPartitions = flatten(topicsPartionArrays)
 
     topicsPartitions.forEach((topicPartition, i) => {
       const assignee = sortedMembers[i % membersCount]

@@ -1,7 +1,5 @@
 jest.setTimeout(20000)
 
-const PromiseAllSettled = require('../../utils/promiseAllSettled')
-
 const {
   secureRandom,
   newLogger,
@@ -148,7 +146,7 @@ describe('Producer > Idempotent producer', () => {
       })
     }
 
-    await PromiseAllSettled(
+    await Promise.allSettled(
       messages.map(m => producer.send({ acks: -1, topic: topicName, messages: [m] }))
     )
 
@@ -173,7 +171,7 @@ describe('Producer > Idempotent producer', () => {
       })
     }
 
-    await PromiseAllSettled(
+    await Promise.allSettled(
       messages.map(m => producer.send({ acks: -1, topic: topicName, messages: [m] }))
     )
 

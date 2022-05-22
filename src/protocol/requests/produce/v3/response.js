@@ -1,6 +1,5 @@
 const Decoder = require('../../../decoder')
 const { failure, createErrorFromCode } = require('../../../error')
-const flatten = require('../../../../utils/flatten')
 
 /**
  * Produce Response (Version: 3) => [responses] throttle_time_ms
@@ -37,11 +36,10 @@ const decode = async rawData => {
 }
 
 const parse = async data => {
-  const partitionsWithError = data.topics.map(response => {
+  const errors = data.topics.flatMap(response => {
     return response.partitions.filter(partition => failure(partition.errorCode))
   })
 
-  const errors = flatten(partitionsWithError)
   if (errors.length > 0) {
     const { errorCode } = errors[0]
     throw createErrorFromCode(errorCode)

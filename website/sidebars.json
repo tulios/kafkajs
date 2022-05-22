@@ -20,6 +20,9 @@
       "consumer-example"
     ],
     "API Reference": [],
+    "Migration Guides": [
+      "migration-guide-v2.0.0"
+    ],
     "Developing KafkaJS": [
       "contribution-guide",
       "development-environment",

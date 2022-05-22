@@ -1,5 +1,4 @@
 const waitFor = require('./waitFor')
-const flatten = require('./flatten')
 const Lock = require('./lock')
 
 const sleep = value => waitFor(delay => delay >= value)
@@ -19,7 +18,7 @@ describe('Utils > Lock', () => {
     }
 
     await Promise.all([callResource(), callResource(), callResource()])
-    const calls = flatten(resource.mock.calls)
+    const calls = resource.mock.calls.flat()
     expect(calls.length).toEqual(3)
     expect(calls[1] - calls[0]).toBeGreaterThanOrEqual(50)
     expect(calls[2] - calls[1]).toBeGreaterThanOrEqual(50)

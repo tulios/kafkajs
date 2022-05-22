@@ -1,7 +1,6 @@
 const sleep = require('../utils/sleep')
 const websiteUrl = require('../utils/websiteUrl')
 const arrayDiff = require('../utils/arrayDiff')
-const flatMap = require('../utils/flatMap')
 const createRetry = require('../retry')
 const sharedPromiseTo = require('../utils/sharedPromiseTo')
 
@@ -495,7 +494,7 @@ module.exports = class ConsumerGroup {
         rackId: this.rackId,
       })
 
-      return flatMap(responses, ({ topicName, partitions }) => {
+      return responses.flatMap(({ topicName, partitions }) => {
         const topicRequestData = requests.find(({ topic }) => topic === topicName)
 
         let preferredReadReplicas = this.preferredReadReplicasPerTopicPartition[topicName]
