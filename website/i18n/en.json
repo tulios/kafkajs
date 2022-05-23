@@ -323,6 +323,21 @@
       },
       "version-1.16.0/version-1.16.0-transactions": {
         "title": "Transactions"
+      },
+      "version-2.0.0/version-2.0.0-admin": {
+        "title": "Admin Client"
+      },
+      "version-2.0.0/version-2.0.0-configuration": {
+        "title": "Client Configuration"
+      },
+      "version-2.0.0/version-2.0.0-consuming": {
+        "title": "Consuming Messages"
+      },
+      "version-2.0.0/version-2.0.0-migration-guide-v2.0.0": {
+        "title": "Migrating to v2.0.0"
+      },
+      "version-2.0.0/version-2.0.0-producing": {
+        "title": "Producing Messages"
       }
     },
     "links": {
