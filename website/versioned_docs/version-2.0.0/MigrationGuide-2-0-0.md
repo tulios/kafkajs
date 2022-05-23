@@ -1,6 +1,7 @@
 ---
-id: migration-guide-v2.0.0
+id: version-2.0.0-migration-guide-v2.0.0
 title: Migrating to v2.0.0
+original_id: migration-guide-v2.0.0
 ---
 
 v2.0.0 is the first major version of KafkaJS released since 2018. For most users, the required changes in order to upgrade from 1.x.x are very minor, but it is still important to read through the list of changes to know what, if any, changes need to be made.
