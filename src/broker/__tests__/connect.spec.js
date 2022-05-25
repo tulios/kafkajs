@@ -2,6 +2,7 @@ const {
   createConnectionPool,
   connectionOpts,
   saslSCRAM256ConnectionOpts,
+  sslConnectionOpts,
   newLogger,
   testIfKafkaAtLeast_1_1_0,
   describeIfOauthbearerDisabled,
@@ -32,6 +33,29 @@ describe('Broker > connect', () => {
     expect(broker.versions).toEqual(null)
     await broker.connect()
     expect(broker.versions).toBeTruthy()
+  })
+
+  test("throws if the mechanism isn't supported by the server", async () => {
+    broker = new Broker({
+      connectionPool: createConnectionPool(
+        Object.assign(sslConnectionOpts(), {
+          port: 9094,
+          sasl: {
+            mechanism: 'fake-mechanism',
+            authenticationProvider: () => ({
+              authenticate: async () => {
+                throw new Error('🥸')
+              },
+            }),
+          },
+        })
+      ),
+      logger: newLogger(),
+    })
+
+    await expect(broker.connect()).rejects.toThrow(
+      'The broker does not support the requested SASL mechanism'
+    )
   })
 
   for (const e of saslEntries) {
