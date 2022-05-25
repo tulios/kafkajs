@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2022-05-23
+
+### Fixed
+  - Fix members leaving the group after not being assigned any partitions #1362
+  - Make `REPLICA_NOT_AVAILABLE` retriable #1351
+  - Document `admin.createTopics` respecting cluster default partitions number and replication factor #1360
+
 ## [2.0.0] - 2022-05-06
 
 This is the first major version released in 4 years, and contains a few important breaking changes. **A [migration guide](https://kafka.js.org/docs/migration-guide-v2.0.0) has been prepared to help with the migration process.** Be sure to read it before upgrading from older versions of KafkaJS.
