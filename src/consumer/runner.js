@@ -144,6 +144,10 @@ module.exports = class Runner extends EventEmitter {
           return bail(e)
         }
 
+        if (e.name === 'KafkaJSConnectionError') {
+          return bail(e)
+        }
+
         this.logger.debug('Error while scheduling fetch manager, trying again...', {
           groupId: this.consumerGroup.groupId,
           memberId: this.consumerGroup.memberId,
