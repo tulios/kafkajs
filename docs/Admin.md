@@ -18,6 +18,16 @@ The option `retry` can be used to customize the configuration for the admin.
 
 Take a look at [Retry](Configuration.md#default-retry) for more information.
 
+## <a name="list-topics"></a> List topics
+
+`listTopics` lists the names of all existing topics, and returns an array of strings.
+The method will throw exceptions in case of errors.
+
+```javascript
+await admin.listTopics()
+// [ 'topic-1', 'topic-2', 'topic-3', ... ]
+```
+
 ## <a name="create-topics"></a> Create topics
 
 `createTopics` will resolve to `true` if the topic was created successfully or `false` if it already exists. The method will throw exceptions in case of errors.
@@ -27,17 +37,17 @@ await admin.createTopics({
     validateOnly: <boolean>,
     waitForLeaders: <boolean>
     timeout: <Number>,
-    topics: <Topic[]>,
+    topics: <ITopicConfig[]>,
 })
 ```
 
-`Topic` structure:
+`ITopicConfig` structure:
 
 ```javascript
 {
     topic: <String>,
-    numPartitions: <Number>,     // default: 1
-    replicationFactor: <Number>, // default: 1
+    numPartitions: <Number>,     // default: -1 (uses broker `num.partitions` configuration)
+    replicationFactor: <Number>, // default: -1 (uses broker `default.replication.factor` configuration)
     replicaAssignment: <Array>,  // Example: [{ partition: 0, replicas: [0,1,2] }] - default: []
     configEntries: <Array>       // Example: [{ name: 'cleanup.policy', value: 'compact' }] - default: []
 }
@@ -83,7 +93,7 @@ await admin.createPartitions({
 {
     topic: <String>,
     count: <Number>,     // partition count
-    assignments: <Array<Array<Number>>> // Example: [[0,1],[1,2],[2,0]] 
+    assignments: <Array<Array<Number>>> // Example: [[0,1],[1,2],[2,0]]
 }
 ```
 
@@ -94,10 +104,6 @@ await admin.createPartitions({
 | timeout        | The time in ms to wait for a topic to be completely created on the controller node                    | 5000    |
 | count          | New partition count, mandatory                                                                                   |         |
 | assignments    | Assigned brokers for each new partition                                                               | null    |
-
-## <a name="get-topic-metadata"></a> Get topic metadata
-
-Deprecated, see [Fetch topic metadata](#fetch-topic-metadata)
 
 ## <a name="fetch-topic-metadata"></a> Fetch topic metadata
 
@@ -117,7 +123,7 @@ await admin.fetchTopicMetadata({ topics: <Array<String>> })
 
 ```javascript
 {
-    topic: <String>,
+    name: <String>,
     partitions: <Array<PartitionMetadata>> // default: 1
 }
 ```
@@ -156,12 +162,60 @@ await admin.fetchTopicOffsets(topic)
 // ]
 ```
 
-## <a name="fetch-offsets"></a> Fetch consumer group offsets
+## <a name="fetch-topic-offsets-by-timestamp"></a> Fetch topic offsets by timestamp
 
-`fetchOffsets` returns the consumer group offset for a topic.
+Specify a `timestamp` to get the earliest offset on each partition where the message's timestamp is greater than or equal to the given timestamp.
 
 ```javascript
-await admin.fetchOffsets({ groupId, topic })
+await admin.fetchTopicOffsetsByTimestamp(topic, timestamp)
+// [
+//   { partition: 0, offset: '3244' },
+//   { partition: 1, offset: '3113' },
+// ]
+```
+
+## <a name="fetch-offsets"></a> Fetch consumer group offsets
+
+`fetchOffsets` returns the consumer group offset for a list of topics.
+
+```javascript
+await admin.fetchOffsets({ groupId, topics: ['topic1', 'topic2'] })
+// [
+//   {
+//     topic: 'topic1',
+//     partitions: [
+//       { partition: 0, offset: '31004' },
+//       { partition: 1, offset: '54312' },
+//       { partition: 2, offset: '32103' },
+//       { partition: 3, offset: '28' },
+//     ],
+//   },
+//   {
+//     topic: 'topic2',
+//     partitions: [
+//       { partition: 0, offset: '1234' },
+//       { partition: 1, offset: '4567' },
+//     ],
+//   },
+// ]
+```
+
+Omit `topics` altogether if you want to get the consumer group offsets for all topics with committed offsets.
+
+Include the optional `resolveOffsets` flag to resolve the offsets without having to start a consumer, useful when fetching directly after calling [resetOffsets](#a-name-reset-offsets-a-reset-consumer-group-offsets):
+
+```javascript
+await admin.resetOffsets({ groupId, topic })
+await admin.fetchOffsets({ groupId, topics: [topic], resolveOffsets: false })
+// [
+//   { partition: 0, offset: '-1' },
+//   { partition: 1, offset: '-1' },
+//   { partition: 2, offset: '-1' },
+//   { partition: 3, offset: '-1' },
+// ]
+
+await admin.resetOffsets({ groupId, topic })
+await admin.fetchOffsets({ groupId, topics: [topic], resolveOffsets: true })
 // [
 //   { partition: 0, offset: '31004' },
 //   { partition: 1, offset: '54312' },
@@ -214,6 +268,15 @@ await admin.setOffsets({
 })
 ```
 
+## <a name="reset-offsets-by-timestamp"></a> Reset consumer group offsets by timestamp
+
+Combining `fetchTopicOffsetsByTimestamp` and `setOffsets` can reset a consumer group's offsets on each partition to the earliest offset whose timestamp is greater than or equal to the given timestamp.
+The consumer group must have no running instances when performing the reset. Otherwise, the command will be rejected.
+
+```javascript
+await admin.setOffsets({ groupId, topic, partitions: await admin.fetchTopicOffsetsByTimestamp(topic, timestamp) })
+```
+
 ## <a name="describe-cluster"></a> Describe cluster
 
 Allows you to get information about the broker cluster. This is mostly useful
@@ -245,7 +308,7 @@ await admin.describeConfigs({
 
 ```javascript
 {
-    type: <ResourceType>,
+    type: <ConfigResourceType>,
     name: <String>,
     configNames: <String[]>
 }
@@ -254,13 +317,13 @@ await admin.describeConfigs({
 Returning all configs for a given resource:
 
 ```javascript
-const { ResourceTypes } = require('kafkajs')
+const { ConfigResourceTypes } = require('kafkajs')
 
 await admin.describeConfigs({
   includeSynonyms: false,
   resources: [
     {
-      type: ResourceTypes.TOPIC,
+      type: ConfigResourceTypes.TOPIC,
       name: 'topic-name'
     }
   ]
@@ -270,13 +333,13 @@ await admin.describeConfigs({
 Returning specific configs for a given resource:
 
 ```javascript
-const { ResourceTypes } = require('kafkajs')
+const { ConfigResourceTypes } = require('kafkajs')
 
 await admin.describeConfigs({
   includeSynonyms: false,
   resources: [
     {
-      type: ResourceTypes.TOPIC,
+      type: ConfigResourceTypes.TOPIC,
       name: 'topic-name',
       configNames: ['cleanup.policy']
     }
@@ -284,7 +347,7 @@ await admin.describeConfigs({
 })
 ```
 
-Take a look at [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) for a complete list of resources.
+Take a look at [configResourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/configResourceTypes.js) for a complete list of resources.
 
 Example response:
 
@@ -296,6 +359,7 @@ Example response:
                 configName: 'cleanup.policy',
                 configValue: 'delete',
                 isDefault: true,
+                configSource: 5,
                 isSensitive: false,
                 readOnly: false
             }],
@@ -324,7 +388,7 @@ await admin.alterConfigs({
 
 ```javascript
 {
-    type: <ResourceType>,
+    type: <ConfigResourceType>,
     name: <String>,
     configEntries: <ResourceConfigEntry[]>
 }
@@ -342,18 +406,18 @@ await admin.alterConfigs({
 Example:
 
 ```javascript
-const { ResourceTypes } = require('kafkajs')
+const { ConfigResourceTypes } = require('kafkajs')
 
 await admin.alterConfigs({
     resources: [{
-        type: ResourceTypes.TOPIC,
+        type: ConfigResourceTypes.TOPIC,
         name: 'topic-name',
         configEntries: [{ name: 'cleanup.policy', value: 'compact' }]
     }]
 })
 ```
 
-Take a look at [resourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/resourceTypes.js) for a complete list of resources.
+Take a look at [configResourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/configResourceTypes.js) for a complete list of resources.
 
 Example response:
 
@@ -377,14 +441,6 @@ List groups available on the broker.
 await admin.listGroups()
 ```
 
-Example:
-
-```javascript
-const { ResourceTypes } = require('kafkajs')
-
-await admin.listGroups()
-```
-
 Example response:
 
 ```javascript
@@ -394,6 +450,41 @@ Example response:
     ]
 }
 ```
+
+## <a name="describe-groups"></a> Describe groups
+
+Describe consumer groups by `groupId`s. This is similar to [consumer.describeGroup()](Consuming.md#describe-group), except
+it allows you to describe multiple groups and does not require you to have a consumer be part of any of those groups.
+
+```js
+await admin.describeGroups([ 'testgroup' ])
+// {
+//   groups: [{
+//     errorCode: 0,
+//     groupId: 'testgroup',
+//     members: [
+//       {
+//         clientHost: '/172.19.0.1',
+//         clientId: 'test-3e93246fe1f4efa7380a',
+//         memberAssignment: Buffer,
+//         memberId: 'test-3e93246fe1f4efa7380a-ff87d06d-5c87-49b8-a1f1-c4f8e3ffe7eb',
+//         memberMetadata: Buffer,
+//       },
+//     ],
+//     protocol: 'RoundRobinAssigner',
+//     protocolType: 'consumer',
+//     state: 'Stable',
+//   }]
+// }
+```
+Helper function to decode `memeberMetadata` and `memberAssignment` is available in `AssignerProtocol`
+
+Example: 
+
+`const memberMetadata = AssignerProtocol.MemberMetadata.decode(memberMetadata)`
+
+`const memberAssignment = AssignerProtocol.MemberAssignment.decode(memberAssignment)`
+
 
 ## <a name="delete-groups"></a> Delete groups
 
@@ -408,8 +499,6 @@ await admin.deleteGroups([groupId])
 Example:
 
 ```javascript
-const { ResourceTypes } = require('kafkajs')
-
 await admin.deleteGroups(['group-test'])
 ```
 
@@ -433,4 +522,161 @@ try {
   //   error: KafkaJSProtocolError
   // }]
 }
+```
+
+## <a name="delete-topic-records"></a> Delete Topic Records
+
+Delete records for a selected topic. This will delete all records from the earliest offset up to - but not including - the provided target offset for the given partition(s). To delete all records in a partition, use a target offset of `-1`.
+
+Note that you cannot delete records in an arbitrary range (it will always be from the earliest available offset)
+
+```javascript
+await admin.deleteTopicRecords({
+    topic: <String>,
+    partitions: <SeekEntry[]>,
+})
+```
+
+Example:
+
+```javascript
+await admin.deleteTopicRecords({
+    topic: 'custom-topic',
+    partitions: [
+        { partition: 0, offset: '30' }, // delete up to and including offset 29
+        { partition: 3, offset: '-1' }, // delete all available records on this partition
+    ]
+})
+```
+
+## <a name="create-acl"></a> Create ACL
+
+```javascript
+const {
+  AclResourceTypes,
+  AclOperationTypes,
+  AclPermissionTypes,
+  ResourcePatternTypes,
+} = require('kafkajs')
+
+const acl = [
+  {
+    resourceType: AclResourceTypes.TOPIC,
+    resourceName: 'topic-name',
+    resourcePatternType: ResourcePatternTypes.LITERAL,
+    principal: 'User:bob',
+    host: '*',
+    operation: AclOperationTypes.ALL,
+    permissionType: AclPermissionTypes.DENY,
+  },
+  {
+    resourceType: AclResourceTypes.TOPIC,
+    resourceName: 'topic-name',
+    resourcePatternType: ResourcePatternTypes.LITERAL,
+    principal: 'User:alice',
+    host: '*',
+    operation: AclOperationTypes.ALL,
+    permissionType: AclPermissionTypes.ALLOW,
+  },
+]
+
+await admin.createAcls({ acl })
+```
+
+Be aware that the security features might be disabled in your cluster. In that case, the operation will throw an error:
+
+```sh
+KafkaJSProtocolError: Security features are disabled
+```
+
+## <a name="delete-acl"></a> Delete ACL
+
+```javascript
+const {
+  AclResourceTypes,
+  AclOperationTypes,
+  AclPermissionTypes,
+  ResourcePatternTypes,
+} = require('kafkajs')
+
+const acl = {
+  resourceName: 'topic-name,
+  resourceType: AclResourceTypes.TOPIC,
+  host: '*',
+  permissionType: AclPermissionTypes.ALLOW,
+  operation: AclOperationTypes.ANY,
+  resourcePatternType: ResourcePatternTypes.LITERAL,
+}
+
+await admin.deleteAcls({ filters: [acl] })
+// {
+//   filterResponses: [
+//     {
+//     errorCode: 0,
+//     errorMessage: null,
+//     matchingAcls: [
+//         {
+//         errorCode: 0,
+//         errorMessage: null,
+//         resourceType: AclResourceTypes.TOPIC,
+//         resourceName: 'topic-name',
+//         resourcePatternType: ResourcePatternTypes.LITERAL,
+//         principal: 'User:alice',
+//         host: '*',
+//         operation: AclOperationTypes.ALL,
+//         permissionType: AclPermissionTypes.ALLOW,
+//         },
+//     ],
+//     },
+//   ],
+// }
+```
+
+Be aware that the security features might be disabled in your cluster. In that case, the operation will throw an error:
+
+```sh
+KafkaJSProtocolError: Security features are disabled
+```
+
+## <a name="describe-acl"></a> Describe ACL
+
+```javascript
+const {
+  AclResourceTypes,
+  AclOperationTypes,
+  AclPermissionTypes,
+  ResourcePatternTypes,
+} = require('kafkajs')
+
+await admin.describeAcls({
+  resourceName: 'topic-name,
+  resourceType: AclResourceTypes.TOPIC,
+  host: '*',
+  permissionType: AclPermissionTypes.ALLOW,
+  operation: AclOperationTypes.ANY,
+  resourcePatternTypeFilter: ResourcePatternTypes.LITERAL,
+})
+// {
+//   resources: [
+//     {
+//       resourceType: AclResourceTypes.TOPIC,
+//       resourceName: 'topic-name,
+//       resourcePatternType: ResourcePatternTypes.LITERAL,
+//       acls: [
+//         {
+//           principal: 'User:alice',
+//           host: '*',
+//           operation: AclOperationTypes.ALL,
+//           permissionType: AclPermissionTypes.ALLOW,
+//         },
+//       ],
+//     },
+//   ],
+// }
+```
+
+Be aware that the security features might be disabled in your cluster. In that case, the operation will throw an error:
+
+```sh
+KafkaJSProtocolError: Security features are disabled
 ```

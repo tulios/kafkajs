@@ -1,6 +1,6 @@
 const Broker = require('../index')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
-const { secureRandom, createConnection, newLogger, retryProtocol } = require('testHelpers')
+const { secureRandom, createConnectionPool, newLogger, retryProtocol } = require('testHelpers')
 const { KafkaJSProtocolError } = require('../../errors')
 
 describe('Broker > AddOffsetsToTxn', () => {
@@ -11,7 +11,7 @@ describe('Broker > AddOffsetsToTxn', () => {
     consumerGroupId = `group-id-${secureRandom()}`
 
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
 
@@ -29,7 +29,7 @@ describe('Broker > AddOffsetsToTxn', () => {
     )
 
     broker = new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
 
@@ -44,8 +44,8 @@ describe('Broker > AddOffsetsToTxn', () => {
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await broker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    broker && (await broker.disconnect())
   })
 
   test('request', async () => {
@@ -57,6 +57,7 @@ describe('Broker > AddOffsetsToTxn', () => {
     })
 
     expect(result).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       errorCode: 0,
     })

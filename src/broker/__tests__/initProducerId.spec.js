@@ -1,5 +1,5 @@
 const Broker = require('../index')
-const { createConnection, newLogger, retryProtocol, secureRandom } = require('testHelpers')
+const { createConnectionPool, newLogger, retryProtocol, secureRandom } = require('testHelpers')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 
 describe('Broker > InitProducerId', () => {
@@ -9,7 +9,7 @@ describe('Broker > InitProducerId', () => {
     transactionalId = `producer-group-id-${secureRandom()}`
 
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -26,15 +26,15 @@ describe('Broker > InitProducerId', () => {
     )
 
     broker = new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
     await broker.connect()
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await broker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    broker && (await broker.disconnect())
   })
 
   test('request with transaction id', async () => {
@@ -44,8 +44,9 @@ describe('Broker > InitProducerId', () => {
     })
 
     expect(response).toEqual({
-      errorCode: 0,
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
+      errorCode: 0,
       producerId: expect.stringMatching(/\d+/),
       producerEpoch: expect.any(Number),
     })
@@ -55,8 +56,9 @@ describe('Broker > InitProducerId', () => {
     const response = await broker.initProducerId({ transactionTimeout: 30000 })
 
     expect(response).toEqual({
-      errorCode: 0,
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
+      errorCode: 0,
       producerId: expect.stringMatching(/\d+/),
       producerEpoch: expect.any(Number),
     })

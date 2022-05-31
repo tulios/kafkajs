@@ -2,7 +2,7 @@ const Broker = require('../index')
 const apiKeys = require('../../protocol/requests/apiKeys')
 const {
   secureRandom,
-  createConnection,
+  createConnectionPool,
   newLogger,
   createTopic,
   retryProtocol,
@@ -17,7 +17,7 @@ describe('Broker > ListOffsets', () => {
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -34,15 +34,15 @@ describe('Broker > ListOffsets', () => {
 
     // Connect to the correct broker to produce message
     broker = new Broker({
-      connection: createConnection(newBrokerData),
+      connectionPool: createConnectionPool(newBrokerData),
       logger: newLogger(),
     })
     await broker.connect()
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await broker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    broker && (await broker.disconnect())
   })
 
   test('request', async () => {
@@ -82,6 +82,7 @@ describe('Broker > ListOffsets', () => {
           ]),
         },
       ],
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
     })
   })
@@ -127,6 +128,7 @@ describe('Broker > ListOffsets', () => {
           ]),
         },
       ],
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
     })
 
@@ -152,6 +154,7 @@ describe('Broker > ListOffsets', () => {
           ]),
         },
       ],
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
     })
   })

@@ -6,7 +6,11 @@ import {
   logLevel,
   CompressionTypes,
   CompressionCodecs,
-  ResourceTypes,
+  ConfigResourceTypes,
+  AclResourceTypes,
+  AclOperationTypes,
+  AclPermissionTypes,
+  ResourcePatternTypes,
   LogEntry,
   KafkaJSError,
   KafkaJSOffsetOutOfRange,
@@ -38,7 +42,9 @@ const kafka = new Kafka({
     username: 'test',
     password: 'testtest',
   },
-  logCreator: (logLevel: logLevel) => (entry: LogEntry) => { },
+  logCreator: (logLevel: logLevel) => (entry: LogEntry) => {
+    Date.parse(entry.log.timestamp);
+  },
 })
 
 kafka.logger().error('Instantiated KafkaJS')
@@ -54,7 +60,7 @@ removeListener()
 
 const runConsumer = async () => {
   await consumer.connect()
-  await consumer.subscribe({ topic })
+  await consumer.subscribe({ topics: [topic] })
   await consumer.run({
     eachBatch: async ({
       batch,
@@ -163,8 +169,8 @@ const runAdmin = async () => {
     brokers: brokers.map(({ nodeId, host, port }) => ({
       nodeId,
       host,
-      port
-    }))
+      port,
+    })),
   })
 
   await admin.fetchTopicMetadata({ topics: ['string'] }).then(metadata => {
@@ -172,6 +178,11 @@ const runAdmin = async () => {
       console.log(topic.name, topic.partitions)
     })
   })
+
+  await admin.listTopics()
+
+  await admin.fetchOffsets({ groupId: 'test-group' })
+  await admin.fetchOffsets({ groupId: 'test-group', topics: ['topic1', 'topic2'] })
 
   await admin.createTopics({
     topics: [{ topic, numPartitions: 10, replicationFactor: 1 }],
@@ -183,11 +194,80 @@ const runAdmin = async () => {
     includeSynonyms: false,
     resources: [
       {
-        type: ResourceTypes.TOPIC,
+        type: ConfigResourceTypes.TOPIC,
         name: topic,
       },
     ],
   })
+
+  const describeAcls = await admin.describeAcls({
+    resourceName: 'topic-name',
+    resourceType: AclResourceTypes.TOPIC,
+    host: '*',
+    permissionType: AclPermissionTypes.ALLOW,
+    operation: AclOperationTypes.ANY,
+    resourcePatternType: ResourcePatternTypes.LITERAL,
+  })
+  admin.logger().debug('Describe ACls', {
+    resources: describeAcls.resources.map(r => ({
+      resourceType: r.resourceType,
+      resourceName: r.resourceName,
+      resourcePatternType: r.resourcePatternType,
+      acls: r.acls,
+    })),
+  })
+
+  const createAcls = await admin.createAcls({
+    acl: [
+      {
+        resourceType: AclResourceTypes.TOPIC,
+        resourceName: 'topic-name',
+        resourcePatternType: ResourcePatternTypes.LITERAL,
+        principal: 'User:bob',
+        host: '*',
+        operation: AclOperationTypes.ALL,
+        permissionType: AclPermissionTypes.DENY,
+      },
+    ],
+  })
+  admin.logger().debug('Create ACls', {
+    created: createAcls === true,
+  })
+
+  const deleteAcls = await admin.deleteAcls({
+    filters: [
+      {
+        resourceName: 'topic-name',
+        resourceType: AclResourceTypes.TOPIC,
+        host: '*',
+        permissionType: AclPermissionTypes.ALLOW,
+        operation: AclOperationTypes.ANY,
+        resourcePatternType: ResourcePatternTypes.LITERAL,
+      },
+    ],
+  })
+  admin.logger().debug('Delete ACls', {
+    filterResponses: deleteAcls.filterResponses.map(f => ({
+      errorCode: f.errorCode,
+      errorMessage: f.errorMessage,
+      machingAcls: f.matchingAcls.map(m => ({
+        errorCode: m.errorCode,
+        errorMessage: m.errorMessage,
+        resourceType: m.resourceType,
+        resourceName: m.resourceName,
+        resourcePatternType: m.resourcePatternType,
+        principal: m.principal,
+        host: m.host,
+        operation: m.operation,
+        permissionType: m.permissionType,
+      })),
+    })),
+  })
+
+  const { groups } = await admin.listGroups()
+  const groupIds = groups.map(({ groupId }) => groupId)
+  const groupDescription = await admin.describeGroups(groupIds)
+  await admin.deleteGroups(groupDescription.groups.map(({ groupId }) => groupId))
 
   await admin.disconnect()
 }
@@ -214,19 +294,19 @@ kafka.consumer({
 })
 
 // ERROR
-new KafkaJSError('Invalid partition metadata', { retriable: true });
-new KafkaJSError('The group is rebalancing');
-new KafkaJSError(new Error('💣'), { retriable: true });
+new KafkaJSError('Invalid partition metadata', { retriable: true })
+new KafkaJSError('The group is rebalancing')
+new KafkaJSError(new Error('💣'), { retriable: true })
 
-new KafkaJSOffsetOutOfRange(new Error(), { topic: topic, partition: 0 });
+new KafkaJSOffsetOutOfRange(new Error(), { topic: topic, partition: 0 })
 
-new KafkaJSNumberOfRetriesExceeded(new Error(), { retryCount: 0, retryTime: 0 });
+new KafkaJSNumberOfRetriesExceeded(new Error(), { retryCount: 0, retryTime: 0 })
 
 new KafkaJSConnectionError('Connection error: ECONNREFUSED', {
   broker: `${host}:9094`,
-  code: 'ECONNREFUSED'
-});
-new KafkaJSConnectionError('Connection error: ECONNREFUSED', { code: 'ECONNREFUSED' });
+  code: 'ECONNREFUSED',
+})
+new KafkaJSConnectionError('Connection error: ECONNREFUSED', { code: 'ECONNREFUSED' })
 
 new KafkaJSRequestTimeoutError('Request requestInfo timed out', {
   broker: `${host}:9094`,
@@ -234,10 +314,10 @@ new KafkaJSRequestTimeoutError('Request requestInfo timed out', {
   correlationId: 0,
   createdAt: 0,
   sentAt: 0,
-  pendingDuration: 0
-});
+  pendingDuration: 0,
+})
 
-new KafkaJSTopicMetadataNotLoaded('Topic metadata not loaded', { topic: topic });
+new KafkaJSTopicMetadataNotLoaded('Topic metadata not loaded', { topic: topic })
 
 const partitionMetadata: PartitionMetadata = {
   partitionErrorCode: 0,
@@ -248,10 +328,13 @@ const partitionMetadata: PartitionMetadata = {
 }
 new KafkaJSStaleTopicMetadataAssignment('Topic has been updated', {
   topic: topic,
-  unknownPartitions: [partitionMetadata]
-});
+  unknownPartitions: [partitionMetadata],
+})
 
-new KafkaJSServerDoesNotSupportApiKey('The Kafka server does not support the requested API version', {
-  apiKey: 0,
-  apiName: 'Produce'
-});
+new KafkaJSServerDoesNotSupportApiKey(
+  'The Kafka server does not support the requested API version',
+  {
+    apiKey: 0,
+    apiName: 'Produce',
+  }
+)

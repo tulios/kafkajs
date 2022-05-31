@@ -8,7 +8,7 @@ The following example assumes that you are using the local Kafka configuration d
 ```javascript
 const ip = require('ip')
 
-const { Kafka, logLevel } = require('../index')
+const { Kafka, logLevel } = require('kafkajs')
 
 const host = process.env.HOST_IP || ip.address()
 
@@ -40,7 +40,7 @@ run().catch(e => console.error(`[example/consumer] ${e.message}`, e))
 const errorTypes = ['unhandledRejection', 'uncaughtException']
 const signalTraps = ['SIGTERM', 'SIGINT', 'SIGUSR2']
 
-errorTypes.map(type => {
+errorTypes.forEach(type => {
   process.on(type, async e => {
     try {
       console.log(`process.on ${type}`)
@@ -53,7 +53,7 @@ errorTypes.map(type => {
   })
 })
 
-signalTraps.map(type => {
+signalTraps.forEach(type => {
   process.once(type, async () => {
     try {
       await consumer.disconnect()
@@ -62,6 +62,82 @@ signalTraps.map(type => {
     }
   })
 })
+```
+
+## <a name="typescript-consumer-example"></a> TypeScript Example
+
+A similar example in TypeScript
+
+```typescript
+import { Consumer, ConsumerSubscribeTopic, EachBatchPayload, Kafka, EachMessagePayload } from 'kafkajs'
+
+export default class ExampleConsumer {
+  private kafkaConsumer: Consumer
+  private messageProcessor: ExampleMessageProcessor
+
+  public constructor(messageProcessor: ExampleMessageProcessor) {
+    this.messageProcessor = messageProcessor
+    this.kafkaConsumer = this.createKafkaConsumer()
+  }
+
+  public async startConsumer(): Promise<void> {
+    const topic: ConsumerSubscribeTopic = {
+      topic: 'example-topic',
+      fromBeginning: false
+    }
+
+    try {
+      await this.kafkaConsumer.connect()
+      await this.kafkaConsumer.subscribe(topic)
+
+      await this.kafkaConsumer.run({
+        eachMessage: async (messagePayload: EachMessagePayload) => {
+          const { topic, partition, message } = messagePayload
+          const prefix = `${topic}[${partition} | ${message.offset}] / ${message.timestamp}`
+          console.log(`- ${prefix} ${message.key}#${message.value}`)
+        }
+      })
+    } catch (error) {
+      console.log('Error: ', error)
+    }
+  }
+
+  public async startBatchConsumer(): Promise<void> {
+    const topic: ConsumerSubscribeTopic = {
+      topic: 'example-topic',
+      fromBeginning: false
+    }
+
+    try {
+      await this.kafkaConsumer.connect()
+      await this.kafkaConsumer.subscribe(topic)
+      await this.kafkaConsumer.run({
+        eachBatch: async (eatchBatchPayload: EachBatchPayload) => {
+          const { topic, partition, batch } = eachBatchPayload
+          for (const message of batch.messages) {
+            const prefix = `${topic}[${partition} | ${message.offset}] / ${message.timestamp}`
+            console.log(`- ${prefix} ${message.key}#${message.value}`) 
+          }
+        }
+      })
+    } catch (error) {
+      console.log('Error: ', error)
+    }
+  }
+
+  public async shutdown(): Promise<void> {
+    await this.kafkaConsumer.disconnect()
+  }
+
+  private createKafkaConsumer(): Consumer {
+    const kafka = new Kafka({ 
+      clientId: 'client-id',
+      brokers: ['example.kafka.broker:9092']
+    })
+    const consumer = kafka.consumer({ groupId: 'consumer-group' })
+    return consumer
+  }
+}
 ```
 
 ## <a name="ssl-and-sasl-authentication"></a> SSL & SASL Authentication
@@ -111,7 +187,7 @@ run().catch(e => console.error(`[example/consumer] ${e.message}`, e))
 const errorTypes = ['unhandledRejection', 'uncaughtException']
 const signalTraps = ['SIGTERM', 'SIGINT', 'SIGUSR2']
 
-errorTypes.map(type => {
+errorTypes.forEach(type => {
   process.on(type, async e => {
     try {
       console.log(`process.on ${type}`)
@@ -124,7 +200,7 @@ errorTypes.map(type => {
   })
 })
 
-signalTraps.map(type => {
+signalTraps.forEach(type => {
   process.once(type, async () => {
     try {
       await consumer.disconnect()

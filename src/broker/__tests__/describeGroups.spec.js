@@ -1,7 +1,7 @@
 const Broker = require('../index')
 const {
   secureRandom,
-  createConnection,
+  createConnectionPool,
   newLogger,
   retryProtocol,
   createCluster,
@@ -15,7 +15,7 @@ describe('Broker > DescribeGroups', () => {
     groupId = `consumer-group-id-${secureRandom()}`
     topicName = `test-topic-${secureRandom()}`
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -28,7 +28,7 @@ describe('Broker > DescribeGroups', () => {
     )
 
     broker = new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
     await broker.connect()
@@ -43,9 +43,9 @@ describe('Broker > DescribeGroups', () => {
   })
 
   afterEach(async () => {
-    await consumer.disconnect()
-    await seedBroker.disconnect()
-    await broker.disconnect()
+    consumer && (await consumer.disconnect())
+    seedBroker && (await seedBroker.disconnect())
+    broker && (await broker.disconnect())
   })
 
   test('request', async () => {
@@ -55,6 +55,7 @@ describe('Broker > DescribeGroups', () => {
     const response = await broker.describeGroups({ groupIds: [groupId] })
 
     expect(response).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       groups: [
         {

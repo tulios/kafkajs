@@ -1,10 +1,12 @@
 const {
   createConnectionBuilder,
-  createConnection,
+  plainTextBrokers,
+  createConnectionPool,
   newLogger,
   secureRandom,
 } = require('testHelpers')
 const { KafkaJSProtocolError, KafkaJSConnectionError } = require('../../errors')
+const { createErrorFromCode, errorCodes } = require('../../protocol/error')
 const BrokerPool = require('../brokerPool')
 const Broker = require('../../broker')
 
@@ -14,13 +16,13 @@ describe('Cluster > BrokerPool', () => {
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
     brokerPool = new BrokerPool({
-      connectionBuilder: createConnectionBuilder(),
+      connectionPoolBuilder: createConnectionBuilder(),
       logger: newLogger(),
     })
   })
 
   afterEach(async () => {
-    await brokerPool.disconnect()
+    brokerPool && (await brokerPool.disconnect())
   })
 
   it('defaults metadataMaxAge to 0', () => {
@@ -28,8 +30,8 @@ describe('Cluster > BrokerPool', () => {
   })
 
   describe('#connect', () => {
-    it('connects to the seed broker when the broker pool is created', async () => {
-      expect(brokerPool.seedBroker.isConnected()).toEqual(false)
+    it('when the broker pool is created seed broker is null', async () => {
+      expect(brokerPool.seedBroker).toEqual(undefined)
       await brokerPool.connect()
       expect(brokerPool.seedBroker.isConnected()).toEqual(true)
     })
@@ -41,7 +43,9 @@ describe('Cluster > BrokerPool', () => {
     })
 
     test('select a different seed broker on ILLEGAL_SASL_STATE error', async () => {
-      const originalSeedPort = brokerPool.seedBroker.connection.port
+      await brokerPool.createSeedBroker()
+
+      const originalSeedPort = brokerPool.seedBroker.connectionPool.port
       const illegalStateError = new KafkaJSProtocolError({
         message: 'ILLEGAL_SASL_STATE',
         type: 'ILLEGAL_SASL_STATE',
@@ -53,17 +57,19 @@ describe('Cluster > BrokerPool', () => {
       })
 
       await brokerPool.connect()
-      expect(brokerPool.seedBroker.connection.port).not.toEqual(originalSeedPort)
+      expect(brokerPool.seedBroker.connectionPool.port).not.toEqual(originalSeedPort)
     })
 
     test('select a different seed broker on connection errors', async () => {
-      const originalSeedPort = brokerPool.seedBroker.connection.port
+      await brokerPool.createSeedBroker()
+
+      const originalSeedPort = brokerPool.seedBroker.connectionPool.port
       brokerPool.seedBroker.connect = jest.fn(() => {
         throw new KafkaJSConnectionError('Test connection error')
       })
 
       await brokerPool.connect()
-      expect(brokerPool.seedBroker.connection.port).not.toEqual(originalSeedPort)
+      expect(brokerPool.seedBroker.connectionPool.port).not.toEqual(originalSeedPort)
     })
 
     it('does not connect to the seed broker if it is already connected', async () => {
@@ -131,6 +137,50 @@ describe('Cluster > BrokerPool', () => {
       expect(brokerPool.metadata).toEqual(null)
       expect(brokerPool.versions).toEqual(null)
       expect(brokerPool.brokers).toEqual({})
+    })
+  })
+
+  describe('#removeBroker', () => {
+    let host, port
+
+    beforeEach(async () => {
+      await brokerPool.connect()
+      await brokerPool.refreshMetadata([topicName])
+      expect(Object.values(brokerPool.brokers).length).toBeGreaterThan(1)
+
+      const brokerUri = plainTextBrokers().shift()
+      const [hostToRemove, portToRemove] = brokerUri.split(':')
+      host = hostToRemove
+      port = Number(portToRemove)
+    })
+
+    it('removes the broker by host and port', () => {
+      const numberOfBrokers = Object.values(brokerPool.brokers).length
+
+      brokerPool.removeBroker({ host, port })
+
+      const brokers = Object.values(brokerPool.brokers)
+      expect(brokers.length).toEqual(numberOfBrokers - 1)
+      expect(
+        brokers.find(
+          broker => broker.connectionPool.host === host && broker.connectionPool.port === port
+        )
+      ).toEqual(undefined)
+    })
+
+    it('replaces the seed broker if it is the target broker', () => {
+      const seedBrokerHost = brokerPool.seedBroker.connectionPool.host
+      const seedBrokerPort = brokerPool.seedBroker.connectionPool.port
+      brokerPool.removeBroker({ host: seedBrokerHost, port: seedBrokerPort })
+
+      // check only port since the host will be "localhost" on most tests
+      expect(brokerPool.seedBroker.connectionPool.port).not.toEqual(seedBrokerPort)
+    })
+
+    it('erases metadataExpireAt to force a metadata refresh', () => {
+      brokerPool.metadataExpireAt = Date.now() + 25
+      brokerPool.removeBroker({ host, port })
+      expect(brokerPool.metadataExpireAt).toEqual(null)
     })
   })
 
@@ -202,10 +252,10 @@ describe('Cluster > BrokerPool', () => {
 
     it('includes the seed broker into the broker pool', async () => {
       await brokerPool.refreshMetadata([topicName])
-      const seed = brokerPool.seedBroker.connection
+      const seed = brokerPool.seedBroker.connectionPool
       const brokers = Object.values(brokerPool.brokers)
       const seedFromBrokerPool = brokers
-        .map(b => b.connection)
+        .map(b => b.connectionPool)
         .find(b => b.host === seed.host && b.port === seed.port)
 
       expect(seedFromBrokerPool).toEqual(seed)
@@ -216,7 +266,7 @@ describe('Cluster > BrokerPool', () => {
 
       const nodeId = 'fakebroker'
       const fakeBroker = new Broker({
-        connection: createConnection(),
+        connectionPool: createConnectionPool(),
         logger: newLogger(),
       })
 
@@ -265,7 +315,7 @@ describe('Cluster > BrokerPool', () => {
         }))
 
         await brokerPool.refreshMetadata([topicName])
-        expect(brokerPool.brokers[0].connection.host).toEqual('0.0.0.0')
+        expect(brokerPool.brokers[0].connectionPool.host).toEqual('0.0.0.0')
       })
 
       it('replaces the broker when the port change', async () => {
@@ -277,7 +327,7 @@ describe('Cluster > BrokerPool', () => {
         }))
 
         await brokerPool.refreshMetadata([topicName])
-        expect(brokerPool.brokers[0].connection.port).toEqual(4321)
+        expect(brokerPool.brokers[0].connectionPool.port).toEqual(4321)
       })
 
       it('replaces the broker when the rack change', async () => {
@@ -289,7 +339,7 @@ describe('Cluster > BrokerPool', () => {
         }))
 
         await brokerPool.refreshMetadata([topicName])
-        expect(brokerPool.brokers[0].connection.rack).toEqual('south-1')
+        expect(brokerPool.brokers[0].connectionPool.rack).toEqual('south-1')
       })
     })
   })
@@ -394,14 +444,14 @@ describe('Cluster > BrokerPool', () => {
       expect(broker.isConnected()).toEqual(true)
     })
 
-    it('recreates the connection on connection errors', async () => {
+    it('recreates the connection on ILLEGAL_SASL_STATE error', async () => {
       const nodeId = 'fakebroker'
       const mockBroker = new Broker({
-        connection: createConnection(),
+        connectionPool: createConnectionPool(),
         logger: newLogger(),
       })
       jest.spyOn(mockBroker, 'connect').mockImplementationOnce(() => {
-        throw new KafkaJSConnectionError('Connection lost')
+        throw createErrorFromCode(errorCodes.find(({ type }) => type === 'ILLEGAL_SASL_STATE').code)
       })
       brokerPool.brokers[nodeId] = mockBroker
 

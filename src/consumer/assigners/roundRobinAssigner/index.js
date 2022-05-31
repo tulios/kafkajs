@@ -1,10 +1,8 @@
 const { MemberMetadata, MemberAssignment } = require('../../assignerProtocol')
-const flatten = require('../../../utils/flatten')
 
 /**
  * RoundRobinAssigner
- * @param {Cluster} cluster
- * @returns {function}
+ * @type {import('types').PartitionAssigner}
  */
 module.exports = ({ cluster }) => ({
   name: 'RoundRobinAssigner',
@@ -16,10 +14,11 @@ module.exports = ({ cluster }) => ({
    * The members array contains information about each member, `memberMetadata` is the result of the
    * `protocol` operation.
    *
-   * @param {array} members array of members, e.g:
+   * @param {object} group
+   * @param {import('types').GroupMember[]} group.members array of members, e.g:
                               [{ memberId: 'test-5f93f5a3', memberMetadata: Buffer }]
-   * @param {array} topics
-   * @returns {array} object partitions per topic per member, e.g:
+   * @param {string[]} group.topics
+   * @returns {Promise<import('types').GroupMemberAssignment[]>} object partitions per topic per member, e.g:
    *                   [
    *                     {
    *                       memberId: 'test-5f93f5a3',
@@ -42,17 +41,16 @@ module.exports = ({ cluster }) => ({
     const sortedMembers = members.map(({ memberId }) => memberId).sort()
     const assignment = {}
 
-    const topicsPartionArrays = topics.map(topic => {
+    const topicsPartitions = topics.flatMap(topic => {
       const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
       return partitionMetadata.map(m => ({ topic: topic, partitionId: m.partitionId }))
     })
-    const topicsPartitions = flatten(topicsPartionArrays)
 
     topicsPartitions.forEach((topicPartition, i) => {
       const assignee = sortedMembers[i % membersCount]
 
       if (!assignment[assignee]) {
-        assignment[assignee] = []
+        assignment[assignee] = Object.create(null)
       }
 
       if (!assignment[assignee][topicPartition.topic]) {

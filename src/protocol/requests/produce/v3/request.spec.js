@@ -1,4 +1,3 @@
-const apiKeys = require('../../apiKeys')
 const RequestV3Protocol = require('./request')
 
 describe('Protocol > Requests > Produce > v3', () => {
@@ -22,7 +21,7 @@ describe('Protocol > Requests > Produce > v3', () => {
                   key: 'key-9d0f348cb2e730e1edc4',
                   value: 'some-value-a17b4c81f9ecd1e896e3',
                   timestamp: 1509928155660,
-                  headers: { a: 'b' },
+                  headers: { a: 'b', c: ['d', 'e'] },
                 },
               ],
             },
@@ -30,14 +29,6 @@ describe('Protocol > Requests > Produce > v3', () => {
         },
       ],
     }
-  })
-
-  test('metadata about the API', () => {
-    const request = RequestV3Protocol(args)
-    expect(request.apiKey).toEqual(apiKeys.Produce)
-    expect(request.apiVersion).toEqual(3)
-    expect(request.apiName).toEqual('Produce')
-    expect(request.expectResponse()).toEqual(true)
   })
 
   describe('when acks=0', () => {
@@ -65,7 +56,7 @@ describe('Protocol > Requests > Produce > v3', () => {
                   key: 'key-9d0f348cb2e730e1edc4',
                   value: 'some-value-a17b4c81f9ecd1e896e3',
                   timestamp: 1509928155660,
-                  headers: { a: 'b' },
+                  headers: { a: 'b', c: ['d', 'e'] },
                 },
                 {
                   key: 'key-c7073e965c34b4cc6442',

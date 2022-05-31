@@ -2,9 +2,7 @@ const createAdmin = require('../index')
 
 const {
   sslConnectionOpts,
-  saslConnectionOpts,
-  saslSCRAM256ConnectionOpts,
-  saslSCRAM512ConnectionOpts,
+  saslEntries,
   createCluster,
   sslBrokers,
   saslBrokers,
@@ -15,7 +13,7 @@ describe('Admin', () => {
   let admin
 
   afterEach(async () => {
-    await admin.disconnect()
+    admin && (await admin.disconnect())
   })
 
   test('support SSL connections', async () => {
@@ -25,21 +23,11 @@ describe('Admin', () => {
     await admin.connect()
   })
 
-  test('support SASL PLAIN connections', async () => {
-    const cluster = createCluster(saslConnectionOpts(), saslBrokers())
-    admin = createAdmin({ cluster, logger: newLogger() })
-    await admin.connect()
-  })
-
-  test('support SASL SCRAM 256 connections', async () => {
-    const cluster = createCluster(saslSCRAM256ConnectionOpts(), saslBrokers())
-    admin = createAdmin({ cluster, logger: newLogger() })
-    await admin.connect()
-  })
-
-  test('support SASL SCRAM 512 connections', async () => {
-    const cluster = createCluster(saslSCRAM512ConnectionOpts(), saslBrokers())
-    admin = createAdmin({ cluster, logger: newLogger() })
-    await admin.connect()
-  })
+  for (const e of saslEntries) {
+    test(`support SASL ${e.name} connections`, async () => {
+      const cluster = createCluster(e.opts(), saslBrokers())
+      admin = createAdmin({ cluster, logger: newLogger() })
+      await admin.connect()
+    })
+  }
 })

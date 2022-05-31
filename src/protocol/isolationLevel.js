@@ -1,7 +1,7 @@
 /**
  * Enum for isolation levels
  * @readonly
- * @enum {IsolationLevel}
+ * @enum {number}
  */
 module.exports = {
   // Makes all records visible

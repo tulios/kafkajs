@@ -1,26 +1,52 @@
 {
   "extends": [
     "standard",
-    "prettier"
+    "prettier",
+    "plugin:node/recommended"
   ],
   "plugins": [
     "prettier",
-    "standard"
+    "standard",
+    "jest"
   ],
+  "parserOptions": {
+    "ecmaVersion": 2020
+  },
   "rules": {
     "prettier/prettier": "error",
     "standard/no-callback-literal": "off",
     "no-unexpected-multiline": "off",
     "no-return-await": "off",
     "node/no-deprecated-api": "off",
+    "node/no-missing-require": [
+      "error",
+      {
+        "allowModules": [
+          "testHelpers"
+        ]
+      }
+    ],
+    "no-process-exit": "off",
+    "node/shebang": "off",
     "camelcase": [
       "error",
       {
-        "allow": ["^testIfKafka_*"]
+        "allow": [
+          "^testIfKafka_*"
+        ]
       }
-    ]
+    ],
+    "jest/no-focused-tests": "error",
+    "jest/no-commented-out-tests": "error",
+    "jest/no-deprecated-functions": "error",
+    "jest/no-jasmine-globals": "error",
+    "jest/no-jest-import": "error",
+    "jest/no-test-prefixes": "error",
+    "jest/valid-describe-callback": "error",
+    "jest/valid-expect": "error",
+    "jest/valid-expect-in-promise": "error"
   },
-  "env":{
-    "jest": true,
+  "env": {
+    "jest": true
   }
 }

@@ -5,6 +5,182 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2022-05-31
+
+### Fixed
+  - Fix `consumer.seek` when seeking on multiple partitions for the same topic #1378
+
+## [2.0.1] - 2022-05-23
+
+### Fixed
+  - Fix members leaving the group after not being assigned any partitions #1362
+  - Make `REPLICA_NOT_AVAILABLE` retriable #1351
+  - Document `admin.createTopics` respecting cluster default partitions number and replication factor #1360
+
+## [2.0.0] - 2022-05-06
+
+This is the first major version released in 4 years, and contains a few important breaking changes. **A [migration guide](https://kafka.js.org/docs/migration-guide-v2.0.0) has been prepared to help with the migration process.** Be sure to read it before upgrading from older versions of KafkaJS.
+
+### Added
+  - Validate configEntries when creating topics #1309
+  - New `topics` argument for `consumer.subscribe` to subscribe to multiple topics #1313
+  - Support duplicate header keys #1132
+
+### Removed
+  - **BREAKING:** Drop support for Node 10 and 12 #1333
+  - **BREAKING:** Remove deprecated enum `ResourceTypes` #1334
+  - **BREAKING:** Remove deprecated argument `topic` from `admin.fetchOffsets` #1335
+  - **BREAKING:** Remove deprecated method `getTopicMetadata` from admin client #1336
+  - **BREAKING:** Remove typo type `TopicPartitionOffsetAndMedata` #1338
+  - **BREAKING:** Remove deprecated error property originalError. Replaced by `cause` #1341
+
+### Changed
+  - **BREAKING:** Change default partitioner to Java compatible #1339
+  - Improve consumer performance #1258
+  - **BREAKING:** Enforce request timeout by default #1337
+  - **BREAKING** Honor default replication factor and partition count when creating topics #1305
+  - Increase default authentication timeout to 10 seconds #1340
+
+### Fixed
+  - Fix invalid sequence numbers when producing concurrently with idempotent producer #1050 #1172
+  - Fix correlation id and sequence number overflow #1310
+  - Fix consumer not restarting on retriable connection errors #1304
+  - Avoid endless sleep loop #1323
+
+## [1.16.0] - 2022-02-09
+
+### Added
+  - Allow manual heartbeating from inside `eachMessage` handler #1255
+  - Add `rebalancing` consumer event #1067 #1079
+  - Add overload typings for all event types #1202
+  - Return `configSource` in `admin.decribeConfigs` #1023
+  - Add `topics` property to `admin.fetchOffsets` to fetch offsets for multiple topics #992 #998
+  - Improve error output from `admin.createTopic` #1104
+  - Export Error classes #1254
+  - Validate `brokers` list contains strings #1284
+  - Throw error when failing to stop or disconnect consumer #960
+
+### Changed
+  
+  - Don't commit offsets from `consumer.seek` when `autoCommit` is `false` #1012
+  - Do not restart the consumer on non-retriable errors #1274
+  - Downgrade consumer rebalance error log to `warn` #1279
+  - Make default round-robin partitioner topic-aware #1112
+
+### Fixed
+  - Fix `offset` type of `consumer.seek` #981
+  - Fix crash when used in Electron app built with electron-builder #984
+  - Improve performance of Fetch requests #985
+  - Fix crash when using topics with name of built-in Javascript functions #995
+  - Fix type of consumer constructor to require config object #1002
+  - Fix message type to allow `null` key #1037
+  - Respect `heartbeatInterval` when invoking `heartbeat` concurrently #1026
+  - Fix type of `timestamp` of `LoggerEntryContent` to be string #1082
+  - Fix return type of `admin.describeAcls` #1118
+  - Fix consumer getting stuck in `DISCONNECTING` state if in-flight requests time out during disconnect #1208
+  - Fix failed serialization of BigInts when logging #1234
+  - Fix crash when committing offsets for a topic before consumer initialization #1235
+  - Reauthenticate to all brokers on demand #1241
+  - Remove unnecessary warn log when calling `admin.deleteTopicRecords` with offset `-1` #1265
+  - Handle empty control batches #1256
+  - Send empty topic array as null when fetching metadata #1184
+
+## [1.15.0] - 2020-11-24
+### Added
+  - Initial work for static membership #888
+  - Add consumer instrumentation event: received unsubscribed topics #897
+  - Add option for `admin.fetchOffsets` to resolve the offsets #895
+  - Add ACL functions to admin client #697
+  - Add `admin.deleteTopicRecords` #905
+  - Emit `GROUP_JOIN` event on stale partition assignments #937
+
+### Changed
+  - Added properties to error classes typescript types #900
+  - Make header value type definition possibly undefined #927
+  - Bump API versions for client-side throttling #933
+  - Add `UNKNOWN_TOPIC_OR_PARTITION` check for `addMultipleTargetTopics` #938
+
+### Fixed
+  - Fix describe/alter broker configs (introduced `ConfigResourceTypes`) #898
+  - Fix record batch compression masking (fix ZSTD compression) #912
+  - Prevent inflight's correlation id collisions #926
+  - Fix ACL, ISocketFactory and SaslOptions type definitions #941 #959 #966
+  - Fix deadlock on the connection `onError` handler #944
+  - Fix deadlock on the connection `onTimeout ` handler #956
+  - Remove nested retriers from producer #962 (fixes #958 #950)
+
+## [1.14.0] - 2020-09-21
+### Added
+  - Support Produce v6 protocol #869
+  - Support Produce v7 protocol (support for ZSTD compression) #869
+  - Broker rediscovery with config.brokers parameter taking a callback function #854 #882
+
+### Changed
+  - Remove long.js in favor of BigInt #663
+  - Remove allowExperimentalV011 flag #847
+
+### Fixed
+  - Only commit offsets on eachMessage failures if autoCommit is enabled #866
+  - Fix consumer offsets not committed if consumer stop was invoked right after the batch process #874
+  - Remove brokers with closed connections from the brokers list #878
+  - Type improvements and fixes #877
+
+## [1.13.0] - 2020-09-10
+### Added
+  - Add listGroup method to admin interface #645
+  - Add describeCluster method to admin client #648
+  - Add createPartitions method to admin client #661
+  - Add deleteGroups method to admin client #646
+  - Add listTopics method to admin client #718
+  - Add describeGroups method to admin client #742
+  - Allow to handle consumer retry failure at the user level #643
+  - Support Fetch v8 protocol (including client-side throttling) #776
+  - Support Fetch v9 protocol #778
+  - Support Fetch v10 protocol #792
+  - Support Fetch v11 protocol #810
+  - Support JoinGroup v3 and v4 protocol #801
+  - Oauthbearer support #680
+  - Add new protocol errors #824
+  - Add versioning to docs #835
+  - Add fetch topic offsets by timestamp #604
+  - Support LOG_APPEND_TIME record timestamps #838
+  - Suppress JoinGroup V4+ response error log when memberId is empty #860
+
+### Changed
+  - Replace fetch promise all with async generator #570
+  - Improve balance in the RoundRobinAssigner #635
+  - Add single requestTimeout runner instead of setTimeout per request #650
+  - Provide the subscribed topics to the protocol() function #545
+  - Only wait for the lock when there are enqueued batches #670
+  - Update consumer default retries to 5 #720 (related to #719)
+  - Simplify and speed up SeekOffsets #668
+  - Remove maxInFlight option from default retry and moved into Producer ad Consumer #754
+  - Use addMultipleTargetTopics instead of looping over multiple calls to addTargetTopic #748
+  - Only disconnect the consumer and producers if they were created #784
+  - Resolve socket requests without response immediately when they have been queued #785
+  - Move default request timeout from connection to cluster #739
+  - Simplify the BufferedAsyncIterator #671
+  - Ensure fair fetch response allocation across topic-partitions #859
+
+### Fixed
+  - Type improvements and fixes #636 #664 #675 #722 #729 #758 #799 #813 #757 #749 #764 #828 #843 #839
+  - Remove invalid topics from targetTopics on INVALID_TOPIC_EXCEPTION #666
+  - Fix network buffering performance problems #669
+  - Delete the entry for the waiter when the timeout is reached #694
+  - Fix encoder instanceof issue with Encoder #685
+  - Fix default retry for consumer #719
+  - Runner#waitForConsumer uses consuming stop event instead of timers #724
+  - Fix unhandled rejections #714 #797
+  - Make Array shuffle test pass in Node >= 11.0.0 #740
+  - Use setImmediate when scheduling calls of scheduleFetch #752
+  - Improve offset commit handling #775
+  - Use the length from the message to pre-allocate the result array #771
+  - Fix application lock in case of errors before the connection is established #780
+  - Add isNaN check for concurrency limit #787
+  - Fix admin client createTopics timeout #800
+  - Avoid repeated costly copies of buffers when working with encoders #811  
+  - Fix fall-back retry config for producer #851
+
 ## [1.12.0] - 2020-01-30
 ### Added
   - Force refresh of metadata when topic is not present #556

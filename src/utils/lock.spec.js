@@ -1,12 +1,11 @@
 const waitFor = require('./waitFor')
-const flatten = require('./flatten')
 const Lock = require('./lock')
 
 const sleep = value => waitFor(delay => delay >= value)
 
 describe('Utils > Lock', () => {
   it('allows only one resource at a time', async () => {
-    const lock = new Lock()
+    const lock = new Lock({ timeout: 1000 })
     const resource = jest.fn()
     const callResource = async () => {
       try {
@@ -19,7 +18,7 @@ describe('Utils > Lock', () => {
     }
 
     await Promise.all([callResource(), callResource(), callResource()])
-    const calls = flatten(resource.mock.calls)
+    const calls = resource.mock.calls.flat()
     expect(calls.length).toEqual(3)
     expect(calls[1] - calls[0]).toBeGreaterThanOrEqual(50)
     expect(calls[2] - calls[1]).toBeGreaterThanOrEqual(50)
@@ -38,6 +37,13 @@ describe('Utils > Lock', () => {
     await expect(
       Promise.all([callResource(), callResource(), callResource()])
     ).rejects.toHaveProperty('message', 'Timeout while acquiring lock (2 waiting locks)')
+  })
+
+  it('throws if the lock is initiated with an undefined timeout', async () => {
+    expect(() => new Lock()).toThrowWithMessage(
+      TypeError,
+      `'timeout' is not a number, received 'undefined'`
+    )
   })
 
   it('allows lock to be acquired after timeout', async () => {

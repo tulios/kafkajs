@@ -3,7 +3,7 @@ const { MemberMetadata, MemberAssignment } = require('../../consumer/assignerPro
 
 const {
   secureRandom,
-  createConnection,
+  createConnectionPool,
   newLogger,
   createTopic,
   retryProtocol,
@@ -17,7 +17,7 @@ describe('Broker > Heartbeat', () => {
     groupId = `consumer-group-id-${secureRandom()}`
 
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -34,7 +34,7 @@ describe('Broker > Heartbeat', () => {
 
     // Connect to the correct broker to produce message
     broker = new Broker({
-      connection: createConnection(newBrokerData),
+      connectionPool: createConnectionPool(newBrokerData),
       logger: newLogger(),
     })
     await broker.connect()
@@ -47,16 +47,16 @@ describe('Broker > Heartbeat', () => {
     )
 
     groupCoordinator = new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
     await groupCoordinator.connect()
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await broker.disconnect()
-    await groupCoordinator.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    broker && (await broker.disconnect())
+    groupCoordinator && (await groupCoordinator.disconnect())
   })
 
   test('request', async () => {
@@ -90,6 +90,10 @@ describe('Broker > Heartbeat', () => {
       memberId,
     })
 
-    expect(response).toEqual({ throttleTime: 0, errorCode: 0 })
+    expect(response).toEqual({
+      clientSideThrottleTime: expect.optional(0),
+      throttleTime: 0,
+      errorCode: 0,
+    })
   })
 })

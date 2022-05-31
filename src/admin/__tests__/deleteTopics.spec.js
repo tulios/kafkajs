@@ -15,7 +15,7 @@ describe('Admin', () => {
   })
 
   afterEach(async () => {
-    await admin.disconnect()
+    admin && (await admin.disconnect())
   })
 
   describe('deleteTopics', () => {
@@ -53,10 +53,10 @@ describe('Admin', () => {
       admin = createAdmin({ cluster, logger: newLogger() })
       await admin.connect()
 
-      await expect(admin.getTopicMetadata({ topics: [topicName] })).resolves.toBeTruthy()
+      await expect(admin.fetchTopicMetadata({ topics: [topicName] })).resolves.toBeTruthy()
+      expect(cluster.brokerPool.topicMetadataCache.has(topicName)).toEqual(true)
 
       await admin.deleteTopics({ topics: [topicName] })
-      await expect(admin.getTopicMetadata()).resolves.toBeTruthy()
       expect(cluster.brokerPool.topicMetadataCache.has(topicName)).toEqual(false)
     })
 

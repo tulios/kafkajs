@@ -16,24 +16,23 @@ Subscribing to some topics:
 ```javascript
 await consumer.connect()
 
-await consumer.subscribe({ topic: 'topic-A' })
+await consumer.subscribe({ topics: ['topic-A'] })
 
-// Subscribe can be called several times
-await consumer.subscribe({ topic: 'topic-B' })
-await consumer.subscribe({ topic: 'topic-C' })
+// You can subscribe to multiple topics at once
+await consumer.subscribe({ topics: ['topic-B', 'topic-C'] })
 
 // It's possible to start from the beginning of the topic
-await consumer.subscribe({ topic: 'topic-D', fromBeginning: true })
+await consumer.subscribe({ topics: ['topic-D'], fromBeginning: true })
 ```
 
-Alternatively, you can subscribe to multiple topics at once using a RegExp:
+Alternatively, you can subscribe to any topic that matches a regular expression:
 
 ```javascript
 await consumer.connect()
-await consumer.subscribe({ topic: /topic-(eu|us)-.*/i })
+await consumer.subscribe({ topics: [/topic-(eu|us)-.*/i] })
 ```
 
-The consumer will not match topics created after the subscription. If your broker has `topic-A` and `topic-B`, you subscribe to `/topic-.*/`, then `topic-C` is created, your consumer would not be automatically subscribed to `topic-C`.
+When suppling a regular expression, the consumer will not match topics created after the subscription. If your broker has `topic-A` and `topic-B`, you subscribe to `/topic-.*/`, then `topic-C` is created, your consumer would not be automatically subscribed to `topic-C`.
 
 KafkaJS offers you two ways to process your data: `eachMessage` and `eachBatch`
 
@@ -43,7 +42,7 @@ The `eachMessage` handler provides a convenient and easy to use API, feeding you
 
 ```javascript
 await consumer.run({
-    eachMessage: async ({ topic, partition, message }) => {
+    eachMessage: async ({ topic, partition, message, heartbeat }) => {
         console.log({
             key: message.key.toString(),
             value: message.value.toString(),
@@ -53,15 +52,26 @@ await consumer.run({
 })
 ```
 
+Be aware that the `eachMessage` handler should not block for longer than the configured [session timeout](#options) or else the consumer will be removed from the group. If your workload involves very slow processing times for individual messages then you should either increase the session timeout or make periodic use of the `heartbeat` function exposed in the handler payload.
+
 ## <a name="each-batch"></a> eachBatch
 
-Some use cases require dealing with batches directly. This handler will feed your function batches and provide some utility functions to give your code more flexibility: `resolveOffset`, `heartbeat`, `isRunning`, and `commitOffsetsIfNecessary`. All resolved offsets will be automatically committed after the function is executed.
+Some use cases require dealing with batches directly. This handler will feed your function batches and provide some utility functions to give your code more flexibility: `resolveOffset`, `heartbeat`, `commitOffsetsIfNecessary`, `uncommittedOffsets`, `isRunning`, and `isStale`. All resolved offsets will be automatically committed after the function is executed.
 
 > Note: Be aware that using `eachBatch` directly is considered a more advanced use case as compared to using `eachMessage`, since you will have to understand how session timeouts and heartbeats are connected.
 
 ```javascript
 await consumer.run({
-    eachBatch: async ({ batch, resolveOffset, heartbeat, isRunning, isStale }) => {
+    eachBatchAutoResolve: true,
+    eachBatch: async ({
+        batch,
+        resolveOffset,
+        heartbeat,
+        commitOffsetsIfNecessary,
+        uncommittedOffsets,
+        isRunning,
+        isStale,
+    }) => {
         for (let message of batch.messages) {
             console.log({
                 topic: batch.topic,
@@ -82,11 +92,13 @@ await consumer.run({
 })
 ```
 
-* `batch.highWatermark` is the last committed offset within the topic partition. It can be useful for calculating lag.
 * `eachBatchAutoResolve` configures auto-resolve of batch processing. If set to true, KafkaJS will automatically commit the last offset of the batch if `eachBatch` doesn't throw an error. Default: true.
+* `batch.highWatermark` is the last committed offset within the topic partition. It can be useful for calculating lag.
 * `resolveOffset()` is used to mark a message in the batch as processed. In case of errors, the consumer will automatically commit the resolved offsets.
-* `commitOffsetsIfNecessary(offsets?)` is used to commit offsets based on the autoCommit configurations (`autoCommitInterval` and `autoCommitThreshold`). Note that auto commit won't happen in `eachBatch` if `commitOffsetsIfNecessary` is not invoked. Take a look at [autoCommit](#auto-commit) for more information.
+* `heartbeat(): Promise<void>` can be used to send heartbeat to the broker according to the set `heartbeatInterval` value in consumer [configuration](#options).
+* `commitOffsetsIfNecessary(offsets?): Promise<void>` is used to commit offsets based on the autoCommit configurations (`autoCommitInterval` and `autoCommitThreshold`). Note that auto commit won't happen in `eachBatch` if `commitOffsetsIfNecessary` is not invoked. Take a look at [autoCommit](#auto-commit) for more information.
 * `uncommittedOffsets()` returns all offsets by topic-partition which have not yet been committed.
+* `isRunning()` returns true if consumer is in running state, else it returns false.
 * `isStale()` returns whether the messages in the batch have been rendered stale through some other operation and should be discarded. For example, when calling [`consumer.seek`](#seek) the messages in the batch should be discarded, as they are not at the offset we seeked to.
 
 ### Example
@@ -130,7 +142,7 @@ A guideline for setting `partitionsConsumedConcurrently` would be that it should
 
 The messages are always fetched in batches from Kafka, even when using the `eachMessage` handler. All resolved offsets will be committed to Kafka after processing the whole batch.
 
-Committing offsets periodically during a batch allows the consumer to recover from group rebalances, stale metadata and other issues before it has completed the entire batch. However, committing more often increases network traffic and slows down processing. Auto-commit offers more flexibility when committing offsets; there are two flavors available:
+Committing offsets periodically during a batch allows the consumer to recover from group rebalancing, stale metadata and other issues before it has completed the entire batch. However, committing more often increases network traffic and slows down processing. Auto-commit offers more flexibility when committing offsets; there are two flavors available:
 
 `autoCommitInterval`: The consumer will commit offsets after a given period, for example, five seconds. Value in milliseconds. Default: `null`
 
@@ -162,7 +174,7 @@ When disabling [`autoCommit`](#auto-commit) you can still manually commit messag
 - By [sending message offsets in a transaction](Transactions.md#offsets).
 - By using the `commitOffsets` method of the consumer (see below).
 
-The `consumer.commitOffsets` is the lowest-level option and will ignore all other auto commit settings, but in doing so allows the committed offset to be set to any offset and committing various offsets at once. This can be useful, for example, for building an processing reset tool. It can only be called after `consumer.run`. Committing offsets does not change what message we'll consume next once we've started consuming, but instead is only used to determine **from which place to start**. To immediately change from what offset you're consuming messages, you'll want to [seek](#seek), instead.
+The `consumer.commitOffsets` is the lowest-level option and will ignore all other auto commit settings, but in doing so allows the committed offset to be set to any offset and committing various offsets at once. This can be useful, for example, for building a processing reset tool. It can only be called after `consumer.run`. Committing offsets does not change what message we'll consume next once we've started consuming, but instead is only used to determine **from which place to start**. To immediately change from what offset you're consuming messages, you'll want to [seek](#seek), instead.
 
 ```javascript
 consumer.run({
@@ -192,8 +204,8 @@ The usual usage pattern for offsets stored outside of Kafka is as follows:
 The consumer group will use the latest committed offset when starting to fetch messages. If the offset is invalid or not defined, `fromBeginning` defines the behavior of the consumer group. This can be configured when subscribing to a topic:
 
 ```javascript
-await consumer.subscribe({ topic: 'test-topic', fromBeginning: true })
-await consumer.subscribe({ topic: 'other-topic', fromBeginning: false })
+await consumer.subscribe({ topics: ['test-topic'], fromBeginning: true })
+await consumer.subscribe({ topics: ['other-topic'], fromBeginning: false })
 ```
 
 When `fromBeginning` is `true`, the group will use the earliest offset. If set to `false`, it will use the latest offset. The default is `false`.
@@ -214,6 +226,8 @@ kafka.consumer({
   maxBytes: <Number>,
   maxWaitTimeInMs: <Number>,
   retry: <Object>,
+  maxInFlightRequests: <Number>,
+  rackId: <String>
 })
 ```
 
@@ -229,8 +243,10 @@ kafka.consumer({
 | minBytes               | Minimum amount of data the server should return for a fetch request, otherwise wait up to `maxWaitTimeInMs` for more data to accumulate.                                                                                                                                                                                                           | `1`                               |
 | maxBytes               | Maximum amount of bytes to accumulate in the response. Supported by Kafka >= `0.10.1.0`                                                                                                                                                                                                                                                            | `10485760` (10MB)                 |
 | maxWaitTimeInMs        | The maximum amount of time in milliseconds the server will block before answering the fetch request if there isn’t sufficient data to immediately satisfy the requirement given by `minBytes`                                                                                                                                                      | `5000`                            |
-| retry                  | See [retry](Configuration.md#retry) for more information                                                                                                                                                                                                                                                                                           | `{ retries: 10 }`                 |
+| retry                  | See [retry](Configuration.md#retry) for more information                                                                                                                                                                                                                                                                                           | `{ retries: 5 }`                 |
 | readUncommitted        | Configures the consumer isolation level. If `false` (default), the consumer will not return any transactional messages which were not committed.                                                                                                                                                                                                   | `false`                           |
+| maxInFlightRequests | Max number of requests that may be in progress at any time. If falsey then no limit.                                    | `null` _(no limit)_ |
+| rackId                 | Configure the "rack" in which the consumer resides to enable [follower fetching](#follower-fetching)                 | `null` _(fetch from the leader always)_ |
 
 ## <a name="pause-resume"></a> Pause & Resume
 
@@ -244,7 +260,7 @@ Example: A situation where this could be useful is when an external dependency u
 
 ```javascript
 await consumer.connect()
-await consumer.subscribe({ topic: 'jobs' })
+await consumer.subscribe({ topics: ['jobs'] })
 
 await consumer.run({ eachMessage: async ({ topic, message }) => {
     try {
@@ -305,7 +321,7 @@ To move the offset position in a topic/partition the `Consumer` provides the met
 
 ```javascript
 await consumer.connect()
-await consumer.subscribe({ topic: 'example' })
+await consumer.subscribe({ topics: ['example'] })
 
 // you don't need to await consumer#run
 consumer.run({ eachMessage: async ({ topic, message }) => true })
@@ -313,6 +329,17 @@ consumer.seek({ topic: 'example', partition: 0, offset: 12384 })
 ```
 
 Upon seeking to an offset, any messages in active batches are marked as stale and discarded, making sure the next message read for the partition is from the offset sought to. Make sure to check `isStale()` before processing a message using [the `eachBatch` interface](#each-batch) of `consumer.run`.
+
+By default, the consumer will commit the offset seeked. To disable this, set the [`autoCommit`](#auto-commit) option to `false` on the consumer.
+
+```javascript
+consumer.run({
+    autoCommit: false,
+    eachMessage: async ({ topic, message }) => true
+})
+// This will now only resolve the previous offset, not commit it
+consumer.seek({ topic: 'example', partition: 0, offset: "12384" })
+```
 
 ## <a name="custom-partition-assigner"></a> Custom partition assigner
 
@@ -414,3 +441,11 @@ const data = await consumer.describeGroup()
 ## <a name="compression"></a> Compression
 
 KafkaJS only support GZIP natively, but [other codecs can be supported](Producing.md#compression-other).
+
+## <a name="follower-fetching"></a> Follower Fetching
+
+KafkaJS supports "follower fetching", where the consumer tries to fetch data preferentially from a broker in the same "rack", rather than always going to the leader. This can considerably reduce operational costs if data transfer across "racks" is metered. There may also be performance benefits if the network speed between these "racks" is limited.
+
+The meaning of "rack" is very flexible, and can be used to model setups such as data centers, regions/availability zones, or other topologies.
+
+See also [this blog post](https://www.confluent.io/blog/multi-region-data-replication/) for the bigger context.

@@ -1,6 +1,6 @@
 const Broker = require('../index')
 const { MemberMetadata } = require('../../consumer/assignerProtocol')
-const { secureRandom, createConnection, newLogger, retryProtocol } = require('testHelpers')
+const { secureRandom, createConnectionPool, newLogger, retryProtocol } = require('testHelpers')
 
 describe('Broker > JoinGroup', () => {
   let groupId, topicName, seedBroker, broker
@@ -9,7 +9,7 @@ describe('Broker > JoinGroup', () => {
     groupId = `consumer-group-id-${secureRandom()}`
     topicName = `test-topic-${secureRandom()}`
     seedBroker = new Broker({
-      connection: createConnection(),
+      connectionPool: createConnectionPool(),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -22,15 +22,15 @@ describe('Broker > JoinGroup', () => {
     )
 
     broker = new Broker({
-      connection: createConnection({ host, port }),
+      connectionPool: createConnectionPool({ host, port }),
       logger: newLogger(),
     })
     await broker.connect()
   })
 
   afterEach(async () => {
-    await seedBroker.disconnect()
-    await broker.disconnect()
+    seedBroker && (await seedBroker.disconnect())
+    broker && (await broker.disconnect())
   })
 
   test('request', async () => {
@@ -47,6 +47,7 @@ describe('Broker > JoinGroup', () => {
     })
 
     expect(response).toEqual({
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       errorCode: 0,
       generationId: expect.any(Number),
@@ -56,6 +57,7 @@ describe('Broker > JoinGroup', () => {
       members: expect.arrayContaining([
         expect.objectContaining({
           memberId: expect.any(String),
+          groupInstanceId: null,
           memberMetadata: expect.any(Buffer),
         }),
       ]),

@@ -9,6 +9,15 @@ To publish messages to Kafka you have to create a producer. Simply call the `pro
 const producer = kafka.producer()
 ```
 
+or with options
+
+```javascript
+const producer = kafka.producer({
+    allowAutoTopicCreation: false,
+    transactionTimeout: 30000
+})
+```
+
 ## Options
 
 | option                 | description                                                                                                                                                                                  | default              |
@@ -19,6 +28,9 @@ const producer = kafka.producer()
 | allowAutoTopicCreation | Allow topic creation when querying metadata for non-existent topics                                                                                                                          | `true`               |
 | transactionTimeout | The maximum amount of time in ms that the transaction coordinator will wait for a transaction status update from the producer before proactively aborting the ongoing transaction. If this value is larger than the `transaction.max.timeout.ms` setting in the __broker__, the request will fail with a `InvalidTransactionTimeout` error | `60000`                            |
 | idempotent         | _Experimental._ If enabled producer will ensure each message is written exactly once. Acks _must_ be set to -1 ("all"). Retries will default to MAX_SAFE_INTEGER.                                                                                                                                                                          | `false`                            |
+| maxInFlightRequests | Max number of requests that may be in progress at any time. If falsey then no limit.                                    | `null` _(no limit)_ |
+
+## Producing messages
 
 The method `send` is used to publish messages to the Kafka cluster.
 
@@ -64,11 +76,28 @@ await producer.send({
 
 | property           | description                                                                                                                                                                                                                                                                                                                                | default                            |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
-| topic              | topic name                                                                                                                                                                                                                                                                                                                                 | `null`                             |
-| messages           | An array of objects with "key" (optional), "value" (required), "partition" (optional), "timestamp" (optional), "headers" (optional), example: <br> `[{ key: 'my-key', value: 'my-value'}]`                                                                                                                                                                                                                                          | `null`                             |
-| acks               | Control the number of required acks. <br> __-1__ = all replicas must acknowledge _(default)_ <br> __0__ = no acknowledgments <br> __1__ = only waits for the leader to acknowledge                                                                                                                                                         | `-1` all replicas must acknowledge |
+| topic              | topic name                                                                                                                                                                                                                                                                                                                                 |                              |
+| messages           | An array of objects. See [Message structure](#message-structure) for more details. Example: <br> `[{ key: 'my-key', value: 'my-value'}]`                                                                                                                                                                                                                                          |                              |
+| acks               | Control the number of required acks. <br> __-1__ = all insync replicas must acknowledge _(default)_ <br> __0__ = no acknowledgments <br> __1__ = only waits for the leader to acknowledge                                                                                                                                                         | `-1` all insync replicas must acknowledge |
 | timeout            | The time to await a response in ms                                                                                                                                                                                                                                                                                                         | `30000`                            |
 | compression        | Compression codec                                                                                                                                                                                                                                                                                                                          | `CompressionTypes.None`            |
+
+
+### Message structure
+
+Messages have the following properties:
+
+| Property  | Description                                                                                                                                                                                                             | Default      |
+| ----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
+| key       | Used for partitioning. See [Key](#message-key)                                                                                                                                                                          |              |
+| value     | Your message content. The value can be a Buffer, a string or null. The value will always be encoded as bytes when sent to Kafka. When consumed, the consumer will need to interpret the value according to your schema. |              |
+| partition | Which partition to send the message to. See [Key](#message-key) for details on how the partition is decided if this property is omitted.                                                                                |              |
+| timestamp | The timestamp of when the message was created. See [Timestamp](#message-timestamp) for details.                                                                                                                         | `Date.now()` |
+| headers   | Metadata to associate with your message. See [Headers](#message-headers).                                                                                                                                               |              |
+
+#### <a name="message-key"></a>Key
+
+The message `key` is used to decide which partition the message will be sent to. This is important to ensure that messages relating to the same aggregate are processed in order. For example, if you use an `orderId` as the key, you can ensure that all messages regarding that order will be processed in order.
 
 By default, the producer is configured to distribute the messages with the following logic:
 
@@ -76,7 +105,14 @@ By default, the producer is configured to distribute the messages with the follo
 - If no partition is specified but a key is present choose a partition based on a hash (murmur2) of the key
 - If no partition or key is present choose a partition in a round-robin fashion
 
-## Message Headers
+#### <a name="message-timestamp"></a>Timestamp
+
+Each message has a timestamp in the form of a UTC timestamp with millisecond precision as a string. If no timestamp was provided, the producer will use the current time as the timestamp. When the message is consumed, the broker may override this timestamp depending on the topic configuration:
+
+* If the topic is configured to use CreateTime, the timestamp from the producer's message will be used.
+* If the topic is configured to use LogAppendTime, the timestamp will be overwritten by the broker with the broker local time when it appends the message to its log.
+
+#### <a name="message-headers"></a>Headers
 
 Kafka v0.11 introduces record headers, which allows your messages to carry extra metadata. To send headers with your message, include the key `headers` with the values. Example:
 
@@ -88,11 +124,13 @@ await producer.send({
         value: 'hello world',
         headers: {
             'correlation-id': '2bfb68bb-893a-423b-a7fa-7b568cad5b67',
-            'system-id': 'my-system'
+            'system-id': 'my-system',
         }
     }]
 })
 ```
+
+A header value can be either a string or an array of strings.
 
 ## Producing to multiple topics
 
@@ -175,16 +213,20 @@ kafka.producer({ createPartitioner: MyPartitioner })
 
 ### Default Partitioners
 
-KafkaJS ships with 2 partitioners: `DefaultPartitioner` and `JavaCompatiblePartitioner`.
+KafkaJS ships with 2 partitioners: `DefaultPartitioner` and `LegacyPartitioner`.
 
-The `JavaCompatiblePartitioner` should be compatible with the default partitioner that ships with the Java Kafka client. This can be important to meet the [co-partitioning requirement](https://docs.confluent.io/current/ksql/docs/developer-guide/partition-data.html#co-partitioning-requirements) when joining multiple topics.
+The `DefaultPartitioner` should be compatible with the default partitioner that ships with the Java Kafka client. This can be important to meet the [co-partitioning requirement](https://docs.confluent.io/current/ksql/docs/developer-guide/partition-data.html#co-partitioning-requirements) when joining multiple topics.
 
-Use the `JavaCompatiblePartitioner` by importing it and providing it to the Producer constructor:
-
-```javascript
-const { Partitioners } = require('kafkajs')
-kafka.producer({ createPartitioner: Partitioners.JavaCompatiblePartitioner })
-```
+> 🚨 **Important**  🚨
+> 
+> **The `LegacyPartitioner` was the default until v2.0.0. If you are upgrading from a version
+older and want to retain the previous partitioning behavior, use the `LegacyPartitioner`
+by importing it and providing it to the Producer constructor:**
+> 
+> ```javascript
+> const { Partitioners } = require('kafkajs')
+> kafka.producer({ createPartitioner: Partitioners.LegacyPartitioner })
+> ```
 
 ## <a name="retry"></a> Retry
 
@@ -220,7 +262,7 @@ The consumers know how to decompress GZIP, so no further work is necessary.
 Snappy support is provided by the package `kafkajs-snappy`
 
 ```sh
-npm install kafkajs-snappy
+npm install --save kafkajs-snappy
 # yarn add kafkajs-snappy
 ```
 
@@ -238,7 +280,7 @@ Take a look at the official [readme](https://github.com/tulios/kafkajs-snappy) f
 LZ4 support is provided by the package `kafkajs-lz4`
 
 ```sh
-npm install kafkajs-lz4
+npm install --save kafkajs-lz4
 # yarn add kafkajs-lz4
 ```
 
@@ -250,6 +292,24 @@ CompressionCodecs[CompressionTypes.LZ4] = new LZ4().codec
 ```
 
 The package also accepts options to granularly control LZ4 compression & decompression. Take a look at the official [readme](https://github.com/indix/kafkajs-lz4) for more information.
+
+### <a name="compression-zstd"></a> ZSTD
+
+Zstandard support is provided by [`@kafkajs/zstd`](https://github.com/kafkajs/zstd)
+
+```sh
+npm install --save @kafkajs/zstd
+# yarn add @kafkajs/zstd
+```
+
+```javascript
+const { CompressionTypes, CompressionCodecs } = require('kafkajs')
+const ZstdCodec = require('@kafkajs/zstd')
+
+CompressionCodecs[CompressionTypes.ZSTD] = ZstdCodec()
+```
+
+Configuration options can be passed to the factory function to control compression & decompression levels and other features. See [the official readme](https://github.com/kafkajs/zstd) for more information.
 
 ### <a name="compression-other"></a> Other
 
@@ -269,11 +329,11 @@ const MyCustomSnappyCodec = {
 }
 ```
 
-Now that we have the codec object, we can add it to the implementation:
+Now that we have the codec object, we can wrap it in a function and add it to the implementation:
 
 ```javascript
 const { CompressionTypes, CompressionCodecs } = require('kafkajs')
-CompressionCodecs[CompressionTypes.Snappy] = MyCustomSnappyCodec
+CompressionCodecs[CompressionTypes.Snappy] = () => MyCustomSnappyCodec
 ```
 
 The new codec can now be used with the `send` method, example:

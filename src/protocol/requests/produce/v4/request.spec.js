@@ -1,4 +1,3 @@
-const apiKeys = require('../../apiKeys')
 const RequestV4Protocol = require('./request')
 
 describe('Protocol > Requests > Produce > v4', () => {
@@ -54,14 +53,6 @@ describe('Protocol > Requests > Produce > v4', () => {
         },
       ],
     }
-  })
-
-  test('metadata about the API', () => {
-    const request = RequestV4Protocol(args)
-    expect(request.apiKey).toEqual(apiKeys.Produce)
-    expect(request.apiVersion).toEqual(4)
-    expect(request.apiName).toEqual('Produce')
-    expect(request.expectResponse()).toEqual(true)
   })
 
   describe('when acks=0', () => {

@@ -1,5 +1,4 @@
-const Long = require('long')
-const flatten = require('../../utils/flatten')
+const Long = require('../../utils/long')
 const isInvalidOffset = require('./isInvalidOffset')
 const initializeConsumerOffsets = require('./initializeConsumerOffsets')
 const {
@@ -13,10 +12,25 @@ const PRIVATE = {
   COMMITTED_OFFSETS: Symbol('private:OffsetManager:committedOffsets'),
 }
 module.exports = class OffsetManager {
+  /**
+   * @param {Object} options
+   * @param {import("../../../types").Cluster} options.cluster
+   * @param {import("../../../types").Broker} options.coordinator
+   * @param {import("../../../types").IMemberAssignment} options.memberAssignment
+   * @param {boolean} options.autoCommit
+   * @param {number | null} options.autoCommitInterval
+   * @param {number | null} options.autoCommitThreshold
+   * @param {{[topic: string]: { fromBeginning: boolean }}} options.topicConfigurations
+   * @param {import("../../instrumentation/emitter")} options.instrumentationEmitter
+   * @param {string} options.groupId
+   * @param {number} options.generationId
+   * @param {string} options.memberId
+   */
   constructor({
     cluster,
     coordinator,
     memberAssignment,
+    autoCommit,
     autoCommitInterval,
     autoCommitThreshold,
     topicConfigurations,
@@ -41,6 +55,7 @@ module.exports = class OffsetManager {
     this.generationId = generationId
     this.memberId = memberId
 
+    this.autoCommit = autoCommit
     this.autoCommitInterval = autoCommitInterval
     this.autoCommitThreshold = autoCommitThreshold
     this.lastCommit = Date.now()
@@ -60,7 +75,7 @@ module.exports = class OffsetManager {
     }
 
     let offset = this.resolvedOffsets[topic][partition]
-    if (Long.fromValue(offset).equals(-1)) {
+    if (isInvalidOffset(offset)) {
       offset = '0'
     }
 
@@ -68,7 +83,7 @@ module.exports = class OffsetManager {
   }
 
   /**
-   * @returns {Broker}
+   * @returns {Promise<import("../../../types").Broker>}
    */
   async getCoordinator() {
     if (!this.coordinator.isConnected()) {
@@ -79,17 +94,14 @@ module.exports = class OffsetManager {
   }
 
   /**
-   * @param {string} topic
-   * @param {number} partition
+   * @param {import("../../../types").TopicPartition} topicPartition
    */
   resetOffset({ topic, partition }) {
     this.resolvedOffsets[topic][partition] = this.committedOffsets()[topic][partition]
   }
 
   /**
-   * @param {string} topic
-   * @param {number} partition
-   * @param {string} offset
+   * @param {import("../../../types").TopicPartitionOffset} topicPartitionOffset
    */
   resolveOffset({ topic, partition, offset }) {
     this.resolvedOffsets[topic][partition] = Long.fromValue(offset)
@@ -101,31 +113,29 @@ module.exports = class OffsetManager {
    * @returns {Long}
    */
   countResolvedOffsets() {
-    const toPartitions = topic => keys(this.resolvedOffsets[topic])
+    const committedOffsets = this.committedOffsets()
 
     const subtractOffsets = (resolvedOffset, committedOffset) => {
       const resolvedOffsetLong = Long.fromValue(resolvedOffset)
-      return committedOffset === '-1'
+      return isInvalidOffset(committedOffset)
         ? resolvedOffsetLong
         : resolvedOffsetLong.subtract(Long.fromValue(committedOffset))
     }
 
-    const subtractPartitionOffsets = (topic, partition) =>
-      subtractOffsets(
-        this.resolvedOffsets[topic][partition],
-        this.committedOffsets()[topic][partition]
+    const subtractPartitionOffsets = (resolvedTopicOffsets, committedTopicOffsets) =>
+      keys(resolvedTopicOffsets).map(partition =>
+        subtractOffsets(resolvedTopicOffsets[partition], committedTopicOffsets[partition])
       )
 
     const subtractTopicOffsets = topic =>
-      toPartitions(topic).map(partition => subtractPartitionOffsets(topic, partition))
+      subtractPartitionOffsets(this.resolvedOffsets[topic], committedOffsets[topic])
 
-    const offsetsDiff = this.topics.map(subtractTopicOffsets)
-    return flatten(offsetsDiff).reduce((sum, offset) => sum.add(offset), Long.fromValue(0))
+    const offsetsDiff = this.topics.flatMap(subtractTopicOffsets)
+    return offsetsDiff.reduce((sum, offset) => sum.add(offset), Long.fromValue(0))
   }
 
   /**
-   * @param {string} topic
-   * @param {number} partition
+   * @param {import("../../../types").TopicPartition} topicPartition
    */
   async setDefaultOffset({ topic, partition }) {
     const { groupId, generationId, memberId } = this
@@ -151,12 +161,21 @@ module.exports = class OffsetManager {
    * Commit the given offset to the topic/partition. If the consumer isn't assigned to the given
    * topic/partition this method will be a NO-OP.
    *
-   * @param {string} topic
-   * @param {number} partition
-   * @param {string} offset
+   * @param {import("../../../types").TopicPartitionOffset} topicPartitionOffset
    */
   async seek({ topic, partition, offset }) {
     if (!this.memberAssignment[topic] || !this.memberAssignment[topic].includes(partition)) {
+      return
+    }
+
+    if (!this.autoCommit) {
+      this.resolveOffset({
+        topic,
+        partition,
+        offset: Long.fromValue(offset)
+          .subtract(1)
+          .toString(),
+      })
       return
     }
 
@@ -195,17 +214,7 @@ module.exports = class OffsetManager {
 
   /**
    * Return all locally resolved offsets which are not marked as committed, by topic-partition.
-   * @returns {OffsetsByTopicPartition}
-   *
-   * @typedef {Object} OffsetsByTopicPartition
-   * @property {TopicOffsets[]} topics
-   *
-   * @typedef {Object} TopicOffsets
-   * @property {PartitionOffset[]} partitions
-   *
-   * @typedef {Object} PartitionOffset
-   * @property {string} partition
-   * @property {string} offset
+   * @returns {import('../../../types').OffsetsByTopicPartition}
    */
   uncommittedOffsets() {
     const offsets = topic => keys(this.resolvedOffsets[topic])
@@ -261,7 +270,12 @@ module.exports = class OffsetManager {
           (obj, { partition, offset }) => assign(obj, { [partition]: offset }),
           {}
         )
-        assign(this.committedOffsets()[topic], updatedOffsets)
+
+        this[PRIVATE.COMMITTED_OFFSETS][topic] = assign(
+          {},
+          this.committedOffsets()[topic],
+          updatedOffsets
+        )
       })
 
       this.lastCommit = Date.now()
@@ -318,8 +332,7 @@ module.exports = class OffsetManager {
       return assign(obj, { [partition]: offset })
     }
 
-    const hasUnresolvedPartitions = () =>
-      unresolvedPartitions.filter(t => t.partitions.length > 0).length > 0
+    const hasUnresolvedPartitions = () => unresolvedPartitions.some(t => t.partitions.length > 0)
 
     let offsets = consumerOffsets
     if (hasUnresolvedPartitions()) {
@@ -336,8 +349,7 @@ module.exports = class OffsetManager {
 
   /**
    * @private
-   * @param {string} topic
-   * @param {number} partition
+   * @param {import("../../../types").TopicPartition} topicPartition
    */
   clearOffsets({ topic, partition }) {
     delete this.committedOffsets()[topic][partition]

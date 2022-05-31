@@ -2,14 +2,13 @@ const { connectionOpts, sslConnectionOpts } = require('../../testHelpers')
 const sleep = require('../utils/sleep')
 const { requests } = require('../protocol/requests')
 const Decoder = require('../protocol/decoder')
+const Encoder = require('../protocol/encoder')
 const { KafkaJSRequestTimeoutError } = require('../errors')
 const Connection = require('./connection')
+const { CONNECTION_STATUS } = require('./connectionStatus')
+const EventEmitter = require('events')
 
 describe('Network > Connection', () => {
-  // According to RFC 5737:
-  // The blocks 192.0.2.0/24 (TEST-NET-1), 198.51.100.0/24 (TEST-NET-2),
-  // and 203.0.113.0/24 (TEST-NET-3) are provided for use in documentation.
-  const invalidIP = '203.0.113.1'
   const invalidHost = 'kafkajs.test'
   let connection
 
@@ -25,14 +24,14 @@ describe('Network > Connection', () => {
 
       test('resolves the Promise when connected', async () => {
         await expect(connection.connect()).resolves.toEqual(true)
-        expect(connection.connected).toEqual(true)
+        expect(connection.isConnected()).toEqual(true)
       })
 
       test('rejects the Promise in case of errors', async () => {
         connection.host = invalidHost
         const messagePattern = /Connection error: getaddrinfo ENOTFOUND kafkajs.test/
         await expect(connection.connect()).rejects.toThrow(messagePattern)
-        expect(connection.connected).toEqual(false)
+        expect(connection.isConnected()).toEqual(false)
       })
     })
 
@@ -43,22 +42,36 @@ describe('Network > Connection', () => {
 
       test('resolves the Promise when connected', async () => {
         await expect(connection.connect()).resolves.toEqual(true)
-        expect(connection.connected).toEqual(true)
+        expect(connection.isConnected()).toEqual(true)
       })
 
       test('rejects the Promise in case of timeouts', async () => {
-        connection = new Connection(sslConnectionOpts({ connectionTimeout: 1 }))
-        connection.host = invalidIP
+        const socketFactory = () => {
+          const socket = new EventEmitter()
+          socket.end = () => {}
+          socket.unref = () => {}
+          return socket
+        }
+        connection = new Connection({
+          ...sslConnectionOpts({ connectionTimeout: 1 }),
+          socketFactory,
+        })
 
         await expect(connection.connect()).rejects.toHaveProperty('message', 'Connection timeout')
-        expect(connection.connected).toEqual(false)
+        expect(connection.isConnected()).toEqual(false)
       })
 
       test('rejects the Promise in case of errors', async () => {
         connection.ssl.cert = 'invalid'
         const messagePattern = /Failed to connect/
         await expect(connection.connect()).rejects.toThrow(messagePattern)
-        expect(connection.connected).toEqual(false)
+        expect(connection.isConnected()).toEqual(false)
+      })
+
+      test('sets the authenticatedAt timer', async () => {
+        connection.authenticatedAt = process.hrtime()
+        await connection.connect()
+        expect(connection.authenticatedAt).toBe(null)
       })
     })
   })
@@ -70,18 +83,30 @@ describe('Network > Connection', () => {
 
     test('disconnects an active connection', async () => {
       await connection.connect()
-      expect(connection.connected).toEqual(true)
+      expect(connection.isConnected()).toEqual(true)
       await expect(connection.disconnect()).resolves.toEqual(true)
-      expect(connection.connected).toEqual(false)
+      expect(connection.isConnected()).toEqual(false)
+    })
+
+    test('trigger "end" and "unref" function on not active connection', async () => {
+      expect(connection.isConnected()).toEqual(false)
+      connection.socket = {
+        end: jest.fn(),
+        unref: jest.fn(),
+      }
+      await expect(connection.disconnect()).resolves.toEqual(true)
+      expect(connection.socket.end).toHaveBeenCalled()
+      expect(connection.socket.unref).toHaveBeenCalled()
     })
   })
 
   describe('#send', () => {
-    let apiVersions
+    let apiVersions, metadata
 
     beforeEach(() => {
       connection = new Connection(connectionOpts())
       apiVersions = requests.ApiVersions.protocol({ version: 0 })
+      metadata = requests.Metadata.protocol({ version: 0 })
     })
 
     test('resolves the Promise with the response', async () => {
@@ -90,7 +115,7 @@ describe('Network > Connection', () => {
     })
 
     test('rejects the Promise if it is not connected', async () => {
-      expect(connection.connected).toEqual(false)
+      expect(connection.isConnected()).toEqual(false)
       await expect(connection.send(apiVersions())).rejects.toEqual(new Error('Not connected'))
     })
 
@@ -157,6 +182,43 @@ describe('Network > Connection', () => {
       await expect(connection.send(protocol)).rejects.toThrowError(KafkaJSRequestTimeoutError)
     })
 
+    test('throttles the request queue', async () => {
+      const clientSideThrottleTime = 500
+      // Create a fictitious request with a response that indicates client-side throttling is needed
+      const protocol = {
+        request: {
+          apiKey: -1,
+          apiVersion: 0,
+          expectResponse: () => true,
+          encode: () => new Encoder(),
+        },
+        response: {
+          decode: () => ({ clientSideThrottleTime }),
+          parse: () => ({}),
+        },
+      }
+
+      // Setup the socket connection to accept the request
+      const correlationId = 383
+      connection.nextCorrelationId = () => correlationId
+      connection.connectionStatus = CONNECTION_STATUS.CONNECTED
+      connection.socket = {
+        write() {
+          // Simulate a happy response
+          setImmediate(() => {
+            connection.requestQueue.fulfillRequest({ correlationId, size: 0, payload: null })
+          })
+        },
+        end() {},
+        unref() {},
+      }
+      const before = Date.now()
+      await connection.send(protocol)
+      expect(connection.requestQueue.throttledUntil).toBeGreaterThanOrEqual(
+        before + clientSideThrottleTime
+      )
+    })
+
     describe('Debug logging', () => {
       let initialValue, connection
 
@@ -169,9 +231,7 @@ describe('Network > Connection', () => {
       })
 
       afterEach(async () => {
-        if (connection) {
-          await connection.disconnect()
-        }
+        connection && (await connection.disconnect())
       })
 
       test('logs the full payload in case of non-retriable error when "KAFKAJS_DEBUG_PROTOCOL_BUFFERS" runtime flag is set', async () => {
@@ -209,6 +269,48 @@ describe('Network > Connection', () => {
         })
       })
     })
+
+    describe('Error logging', () => {
+      let connection, errorStub
+
+      beforeEach(() => {
+        connection = new Connection(connectionOpts())
+        errorStub = jest.fn()
+        connection.logger.error = errorStub
+      })
+
+      afterEach(async () => {
+        connection && (await connection.disconnect())
+      })
+
+      it('logs error responses by default', async () => {
+        const protocol = metadata({ topics: [] })
+        protocol.response.parse = () => {
+          throw new Error('non-retriable')
+        }
+
+        expect(protocol.logResponseError).not.toBe(false)
+
+        await connection.connect()
+
+        await expect(connection.send(protocol)).rejects.toBeTruthy()
+
+        expect(errorStub).toHaveBeenCalled()
+      })
+
+      it('does not log errors when protocol.logResponseError=false', async () => {
+        const protocol = metadata({ topics: [] })
+        protocol.response.parse = () => {
+          throw new Error('non-retriable')
+        }
+        protocol.logResponseError = false
+        await connection.connect()
+
+        await expect(connection.send(protocol)).rejects.toBeTruthy()
+
+        expect(errorStub).not.toHaveBeenCalled()
+      })
+    })
   })
 
   describe('#nextCorrelationId', () => {
@@ -224,14 +326,14 @@ describe('Network > Connection', () => {
       expect(connection.correlationId).toEqual(2)
     })
 
-    test('resets to 0 when correlationId is equal to Number.MAX_VALUE', () => {
+    test('resets to 0 when correlationId is equal to max signed int32', () => {
       expect(connection.correlationId).toEqual(0)
 
       connection.nextCorrelationId()
       connection.nextCorrelationId()
       expect(connection.correlationId).toEqual(2)
 
-      connection.correlationId = Number.MAX_VALUE
+      connection.correlationId = Math.pow(2, 31) - 1
       const id1 = connection.nextCorrelationId()
       expect(id1).toEqual(0)
       expect(connection.correlationId).toEqual(1)

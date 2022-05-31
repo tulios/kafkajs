@@ -2,59 +2,53 @@ const Broker = require('../broker')
 const createRetry = require('../retry')
 const shuffle = require('../utils/shuffle')
 const arrayDiff = require('../utils/arrayDiff')
-const { KafkaJSBrokerNotFound } = require('../errors')
+const { KafkaJSBrokerNotFound, KafkaJSProtocolError } = require('../errors')
 
 const { keys, assign, values } = Object
 const hasBrokerBeenReplaced = (broker, { host, port, rack }) =>
-  broker.connection.host !== host ||
-  broker.connection.port !== port ||
-  broker.connection.rack !== rack
+  broker.connectionPool.host !== host ||
+  broker.connectionPool.port !== port ||
+  broker.connectionPool.rack !== rack
 
 module.exports = class BrokerPool {
   /**
-   * @param {ConnectionBuilder} connectionBuilder
-   * @param {Logger} logger
-   * @param {Object} retry
-   * @param {number} authenticationTimeout
-   * @param {number} reauthenticationThreshold
-   * @param {number} metadataMaxAge
+   * @param {object} options
+   * @param {import("./connectionPoolBuilder").ConnectionPoolBuilder} options.connectionPoolBuilder
+   * @param {import("../../types").Logger} options.logger
+   * @param {import("../../types").RetryOptions} [options.retry]
+   * @param {boolean} [options.allowAutoTopicCreation]
+   * @param {number} [options.authenticationTimeout]
+   * @param {number} [options.metadataMaxAge]
    */
   constructor({
-    connectionBuilder,
+    connectionPoolBuilder,
     logger,
     retry,
-    allowExperimentalV011,
     allowAutoTopicCreation,
     authenticationTimeout,
-    reauthenticationThreshold,
     metadataMaxAge,
   }) {
     this.rootLogger = logger
-    this.connectionBuilder = connectionBuilder
+    this.connectionPoolBuilder = connectionPoolBuilder
     this.metadataMaxAge = metadataMaxAge || 0
     this.logger = logger.namespace('BrokerPool')
     this.retrier = createRetry(assign({}, retry))
 
     this.createBroker = options =>
       new Broker({
-        allowExperimentalV011,
         allowAutoTopicCreation,
         authenticationTimeout,
-        reauthenticationThreshold,
         ...options,
       })
 
-    this.seedBroker = this.createBroker({
-      connection: this.connectionBuilder.build(),
-      logger: this.rootLogger,
-    })
-
     this.brokers = {}
+    /** @type {Broker | undefined} */
+    this.seedBroker = undefined
+    /** @type {import("../../types").BrokerMetadata | null} */
     this.metadata = null
     this.metadataExpireAt = null
     this.topicMetadataCache = new Map()
     this.versions = null
-    this.supportAuthenticationProtocol = null
   }
 
   /**
@@ -63,16 +57,36 @@ module.exports = class BrokerPool {
    */
   hasConnectedBrokers() {
     const brokers = values(this.brokers)
-    return !!brokers.find(broker => broker.isConnected()) || this.seedBroker.isConnected()
+    return (
+      !!brokers.find(broker => broker.isConnected()) ||
+      (this.seedBroker ? this.seedBroker.isConnected() : false)
+    )
+  }
+
+  async createSeedBroker() {
+    if (this.seedBroker) {
+      await this.seedBroker.disconnect()
+    }
+
+    const connectionPool = await this.connectionPoolBuilder.build()
+
+    this.seedBroker = this.createBroker({
+      connectionPool,
+      logger: this.rootLogger,
+    })
   }
 
   /**
    * @public
-   * @returns {Promise<null>}
+   * @returns {Promise<void>}
    */
   async connect() {
     if (this.hasConnectedBrokers()) {
       return
+    }
+
+    if (!this.seedBroker) {
+      await this.createSeedBroker()
     }
 
     return this.retrier(async (bail, retryCount, retryTime) => {
@@ -82,10 +96,7 @@ module.exports = class BrokerPool {
       } catch (e) {
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
           // Connection builder will always rotate the seed broker
-          this.seedBroker = this.createBroker({
-            connection: this.connectionBuilder.build(),
-            logger: this.rootLogger,
-          })
+          await this.createSeedBroker()
           this.logger.error(
             `Failed to connect to seed broker, trying another broker from the list: ${e.message}`,
             { retryCount, retryTime }
@@ -105,7 +116,7 @@ module.exports = class BrokerPool {
    * @returns {Promise}
    */
   async disconnect() {
-    await this.seedBroker.disconnect()
+    this.seedBroker && (await this.seedBroker.disconnect())
     await Promise.all(values(this.brokers).map(broker => broker.disconnect()))
 
     this.brokers = {}
@@ -113,7 +124,27 @@ module.exports = class BrokerPool {
     this.metadataExpireAt = null
     this.topicMetadataCache.clear()
     this.versions = null
-    this.supportAuthenticationProtocol = null
+  }
+
+  /**
+   * @public
+   * @param {Object} destination
+   * @param {string} destination.host
+   * @param {number} destination.port
+   */
+  removeBroker({ host, port }) {
+    const removedBroker = values(this.brokers).find(
+      broker => broker.connectionPool.host === host && broker.connectionPool.port === port
+    )
+
+    if (removedBroker) {
+      delete this.brokers[removedBroker.nodeId]
+      this.metadataExpireAt = null
+
+      if (this.seedBroker.nodeId === removedBroker.nodeId) {
+        this.seedBroker = shuffle(values(this.brokers))[0]
+      }
+    }
   }
 
   /**
@@ -123,12 +154,14 @@ module.exports = class BrokerPool {
    */
   async refreshMetadata(topics) {
     const broker = await this.findConnectedBroker()
-    const { host: seedHost, port: seedPort } = this.seedBroker.connection
+    const { host: seedHost, port: seedPort } = this.seedBroker.connectionPool
 
     // clear expired entries to prevent cache bloat
     Array.from(this.topicMetadataCache.entries())
       .filter(([_, cached]) => Date.now() > cached.expireAt)
-      .forEach(([topic]) => this.topicMetadataCache.delete(topic))
+      .forEach(([topic]) => {
+        this.topicMetadataCache.delete(topic)
+      })
 
     return this.retrier(async (bail, retryCount, retryTime) => {
       try {
@@ -136,40 +169,45 @@ module.exports = class BrokerPool {
         this.metadataExpireAt = Date.now() + this.metadataMaxAge
 
         const replacedBrokers = []
-        this.brokers = this.metadata.brokers.reduce((result, { nodeId, host, port, rack }) => {
-          if (result[nodeId]) {
-            if (!hasBrokerBeenReplaced(result[nodeId], { host, port, rack })) {
-              return result
+
+        this.brokers = await this.metadata.brokers.reduce(
+          async (resultPromise, { nodeId, host, port, rack }) => {
+            const result = await resultPromise
+
+            if (result[nodeId]) {
+              if (!hasBrokerBeenReplaced(result[nodeId], { host, port, rack })) {
+                return result
+              }
+
+              replacedBrokers.push(result[nodeId])
             }
 
-            replacedBrokers.push(result[nodeId])
-          }
+            if (host === seedHost && port === seedPort) {
+              this.seedBroker.nodeId = nodeId
+              this.seedBroker.connectionPool.rack = rack
+              return assign(result, {
+                [nodeId]: this.seedBroker,
+              })
+            }
 
-          if (host === seedHost && port === seedPort) {
-            this.seedBroker.nodeId = nodeId
-            this.seedBroker.connection.rack = rack
             return assign(result, {
-              [nodeId]: this.seedBroker,
+              [nodeId]: this.createBroker({
+                logger: this.rootLogger,
+                versions: this.versions,
+                connectionPool: await this.connectionPoolBuilder.build({ host, port, rack }),
+                nodeId,
+              }),
             })
-          }
+          },
+          this.brokers
+        )
 
-          return assign(result, {
-            [nodeId]: this.createBroker({
-              logger: this.rootLogger,
-              versions: this.versions,
-              supportAuthenticationProtocol: this.supportAuthenticationProtocol,
-              connection: this.connectionBuilder.build({ host, port, rack }),
-              nodeId,
-            }),
-          })
-        }, this.brokers)
-
-        this.metadata.topicMetadata.forEach(topicMetadata =>
+        this.metadata.topicMetadata.forEach(topicMetadata => {
           this.topicMetadataCache.set(topicMetadata.topic, {
             expireAt: Date.now() + this.metadataMaxAge,
             metadata: topicMetadata,
           })
-        )
+        })
 
         const freshBrokerIds = this.metadata.brokers.map(({ nodeId }) => `${nodeId}`).sort()
         const currentBrokerIds = keys(this.brokers).sort()
@@ -195,7 +233,7 @@ module.exports = class BrokerPool {
   }
 
   /**
-   * Only refreshes metadata if the data is stale according to the `metadataMaxAge` param
+   * Only refreshes metadata if the data is stale according to the `metadataMaxAge` param or does not contain information about the provided topics
    *
    * @public
    * @param {Array<String>} topics
@@ -218,9 +256,15 @@ module.exports = class BrokerPool {
     }
   }
 
+  /** @type {() => string[]} */
+  getNodeIds() {
+    return keys(this.brokers)
+  }
+
   /**
    * @public
-   * @param {string} nodeId
+   * @param {object} options
+   * @param {string} options.nodeId
    * @returns {Promise<Broker>}
    */
   async findBroker({ nodeId }) {
@@ -236,8 +280,9 @@ module.exports = class BrokerPool {
 
   /**
    * @public
-   * @param {Promise<{ nodeId<String>, broker<Broker> }>} callback
-   * @returns {Promise<null>}
+   * @param {(params: { nodeId: string, broker: Broker }) => Promise<T>} callback
+   * @returns {Promise<T>}
+   * @template T
    */
   async withBroker(callback) {
     const brokers = shuffle(keys(this.brokers))
@@ -295,21 +340,24 @@ module.exports = class BrokerPool {
       } catch (e) {
         if (e.name === 'KafkaJSConnectionError' || e.type === 'ILLEGAL_SASL_STATE') {
           await broker.disconnect()
+        }
 
-          // Connection refused means this node is down, or the cluster is restarting,
-          // which requires metadata refresh to discover the new nodes
-          if (e.code === 'ECONNREFUSED') {
-            return bail(e)
-          }
+        // To avoid reconnecting to an unavailable host, we bail on connection errors
+        // and refresh metadata on a higher level before reconnecting
+        if (e.name === 'KafkaJSConnectionError') {
+          return bail(e)
+        }
 
-          // Rebuild the connection since it can't recover from illegal SASL state
-          broker.connection = this.connectionBuilder.build({
-            host: broker.connection.host,
-            port: broker.connection.port,
-            rack: broker.connection.rack,
+        if (e.type === 'ILLEGAL_SASL_STATE') {
+          // Rebuild the connection pool since it can't recover from illegal SASL state
+          broker.connectionPool = await this.connectionPoolBuilder.build({
+            host: broker.connectionPool.host,
+            port: broker.connectionPool.port,
+            rack: broker.connectionPool.rack,
           })
 
           this.logger.error(`Failed to connect to broker, reconnecting`, { retryCount, retryTime })
+          throw new KafkaJSProtocolError(e, { retriable: true })
         }
 
         if (e.retriable) throw e

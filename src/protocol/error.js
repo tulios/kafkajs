@@ -61,7 +61,7 @@ const errorCodes = [
   {
     type: 'REPLICA_NOT_AVAILABLE',
     code: 9,
-    retriable: false,
+    retriable: true,
     message: 'The replica is not available for the requested topic-partition',
   },
   {
@@ -266,7 +266,7 @@ const errorCodes = [
     code: 42,
     retriable: false,
     message:
-      "This most likely occurs because of a request being malformed by the client library or the message was sen't to an incompatible broker. See the broker logs for more details",
+      'This most likely occurs because of a request being malformed by the client library or the message was sent to an incompatible broker. See the broker logs for more details',
   },
   {
     type: 'UNSUPPORTED_FOR_MESSAGE_FORMAT',
@@ -520,6 +520,50 @@ const errorCodes = [
     message:
       'The consumer group has reached its max size. It already has the configured maximum number of members',
   },
+  {
+    type: 'FENCED_INSTANCE_ID',
+    code: 82,
+    retriable: false,
+    message:
+      'The broker rejected this static consumer since another consumer with the same group instance id has registered with a different member id',
+  },
+  {
+    type: 'ELIGIBLE_LEADERS_NOT_AVAILABLE',
+    code: 83,
+    retriable: true,
+    message: 'Eligible topic partition leaders are not available',
+  },
+  {
+    type: 'ELECTION_NOT_NEEDED',
+    code: 84,
+    retriable: true,
+    message: 'Leader election not needed for topic partition',
+  },
+  {
+    type: 'NO_REASSIGNMENT_IN_PROGRESS',
+    code: 85,
+    retriable: false,
+    message: 'No partition reassignment is in progress',
+  },
+  {
+    type: 'GROUP_SUBSCRIBED_TO_TOPIC',
+    code: 86,
+    retriable: false,
+    message:
+      'Deleting offsets of a topic is forbidden while the consumer group is actively subscribed to it',
+  },
+  {
+    type: 'INVALID_RECORD',
+    code: 87,
+    retriable: false,
+    message: 'This record has failed the validation on broker and hence be rejected',
+  },
+  {
+    type: 'UNSTABLE_OFFSET_COMMIT',
+    code: 88,
+    retriable: true,
+    message: 'There are unstable offsets that need to be cleared',
+  },
 ]
 
 const unknownErrorCode = errorCode => ({
@@ -543,9 +587,15 @@ const failIfVersionNotSupported = code => {
   }
 }
 
+const staleMetadata = e =>
+  ['UNKNOWN_TOPIC_OR_PARTITION', 'LEADER_NOT_AVAILABLE', 'NOT_LEADER_FOR_PARTITION'].includes(
+    e.type
+  )
+
 module.exports = {
   failure,
   errorCodes,
   createErrorFromCode,
   failIfVersionNotSupported,
+  staleMetadata,
 }

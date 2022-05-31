@@ -8,8 +8,7 @@ const {
   createModPartitioner,
   newLogger,
   sslConnectionOpts,
-  saslSCRAM256ConnectionOpts,
-  saslSCRAM512ConnectionOpts,
+  saslEntries,
   sslBrokers,
   saslBrokers,
   waitFor,
@@ -29,7 +28,8 @@ describe('Consumer', () => {
   })
 
   afterEach(async () => {
-    await consumer.disconnect()
+    consumer && (await consumer.disconnect())
+    producer && (await producer.disconnect())
   })
 
   test('support SSL connections', async () => {
@@ -44,53 +44,20 @@ describe('Consumer', () => {
     await consumer.connect()
   })
 
-  test('support SASL PLAIN connections', async () => {
-    cluster = createCluster(
-      Object.assign(sslConnectionOpts(), {
-        sasl: {
-          mechanism: 'plain',
-          username: 'test',
-          password: 'testtest',
-        },
-      }),
-      saslBrokers()
-    )
+  for (const e of saslEntries) {
+    test(`support SASL ${e.name} connections`, async () => {
+      cluster = createCluster(e.opts(), saslBrokers())
 
-    consumer = createConsumer({
-      cluster,
-      groupId,
-      maxWaitTimeInMs: 1,
-      logger: newLogger(),
+      consumer = createConsumer({
+        cluster,
+        groupId,
+        maxWaitTimeInMs: 1,
+        logger: newLogger(),
+      })
+
+      await consumer.connect()
     })
-
-    await consumer.connect()
-  })
-
-  test('support SASL SCRAM 256 connections', async () => {
-    cluster = createCluster(saslSCRAM256ConnectionOpts(), saslBrokers())
-
-    consumer = createConsumer({
-      cluster,
-      groupId,
-      maxWaitTimeInMs: 1,
-      logger: newLogger(),
-    })
-
-    await consumer.connect()
-  })
-
-  test('support SASL SCRAM 512 connections', async () => {
-    cluster = createCluster(saslSCRAM512ConnectionOpts(), saslBrokers())
-
-    consumer = createConsumer({
-      cluster,
-      groupId,
-      maxWaitTimeInMs: 1,
-      logger: newLogger(),
-    })
-
-    await consumer.connect()
-  })
+  }
 
   test('reconnects the cluster if disconnected', async () => {
     consumer = createConsumer({
@@ -125,15 +92,11 @@ describe('Consumer', () => {
     await cluster.disconnect()
     expect(cluster.isConnected()).toEqual(false)
 
-    try {
-      await producer.send({
-        acks: 1,
-        topic: topicName,
-        messages: [{ key: `key-${secureRandom()}`, value: `value-${secureRandom()}` }],
-      })
-    } finally {
-      await producer.disconnect()
-    }
+    await producer.send({
+      acks: 1,
+      topic: topicName,
+      messages: [{ key: `key-${secureRandom()}`, value: `value-${secureRandom()}` }],
+    })
 
     await waitFor(() => cluster.isConnected())
     await expect(waitFor(() => messages.length > 0)).resolves.toBeTruthy()

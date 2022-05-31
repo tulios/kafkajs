@@ -3,14 +3,14 @@ const { KafkaJSProtocolError } = require('../../errors')
 const { createErrorFromCode } = require('../../protocol/error')
 
 const { secureRandom, createCluster, newLogger, createTopic } = require('testHelpers')
-const RESOURCE_TYPES = require('../../protocol/resourceTypes')
+const CONFIG_RESOURCE_TYPES = require('../../protocol/configResourceTypes')
 const NOT_CONTROLLER = 41
 
 describe('Admin', () => {
   let topicName, admin
 
   const getConfigEntries = response =>
-    response.resources.find(r => r.resourceType === RESOURCE_TYPES.TOPIC).configEntries
+    response.resources.find(r => r.resourceType === CONFIG_RESOURCE_TYPES.TOPIC).configEntries
 
   const getConfigValue = (configEntries, name) =>
     configEntries.find(c => c.configName === name).configValue
@@ -20,7 +20,7 @@ describe('Admin', () => {
   })
 
   afterEach(async () => {
-    await admin.disconnect()
+    admin && (await admin.disconnect())
   })
 
   describe('alterConfigs', () => {
@@ -46,7 +46,7 @@ describe('Admin', () => {
 
     test('throws an error if there are invalid resource types', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
-      const resources = [{ type: RESOURCE_TYPES.TOPIC }, { type: 1999 }]
+      const resources = [{ type: CONFIG_RESOURCE_TYPES.TOPIC }, { type: 1999 }]
       await expect(admin.alterConfigs({ resources })).rejects.toHaveProperty(
         'message',
         'Invalid resource type 1999: {"type":1999}'
@@ -56,8 +56,8 @@ describe('Admin', () => {
     test('throws an error if there are blank resource names', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
       const resources = [
-        { type: RESOURCE_TYPES.TOPIC, name: 'abc' },
-        { type: RESOURCE_TYPES.TOPIC, name: null },
+        { type: CONFIG_RESOURCE_TYPES.TOPIC, name: 'abc' },
+        { type: CONFIG_RESOURCE_TYPES.TOPIC, name: null },
       ]
       await expect(admin.alterConfigs({ resources })).rejects.toHaveProperty(
         'message',
@@ -68,8 +68,8 @@ describe('Admin', () => {
     test('throws an error if there are invalid resource names', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
       const resources = [
-        { type: RESOURCE_TYPES.TOPIC, name: 'abc' },
-        { type: RESOURCE_TYPES.TOPIC, name: 123 },
+        { type: CONFIG_RESOURCE_TYPES.TOPIC, name: 'abc' },
+        { type: CONFIG_RESOURCE_TYPES.TOPIC, name: 123 },
       ]
       await expect(admin.alterConfigs({ resources })).rejects.toHaveProperty(
         'message',
@@ -80,8 +80,8 @@ describe('Admin', () => {
     test('throws an error if there are invalid resource configEntries', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
       const resources = [
-        { type: RESOURCE_TYPES.TOPIC, name: 'abc', configEntries: [] },
-        { type: RESOURCE_TYPES.TOPIC, name: 'def', configEntries: 123 },
+        { type: CONFIG_RESOURCE_TYPES.TOPIC, name: 'abc', configEntries: [] },
+        { type: CONFIG_RESOURCE_TYPES.TOPIC, name: 'def', configEntries: 123 },
       ]
       await expect(admin.alterConfigs({ resources })).rejects.toHaveProperty(
         'message',
@@ -89,15 +89,15 @@ describe('Admin', () => {
       )
     })
 
-    test('throws an error if there are invalid resource configEntriy values', async () => {
+    test('throws an error if there are invalid resource configEntry values', async () => {
       admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
       const resources = [
         {
-          type: RESOURCE_TYPES.TOPIC,
+          type: CONFIG_RESOURCE_TYPES.TOPIC,
           name: 'abc',
           configEntries: [{ name: 'cleanup.policy', value: 'compact' }],
         },
-        { type: RESOURCE_TYPES.TOPIC, name: 'def', configEntries: [{}] },
+        { type: CONFIG_RESOURCE_TYPES.TOPIC, name: 'def', configEntries: [{}] },
       ]
       await expect(admin.alterConfigs({ resources })).rejects.toHaveProperty(
         'message',
@@ -114,7 +114,7 @@ describe('Admin', () => {
       let describeResponse = await admin.describeConfigs({
         resources: [
           {
-            type: RESOURCE_TYPES.TOPIC,
+            type: CONFIG_RESOURCE_TYPES.TOPIC,
             name: topicName,
             configNames: ['cleanup.policy'],
           },
@@ -127,7 +127,7 @@ describe('Admin', () => {
       await admin.alterConfigs({
         resources: [
           {
-            type: RESOURCE_TYPES.TOPIC,
+            type: CONFIG_RESOURCE_TYPES.TOPIC,
             name: topicName,
             configEntries: [{ name: 'cleanup.policy', value: 'compact' }],
           },
@@ -137,7 +137,7 @@ describe('Admin', () => {
       describeResponse = await admin.describeConfigs({
         resources: [
           {
-            type: RESOURCE_TYPES.TOPIC,
+            type: CONFIG_RESOURCE_TYPES.TOPIC,
             name: topicName,
             configNames: ['cleanup.policy'],
           },
@@ -157,7 +157,7 @@ describe('Admin', () => {
       let describeResponse = await admin.describeConfigs({
         resources: [
           {
-            type: RESOURCE_TYPES.TOPIC,
+            type: CONFIG_RESOURCE_TYPES.TOPIC,
             name: topicName,
             configNames: ['cleanup.policy'],
           },
@@ -171,7 +171,7 @@ describe('Admin', () => {
         validateOnly: true,
         resources: [
           {
-            type: RESOURCE_TYPES.TOPIC,
+            type: CONFIG_RESOURCE_TYPES.TOPIC,
             name: topicName,
             configEntries: [{ name: 'cleanup.policy', value: 'compact' }],
           },
@@ -181,7 +181,7 @@ describe('Admin', () => {
       describeResponse = await admin.describeConfigs({
         resources: [
           {
-            type: RESOURCE_TYPES.TOPIC,
+            type: CONFIG_RESOURCE_TYPES.TOPIC,
             name: topicName,
             configNames: ['cleanup.policy'],
           },
@@ -194,7 +194,8 @@ describe('Admin', () => {
 
     test('retries if the controller has moved', async () => {
       const cluster = createCluster()
-      const broker = { alterConfigs: jest.fn(() => true) }
+      const brokerResponse = { resources: [true] }
+      const broker = { alterConfigs: jest.fn(() => brokerResponse) }
 
       cluster.refreshMetadata = jest.fn()
       cluster.findControllerBroker = jest
@@ -209,17 +210,45 @@ describe('Admin', () => {
         admin.alterConfigs({
           resources: [
             {
-              type: RESOURCE_TYPES.TOPIC,
+              type: CONFIG_RESOURCE_TYPES.TOPIC,
               name: topicName,
               configEntries: [{ name: 'cleanup.policy', value: 'compact' }],
             },
           ],
         })
-      ).resolves.toEqual(true)
+      ).resolves.toEqual(brokerResponse)
 
       expect(cluster.refreshMetadata).toHaveBeenCalledTimes(2)
       expect(cluster.findControllerBroker).toHaveBeenCalledTimes(2)
       expect(broker.alterConfigs).toHaveBeenCalledTimes(1)
     })
+  })
+
+  test('alter broker configs', async () => {
+    await createTopic({ topic: topicName })
+
+    const cluster = createCluster()
+    admin = createAdmin({ cluster, logger: newLogger() })
+    await admin.connect()
+
+    const metadata = await cluster.brokerPool.seedBroker.metadata()
+    const brokers = metadata.brokers
+    const brokerToAlterConfig = brokers[1].nodeId.toString()
+
+    const resources = [
+      {
+        type: CONFIG_RESOURCE_TYPES.TOPIC,
+        name: topicName,
+        configEntries: [{ name: 'cleanup.policy', value: 'compact' }],
+      },
+      {
+        type: CONFIG_RESOURCE_TYPES.BROKER,
+        name: brokerToAlterConfig,
+        configEntries: [{ name: 'cleanup.policy', value: 'delete' }],
+      },
+    ]
+
+    const response = await admin.alterConfigs({ resources })
+    expect(response.resources.length).toEqual(2)
   })
 })

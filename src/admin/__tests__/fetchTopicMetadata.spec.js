@@ -13,7 +13,7 @@ describe('Admin', () => {
   })
 
   afterEach(async () => {
-    await admin.disconnect()
+    admin && (await admin.disconnect())
     consumer && (await consumer.disconnect())
   })
 
@@ -74,9 +74,19 @@ describe('Admin', () => {
         topics: [existingTopicName, newTopicName],
       })
 
-      expect(topicsMetadata[0]).toHaveProperty('name', existingTopicName)
-      expect(topicsMetadata[1]).toHaveProperty('name', newTopicName)
-      expect(topicsMetadata[1].partitions).toHaveLength(1)
+      expect(topicsMetadata).toHaveLength(2)
+      expect(topicsMetadata).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: existingTopicName,
+            partitions: expect.any(Array),
+          }),
+          expect.objectContaining({
+            name: newTopicName,
+            partitions: expect.any(Array),
+          }),
+        ])
+      )
     })
 
     test('throws an error if the topic does not exist and "allowAutoTopicCreation" is false', async () => {

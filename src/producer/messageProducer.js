@@ -1,13 +1,36 @@
 const createSendMessages = require('./sendMessages')
-const { KafkaJSNonRetriableError } = require('../errors')
+const { KafkaJSError, KafkaJSNonRetriableError } = require('../errors')
+const { CONNECTION_STATUS } = require('../network/connectionStatus')
 
-module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrier }) => {
+module.exports = ({
+  logger,
+  cluster,
+  partitioner,
+  eosManager,
+  idempotent,
+  retrier,
+  getConnectionStatus,
+}) => {
   const sendMessages = createSendMessages({
     logger,
     cluster,
+    retrier,
     partitioner,
     eosManager,
   })
+
+  const validateConnectionStatus = () => {
+    const connectionStatus = getConnectionStatus()
+
+    switch (connectionStatus) {
+      case CONNECTION_STATUS.DISCONNECTING:
+        throw new KafkaJSNonRetriableError(
+          `The producer is disconnecting; therefore, it can't safely accept messages anymore`
+        )
+      case CONNECTION_STATUS.DISCONNECTED:
+        throw new KafkaJSError('The producer is disconnected')
+    }
+  }
 
   /**
    * @typedef {Object} TopicMessages
@@ -56,6 +79,7 @@ module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrie
       }
     }
 
+    validateConnectionStatus()
     const mergedTopicMessages = topicMessages.reduce((merged, { topic, messages }) => {
       const index = merged.findIndex(({ topic: mergedTopic }) => topic === mergedTopic)
 
@@ -68,41 +92,11 @@ module.exports = ({ logger, cluster, partitioner, eosManager, idempotent, retrie
       return merged
     }, [])
 
-    const topicNames = topicMessages.map(message => message.topic)
-    return retrier(async (bail, retryCount, retryTime) => {
-      try {
-        return await sendMessages({
-          acks,
-          timeout,
-          compression,
-          topicMessages: mergedTopicMessages,
-        })
-      } catch (error) {
-        if (!cluster.isConnected()) {
-          logger.debug(`Cluster has disconnected, reconnecting: ${error.message}`, {
-            retryCount,
-            retryTime,
-          })
-          await cluster.connect()
-          await cluster.refreshMetadata(topicNames)
-          throw error
-        }
-
-        // This is necessary in case the metadata is stale and the number of partitions
-        // for this topic has increased in the meantime
-        if (
-          error.name === 'KafkaJSConnectionError' ||
-          (error.name === 'KafkaJSProtocolError' && error.retriable)
-        ) {
-          logger.error(`Failed to send messages: ${error.message}`, { retryCount, retryTime })
-          await cluster.refreshMetadata(topicNames)
-          throw error
-        }
-
-        // Skip retries for errors not related to the Kafka protocol
-        logger.error(`${error.message}`, { retryCount, retryTime })
-        bail(error)
-      }
+    return await sendMessages({
+      acks,
+      timeout,
+      compression,
+      topicMessages: mergedTopicMessages,
     })
   }
 

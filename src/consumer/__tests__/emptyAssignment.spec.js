@@ -8,6 +8,7 @@ const {
   createTopic,
   newLogger,
   waitForConsumerToJoinGroup,
+  waitForNextEvent,
 } = require('testHelpers')
 
 describe('Consumer', () => {
@@ -21,11 +22,11 @@ describe('Consumer', () => {
   })
 
   afterEach(async () => {
-    await consumer1.disconnect()
-    await consumer2.disconnect()
+    consumer1 && (await consumer1.disconnect())
+    consumer2 && (await consumer2.disconnect())
   })
 
-  test('can join the group without receiving any assignment', async () => {
+  test('remains in the group without receiving any assignment', async () => {
     // Assigns all topic-partitions to the first member.
     const UnbalancedAssigner = ({ cluster }) => ({
       name: 'UnbalancedAssigner',
@@ -89,9 +90,23 @@ describe('Consumer', () => {
     consumer2.run({ eachMessage: () => {} })
 
     // Ensure that both consumers manage to join
-    await Promise.all([
+    const groupJoinEvents = await Promise.all([
       waitForConsumerToJoinGroup(consumer1),
       waitForConsumerToJoinGroup(consumer2),
     ])
+
+    const emptyAssignments = groupJoinEvents.filter(
+      ({ payload }) => Object.entries(payload.memberAssignment).length === 0
+    )
+    expect(emptyAssignments).toHaveLength(1)
+
+    await Promise.all(
+      [consumer1, consumer2].map(consumer => waitForNextEvent(consumer, consumer.events.FETCH))
+    )
+
+    // Both consumers should continue to heartbeat even without receiving any assignments
+    await Promise.all(
+      [consumer1, consumer2].map(consumer => waitForNextEvent(consumer, consumer.events.HEARTBEAT))
+    )
   })
 })

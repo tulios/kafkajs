@@ -11,6 +11,8 @@ const createConsumer = require('./consumer')
 const createAdmin = require('./admin')
 const ISOLATION_LEVEL = require('./protocol/isolationLevel')
 const defaultSocketFactory = require('./network/socketFactory')
+const once = require('./utils/once')
+const websiteUrl = require('./utils/websiteUrl')
 
 const PRIVATE = {
   CREATE_CLUSTER: Symbol('private:Kafka:createCluster'),
@@ -19,28 +21,53 @@ const PRIVATE = {
   OFFSETS: Symbol('private:Kafka:offsets'),
 }
 
+const DEFAULT_METADATA_MAX_AGE = 300000
+const warnOfDefaultPartitioner = once(logger => {
+  if (process.env.KAFKAJS_NO_PARTITIONER_WARNING == null) {
+    logger.warn(
+      `KafkaJS v2.0.0 switched default partitioner. To retain the same partitioning behavior as in previous versions, create the producer with the option "createPartitioner: Partitioners.LegacyPartitioner". See the migration guide at ${websiteUrl(
+        'docs/migration-guide-v2.0.0',
+        'producer-new-default-partitioner'
+      )} for details. Silence this warning by setting the environment variable "KAFKAJS_NO_PARTITIONER_WARNING=1"`
+    )
+  }
+})
+
 module.exports = class Client {
+  /**
+   * @param {Object} options
+   * @param {Array<string>} options.brokers example: ['127.0.0.1:9092', '127.0.0.1:9094']
+   * @param {Object} options.ssl
+   * @param {Object} options.sasl
+   * @param {string} options.clientId
+   * @param {number} [options.connectionTimeout=1000] - in milliseconds
+   * @param {number} options.authenticationTimeout - in milliseconds
+   * @param {number} options.reauthenticationThreshold - in milliseconds
+   * @param {number} [options.requestTimeout=30000] - in milliseconds
+   * @param {boolean} [options.enforceRequestTimeout]
+   * @param {import("../types").RetryOptions} [options.retry]
+   * @param {import("../types").ISocketFactory} [options.socketFactory]
+   */
   constructor({
     brokers,
     ssl,
     sasl,
     clientId,
-    connectionTimeout,
+    connectionTimeout = 1000,
     authenticationTimeout,
     reauthenticationThreshold,
     requestTimeout,
-    enforceRequestTimeout = false,
+    enforceRequestTimeout = true,
     retry,
     socketFactory = defaultSocketFactory(),
     logLevel = INFO,
     logCreator = LoggerConsole,
-    allowExperimentalV011 = true,
   }) {
     this[PRIVATE.OFFSETS] = new Map()
     this[PRIVATE.LOGGER] = createLogger({ level: logLevel, logCreator })
     this[PRIVATE.CLUSTER_RETRY] = retry
     this[PRIVATE.CREATE_CLUSTER] = ({
-      metadataMaxAge = 300000,
+      metadataMaxAge,
       allowAutoTopicCreation = true,
       maxInFlightRequests = null,
       instrumentationEmitter = null,
@@ -63,7 +90,6 @@ module.exports = class Client {
         metadataMaxAge,
         instrumentationEmitter,
         allowAutoTopicCreation,
-        allowExperimentalV011,
         maxInFlightRequests,
         isolationLevel,
       })
@@ -75,7 +101,7 @@ module.exports = class Client {
   producer({
     createPartitioner,
     retry,
-    metadataMaxAge,
+    metadataMaxAge = DEFAULT_METADATA_MAX_AGE,
     allowAutoTopicCreation,
     idempotent,
     transactionalId,
@@ -89,6 +115,10 @@ module.exports = class Client {
       maxInFlightRequests,
       instrumentationEmitter,
     })
+
+    if (createPartitioner == null) {
+      warnOfDefaultPartitioner(this[PRIVATE.LOGGER])
+    }
 
     return createProducer({
       retry: { ...this[PRIVATE.CLUSTER_RETRY], ...retry },
@@ -108,7 +138,7 @@ module.exports = class Client {
   consumer({
     groupId,
     partitionAssigners,
-    metadataMaxAge,
+    metadataMaxAge = DEFAULT_METADATA_MAX_AGE,
     sessionTimeout,
     rebalanceTimeout,
     heartbeatInterval,
@@ -116,10 +146,11 @@ module.exports = class Client {
     minBytes,
     maxBytes,
     maxWaitTimeInMs,
-    retry,
+    retry = { retries: 5 },
     allowAutoTopicCreation,
     maxInFlightRequests,
     readUncommitted = false,
+    rackId = '',
   } = {}) {
     const isolationLevel = readUncommitted
       ? ISOLATION_LEVEL.READ_UNCOMMITTED
@@ -149,6 +180,8 @@ module.exports = class Client {
       maxWaitTimeInMs,
       isolationLevel,
       instrumentationEmitter,
+      rackId,
+      metadataMaxAge,
     })
   }
 

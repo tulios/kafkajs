@@ -1,5 +1,6 @@
-const { createConnection, connectionOpts, secureRandom, newLogger } = require('testHelpers')
-const RESOURCE_TYPES = require('../../protocol/resourceTypes')
+const { createConnectionPool, connectionOpts, secureRandom, newLogger } = require('testHelpers')
+const CONFIG_RESOURCE_TYPES = require('../../protocol/configResourceTypes')
+const ConfigSource = require('../../protocol/configSource')
 const Broker = require('../index')
 
 const sortByConfigName = array => array.sort((a, b) => a.configName.localeCompare(b.configName))
@@ -9,7 +10,7 @@ describe('Broker > describeConfigs', () => {
 
   beforeEach(async () => {
     seedBroker = new Broker({
-      connection: createConnection(connectionOpts()),
+      connectionPool: createConnectionPool(connectionOpts()),
       logger: newLogger(),
     })
     await seedBroker.connect()
@@ -18,7 +19,7 @@ describe('Broker > describeConfigs', () => {
     const newBrokerData = metadata.brokers.find(b => b.nodeId === metadata.controllerId)
 
     broker = new Broker({
-      connection: createConnection(newBrokerData),
+      connectionPool: createConnectionPool(newBrokerData),
       logger: newLogger(),
     })
   })
@@ -41,7 +42,7 @@ describe('Broker > describeConfigs', () => {
       includeSynonyms: true,
       resources: [
         {
-          type: RESOURCE_TYPES.TOPIC,
+          type: CONFIG_RESOURCE_TYPES.TOPIC,
           name: topicName1,
           configNames: ['compression.type', 'retention.ms'],
         },
@@ -55,7 +56,8 @@ describe('Broker > describeConfigs', () => {
             {
               configName: 'compression.type',
               configValue: 'producer',
-              isDefault: false,
+              isDefault: true,
+              configSource: ConfigSource.DEFAULT_CONFIG,
               isSensitive: false,
               readOnly: false,
               configSynonyms: [
@@ -69,7 +71,8 @@ describe('Broker > describeConfigs', () => {
             {
               configName: 'retention.ms',
               configValue: '604800000',
-              isDefault: false,
+              isDefault: true,
+              configSource: ConfigSource.DEFAULT_CONFIG,
               isSensitive: false,
               readOnly: false,
               configSynonyms: [],
@@ -78,9 +81,10 @@ describe('Broker > describeConfigs', () => {
           errorCode: 0,
           errorMessage: null,
           resourceName: topicName1,
-          resourceType: RESOURCE_TYPES.TOPIC,
+          resourceType: CONFIG_RESOURCE_TYPES.TOPIC,
         },
       ],
+      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
     })
   })
@@ -98,7 +102,7 @@ describe('Broker > describeConfigs', () => {
       const response = await broker.describeConfigs({
         resources: [
           {
-            type: RESOURCE_TYPES.TOPIC,
+            type: CONFIG_RESOURCE_TYPES.TOPIC,
             name: topicName1,
             configNames: [],
           },
@@ -109,15 +113,17 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'compression.type',
           configValue: 'producer',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
         },
         {
           configName: 'message.format.version',
-          configValue: expect.stringMatching(/^(0\.11\.0-IV2|1\.1-IV0|2\.[2,3]-IV1)$/),
-          isDefault: false,
+          configValue: expect.stringMatching(/^(0\.11\.0-IV2|1\.1-IV0|2\.[234]-IV1)$/),
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -125,7 +131,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'file.delete.delay.ms',
           configValue: '60000',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -133,7 +140,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'leader.replication.throttled.replicas',
           configValue: '',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -142,7 +150,8 @@ describe('Broker > describeConfigs', () => {
           configName: 'max.compaction.lag.ms',
           configSynonyms: [],
           configValue: '9223372036854775807',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
         },
@@ -150,14 +159,16 @@ describe('Broker > describeConfigs', () => {
           configName: 'message.downconversion.enable',
           configSynonyms: [],
           configValue: 'true',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
         },
         {
           configName: 'max.message.bytes',
           configValue: '1000012',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -165,7 +176,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'min.compaction.lag.ms',
           configValue: '0',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -173,7 +185,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'message.timestamp.type',
           configValue: 'CreateTime',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -181,7 +194,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'min.insync.replicas',
           configValue: '1',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -189,7 +203,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'segment.jitter.ms',
           configValue: '0',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -197,7 +212,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'preallocate',
           configValue: 'false',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -205,7 +221,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'index.interval.bytes',
           configValue: '4096',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -213,7 +230,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'min.cleanable.dirty.ratio',
           configValue: '0.5',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -221,7 +239,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'unclean.leader.election.enable',
           configValue: 'false',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -229,7 +248,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'retention.bytes',
           configValue: '-1',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -237,7 +257,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'delete.retention.ms',
           configValue: '86400000',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -245,7 +266,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'cleanup.policy',
           configValue: 'delete',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -253,7 +275,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'flush.ms',
           configValue: '9223372036854775807',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -261,7 +284,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'follower.replication.throttled.replicas',
           configValue: '',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -270,6 +294,7 @@ describe('Broker > describeConfigs', () => {
           configName: 'segment.bytes',
           configValue: '1073741824',
           isDefault: expect.any(Boolean),
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -277,7 +302,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'retention.ms',
           configValue: '604800000',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -285,7 +311,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'segment.ms',
           configValue: '604800000',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -293,7 +320,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'message.timestamp.difference.max.ms',
           configValue: '9223372036854775807',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -301,7 +329,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'flush.messages',
           configValue: '9223372036854775807',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -309,7 +338,8 @@ describe('Broker > describeConfigs', () => {
         {
           configName: 'segment.index.bytes',
           configValue: '10485760',
-          isDefault: false,
+          isDefault: true,
+          configSource: ConfigSource.DEFAULT_CONFIG,
           isSensitive: false,
           readOnly: false,
           configSynonyms: [],
@@ -324,9 +354,10 @@ describe('Broker > describeConfigs', () => {
               errorCode: 0,
               errorMessage: null,
               resourceName: topicName1,
-              resourceType: RESOURCE_TYPES.TOPIC,
+              resourceType: CONFIG_RESOURCE_TYPES.TOPIC,
             }),
           ],
+          clientSideThrottleTime: expect.optional(0),
           throttleTime: 0,
         })
       )

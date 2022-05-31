@@ -73,6 +73,28 @@ describe('Consumer > assigners > RoundRobinAssigner', () => {
         },
       ])
     })
+
+    test('assign topics with names taken from builtin functions', async () => {
+      topics = ['shift', 'toString']
+      metadata['shift'] = [{ partitionId: 0 }]
+      metadata['toString'] = [{ partitionId: 0 }]
+      const members = [{ memberId: 'member-1' }]
+
+      const assignment = await assigner.assign({ members, topics })
+
+      expect(assignment).toEqual([
+        {
+          memberId: 'member-1',
+          memberAssignment: MemberAssignment.encode({
+            version: assigner.version,
+            assignment: {
+              shift: [0],
+              toString: [0],
+            },
+          }),
+        },
+      ])
+    })
   })
 
   describe('#protocol', () => {
