@@ -214,11 +214,20 @@ module.exports = class Cluster {
    * @return {Promise}
    */
   async addMultipleTargetTopics(topics) {
+    // check if any topics need to be added, skip lock if possible
+    if (
+      this.brokerPool.metadata &&
+      this.previousTopics &&
+      topics.every(topic => this.previousTopics.has(topic))
+    ) {
+      return
+    }
+
     await this.mutatingTargetTopics.acquire()
 
     try {
       const previousSize = this.targetTopics.size
-      const previousTopics = new Set(this.targetTopics)
+      this.previousTopics = new Set(this.targetTopics)
       for (const topic of topics) {
         this.targetTopics.add(topic)
       }
@@ -228,9 +237,10 @@ module.exports = class Cluster {
       if (hasChanged) {
         try {
           await this.refreshMetadata()
+          this.previousTopics = new Set(this.targetTopics)
         } catch (e) {
           if (e.type === 'INVALID_TOPIC_EXCEPTION' || e.type === 'UNKNOWN_TOPIC_OR_PARTITION') {
-            this.targetTopics = previousTopics
+            this.targetTopics = new Set(this.previousTopics)
           }
 
           throw e
@@ -244,6 +254,17 @@ module.exports = class Cluster {
   /** @type {() => string[]} */
   getNodeIds() {
     return this.brokerPool.getNodeIds()
+  }
+
+  /**
+   * @public
+   * @param {string[]} topics
+   */
+  deleteTopics(topics) {
+    for (const topic of topics) {
+      this.targetTopics.delete(topic)
+    }
+    this.previousTopics = new Set(this.targetTopics)
   }
 
   /**

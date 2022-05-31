@@ -264,9 +264,7 @@ module.exports = ({
         await broker.deleteTopics({ topics, timeout })
 
         // Remove deleted topics
-        for (const topic of topics) {
-          cluster.targetTopics.delete(topic)
-        }
+        cluster.deleteTopics(topics)
 
         await cluster.refreshMetadata()
       } catch (e) {

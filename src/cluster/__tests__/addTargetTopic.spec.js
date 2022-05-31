@@ -46,4 +46,20 @@ describe('Cluster > addTargetTopic', () => {
     await cluster.addTargetTopic(topic1)
     expect(cluster.refreshMetadata).toHaveBeenCalledTimes(2)
   })
+
+  test('take mutatingTargetTopics lock only when needed', async () => {
+    const concurrency = 100
+    cluster.mutatingTargetTopics.acquire = jest.fn()
+    cluster.mutatingTargetTopics.release = jest.fn()
+    const topic1 = `topic-${secureRandom()}`
+    await cluster.addTargetTopic(topic1)
+    expect(cluster.mutatingTargetTopics.acquire).toHaveBeenCalledTimes(1)
+
+    const pAddTopicArr = []
+    for (let i = 0; i < concurrency; i++) {
+      pAddTopicArr.push(cluster.addTargetTopic(topic1))
+    }
+    await Promise.all(pAddTopicArr)
+    expect(cluster.mutatingTargetTopics.acquire).toHaveBeenCalledTimes(1)
+  })
 })
