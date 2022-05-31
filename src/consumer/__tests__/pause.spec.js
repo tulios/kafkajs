@@ -193,6 +193,139 @@ describe('Consumer', () => {
     })
   })
 
+  describe('when pausing and breaking the consumption', () => {
+    it('does not process messages when consumption from topic is paused', async () => {
+      const [topic] = topics
+      const key1 = secureRandom()
+      const message1 = { key: `key-${key1}`, value: `value-${key1}`, partition: 0 }
+      const messagesConsumed = []
+      let shouldThrow = true
+
+      await consumer.connect()
+      await producer.connect()
+
+      await producer.send({ acks: 1, topic, messages: [message1] })
+      await consumer.subscribe({ topic, fromBeginning: true })
+
+      consumer.run({
+        eachMessage: async event => {
+          messagesConsumed.push(event)
+          if (shouldThrow) {
+            consumer.pause([{ topic }])
+            throw new Error('Should fail')
+          }
+        },
+      })
+
+      await waitForConsumerToJoinGroup(consumer)
+
+      const consumedMessagesTillError = [
+        ...(await waitForMessages(messagesConsumed, { delay: 1000 })),
+      ]
+
+      shouldThrow = false
+      consumer.resume([{ topic }])
+
+      const consumedMessages = await waitForMessages(messagesConsumed, { number: 2 })
+
+      expect(consumedMessagesTillError).toHaveLength(1)
+      expect(consumedMessagesTillError).toEqual([
+        expect.objectContaining({
+          topic,
+          partition: expect.any(Number),
+          message: expect.objectContaining({ offset: '0' }),
+        }),
+      ])
+      expect(consumedMessages).toHaveLength(2)
+      expect(consumedMessages).toEqual([
+        expect.objectContaining({
+          topic,
+          partition: expect.any(Number),
+          message: expect.objectContaining({ offset: '0' }),
+        }),
+        expect.objectContaining({
+          topic,
+          partition: expect.any(Number),
+          message: expect.objectContaining({ offset: '0' }),
+        }),
+      ])
+    })
+
+    it('does not process messages when consumption from topic-partition is paused', async () => {
+      const [topic] = topics
+      const pausedPartition = 0
+      const key1 = secureRandom()
+      const message1 = { key: `key-${key1}`, value: `value-${key1}`, partition: 0 }
+      const key2 = secureRandom()
+      const message2 = { key: `key-${key2}`, value: `value-${key2}`, partition: 1 }
+      const messagesConsumed = []
+      let shouldThrow = true
+
+      await consumer.connect()
+      await producer.connect()
+
+      await producer.send({ acks: 1, topic, messages: [message1, message2] })
+      await consumer.subscribe({ topic, fromBeginning: true })
+
+      consumer.run({
+        eachMessage: async event => {
+          messagesConsumed.push(event)
+          if (shouldThrow && event.partition === pausedPartition) {
+            consumer.pause([{ topic, partitions: [pausedPartition] }])
+            throw new Error('Should fail')
+          }
+        },
+      })
+
+      await waitForConsumerToJoinGroup(consumer)
+
+      const consumedMessagesTillError = [
+        ...(await waitForMessages(messagesConsumed, { number: 2 })),
+      ]
+
+      shouldThrow = false
+      consumer.resume([{ topic, partitions: [pausedPartition] }])
+
+      const consumedMessages = await waitForMessages(messagesConsumed, { number: 3 })
+
+      expect(consumedMessagesTillError).toHaveLength(2)
+      expect(consumedMessagesTillError).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            topic,
+            partition: 0,
+            message: expect.objectContaining({ offset: '0' }),
+          }),
+          expect.objectContaining({
+            topic,
+            partition: 1,
+            message: expect.objectContaining({ offset: '0' }),
+          }),
+        ])
+      )
+      expect(consumedMessages).toHaveLength(3)
+      expect(consumedMessages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            topic,
+            partition: 0,
+            message: expect.objectContaining({ offset: '0' }),
+          }),
+          expect.objectContaining({
+            topic,
+            partition: 0,
+            message: expect.objectContaining({ offset: '0' }),
+          }),
+          expect.objectContaining({
+            topic,
+            partition: 1,
+            message: expect.objectContaining({ offset: '0' }),
+          }),
+        ])
+      )
+    })
+  })
+
   describe('when all topics are paused', () => {
     it('does not fetch messages and wait maxWaitTimeInMs per attempt', async () => {
       const consumerCluster = createCluster()
