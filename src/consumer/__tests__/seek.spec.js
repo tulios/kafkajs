@@ -172,10 +172,11 @@ describe('Consumer', () => {
       })
     })
 
-    describe('with two partitions', () => {
+    describe.only('with two partitions', () => {
       beforeEach(async () => {
         await createTopic({ topic: topicName, partitions: 2 })
       })
+
       it('updates the partition offset to the given offset', async () => {
         await consumer.connect()
         await producer.connect()
@@ -202,24 +203,27 @@ describe('Consumer', () => {
         consumer.seek({ topic: topicName, partition: 1, offset: 1 })
 
         await waitForConsumerToJoinGroup(consumer)
-        await expect(waitForMessages(messagesConsumed, { number: 3 })).resolves.toEqual([
-          expect.objectContaining({
-            topic: topicName,
-            partition: 0,
-            message: expect.objectContaining({ offset: '0' }),
-          }),
-          expect.objectContaining({
-            topic: topicName,
-            partition: 1,
-            message: expect.objectContaining({ offset: '1' }),
-          }),
-          expect.objectContaining({
-            topic: topicName,
-            partition: 1,
-            message: expect.objectContaining({ offset: '2' }),
-          }),
-        ])
+        await expect(waitForMessages(messagesConsumed, { number: 3 })).resolves.toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              topic: topicName,
+              partition: 0,
+              message: expect.objectContaining({ offset: '0' }),
+            }),
+            expect.objectContaining({
+              topic: topicName,
+              partition: 1,
+              message: expect.objectContaining({ offset: '1' }),
+            }),
+            expect.objectContaining({
+              topic: topicName,
+              partition: 1,
+              message: expect.objectContaining({ offset: '2' }),
+            }),
+          ])
+        )
       })
+
       it('works for both partitions', async () => {
         await consumer.connect()
         await producer.connect()
@@ -249,18 +253,20 @@ describe('Consumer', () => {
         consumer.seek({ topic: topicName, partition: 1, offset: 1 })
 
         await waitForConsumerToJoinGroup(consumer)
-        await expect(waitForMessages(messagesConsumed, { number: 2 })).resolves.toEqual([
-          expect.objectContaining({
-            topic: topicName,
-            partition: 0,
-            message: expect.objectContaining({ offset: '2' }),
-          }),
-          expect.objectContaining({
-            topic: topicName,
-            partition: 1,
-            message: expect.objectContaining({ offset: '1' }),
-          }),
-        ])
+        await expect(waitForMessages(messagesConsumed, { number: 2 })).resolves.toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              topic: topicName,
+              partition: 0,
+              message: expect.objectContaining({ offset: '2' }),
+            }),
+            expect.objectContaining({
+              topic: topicName,
+              partition: 1,
+              message: expect.objectContaining({ offset: '1' }),
+            }),
+          ])
+        )
       })
 
       it('uses the last seek for a given topic/partition', async () => {
@@ -284,13 +290,15 @@ describe('Consumer', () => {
         consumer.seek({ topic: topicName, partition: 0, offset: 2 })
 
         await waitForConsumerToJoinGroup(consumer)
-        await expect(waitForMessages(messagesConsumed, { number: 1 })).resolves.toEqual([
-          expect.objectContaining({
-            topic: topicName,
-            partition: 0,
-            message: expect.objectContaining({ offset: '2' }),
-          }),
-        ])
+        await expect(waitForMessages(messagesConsumed, { number: 1 })).resolves.toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              topic: topicName,
+              partition: 0,
+              message: expect.objectContaining({ offset: '2' }),
+            }),
+          ])
+        )
       })
     })
   })
