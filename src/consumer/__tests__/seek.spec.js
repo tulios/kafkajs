@@ -172,7 +172,7 @@ describe('Consumer', () => {
       })
     })
 
-    describe.only('with two partitions', () => {
+    describe('with two partitions', () => {
       beforeEach(async () => {
         await createTopic({ topic: topicName, partitions: 2 })
       })
