@@ -1,6 +1,6 @@
 module.exports = class SeekOffsets extends Map {
   getKey(topic, partition) {
-    return JSON.stringify(topic, partition)
+    return JSON.stringify([topic, partition])
   }
 
   set(topic, partition, offset) {
@@ -14,7 +14,7 @@ module.exports = class SeekOffsets extends Map {
   }
 
   pop(topic, partition) {
-    if (this.size === 0) {
+    if (this.size === 0 || !this.has(topic, partition)) {
       return
     }
 
