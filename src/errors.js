@@ -248,13 +248,6 @@ class KafkaJSAggregateError extends Error {
 
 class KafkaJSFetcherRebalanceError extends Error {}
 
-class KafkaJSPauseConsumerError extends Error {
-  constructor(timeout) {
-    super('Consumer paused on current topic/partition' + (timeout ? ` for ${timeout}ms` : ''))
-    this.timeout = timeout
-  }
-}
-
 const isRebalancing = e =>
   e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
 
@@ -290,7 +283,6 @@ module.exports = {
   KafkaJSCreateTopicError,
   KafkaJSAggregateError,
   KafkaJSFetcherRebalanceError,
-  KafkaJSPauseConsumerError,
   isRebalancing,
   isKafkaJSError,
 }

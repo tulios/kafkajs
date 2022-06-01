@@ -1,7 +1,7 @@
 const { EventEmitter } = require('events')
 const Long = require('../utils/long')
 const createRetry = require('../retry')
-const { isKafkaJSError, isRebalancing, KafkaJSPauseConsumerError } = require('../errors')
+const { isKafkaJSError, isRebalancing } = require('../errors')
 
 const {
   events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS, REBALANCING },
@@ -182,6 +182,12 @@ module.exports = class Runner extends EventEmitter {
   async processEachMessage(batch) {
     const { topic, partition } = batch
 
+    let paused = false
+    const pause = () => {
+      paused = true
+      this.consumerGroup.pause([{ topic, partitions: [partition] }])
+      return () => this.consumerGroup.resume([{ topic, partitions: [partition] }])
+    }
     for (const message of batch.messages) {
       if (!this.running || this.consumerGroup.hasSeekOffset({ topic, partition })) {
         break
@@ -193,22 +199,9 @@ module.exports = class Runner extends EventEmitter {
           partition,
           message,
           heartbeat: () => this.heartbeat(),
-          pause: timeout => {
-            throw new KafkaJSPauseConsumerError(timeout)
-          },
+          pause,
         })
       } catch (e) {
-        if (e instanceof KafkaJSPauseConsumerError) {
-          this.consumerGroup.pause([{ topic, partitions: [partition] }])
-          if (e.timeout) {
-            setTimeout(
-              () => this.consumerGroup.resume([{ topic, partitions: [partition] }]),
-              e.timeout
-            )
-          }
-          await this.autoCommitOffsets()
-          break
-        }
         if (!isKafkaJSError(e)) {
           this.logger.error(`Error when calling eachMessage`, {
             topic,
@@ -221,18 +214,32 @@ module.exports = class Runner extends EventEmitter {
 
         // In case of errors, commit the previously consumed offsets unless autoCommit is disabled
         await this.autoCommitOffsets()
+        if (paused) {
+          break
+        }
         throw e
       }
 
       this.consumerGroup.resolveOffset({ topic, partition, offset: message.offset })
       await this.heartbeat()
       await this.autoCommitOffsetsIfNecessary()
+
+      if (paused) {
+        break
+      }
     }
   }
 
   async processEachBatch(batch) {
     const { topic, partition } = batch
     const lastFilteredMessage = batch.messages[batch.messages.length - 1]
+
+    let paused = false
+    const pause = () => {
+      paused = true
+      this.consumerGroup.pause([{ topic, partitions: [partition] }])
+      return () => this.consumerGroup.resume([{ topic, partitions: [partition] }])
+    }
 
     try {
       await this.eachBatch({
@@ -260,11 +267,9 @@ module.exports = class Runner extends EventEmitter {
         },
         heartbeat: () => this.heartbeat(),
         /**
-         * Pause consumption, committing whatever offsets have been resolved so far if auto-commit is enabled
+         * Pause consumption for the current topic/partition being processed
          */
-        pause: timeout => {
-          throw new KafkaJSPauseConsumerError(timeout)
-        },
+        pause,
         /**
          * Commit offsets if provided. Otherwise commit most recent resolved offsets
          * if the autoCommit conditions are met.
@@ -281,17 +286,6 @@ module.exports = class Runner extends EventEmitter {
         isStale: () => this.consumerGroup.hasSeekOffset({ topic, partition }),
       })
     } catch (e) {
-      if (e instanceof KafkaJSPauseConsumerError) {
-        this.consumerGroup.pause([{ topic, partitions: [partition] }])
-        if (e.timeout) {
-          setTimeout(
-            () => this.consumerGroup.resume([{ topic, partitions: [partition] }]),
-            e.timeout
-          )
-        }
-        await this.autoCommitOffsets()
-        return
-      }
       if (!isKafkaJSError(e)) {
         this.logger.error(`Error when calling eachBatch`, {
           topic,
@@ -305,6 +299,10 @@ module.exports = class Runner extends EventEmitter {
       // eachBatch has a special resolveOffset which can be used
       // to keep track of the messages
       await this.autoCommitOffsets()
+      if (paused) {
+        // we don't want to re-throw the exception because that will trigger a retry
+        return
+      }
       throw e
     }
 
