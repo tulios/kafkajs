@@ -31,7 +31,8 @@ export type Authenticator = {
 export type Mechanism = {
   mechanism: string
   authenticationProvider: (
-    connection: { host: string; port: number },
+    host: string, 
+    port: number,
     logger: Logger,
     saslAuthenticate: <ParseResult>(
       request: SaslAuthenticationRequest,
