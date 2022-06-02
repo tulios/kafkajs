@@ -18,5 +18,5 @@
 const Encoder = require('../../../encoder')
 
 module.exports = ({ clientFirstMessage }) => ({
-  encode: async () => new Encoder().writeBytes(clientFirstMessage),
+  encode: async () => new Encoder().writeBytes(clientFirstMessage).buffer,
 })

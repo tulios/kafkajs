@@ -82,8 +82,8 @@ describe('Broker > SASL Authenticator > SCRAM', () => {
         })
 
         const { request } = connection.authenticate.mock.calls[0][0]
-        const encoder = await request.encode()
-        const decoder = new Decoder(encoder.buffer)
+        const buffer = await request.encode()
+        const decoder = new Decoder(buffer)
         expect(decoder.readBytes().toString()).toEqual(`n,,n=user,r=${scram.currentNonce}`)
       })
 
@@ -97,8 +97,8 @@ describe('Broker > SASL Authenticator > SCRAM', () => {
         })
 
         const { request } = connection.authenticate.mock.calls[0][0]
-        const encoder = await request.encode()
-        const decoder = new Decoder(encoder.buffer)
+        const buffer = await request.encode()
+        const decoder = new Decoder(buffer)
         expect(decoder.readBytes().toString()).toEqual(`n,,n=bob=2C,r=${scram.currentNonce}`)
       })
 
@@ -112,8 +112,8 @@ describe('Broker > SASL Authenticator > SCRAM', () => {
         })
 
         const { request } = connection.authenticate.mock.calls[0][0]
-        const encoder = await request.encode()
-        const decoder = new Decoder(encoder.buffer)
+        const buffer = await request.encode()
+        const decoder = new Decoder(buffer)
         expect(decoder.readBytes().toString()).toEqual(`n,,n=bob=3D,r=${scram.currentNonce}`)
       })
     })
@@ -137,8 +137,8 @@ describe('Broker > SASL Authenticator > SCRAM', () => {
         })
 
         const { request } = connection.authenticate.mock.calls[0][0]
-        const encoder = await request.encode()
-        const decoder = new Decoder(encoder.buffer)
+        const buffer = await request.encode()
+        const decoder = new Decoder(buffer)
         expect(decoder.readBytes().toString()).toEqual(
           'c=biws,r=rOprNGfwEbeRWgbNEkqO%hvYDpWUa2RaTCAfuxFIlj)hNlF$k0,p=dHzbZapWIk4jUhN+Ute9ytag9zjfMHgsqmmiz7AndVQ='
         )

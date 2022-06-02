@@ -42,7 +42,7 @@ module.exports = class SASLAuthenticator {
 
     const saslAuthenticate = async ({ request, response, authExpectResponse }) => {
       if (this.protocolAuthentication) {
-        const { buffer: requestAuthBytes } = await request.encode()
+        const requestAuthBytes = await request.encode()
         const authResponse = await this.connection.send(
           this.protocolAuthentication({ authBytes: requestAuthBytes })
         )

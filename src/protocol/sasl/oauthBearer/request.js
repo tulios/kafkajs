@@ -56,7 +56,7 @@ module.exports = async ({ authorizationIdentity = null }, oauthBearerToken) => {
 
   return {
     encode: async () => {
-      return new Encoder().writeBytes(Buffer.from(oauthMsg))
+      return new Encoder().writeBytes(Buffer.from(oauthMsg)).buffer
     },
   }
 }
