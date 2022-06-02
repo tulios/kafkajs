@@ -182,9 +182,7 @@ module.exports = class Runner extends EventEmitter {
   async processEachMessage(batch) {
     const { topic, partition } = batch
 
-    let paused = false
     const pause = () => {
-      paused = true
       this.consumerGroup.pause([{ topic, partitions: [partition] }])
       return () => this.consumerGroup.resume([{ topic, partitions: [partition] }])
     }
@@ -214,9 +212,6 @@ module.exports = class Runner extends EventEmitter {
 
         // In case of errors, commit the previously consumed offsets unless autoCommit is disabled
         await this.autoCommitOffsets()
-        if (paused) {
-          break
-        }
         throw e
       }
 
@@ -224,7 +219,7 @@ module.exports = class Runner extends EventEmitter {
       await this.heartbeat()
       await this.autoCommitOffsetsIfNecessary()
 
-      if (paused) {
+      if (this.consumerGroup.isPaused(topic, partition)) {
         break
       }
     }
@@ -234,9 +229,7 @@ module.exports = class Runner extends EventEmitter {
     const { topic, partition } = batch
     const lastFilteredMessage = batch.messages[batch.messages.length - 1]
 
-    let paused = false
     const pause = () => {
-      paused = true
       this.consumerGroup.pause([{ topic, partitions: [partition] }])
       return () => this.consumerGroup.resume([{ topic, partitions: [partition] }])
     }
@@ -299,10 +292,6 @@ module.exports = class Runner extends EventEmitter {
       // eachBatch has a special resolveOffset which can be used
       // to keep track of the messages
       await this.autoCommitOffsets()
-      if (paused) {
-        // we don't want to re-throw the exception because that will trigger a retry
-        return
-      }
       throw e
     }
 
@@ -442,6 +431,16 @@ module.exports = class Runner extends EventEmitter {
             error: e.message,
             groupId: this.consumerGroup.groupId,
             memberId: this.consumerGroup.memberId,
+          })
+          return
+        }
+        if (this.consumerGroup.isPaused(batch.topic, batch.partition)) {
+          this.logger.debug('topic/partition paused, will not retry', {
+            error: e.message,
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+            topic: batch.topic,
+            partition: batch.partition,
           })
           return
         }
