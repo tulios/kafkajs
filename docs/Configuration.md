@@ -265,6 +265,23 @@ A complete breakdown can be found in the IAM User Guide's
 It is **highly recommended** that you use SSL for encryption when using `PLAIN` or `AWS`,
 otherwise credentials will be transmitted in cleartext!
 
+### Custom Authentication Mechanisms
+
+If an authentication mechanism is not supported out of the box in KafkaJS, a custom authentication
+mechanism can be introduced as a plugin:
+
+```js
+{ 
+  sasl: { 
+      mechanism: <mechanism name>,
+      authenticationProvider: (host, port, logger, saslAuthenticate) => { authenticate: () => Promise<void> }
+  }
+}
+```
+
+See [Custom Authentication Mechanisms](CustomAuthenticationMechanism.md) for more information on how to implement your own
+authentication mechanism.
+
 ## Connection Timeout
 
 Time in milliseconds to wait for a successful connection. The default value is: `1000`.
