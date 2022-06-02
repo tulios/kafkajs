@@ -39,7 +39,7 @@ module.exports = class SASLAuthenticator {
       )
     }
 
-    const saslAuthenticate = async ({ request, response, authExpectResponse }) => {
+    const saslAuthenticate = async ({ request, response }) => {
       if (this.protocolAuthentication) {
         const requestAuthBytes = await request.encode()
         const authResponse = await this.connection.send(
@@ -50,7 +50,7 @@ module.exports = class SASLAuthenticator {
         // This is not present in SaslAuthenticateV0, so we default to `"0"`
         this.sessionLifetime = authResponse.sessionLifetimeMs || UNLIMITED_SESSION_LIFETIME
 
-        if (!authExpectResponse) {
+        if (!response) {
           return
         }
 
@@ -59,7 +59,7 @@ module.exports = class SASLAuthenticator {
         return response.parse(payloadDecoded)
       }
 
-      return this.connection.sendAuthRequest({ request, response, authExpectResponse })
+      return this.connection.sendAuthRequest({ request, response })
     }
 
     if (Object.keys(BUILT_IN_AUTHENTICATION_PROVIDERS).includes(mechanism)) {

@@ -170,7 +170,6 @@ class SCRAM {
     const response = scram.firstMessage.response
 
     return this.saslAuthenticate({
-      authExpectResponse: true,
       request,
       response,
     })
@@ -203,7 +202,6 @@ class SCRAM {
     const response = scram.finalMessage.response
 
     return this.saslAuthenticate({
-      authExpectResponse: true,
       request,
       response,
     })

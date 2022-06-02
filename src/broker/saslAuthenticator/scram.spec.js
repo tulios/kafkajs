@@ -80,7 +80,6 @@ describe('Broker > SASL Authenticator > SCRAM', () => {
         scram.currentNonce = 'rOprNGfwEbeRWgbNEkqO'
         await scram.sendClientFirstMessage()
         expect(saslAuthenticate).toHaveBeenCalledWith({
-          authExpectResponse: true,
           request: expect.any(Object),
           response: expect.any(Object),
         })
@@ -95,7 +94,6 @@ describe('Broker > SASL Authenticator > SCRAM', () => {
         sasl.username = 'bob,'
         await scram.sendClientFirstMessage()
         expect(saslAuthenticate).toHaveBeenCalledWith({
-          authExpectResponse: true,
           request: expect.any(Object),
           response: expect.any(Object),
         })
@@ -110,7 +108,6 @@ describe('Broker > SASL Authenticator > SCRAM', () => {
         sasl.username = 'bob='
         await scram.sendClientFirstMessage()
         expect(saslAuthenticate).toHaveBeenCalledWith({
-          authExpectResponse: true,
           request: expect.any(Object),
           response: expect.any(Object),
         })
@@ -135,7 +132,6 @@ describe('Broker > SASL Authenticator > SCRAM', () => {
 
         await scram.sendClientFinalMessage(clientMessageResponse)
         expect(saslAuthenticate).toHaveBeenCalledWith({
-          authExpectResponse: true,
           request: expect.any(Object),
           response: expect.any(Object),
         })
