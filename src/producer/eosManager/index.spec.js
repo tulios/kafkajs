@@ -1,6 +1,6 @@
 const { newLogger } = require('testHelpers')
 const createEosManager = require('.')
-const { KafkaJSNonRetriableError } = require('../../errors')
+const { KafkaJSNonRetriableError, KafkaJSProtocolError } = require('../../errors')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 
 describe('Producer > eosManager', () => {
@@ -307,6 +307,50 @@ describe('Producer > eosManager', () => {
         groupId: consumerGroupId,
         topics,
       })
+    })
+
+    test('aborting transaction in an invalid state should not throw', async () => {
+      broker.endTxn.mockRejectedValueOnce(
+        new KafkaJSProtocolError({
+          type: 'INVALID_TXN_STATE',
+        })
+      )
+
+      const eosManager = createEosManager({
+        logger: newLogger(),
+        cluster,
+        transactionTimeout: 30000,
+        transactional: true,
+        transactionalId,
+      })
+
+      await eosManager.initProducerId()
+      await eosManager.beginTransaction()
+
+      await expect(eosManager.abort()).resolves.not.toThrow()
+      expect(eosManager.isInTransaction()).toEqual(false)
+    })
+
+    test('commiting transaction in an invalid state should not throw', async () => {
+      broker.endTxn.mockRejectedValueOnce(
+        new KafkaJSProtocolError({
+          type: 'INVALID_TXN_STATE',
+        })
+      )
+
+      const eosManager = createEosManager({
+        logger: newLogger(),
+        cluster,
+        transactionTimeout: 30000,
+        transactional: true,
+        transactionalId,
+      })
+
+      await eosManager.initProducerId()
+      await eosManager.beginTransaction()
+
+      await expect(eosManager.commit()).resolves.not.toThrow()
+      expect(eosManager.isInTransaction()).toEqual(false)
     })
   })
 

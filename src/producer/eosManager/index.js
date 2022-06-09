@@ -1,6 +1,6 @@
 const createRetry = require('../../retry')
 const Lock = require('../../utils/lock')
-const { KafkaJSNonRetriableError } = require('../../errors')
+const { KafkaJSNonRetriableError, KafkaJSProtocolError } = require('../../errors')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 const createStateMachine = require('./transactionStateMachine')
 const { INT_32_MAX_VALUE } = require('../../constants')
@@ -268,12 +268,20 @@ module.exports = ({
         stateMachine.transitionTo(STATES.COMMITTING)
 
         const broker = await findTransactionCoordinator()
-        await broker.endTxn({
-          producerId,
-          producerEpoch,
-          transactionalId,
-          transactionResult: true,
-        })
+        try {
+          await broker.endTxn({
+            producerId,
+            producerEpoch,
+            transactionalId,
+            transactionResult: true,
+          })
+        } catch (e) {
+          if (e instanceof KafkaJSProtocolError && e.type === 'INVALID_TXN_STATE') {
+            logger.debug('The producer attempted a transactional operation in an invalid state')
+          } else {
+            throw e
+          }
+        }
 
         stateMachine.transitionTo(STATES.READY)
       },
@@ -286,12 +294,20 @@ module.exports = ({
         stateMachine.transitionTo(STATES.ABORTING)
 
         const broker = await findTransactionCoordinator()
-        await broker.endTxn({
-          producerId,
-          producerEpoch,
-          transactionalId,
-          transactionResult: false,
-        })
+        try {
+          await broker.endTxn({
+            producerId,
+            producerEpoch,
+            transactionalId,
+            transactionResult: false,
+          })
+        } catch (e) {
+          if (e instanceof KafkaJSProtocolError && e.type === 'INVALID_TXN_STATE') {
+            logger.debug('The producer attempted a transactional operation in an invalid state')
+          } else {
+            throw e
+          }
+        }
 
         stateMachine.transitionTo(STATES.READY)
       },

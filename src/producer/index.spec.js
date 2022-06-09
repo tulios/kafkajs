@@ -972,5 +972,150 @@ describe('Producer', () => {
         ])
       })
     })
+
+    describe('invalid transaction state', () => {
+      testIfKafkaAtLeast_0_11(
+        'does not throw an error when aborting transaction in invalid state',
+        async () => {
+          const cluster = createCluster({
+            createPartitioner: createModPartitioner,
+          })
+
+          await createTopic({ topic: topicName })
+
+          producer = createProducer({
+            cluster,
+            logger: newLogger(),
+            transactionalId,
+          })
+          await producer.connect()
+
+          const transaction = await producer.transaction()
+
+          await expect(transaction.abort()).toResolve()
+        }
+      )
+
+      testIfKafkaAtLeast_0_11(
+        'does not throw an error when commiting transaction in invalid state',
+        async () => {
+          const cluster = createCluster({
+            createPartitioner: createModPartitioner,
+          })
+
+          await createTopic({ topic: topicName })
+
+          producer = createProducer({
+            cluster,
+            logger: newLogger(),
+            transactionalId,
+          })
+          await producer.connect()
+
+          const transaction = await producer.transaction()
+
+          await expect(transaction.commit()).toResolve()
+        }
+      )
+
+      testIfKafkaAtLeast_0_11(
+        'allows createing transaction when the previous was aborted in an invalid state',
+        async () => {
+          const cluster = createCluster({
+            createPartitioner: createModPartitioner,
+          })
+
+          await createTopic({ topic: topicName })
+
+          producer = createProducer({
+            cluster,
+            logger: newLogger(),
+            transactionalId,
+          })
+          await producer.connect()
+
+          const transaction = await producer.transaction()
+
+          await expect(transaction.abort()).toResolve()
+          await expect(producer.transaction()).toResolve()
+        }
+      )
+
+      testIfKafkaAtLeast_0_11(
+        'allows createing transaction when the previous was commited in an invalid state',
+        async () => {
+          const cluster = createCluster({
+            createPartitioner: createModPartitioner,
+          })
+
+          await createTopic({ topic: topicName })
+
+          producer = createProducer({
+            cluster,
+            logger: newLogger(),
+            transactionalId,
+          })
+          await producer.connect()
+
+          const transaction = await producer.transaction()
+
+          await expect(transaction.commit()).toResolve()
+          await expect(producer.transaction()).toResolve()
+        }
+      )
+
+      testIfKafkaAtLeast_0_11(
+        'the transaction that is created after the previous was ended in an invalid state should work',
+        async () => {
+          const partition = 0
+          const cluster = createCluster({
+            createPartitioner: createModPartitioner,
+          })
+
+          await createTopic({ topic: topicName })
+
+          producer = createProducer({
+            cluster,
+            logger: newLogger(),
+            transactionalId,
+          })
+          await producer.connect()
+
+          const invalidTransaction = await producer.transaction()
+          await invalidTransaction.abort()
+
+          const transaction = await producer.transaction()
+          await transaction.send({
+            topic: topicName,
+            messages: [
+              {
+                value: 'value',
+                partition,
+              },
+              {
+                value: 'value',
+                partition,
+              },
+            ],
+          })
+
+          await transaction.commit()
+
+          const [topicOffset] = await cluster.fetchTopicsOffset([
+            { topic: topicName, partitions: [{ partition }] },
+          ])
+
+          expect(topicOffset).toEqual({
+            topic: topicName,
+            partitions: expect.arrayContaining([
+              {
+                partition,
+                offset: '3',
+              },
+            ]),
+          })
+        }
+      )
+    })
   })
 })
