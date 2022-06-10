@@ -973,53 +973,47 @@ describe('Producer', () => {
       })
     })
 
-    describe('invalid transaction state', () => {
-      testIfKafkaAtLeast_0_11(
-        'does not throw an error when aborting transaction in invalid state',
-        async () => {
-          const cluster = createCluster({
-            createPartitioner: createModPartitioner,
-          })
+    describe('without operations', () => {
+      testIfKafkaAtLeast_0_11('does not throw an error when aborting transaction', async () => {
+        const cluster = createCluster({
+          createPartitioner: createModPartitioner,
+        })
 
-          await createTopic({ topic: topicName })
+        await createTopic({ topic: topicName })
 
-          producer = createProducer({
-            cluster,
-            logger: newLogger(),
-            transactionalId,
-          })
-          await producer.connect()
+        producer = createProducer({
+          cluster,
+          logger: newLogger(),
+          transactionalId,
+        })
+        await producer.connect()
 
-          const transaction = await producer.transaction()
+        const transaction = await producer.transaction()
 
-          await expect(transaction.abort()).toResolve()
-        }
-      )
+        await expect(transaction.abort()).toResolve()
+      })
 
-      testIfKafkaAtLeast_0_11(
-        'does not throw an error when commiting transaction in invalid state',
-        async () => {
-          const cluster = createCluster({
-            createPartitioner: createModPartitioner,
-          })
+      testIfKafkaAtLeast_0_11('does not throw an error when commiting transaction', async () => {
+        const cluster = createCluster({
+          createPartitioner: createModPartitioner,
+        })
 
-          await createTopic({ topic: topicName })
+        await createTopic({ topic: topicName })
 
-          producer = createProducer({
-            cluster,
-            logger: newLogger(),
-            transactionalId,
-          })
-          await producer.connect()
+        producer = createProducer({
+          cluster,
+          logger: newLogger(),
+          transactionalId,
+        })
+        await producer.connect()
 
-          const transaction = await producer.transaction()
+        const transaction = await producer.transaction()
 
-          await expect(transaction.commit()).toResolve()
-        }
-      )
+        await expect(transaction.commit()).toResolve()
+      })
 
       testIfKafkaAtLeast_0_11(
-        'allows createing transaction when the previous was aborted in an invalid state',
+        'allows createing transaction when the previous was aborted without any operations made in it',
         async () => {
           const cluster = createCluster({
             createPartitioner: createModPartitioner,
@@ -1042,7 +1036,7 @@ describe('Producer', () => {
       )
 
       testIfKafkaAtLeast_0_11(
-        'allows createing transaction when the previous was commited in an invalid state',
+        'allows createing transaction when the previous was commited without any operations made in it',
         async () => {
           const cluster = createCluster({
             createPartitioner: createModPartitioner,
@@ -1065,9 +1059,10 @@ describe('Producer', () => {
       )
 
       testIfKafkaAtLeast_0_11(
-        'the transaction that is created after the previous was ended in an invalid state should work',
+        "transaction that is created after a transaction that hasn't made any operations should work",
         async () => {
           const partition = 0
+          const retry = createRetrier({ retries: 5 })
           const cluster = createCluster({
             createPartitioner: createModPartitioner,
           })
@@ -1101,18 +1096,20 @@ describe('Producer', () => {
 
           await transaction.commit()
 
-          const [topicOffset] = await cluster.fetchTopicsOffset([
-            { topic: topicName, partitions: [{ partition }] },
-          ])
+          await retry(async () => {
+            const [topicOffset] = await cluster.fetchTopicsOffset([
+              { topic: topicName, partitions: [{ partition }] },
+            ])
 
-          expect(topicOffset).toEqual({
-            topic: topicName,
-            partitions: expect.arrayContaining([
-              {
-                partition,
-                offset: '3',
-              },
-            ]),
+            expect(topicOffset).toEqual({
+              topic: topicName,
+              partitions: expect.arrayContaining([
+                {
+                  partition,
+                  offset: '3',
+                },
+              ]),
+            })
           })
         }
       )

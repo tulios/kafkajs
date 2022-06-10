@@ -1,6 +1,6 @@
 const createRetry = require('../../retry')
 const Lock = require('../../utils/lock')
-const { KafkaJSNonRetriableError, KafkaJSProtocolError } = require('../../errors')
+const { KafkaJSNonRetriableError } = require('../../errors')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 const createStateMachine = require('./transactionStateMachine')
 const { INT_32_MAX_VALUE } = require('../../constants')
@@ -75,10 +75,16 @@ module.exports = ({
    */
   let transactionTopicPartitions = {}
 
+  /**
+   * Offsets have been added to the transaction
+   */
+  let hasOffsetsAddedToTransaction = false
+
   const stateMachine = createStateMachine({ logger })
   stateMachine.on('transition', ({ to }) => {
     if (to === STATES.READY) {
       transactionTopicPartitions = {}
+      hasOffsetsAddedToTransaction = false
     }
   })
 
@@ -93,6 +99,22 @@ module.exports = ({
     if (!transactional) {
       throw new KafkaJSNonRetriableError('Method unavailable if non-transactional')
     }
+  }
+
+  /**
+   * A transaction is ongoing when offsets or partitions added to it
+   *
+   * @returns {boolean}
+   */
+  const isOngoing = () => {
+    return (
+      hasOffsetsAddedToTransaction ||
+      Object.entries(transactionTopicPartitions).some(([, partitions]) => {
+        return Object.entries(partitions).some(
+          ([, isPartitionAddedToTransaction]) => isPartitionAddedToTransaction
+        )
+      })
+    )
   }
 
   const eosManager = stateMachine.createGuarded(
@@ -267,21 +289,20 @@ module.exports = ({
         transactionalGuard()
         stateMachine.transitionTo(STATES.COMMITTING)
 
-        const broker = await findTransactionCoordinator()
-        try {
-          await broker.endTxn({
-            producerId,
-            producerEpoch,
-            transactionalId,
-            transactionResult: true,
-          })
-        } catch (e) {
-          if (e instanceof KafkaJSProtocolError && e.type === 'INVALID_TXN_STATE') {
-            logger.debug('The producer attempted a transactional operation in an invalid state')
-          } else {
-            throw e
-          }
+        if (!isOngoing()) {
+          logger.debug('No partitions or offsets registered, not sending EndTxn')
+
+          stateMachine.transitionTo(STATES.READY)
+          return
         }
+
+        const broker = await findTransactionCoordinator()
+        await broker.endTxn({
+          producerId,
+          producerEpoch,
+          transactionalId,
+          transactionResult: true,
+        })
 
         stateMachine.transitionTo(STATES.READY)
       },
@@ -293,21 +314,20 @@ module.exports = ({
         transactionalGuard()
         stateMachine.transitionTo(STATES.ABORTING)
 
-        const broker = await findTransactionCoordinator()
-        try {
-          await broker.endTxn({
-            producerId,
-            producerEpoch,
-            transactionalId,
-            transactionResult: false,
-          })
-        } catch (e) {
-          if (e instanceof KafkaJSProtocolError && e.type === 'INVALID_TXN_STATE') {
-            logger.debug('The producer attempted a transactional operation in an invalid state')
-          } else {
-            throw e
-          }
+        if (!isOngoing()) {
+          logger.debug('No partitions or offsets registered, not sending EndTxn')
+
+          stateMachine.transitionTo(STATES.READY)
+          return
         }
+
+        const broker = await findTransactionCoordinator()
+        await broker.endTxn({
+          producerId,
+          producerEpoch,
+          transactionalId,
+          transactionResult: false,
+        })
 
         stateMachine.transitionTo(STATES.READY)
       },
@@ -368,6 +388,8 @@ module.exports = ({
           producerEpoch,
           groupId: consumerGroupId,
         })
+
+        hasOffsetsAddedToTransaction = true
 
         let groupCoordinator = await cluster.findGroupCoordinator({
           groupId: consumerGroupId,

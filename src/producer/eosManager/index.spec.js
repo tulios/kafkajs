@@ -1,6 +1,6 @@
 const { newLogger } = require('testHelpers')
 const createEosManager = require('.')
-const { KafkaJSNonRetriableError, KafkaJSProtocolError } = require('../../errors')
+const { KafkaJSNonRetriableError } = require('../../errors')
 const COORDINATOR_TYPES = require('../../protocol/coordinatorTypes')
 
 describe('Producer > eosManager', () => {
@@ -189,6 +189,8 @@ describe('Producer > eosManager', () => {
     })
 
     test('committing a transaction', async () => {
+      const consumerGroupId = 'consumer-group-id'
+      const topics = [{ topic: 'test-topic-1', partitions: [{ partition: 0 }] }]
       const eosManager = createEosManager({
         logger: newLogger(),
         cluster,
@@ -211,6 +213,26 @@ describe('Producer > eosManager', () => {
       await eosManager.beginTransaction()
 
       cluster.findGroupCoordinator.mockClear()
+      await eosManager.addPartitionsToTransaction(topics)
+      await eosManager.commit()
+
+      expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
+        groupId: transactionalId,
+        coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+      })
+      expect(broker.endTxn).toHaveBeenCalledWith({
+        producerId,
+        producerEpoch,
+        transactionalId,
+        transactionResult: true,
+      })
+
+      await eosManager.beginTransaction()
+
+      cluster.findGroupCoordinator.mockClear()
+      broker.endTxn.mockClear()
+
+      await eosManager.sendOffsets({ consumerGroupId, topics })
       await eosManager.commit()
 
       expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
@@ -226,6 +248,8 @@ describe('Producer > eosManager', () => {
     })
 
     test('aborting a transaction', async () => {
+      const consumerGroupId = 'consumer-group-id'
+      const topics = [{ topic: 'test-topic-1', partitions: [{ partition: 0 }] }]
       const eosManager = createEosManager({
         logger: newLogger(),
         cluster,
@@ -248,6 +272,26 @@ describe('Producer > eosManager', () => {
       await eosManager.beginTransaction()
 
       cluster.findGroupCoordinator.mockClear()
+      await eosManager.addPartitionsToTransaction(topics)
+      await eosManager.abort()
+
+      expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
+        groupId: transactionalId,
+        coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+      })
+      expect(broker.endTxn).toHaveBeenCalledWith({
+        producerId,
+        producerEpoch,
+        transactionalId,
+        transactionResult: false,
+      })
+
+      await eosManager.beginTransaction()
+
+      cluster.findGroupCoordinator.mockClear()
+      broker.endTxn.mockClear()
+
+      await eosManager.sendOffsets({ consumerGroupId, topics })
       await eosManager.abort()
 
       expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
@@ -309,13 +353,7 @@ describe('Producer > eosManager', () => {
       })
     })
 
-    test('aborting transaction in an invalid state should not throw', async () => {
-      broker.endTxn.mockRejectedValueOnce(
-        new KafkaJSProtocolError({
-          type: 'INVALID_TXN_STATE',
-        })
-      )
-
+    test('aborting transaction when no operation have been made should not send EndTxn', async () => {
       const eosManager = createEosManager({
         logger: newLogger(),
         cluster,
@@ -329,15 +367,10 @@ describe('Producer > eosManager', () => {
 
       await expect(eosManager.abort()).resolves.not.toThrow()
       expect(eosManager.isInTransaction()).toEqual(false)
+      expect(broker.endTxn).not.toBeCalled()
     })
 
-    test('commiting transaction in an invalid state should not throw', async () => {
-      broker.endTxn.mockRejectedValueOnce(
-        new KafkaJSProtocolError({
-          type: 'INVALID_TXN_STATE',
-        })
-      )
-
+    test('commiting transaction when no operation have been made should not send EndTxn', async () => {
       const eosManager = createEosManager({
         logger: newLogger(),
         cluster,
@@ -351,6 +384,7 @@ describe('Producer > eosManager', () => {
 
       await expect(eosManager.commit()).resolves.not.toThrow()
       expect(eosManager.isInTransaction()).toEqual(false)
+      expect(broker.endTxn).not.toBeCalled()
     })
   })
 
