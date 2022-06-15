@@ -1039,3 +1039,5 @@ export interface KafkaJSServerDoesNotSupportApiKeyMetadata {
   apiKey: number
   apiName: string
 }
+
+export default CompressionCodecs
