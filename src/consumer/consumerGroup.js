@@ -421,7 +421,7 @@ module.exports = class ConsumerGroup {
   /**
    * @param {string} topic
    * @param {string} partition
-   * @returns {boolean} whether the specified topic/partition are paused or not
+   * @returns {boolean} whether the specified topic-partition are paused or not
    */
   isPaused(topic, partition) {
     return this.subscriptionState.isPaused(topic, partition)

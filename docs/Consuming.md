@@ -53,7 +53,7 @@ await consumer.run({
 ```
 
 Be aware that the `eachMessage` handler should not block for longer than the configured [session timeout](#options) or else the consumer will be removed from the group. If your workload involves very slow processing times for individual messages then you should either increase the session timeout or make periodic use of the `heartbeat` function exposed in the handler payload.
-The `pause` callback function is a convenience for `consumer.pause({ topic, partitions: [partition] })`. Depending on your use case, take care to throw an exception after pausing if you do not want the current message's offset resolved and committed (i.e. if you want to retry the message later).
+The `pause` function is a convenience for `consumer.pause({ topic, partitions: [partition] })`. It will pause the current topic-partition and returns a function that allows you to resume consuming later.
 
 ## <a name="each-batch"></a> eachBatch
 
@@ -102,7 +102,7 @@ await consumer.run({
 * `uncommittedOffsets()` returns all offsets by topic-partition which have not yet been committed.
 * `isRunning()` returns true if consumer is in running state, else it returns false.
 * `isStale()` returns whether the messages in the batch have been rendered stale through some other operation and should be discarded. For example, when calling [`consumer.seek`](#seek) the messages in the batch should be discarded, as they are not at the offset we seeked to.
-* `pause()` can be used to pause the consumer for the current topic/partition. All offsets resolved up to that point will be committed (subject to `eachBatchAutoResolve` and [autoCommit](#auto-commit) settings). If you want to pause in the middle of the batch, you should throw an exception after pausing if you do not wish to resolve the current batch's offset or, alternatively, make sure that `eachBatchAutoResolve` is turned off. You can used the returned callback function to resume processing of the relevant partition and topic (i.e. using `setTimeout` or some other asynchronous trigger). See [Pause & Resume](#pause-resume) for more information about this feature.
+* `pause()` can be used to pause the consumer for the current topic-partition. All offsets resolved up to that point will be committed (subject to `eachBatchAutoResolve` and [autoCommit](#auto-commit)). Throw an error to pause in the middle of the batch without resolving the current offset. Alternatively, disable `eachBatchAutoResolve`. The returned function can be used to resume processing of the topic-partition. See [Pause & Resume](#pause-resume) for more information about this feature.
 
 ### Example
 
@@ -307,7 +307,7 @@ consumer.run({
 })
 ```
 
-As a convenience, the `eachMessage` callback provides a simple callback function to pause the specific topic/partition for the message currently being processed. You can also specify a timeout for when that topic/partition will automatically be resumed:
+As a convenience, the `eachMessage` callback provides a `pause` function to pause the specific topic-partition of the message currently being processed.
 
 ```javascript
 await consumer.connect()
@@ -327,10 +327,6 @@ await consumer.run({ eachMessage: async ({ topic, message, pause }) => {
     }
 }})
 ```
-
-Depending on your use case, be sure to throw an exception after `pause()` is called (as shown above) or the current message's offset will be resolved and committed.
-Alternatively, if you want to pause processing of a topic's partition without retrying the current message, no exception needs to be thrown.
-In either case, the `eachMessage` callback will not be called again for the current topic/partition until the consumer is resumed for this topic/partition.
 
 It's possible to access the list of paused topic partitions using the `paused` method.
 

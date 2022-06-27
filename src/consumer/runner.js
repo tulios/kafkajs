@@ -260,7 +260,7 @@ module.exports = class Runner extends EventEmitter {
         },
         heartbeat: () => this.heartbeat(),
         /**
-         * Pause consumption for the current topic/partition being processed
+         * Pause consumption for the current topic-partition being processed
          */
         pause,
         /**
@@ -434,16 +434,6 @@ module.exports = class Runner extends EventEmitter {
           })
           return
         }
-        if (this.consumerGroup.isPaused(batch.topic, batch.partition)) {
-          this.logger.debug('topic/partition paused, will not retry', {
-            error: e.message,
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            topic: batch.topic,
-            partition: batch.partition,
-          })
-          return
-        }
 
         if (
           isRebalancing(e) ||
@@ -451,6 +441,17 @@ module.exports = class Runner extends EventEmitter {
           e.name === 'KafkaJSNotImplemented'
         ) {
           return bail(e)
+        }
+
+        if (this.consumerGroup.isPaused(batch.topic, batch.partition)) {
+          this.logger.debug('topic-partition paused, will not retry', {
+            error: e.message,
+            groupId: this.consumerGroup.groupId,
+            memberId: this.consumerGroup.memberId,
+            topic: batch.topic,
+            partition: batch.partition,
+          })
+          return
         }
 
         this.logger.debug('Error while fetching data, trying again...', {
