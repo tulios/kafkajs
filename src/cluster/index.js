@@ -229,7 +229,11 @@ module.exports = class Cluster {
         try {
           await this.refreshMetadata()
         } catch (e) {
-          if (e.type === 'INVALID_TOPIC_EXCEPTION' || e.type === 'UNKNOWN_TOPIC_OR_PARTITION') {
+          if (
+            e.type === 'INVALID_TOPIC_EXCEPTION' ||
+            e.type === 'UNKNOWN_TOPIC_OR_PARTITION' ||
+            e.type === 'TOPIC_AUTHORIZATION_FAILED'
+          ) {
             this.targetTopics = previousTopics
           }
 
