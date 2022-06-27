@@ -38,7 +38,7 @@ const createFetchManager = ({
       const current = getNodeIds()
       const hasChanged =
         nodeIds.length !== current.length || nodeIds.some(nodeId => !current.includes(nodeId))
-      if (hasChanged) {
+      if (hasChanged && current.length !== 0) {
         throw new KafkaJSFetcherRebalanceError()
       }
     }

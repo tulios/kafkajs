@@ -4,6 +4,7 @@ const createFetchManager = require('./fetchManager')
 const Batch = require('./batch')
 const { newLogger } = require('testHelpers')
 const waitFor = require('../utils/waitFor')
+const { KafkaJSNonRetriableError } = require('../errors')
 
 describe('FetchManager', () => {
   let fetchManager, fetch, handler, getNodeIds, concurrency, batchSize
@@ -71,5 +72,26 @@ describe('FetchManager', () => {
 
     fetchers = fetchManager.getFetchers()
     expect(fetchers).toHaveLength(3)
+  })
+
+  describe('when all brokers have become unavailable', () => {
+    it('should not rebalance and let the error bubble up', async () => {
+      const fetchMock = jest.fn().mockImplementation(async nodeId => {
+        if (!getNodeIds().includes(nodeId)) {
+          throw new KafkaJSNonRetriableError('Node not found')
+        }
+
+        return fetch(nodeId)
+      })
+      getNodeIds.mockImplementation(() => seq(1))
+
+      fetchManager = createTestFetchManager({ concurrency: 1, fetch: fetchMock })
+      const fetchManagerPromise = fetchManager.start()
+
+      expect(fetchManager.getFetchers()).toHaveLength(1)
+
+      getNodeIds.mockImplementation(() => seq(0))
+      await expect(fetchManagerPromise).rejects.toThrow('Node not found')
+    })
   })
 })
