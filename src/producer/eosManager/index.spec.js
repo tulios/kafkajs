@@ -189,6 +189,8 @@ describe('Producer > eosManager', () => {
     })
 
     test('committing a transaction', async () => {
+      const consumerGroupId = 'consumer-group-id'
+      const topics = [{ topic: 'test-topic-1', partitions: [{ partition: 0 }] }]
       const eosManager = createEosManager({
         logger: newLogger(),
         cluster,
@@ -211,6 +213,26 @@ describe('Producer > eosManager', () => {
       await eosManager.beginTransaction()
 
       cluster.findGroupCoordinator.mockClear()
+      await eosManager.addPartitionsToTransaction(topics)
+      await eosManager.commit()
+
+      expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
+        groupId: transactionalId,
+        coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+      })
+      expect(broker.endTxn).toHaveBeenCalledWith({
+        producerId,
+        producerEpoch,
+        transactionalId,
+        transactionResult: true,
+      })
+
+      await eosManager.beginTransaction()
+
+      cluster.findGroupCoordinator.mockClear()
+      broker.endTxn.mockClear()
+
+      await eosManager.sendOffsets({ consumerGroupId, topics })
       await eosManager.commit()
 
       expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
@@ -226,6 +248,8 @@ describe('Producer > eosManager', () => {
     })
 
     test('aborting a transaction', async () => {
+      const consumerGroupId = 'consumer-group-id'
+      const topics = [{ topic: 'test-topic-1', partitions: [{ partition: 0 }] }]
       const eosManager = createEosManager({
         logger: newLogger(),
         cluster,
@@ -248,6 +272,26 @@ describe('Producer > eosManager', () => {
       await eosManager.beginTransaction()
 
       cluster.findGroupCoordinator.mockClear()
+      await eosManager.addPartitionsToTransaction(topics)
+      await eosManager.abort()
+
+      expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
+        groupId: transactionalId,
+        coordinatorType: COORDINATOR_TYPES.TRANSACTION,
+      })
+      expect(broker.endTxn).toHaveBeenCalledWith({
+        producerId,
+        producerEpoch,
+        transactionalId,
+        transactionResult: false,
+      })
+
+      await eosManager.beginTransaction()
+
+      cluster.findGroupCoordinator.mockClear()
+      broker.endTxn.mockClear()
+
+      await eosManager.sendOffsets({ consumerGroupId, topics })
       await eosManager.abort()
 
       expect(cluster.findGroupCoordinator).toHaveBeenCalledWith({
@@ -307,6 +351,40 @@ describe('Producer > eosManager', () => {
         groupId: consumerGroupId,
         topics,
       })
+    })
+
+    test('aborting transaction when no operation have been made should not send EndTxn', async () => {
+      const eosManager = createEosManager({
+        logger: newLogger(),
+        cluster,
+        transactionTimeout: 30000,
+        transactional: true,
+        transactionalId,
+      })
+
+      await eosManager.initProducerId()
+      await eosManager.beginTransaction()
+
+      await expect(eosManager.abort()).resolves.not.toThrow()
+      expect(eosManager.isInTransaction()).toEqual(false)
+      expect(broker.endTxn).not.toBeCalled()
+    })
+
+    test('commiting transaction when no operation have been made should not send EndTxn', async () => {
+      const eosManager = createEosManager({
+        logger: newLogger(),
+        cluster,
+        transactionTimeout: 30000,
+        transactional: true,
+        transactionalId,
+      })
+
+      await eosManager.initProducerId()
+      await eosManager.beginTransaction()
+
+      await expect(eosManager.commit()).resolves.not.toThrow()
+      expect(eosManager.isInTransaction()).toEqual(false)
+      expect(broker.endTxn).not.toBeCalled()
     })
   })
 
