@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2022-06-28
+
+### Added
+  - Add `pause` function to `eachMessage`/`eachBatch` to pause the current topic-partition #1364
+  - The `KafkaMessage` type is now a union between the pre-Kafka 0.10 message format and the current #1401
+
+### Fixed
+  - Fix 100% CPU utilization when all brokers are unavailable #1402
+  - Fix persistent error when trying to produce after a topic authorization error #1385
+  - Fix error when aborting or committing an empty transaction #1388
+  - Don't re-process messages from a paused partition after breaking the consumption flow #1382
+
 ## [2.0.2] - 2022-05-31
 
 ### Fixed
