@@ -62,6 +62,7 @@ describe('Consumer > Runner', () => {
       heartbeat: jest.fn(),
       assigned: jest.fn(() => []),
       isLeader: jest.fn(() => true),
+      isPaused: jest.fn().mockReturnValue(false),
     }
     instrumentationEmitter = new InstrumentationEventEmitter()
 

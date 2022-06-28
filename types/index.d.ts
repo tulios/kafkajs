@@ -899,12 +899,14 @@ export interface EachMessagePayload {
   partition: number
   message: KafkaMessage
   heartbeat(): Promise<void>
+  pause(): () => void
 }
 
 export interface EachBatchPayload {
   batch: Batch
   resolveOffset(offset: string): void
   heartbeat(): Promise<void>
+  pause(): () => void
   commitOffsetsIfNecessary(offsets?: Offsets): Promise<void>
   uncommittedOffsets(): OffsetsByTopicPartition
   isRunning(): boolean

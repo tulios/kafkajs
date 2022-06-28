@@ -42,7 +42,7 @@ The `eachMessage` handler provides a convenient and easy to use API, feeding you
 
 ```javascript
 await consumer.run({
-    eachMessage: async ({ topic, partition, message, heartbeat }) => {
+    eachMessage: async ({ topic, partition, message, heartbeat, pause }) => {
         console.log({
             key: message.key.toString(),
             value: message.value.toString(),
@@ -53,10 +53,11 @@ await consumer.run({
 ```
 
 Be aware that the `eachMessage` handler should not block for longer than the configured [session timeout](#options) or else the consumer will be removed from the group. If your workload involves very slow processing times for individual messages then you should either increase the session timeout or make periodic use of the `heartbeat` function exposed in the handler payload.
+The `pause` function is a convenience for `consumer.pause({ topic, partitions: [partition] })`. It will pause the current topic-partition and returns a function that allows you to resume consuming later.
 
 ## <a name="each-batch"></a> eachBatch
 
-Some use cases require dealing with batches directly. This handler will feed your function batches and provide some utility functions to give your code more flexibility: `resolveOffset`, `heartbeat`, `commitOffsetsIfNecessary`, `uncommittedOffsets`, `isRunning`, and `isStale`. All resolved offsets will be automatically committed after the function is executed.
+Some use cases require dealing with batches directly. This handler will feed your function batches and provide some utility functions to give your code more flexibility: `resolveOffset`, `heartbeat`, `commitOffsetsIfNecessary`, `uncommittedOffsets`, `isRunning`, `isStale`, and `pause`. All resolved offsets will be automatically committed after the function is executed.
 
 > Note: Be aware that using `eachBatch` directly is considered a more advanced use case as compared to using `eachMessage`, since you will have to understand how session timeouts and heartbeats are connected.
 
@@ -71,6 +72,7 @@ await consumer.run({
         uncommittedOffsets,
         isRunning,
         isStale,
+        pause,
     }) => {
         for (let message of batch.messages) {
             console.log({
@@ -100,6 +102,7 @@ await consumer.run({
 * `uncommittedOffsets()` returns all offsets by topic-partition which have not yet been committed.
 * `isRunning()` returns true if consumer is in running state, else it returns false.
 * `isStale()` returns whether the messages in the batch have been rendered stale through some other operation and should be discarded. For example, when calling [`consumer.seek`](#seek) the messages in the batch should be discarded, as they are not at the offset we seeked to.
+* `pause()` can be used to pause the consumer for the current topic-partition. All offsets resolved up to that point will be committed (subject to `eachBatchAutoResolve` and [autoCommit](#auto-commit)). Throw an error to pause in the middle of the batch without resolving the current offset. Alternatively, disable `eachBatchAutoResolve`. The returned function can be used to resume processing of the topic-partition. See [Pause & Resume](#pause-resume) for more information about this feature.
 
 ### Example
 
@@ -250,7 +253,7 @@ kafka.consumer({
 
 ## <a name="pause-resume"></a> Pause & Resume
 
-In order to pause and resume consuming from one or more topics, the `Consumer` provides the methods `pause` and `resume`. It also provides the `paused` method to get the list of all paused topics. Note that pausing a topic means that it won't be fetched in the next cycle. You may still receive messages for the topic within the current batch.
+In order to pause and resume consuming from one or more topics, the `Consumer` provides the methods `pause` and `resume`. It also provides the `paused` method to get the list of all paused topics. Note that pausing a topic means that it won't be fetched in the next cycle and subsequent messages within the current batch won't be passed to an `eachMessage` handler.
 
 Calling `pause` with a topic that the consumer is not subscribed to is a no-op, calling `resume` with a topic that is not paused is also a no-op.
 
@@ -302,6 +305,27 @@ consumer.run({
         }
     },
 })
+```
+
+As a convenience, the `eachMessage` callback provides a `pause` function to pause the specific topic-partition of the message currently being processed.
+
+```javascript
+await consumer.connect()
+await consumer.subscribe({ topics: ['jobs'] })
+
+await consumer.run({ eachMessage: async ({ topic, message, pause }) => {
+    try {
+        await sendToDependency(message)
+    } catch (e) {
+        if (e instanceof TooManyRequestsError) {
+            const resumeThisPartition = pause()
+            // Other partitions that are paused will continue to be paused
+            setTimeout(resumeThisPartition, e.retryAfter * 1000)
+        }
+
+        throw e
+    }
+}})
 ```
 
 It's possible to access the list of paused topic partitions using the `paused` method.

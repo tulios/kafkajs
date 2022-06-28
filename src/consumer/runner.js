@@ -218,6 +218,10 @@ module.exports = class Runner extends EventEmitter {
   async processEachMessage(batch) {
     const { topic, partition } = batch
 
+    const pause = () => {
+      this.consumerGroup.pause([{ topic, partitions: [partition] }])
+      return () => this.consumerGroup.resume([{ topic, partitions: [partition] }])
+    }
     for (const message of batch.messages) {
       if (!this.running || this.consumerGroup.hasSeekOffset({ topic, partition })) {
         break
@@ -229,6 +233,7 @@ module.exports = class Runner extends EventEmitter {
           partition,
           message,
           heartbeat: () => this.heartbeat(),
+          pause,
         })
       } catch (e) {
         if (!isKafkaJSError(e)) {
@@ -249,12 +254,21 @@ module.exports = class Runner extends EventEmitter {
       this.consumerGroup.resolveOffset({ topic, partition, offset: message.offset })
       await this.heartbeat()
       await this.autoCommitOffsetsIfNecessary()
+
+      if (this.consumerGroup.isPaused(topic, partition)) {
+        break
+      }
     }
   }
 
   async processEachBatch(batch) {
     const { topic, partition } = batch
     const lastFilteredMessage = batch.messages[batch.messages.length - 1]
+
+    const pause = () => {
+      this.consumerGroup.pause([{ topic, partitions: [partition] }])
+      return () => this.consumerGroup.resume([{ topic, partitions: [partition] }])
+    }
 
     try {
       await this.eachBatch({
@@ -281,6 +295,10 @@ module.exports = class Runner extends EventEmitter {
           this.consumerGroup.resolveOffset({ topic, partition, offset: offsetToResolve })
         },
         heartbeat: () => this.heartbeat(),
+        /**
+         * Pause consumption for the current topic-partition being processed
+         */
+        pause,
         /**
          * Commit offsets if provided. Otherwise commit most recent resolved offsets
          * if the autoCommit conditions are met.
