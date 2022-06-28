@@ -1,0 +1,147 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Development Environment · KafkaJS</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="When developing KafkaJS, we run a Kafka cluster in a similar way to what is described in [Running Kafka in Development](/docs/2.0.1/running-kafka-in-development), using [`docker`](https://docs.docker.com/) and [`docker-compose`](https://docs.docker.com/compose/install/). Before you proceed, make sure that you have both `docker` and `docker-compose` available."/><meta name="docsearch:version" content="2.0.1"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Development Environment · KafkaJS"/><meta property="og:type" content="website"/><meta property="og:url" content="https://kafka.js.org/"/><meta property="og:description" content="When developing KafkaJS, we run a Kafka cluster in a similar way to what is described in [Running Kafka in Development](/docs/2.0.1/running-kafka-in-development), using [`docker`](https://docs.docker.com/) and [`docker-compose`](https://docs.docker.com/compose/install/). Before you proceed, make sure that you have both `docker` and `docker-compose` available."/><meta property="og:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"/><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-133751873-1"></script><script>
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments); }
+              gtag('js', new Date());
+              gtag('config', 'UA-133751873-1');
+            </script><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/kafkajs-logoV2.svg" alt="KafkaJS"/><h2 class="headerTitleWithLogo">KafkaJS</h2></a><a href="/versions"><h3>2.0.1</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/2.0.1/getting-started" target="_self">Docs</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class=""><a href="https://github.com/tulios/kafkajs" target="_self">GitHub</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Developing KafkaJS</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Usage</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/2.0.1/introduction">Intro to Kafka</a></li><li class="navListItem"><a class="navItem" href="/docs/2.0.1/getting-started">Getting Started</a></li><li class="navListItem"><a class="navItem" href="/docs/2.0.1/configuration">Client Configuration</a></li><li class="navListItem"><a class="navItem" href="/docs/2.0.1/producing">Producing Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/2.0.1/transactions">Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/2.0.1/consuming">Consuming Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/2.0.1/admin">Admin Client</a></li><li class="navListItem"><a class="navItem" href="/docs/2.0.1/instrumentation-events">Instrumentation Events</a></li><li class="navListItem"><a class="navItem" href="/docs/2.0.1/custom-logger">Custom Logger</a></li><li class="navListItem"><a class="navItem" href="/docs/2.0.1/retry-detailed">Retry Mechanism Explained</a></li><li class="navListItem"><a class="navItem" href="/docs/2.0.1/faq">FAQ</a></li><li class="navListItem"><a class="navItem" href="/docs/2.0.1/pre-releases">Pre-releases</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Examples</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/2.0.1/running-kafka-in-development">Running Kafka in Development</a></li><li class="navListItem"><a class="navItem" href="/docs/2.0.1/producer-example">Producer</a></li><li class="navListItem"><a class="navItem" href="/docs/2.0.1/consumer-example">Consumer</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Migration Guides</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/2.0.1/migration-guide-v2.0.0">Migrating to v2.0.0</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Developing KafkaJS</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/2.0.1/contribution-guide">Contributing</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/2.0.1/development-environment">Development Environment</a></li><li class="navListItem"><a class="navItem" href="/docs/2.0.1/testing">Testing</a></li><li class="navListItem"><a class="navItem" href="/docs/2.0.1/development-resources">Resources</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/tulios/kafkajs/edit/master/docs/DevelopmentEnvironment.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">Development Environment</h1></header><article><div><span><p>When developing KafkaJS, we run a Kafka cluster in a similar way to what is described in <a href="/docs/2.0.1/running-kafka-in-development">Running Kafka in Development</a>, using <a href="https://docs.docker.com/"><code>docker</code></a> and <a href="https://docs.docker.com/compose/install/"><code>docker-compose</code></a>. Before you proceed, make sure that you have both <code>docker</code> and <code>docker-compose</code> available.</p>
+<p>KafkaJS is assuming that <a href="https://yarnpkg.com/"><code>yarn</code></a> is available globally, so if you haven't installed it yet: <code>npm install --global yarn</code>.</p>
+<h2><a class="anchor" aria-hidden="true" id="running-kafka"></a><a href="#running-kafka" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Running Kafka</h2>
+<p>For testing KafkaJS we use a multi-broker Kafka cluster as well as Zookeeper for authentication. To start the cluster and generate credentials, run the following from the root of the repository:</p>
+<pre><code class="hljs css language-sh"><span class="hljs-comment"># This will run a Kafka cluster configured with your current IP</span>
+./scripts/dockerComposeUp.sh
+./scripts/createScramCredentials.sh
+</code></pre>
+<p>This boots the Kafka cluster using the default docker-compose.yml file described in <a href="https://github.com/tulios/kafkajs/blob/master/scripts/dockerComposeUp.sh">scripts/dockerComposeUp.sh</a>. If you want to run a different version of Kafka, specify a different compose file using the <code>COMPOSE_FILE</code> environment variable:</p>
+<pre><code class="hljs css language-sh">COMPOSE_FILE=<span class="hljs-string">"docker-compose.2_3.yml"</span> ./scripts/dockerComposeUp.sh
+</code></pre>
+<p>If you run <code>docker-compose -f docker-compose.2_3.yml ps</code> (specify whichever compose file you used in the step above), you should see something like:</p>
+<pre><code class="hljs css language-sh">$ docker-compose -f docker-compose.2_3.yml ps
+WARNING: The HOST_IP variable is not <span class="hljs-built_in">set</span>. Defaulting to a blank string.
+      Name                    Command               State                                   Ports
+----------------------------------------------------------------------------------------------------------------------------------
+kafkajs_kafka1_1   start-kafka.sh                   Up      0.0.0.0:9092-&gt;9092/tcp, 0.0.0.0:9093-&gt;9093/tcp, 0.0.0.0:9094-&gt;9094/tcp
+kafkajs_kafka2_1   start-kafka.sh                   Up      0.0.0.0:9095-&gt;9095/tcp, 0.0.0.0:9096-&gt;9096/tcp, 0.0.0.0:9097-&gt;9097/tcp
+kafkajs_kafka3_1   start-kafka.sh                   Up      0.0.0.0:9098-&gt;9098/tcp, 0.0.0.0:9099-&gt;9099/tcp, 0.0.0.0:9100-&gt;9100/tcp
+kafkajs_zk_1       /bin/sh -c /usr/sbin/sshd  ...   Up      0.0.0.0:2181-&gt;2181/tcp, 22/tcp, 2888/tcp, 3888/tcp
+</code></pre>
+<p>The user credentials are listed in <a href="https://github.com/tulios/kafkajs/blob/master/scripts/createScramCredentials.sh">scripts/createScramCredentials.sh</a>. You can also pass in the <code>-h</code> flag to this script for more details and controls.</p>
+<p>You should now be able to connect to your cluster as such:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">const</span> fs = <span class="hljs-built_in">require</span>(<span class="hljs-string">'fs'</span>)
+<span class="hljs-keyword">const</span> ip = <span class="hljs-built_in">require</span>(<span class="hljs-string">'ip'</span>)
+
+<span class="hljs-keyword">const</span> { Kafka, CompressionTypes, logLevel } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./index'</span>)
+
+<span class="hljs-keyword">const</span> host = process.env.HOST_IP || ip.address()
+
+<span class="hljs-keyword">const</span> kafka = <span class="hljs-keyword">new</span> Kafka({
+  <span class="hljs-attr">logLevel</span>: logLevel.DEBUG,
+  <span class="hljs-attr">brokers</span>: [<span class="hljs-string">`<span class="hljs-subst">${host}</span>:9094`</span>, <span class="hljs-string">`<span class="hljs-subst">${host}</span>:9097`</span>, <span class="hljs-string">`<span class="hljs-subst">${host}</span>:9100`</span>],
+  <span class="hljs-attr">clientId</span>: <span class="hljs-string">'example-producer'</span>,
+  <span class="hljs-attr">ssl</span>: {
+    <span class="hljs-attr">servername</span>: <span class="hljs-string">'localhost'</span>,
+    <span class="hljs-attr">rejectUnauthorized</span>: <span class="hljs-literal">false</span>,
+    <span class="hljs-attr">ca</span>: [fs.readFileSync(<span class="hljs-string">'./testHelpers/certs/cert-signed'</span>, <span class="hljs-string">'utf-8'</span>)],
+  },
+  <span class="hljs-attr">sasl</span>: {
+    <span class="hljs-attr">mechanism</span>: <span class="hljs-string">'plain'</span>,
+    <span class="hljs-attr">username</span>: <span class="hljs-string">'test'</span>,
+    <span class="hljs-attr">password</span>: <span class="hljs-string">'testtest'</span>,
+  },
+})
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="visual-studio-code-integration"></a><a href="#visual-studio-code-integration" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Visual Studio Code Integration</h2>
+<p>In order to <a href="https://code.visualstudio.com/docs/languages/jsconfig">better integrate with Visual Studio Code's Javascript Language Service</a>,
+you can add a <code>jsconfig.json</code> file to the root of the project.</p>
+<pre><code class="hljs css language-json">{
+  <span class="hljs-attr">"compilerOptions"</span>: {
+    <span class="hljs-attr">"baseUrl"</span>: <span class="hljs-string">"."</span>,
+    <span class="hljs-attr">"module"</span>: <span class="hljs-string">"commonjs"</span>,
+    <span class="hljs-attr">"target"</span>: <span class="hljs-string">"es6"</span>,
+    <span class="hljs-attr">"paths"</span>: {
+      <span class="hljs-attr">"testHelpers"</span>: [<span class="hljs-string">"./testHelpers"</span>]
+    }
+  },
+  <span class="hljs-attr">"include"</span>: [
+    <span class="hljs-string">"src"</span>,
+    <span class="hljs-string">"testHelpers"</span>
+  ]
+}
+</code></pre>
+<p>This can help Visual Studio Code show type-hints even for modules that don't directly import each other:</p>
+<p><img src="./assets/vscode-integration.png" alt="Editor screenshot showing type hinting for Cluster methods"></p>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/2.0.1/contribution-guide"><span class="arrow-prev">← </span><span>Contributing</span></a><a class="docs-next button" href="/docs/2.0.1/testing"><span>Testing</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#running-kafka">Running Kafka</a></li><li><a href="#visual-studio-code-integration">Visual Studio Code Integration</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/kafkajs-logoV2.svg" alt="KafkaJS" width="52" height="84"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Usage</a></div><div><h5>Community</h5><a href="https://kafkajs-slackin.herokuapp.com">Slack</a></div><div><h5>More</h5><a href="https://github.com/tulios/kafkajs">GitHub</a><a class="github-button" href="https://github.com/tulios/kafkajs" data-icon="octicon-star" data-count-href="/tulios/kafkajs/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><a href="https://badge.fury.io/js/kafkajs"><img src="https://badge.fury.io/js/kafkajs.svg" alt="npm version" height="18"/></a></div></section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '7c56b6be30976fce32eb287e2af6cf06',
+                indexName: 'kafka_js',
+                inputSelector: '#search_input_react',
+                algoliaOptions: {}
+              });
+            </script></body></html>
