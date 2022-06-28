@@ -302,9 +302,10 @@ describe('Consumer > Runner', () => {
         messages: [{ offset: 4, key: '1', value: '2' }],
       })
 
-      const longRunningRequest = new Promise(resolve => {
-        setTimeout(() => resolve([]), 100)
-      })
+      const longRunningRequest = () =>
+        new Promise(resolve => {
+          setTimeout(() => resolve([]), 100)
+        })
 
       const error = new Error('Error while processing heartbeats in parallel')
       consumerGroup.heartbeat = async () => {
