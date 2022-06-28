@@ -638,6 +638,7 @@ interface MessageSetEntry {
   attributes: number
   offset: string
   size: number
+  headers?: never
 }
 
 interface RecordBatchEntry {
@@ -647,6 +648,7 @@ interface RecordBatchEntry {
   attributes: number
   offset: string
   headers: IHeaders
+  size?: never
 }
 
 export type KafkaMessage = MessageSetEntry | RecordBatchEntry
