@@ -631,15 +631,27 @@ export type Broker = {
   }): Promise<any>
 }
 
-export type KafkaMessage = {
+interface MessageSetEntry {
   key: Buffer | null
   value: Buffer | null
   timestamp: string
-  size: number
   attributes: number
   offset: string
-  headers?: IHeaders
+  size: number
+  headers?: never
 }
+
+interface RecordBatchEntry {
+  key: Buffer | null
+  value: Buffer | null
+  timestamp: string
+  attributes: number
+  offset: string
+  headers: IHeaders
+  size?: never
+}
+
+export type KafkaMessage = MessageSetEntry | RecordBatchEntry
 
 export interface ProducerRecord {
   topic: string
