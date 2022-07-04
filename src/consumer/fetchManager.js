@@ -2,7 +2,7 @@ const seq = require('../utils/seq')
 const createFetcher = require('./fetcher')
 const createWorker = require('./worker')
 const createWorkerQueue = require('./workerQueue')
-const { KafkaJSFetcherRebalanceError } = require('../errors')
+const { KafkaJSFetcherRebalanceError, KafkaJSNoBrokerAvailableError } = require('../errors')
 
 /** @typedef {ReturnType<typeof createFetchManager>} FetchManager */
 
@@ -33,6 +33,10 @@ const createFetchManager = ({
   const createFetchers = () => {
     const nodeIds = getNodeIds()
     const partitionAssignments = new Map()
+
+    if (nodeIds.length === 0) {
+      throw new KafkaJSNoBrokerAvailableError()
+    }
 
     const validateShouldRebalance = () => {
       const current = getNodeIds()
