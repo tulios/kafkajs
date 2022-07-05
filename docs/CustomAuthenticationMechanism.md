@@ -55,6 +55,11 @@ flow will be:
 request with the value of `says` as `auth_bytes`.
 2. Read the response from the broker. If `says` starts with "Simon says", the response `auth_bytes`
 should equal `says`, if it does not start with "Simon says", it should be an empty string.
+
+**This is a made up example!**
+
+It is a non-existent authentication mechanism just made up to show how to implement the expected interface. It is not a real authentication mechanism. 
+
 ```js
 const simonAuthenticator = says = (host, port, logger, saslAuthenticate) => {
     const INT32_SIZE = 4
