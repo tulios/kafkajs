@@ -1,7 +1,7 @@
 const { request, response } = require('../../protocol/sasl/awsIam')
 const { KafkaJSSASLAuthenticationError } = require('../../errors')
 
-const awsIAMAuthenticatorProvider = sasl => (host, port, logger, saslAuthenticate) => {
+const awsIAMAuthenticatorProvider = sasl => ({ host, port, logger, saslAuthenticate }) => {
   return {
     authenticate: async () => {
       if (!sasl.authorizationIdentity) {

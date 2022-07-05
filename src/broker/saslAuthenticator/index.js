@@ -71,12 +71,12 @@ module.exports = class SASLAuthenticator {
       )
     }
     await this.connection.sasl
-      .authenticationProvider(
-        this.connection.host,
-        this.connection.port,
-        this.logger.namespace(`SaslAuthenticator-${mechanism}`),
-        saslAuthenticate
-      )
+      .authenticationProvider({
+        host: this.connection.host,
+        port: this.connection.port,
+        logger: this.logger.namespace(`SaslAuthenticator-${mechanism}`),
+        saslAuthenticate,
+      })
       .authenticate()
   }
 }

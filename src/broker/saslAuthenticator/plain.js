@@ -1,7 +1,7 @@
 const { request, response } = require('../../protocol/sasl/plain')
 const { KafkaJSSASLAuthenticationError } = require('../../errors')
 
-const plainAuthenticatorProvider = sasl => (host, port, logger, saslAuthenticate) => {
+const plainAuthenticatorProvider = sasl => ({ host, port, logger, saslAuthenticate }) => {
   return {
     authenticate: async () => {
       if (sasl.username == null || sasl.password == null) {

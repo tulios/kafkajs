@@ -13,7 +13,7 @@
 const { request } = require('../../protocol/sasl/oauthBearer')
 const { KafkaJSSASLAuthenticationError } = require('../../errors')
 
-const oauthBearerAuthenticatorProvider = sasl => (host, port, logger, saslAuthenticate) => {
+const oauthBearerAuthenticatorProvider = sasl => ({ host, port, logger, saslAuthenticate }) => {
   return {
     authenticate: async () => {
       const { oauthBearerProvider } = sasl

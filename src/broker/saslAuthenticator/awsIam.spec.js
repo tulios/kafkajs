@@ -3,7 +3,7 @@ const awsIAMAuthenticatorProvider = require('./awsIam')
 
 describe('Broker > SASL Authenticator > AWS-IAM', () => {
   it('throws KafkaJSSASLAuthenticationError for missing authorizationIdentity', async () => {
-    const awsIam = awsIAMAuthenticatorProvider({})('', 0, newLogger())
+    const awsIam = awsIAMAuthenticatorProvider({})({ host: '', port: 0, logger: newLogger() })
     await expect(awsIam.authenticate()).rejects.toThrow(
       'SASL AWS-IAM: Missing authorizationIdentity'
     )
@@ -13,7 +13,7 @@ describe('Broker > SASL Authenticator > AWS-IAM', () => {
     const awsIam = awsIAMAuthenticatorProvider({
       authorizationIdentity: '<authorizationIdentity>',
       secretAccessKey: '<secretAccessKey>',
-    })('', 0, newLogger())
+    })({ host: '', port: 0, logger: newLogger() })
     await expect(awsIam.authenticate()).rejects.toThrow('SASL AWS-IAM: Missing accessKeyId')
   })
 
@@ -21,7 +21,7 @@ describe('Broker > SASL Authenticator > AWS-IAM', () => {
     const awsIam = awsIAMAuthenticatorProvider({
       authorizationIdentity: '<authorizationIdentity>',
       accessKeyId: '<accessKeyId>',
-    })('', 0, newLogger())
+    })({ host: '', port: 0, logger: newLogger() })
     await expect(awsIam.authenticate()).rejects.toThrow('SASL AWS-IAM: Missing secretAccessKey')
   })
 })

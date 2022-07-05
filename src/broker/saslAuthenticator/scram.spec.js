@@ -17,17 +17,17 @@ describe('Broker > SASL Authenticator > SCRAM', () => {
   })
 
   it('throws KafkaJSSASLAuthenticationError for invalid username', async () => {
-    const scram = scram256AuthenticatorProvider({})('', 0, newLogger())
+    const scram = scram256AuthenticatorProvider({})({ host: '', port: 0, logger: newLogger() })
     await expect(scram.authenticate()).rejects.toThrow('Invalid username or password')
   })
 
   it('throws KafkaJSSASLAuthenticationError for invalid password', async () => {
-    const scram = scram256AuthenticatorProvider({ username: '<username>' })(
-      '',
-      0,
-      newLogger(),
-      saslAuthenticate
-    )
+    const scram = scram256AuthenticatorProvider({ username: '<username>' })({
+      host: '',
+      port: 0,
+      logger: newLogger(),
+      saslAuthenticate,
+    })
     await expect(scram.authenticate()).rejects.toThrow('Invalid username or password')
   })
 

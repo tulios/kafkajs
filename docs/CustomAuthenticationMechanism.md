@@ -24,19 +24,29 @@ configure your brokers.
 A custom authentication mechanism needs to fulfill the following interface:
 
 ```ts
-type AuthenticationProvider<ParseResult> = (
-  host: string, 
-  port: number,
-  logger: Logger,
-  saslAuthenticate: (request: SaslAuthenticationRequest, response?: SaslAuthenticationResponse<ParseResult>) => Promise<ParseResult | void>
-) => Authenticator
+type AuthenticationProviderArgs = {
+  host: string
+  port: number
+  logger: Logger
+  saslAuthenticate: <ParseResult>(
+    request: SaslAuthenticationRequest,
+    response?: SaslAuthenticationResponse<ParseResult>
+  ) => Promise<ParseResult | void>
+}
+
+type Mechanism = {
+  mechanism: string
+  authenticationProvider: (args: AuthenticationProviderArgs) => Authenticator
+}
 
 type Authenticator = {
   authenticate(): Promise<void>
 }
+
 type SaslAuthenticationRequest = {
   encode: () => Buffer | Promise<Buffer>
 }
+
 type SaslAuthenticationResponse<ParseResult> = {
   decode: (rawResponse: Buffer) => Buffer | Promise<Buffer>
   parse: (data: Buffer) => ParseResult
@@ -61,7 +71,7 @@ should equal `says`, if it does not start with "Simon says", it should be an emp
 It is a non-existent authentication mechanism just made up to show how to implement the expected interface. It is not a real authentication mechanism. 
 
 ```js
-const simonAuthenticator = says = (host, port, logger, saslAuthenticate) => {
+const simonAuthenticator = says = ({ host, port, logger, saslAuthenticate }) => {
     const INT32_SIZE = 4
   
     const request = {
