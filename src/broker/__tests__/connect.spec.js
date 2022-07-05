@@ -58,6 +58,27 @@ describe('Broker > connect', () => {
     )
   })
 
+  test('user provided authenticator overrides built in ones', async () => {
+    broker = new Broker({
+      connectionPool: createConnectionPool(
+        Object.assign(sslConnectionOpts(), {
+          port: 9094,
+          sasl: {
+            mechanism: 'PLAIN',
+            authenticationProvider: () => ({
+              authenticate: async () => {
+                throw new Error('test error')
+              },
+            }),
+          },
+        })
+      ),
+      logger: newLogger(),
+    })
+
+    await expect(broker.connect()).rejects.toThrow('test error')
+  })
+
   for (const e of saslEntries) {
     test(`authenticate with SASL ${e.name} if configured`, async () => {
       broker = new Broker({

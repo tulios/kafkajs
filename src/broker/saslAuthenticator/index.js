@@ -62,7 +62,10 @@ module.exports = class SASLAuthenticator {
       return this.connection.sendAuthRequest({ request, response })
     }
 
-    if (Object.keys(BUILT_IN_AUTHENTICATION_PROVIDERS).includes(mechanism)) {
+    if (
+      !this.connection.sasl.authenticationProvider &&
+      Object.keys(BUILT_IN_AUTHENTICATION_PROVIDERS).includes(mechanism)
+    ) {
       this.connection.sasl.authenticationProvider = BUILT_IN_AUTHENTICATION_PROVIDERS[mechanism](
         this.connection.sasl
       )
