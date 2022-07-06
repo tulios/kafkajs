@@ -10,7 +10,7 @@ custom authentication mechanisms can be introduced:
 { 
   sasl: { 
       mechanism: <mechanism name>,
-      authenticationProvider: (host, port, logger, saslAuthenticate) => { authenticate: () => Promise<void> }
+      authenticationProvider: ({ host, port, logger, saslAuthenticate }) => { authenticate: () => Promise<void> }
   }
 }
 ```

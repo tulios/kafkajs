@@ -274,7 +274,7 @@ mechanism can be introduced as a plugin:
 { 
   sasl: { 
       mechanism: <mechanism name>,
-      authenticationProvider: (host, port, logger, saslAuthenticate) => { authenticate: () => Promise<void> }
+      authenticationProvider: ({ host, port, logger, saslAuthenticate }) => { authenticate: () => Promise<void> }
   }
 }
 ```
