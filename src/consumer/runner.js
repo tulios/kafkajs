@@ -90,10 +90,25 @@ module.exports = class Runner extends EventEmitter {
     this.scheduleFetchManager()
   }
 
-  async scheduleFetchManager() {
+  scheduleFetchManager() {
+    if (!this.running) {
+      this.consuming = false
+
+      this.logger.info('consumer not running, exiting', {
+        groupId: this.consumerGroup.groupId,
+        memberId: this.consumerGroup.memberId,
+      })
+
+      return
+    }
+
     this.consuming = true
 
-    while (this.running) {
+    this.retrier(async (bail, retryCount, retryTime) => {
+      if (!this.running) {
+        return
+      }
+
       try {
         await this.fetchManager.start()
       } catch (e) {
@@ -110,7 +125,7 @@ module.exports = class Runner extends EventEmitter {
           })
 
           await this.consumerGroup.joinAndSync()
-          continue
+          return
         }
 
         if (e.type === 'UNKNOWN_MEMBER_ID') {
@@ -122,16 +137,37 @@ module.exports = class Runner extends EventEmitter {
 
           this.consumerGroup.memberId = null
           await this.consumerGroup.joinAndSync()
-          continue
+          return
         }
 
-        this.onCrash(e)
-        break
-      }
-    }
+        if (e.name === 'KafkaJSNotImplemented') {
+          return bail(e)
+        }
 
-    this.consuming = false
-    this.running = false
+        if (e.name === 'KafkaJSConnectionError') {
+          return bail(e)
+        }
+
+        this.logger.debug('Error while scheduling fetch manager, trying again...', {
+          groupId: this.consumerGroup.groupId,
+          memberId: this.consumerGroup.memberId,
+          error: e.message,
+          stack: e.stack,
+          retryCount,
+          retryTime,
+        })
+
+        throw e
+      }
+    })
+      .then(() => {
+        this.scheduleFetchManager()
+      })
+      .catch(e => {
+        this.onCrash(e)
+        this.consuming = false
+        this.running = false
+      })
   }
 
   async stop() {
@@ -182,6 +218,10 @@ module.exports = class Runner extends EventEmitter {
   async processEachMessage(batch) {
     const { topic, partition } = batch
 
+    const pause = () => {
+      this.consumerGroup.pause([{ topic, partitions: [partition] }])
+      return () => this.consumerGroup.resume([{ topic, partitions: [partition] }])
+    }
     for (const message of batch.messages) {
       if (!this.running || this.consumerGroup.hasSeekOffset({ topic, partition })) {
         break
@@ -193,6 +233,7 @@ module.exports = class Runner extends EventEmitter {
           partition,
           message,
           heartbeat: () => this.heartbeat(),
+          pause,
         })
       } catch (e) {
         if (!isKafkaJSError(e)) {
@@ -213,12 +254,21 @@ module.exports = class Runner extends EventEmitter {
       this.consumerGroup.resolveOffset({ topic, partition, offset: message.offset })
       await this.heartbeat()
       await this.autoCommitOffsetsIfNecessary()
+
+      if (this.consumerGroup.isPaused(topic, partition)) {
+        break
+      }
     }
   }
 
   async processEachBatch(batch) {
     const { topic, partition } = batch
     const lastFilteredMessage = batch.messages[batch.messages.length - 1]
+
+    const pause = () => {
+      this.consumerGroup.pause([{ topic, partitions: [partition] }])
+      return () => this.consumerGroup.resume([{ topic, partitions: [partition] }])
+    }
 
     try {
       await this.eachBatch({
@@ -245,6 +295,10 @@ module.exports = class Runner extends EventEmitter {
           this.consumerGroup.resolveOffset({ topic, partition, offset: offsetToResolve })
         },
         heartbeat: () => this.heartbeat(),
+        /**
+         * Pause consumption for the current topic-partition being processed
+         */
+        pause,
         /**
          * Commit offsets if provided. Otherwise commit most recent resolved offsets
          * if the autoCommit conditions are met.
@@ -404,39 +458,7 @@ module.exports = class Runner extends EventEmitter {
       await this.heartbeat()
     }
 
-    return this.retrier(async (bail, retryCount, retryTime) => {
-      try {
-        await onBatch(batch)
-      } catch (e) {
-        if (!this.running) {
-          this.logger.debug('consumer not running, exiting', {
-            error: e.message,
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-          })
-          return
-        }
-
-        if (
-          isRebalancing(e) ||
-          e.type === 'UNKNOWN_MEMBER_ID' ||
-          e.name === 'KafkaJSNotImplemented'
-        ) {
-          return bail(e)
-        }
-
-        this.logger.debug('Error while fetching data, trying again...', {
-          groupId: this.consumerGroup.groupId,
-          memberId: this.consumerGroup.memberId,
-          error: e.message,
-          stack: e.stack,
-          retryCount,
-          retryTime,
-        })
-
-        throw e
-      }
-    })
+    await onBatch(batch)
   }
 
   autoCommitOffsets() {
