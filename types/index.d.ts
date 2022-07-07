@@ -16,10 +16,37 @@ export class Kafka {
 
 export type BrokersFunction = () => string[] | Promise<string[]>
 
+type SaslAuthenticationRequest = {
+  encode: () => Buffer | Promise<Buffer>
+}
+type SaslAuthenticationResponse<ParseResult> = {
+  decode: (rawResponse: Buffer) => Buffer | Promise<Buffer>
+  parse: (data: Buffer) => ParseResult
+}
+
+export type Authenticator = {
+  authenticate: () => Promise<void>
+}
+
+export type AuthenticationProviderArgs = {
+  host: string
+  port: number
+  logger: Logger
+  saslAuthenticate: <ParseResult>(
+    request: SaslAuthenticationRequest,
+    response?: SaslAuthenticationResponse<ParseResult>
+  ) => Promise<ParseResult | void>
+}
+
+export type Mechanism = {
+  mechanism: string
+  authenticationProvider: (args: AuthenticationProviderArgs) => Authenticator
+}
+
 export interface KafkaConfig {
   brokers: string[] | BrokersFunction
   ssl?: tls.ConnectionOptions | boolean
-  sasl?: SASLOptions
+  sasl?: SASLOptions | Mechanism
   clientId?: string
   connectionTimeout?: number
   authenticationTimeout?: number
@@ -94,8 +121,8 @@ export type DefaultPartitioner = ICustomPartitioner
 export type LegacyPartitioner = ICustomPartitioner
 
 export const Partitioners: {
-  DefaultPartitioner: DefaultPartitioner,
-  LegacyPartitioner: LegacyPartitioner,
+  DefaultPartitioner: DefaultPartitioner
+  LegacyPartitioner: LegacyPartitioner
   /**
    * @deprecated Use DefaultPartitioner instead
    *

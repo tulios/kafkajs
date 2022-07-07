@@ -6,6 +6,6 @@ module.exports = ({ authorizationIdentity, accessKeyId, secretAccessKey, session
   encode: async () => {
     return new Encoder().writeBytes(
       [authorizationIdentity, accessKeyId, secretAccessKey, sessionToken].join(US_ASCII_NULL_CHAR)
-    )
+    ).buffer
   },
 })

@@ -1,21 +1,20 @@
 const { requests, lookup } = require('../../protocol/requests')
 const apiKeys = require('../../protocol/requests/apiKeys')
-const PlainAuthenticator = require('./plain')
-const SCRAM256Authenticator = require('./scram256')
-const SCRAM512Authenticator = require('./scram512')
-const AWSIAMAuthenticator = require('./awsIam')
-const OAuthBearerAuthenticator = require('./oauthBearer')
+const plainAuthenticatorProvider = require('./plain')
+const scram256AuthenticatorProvider = require('./scram256')
+const scram512AuthenticatorProvider = require('./scram512')
+const awsIAMAuthenticatorProvider = require('./awsIam')
+const oauthBearerAuthenticatorProvider = require('./oauthBearer')
 const { KafkaJSSASLAuthenticationError } = require('../../errors')
 
-const AUTHENTICATORS = {
-  PLAIN: PlainAuthenticator,
-  'SCRAM-SHA-256': SCRAM256Authenticator,
-  'SCRAM-SHA-512': SCRAM512Authenticator,
-  AWS: AWSIAMAuthenticator,
-  OAUTHBEARER: OAuthBearerAuthenticator,
+const BUILT_IN_AUTHENTICATION_PROVIDERS = {
+  AWS: awsIAMAuthenticatorProvider,
+  PLAIN: plainAuthenticatorProvider,
+  OAUTHBEARER: oauthBearerAuthenticatorProvider,
+  'SCRAM-SHA-256': scram256AuthenticatorProvider,
+  'SCRAM-SHA-512': scram512AuthenticatorProvider,
 }
 
-const SUPPORTED_MECHANISMS = Object.keys(AUTHENTICATORS)
 const UNLIMITED_SESSION_LIFETIME = '0'
 
 module.exports = class SASLAuthenticator {
@@ -33,12 +32,6 @@ module.exports = class SASLAuthenticator {
 
   async authenticate() {
     const mechanism = this.connection.sasl.mechanism.toUpperCase()
-    if (!SUPPORTED_MECHANISMS.includes(mechanism)) {
-      throw new KafkaJSSASLAuthenticationError(
-        `SASL ${mechanism} mechanism is not supported by the client`
-      )
-    }
-
     const handshake = await this.connection.send(this.saslHandshake({ mechanism }))
     if (!handshake.enabledMechanisms.includes(mechanism)) {
       throw new KafkaJSSASLAuthenticationError(
@@ -46,9 +39,9 @@ module.exports = class SASLAuthenticator {
       )
     }
 
-    const saslAuthenticate = async ({ request, response, authExpectResponse }) => {
+    const saslAuthenticate = async ({ request, response }) => {
       if (this.protocolAuthentication) {
-        const { buffer: requestAuthBytes } = await request.encode()
+        const requestAuthBytes = await request.encode()
         const authResponse = await this.connection.send(
           this.protocolAuthentication({ authBytes: requestAuthBytes })
         )
@@ -57,7 +50,7 @@ module.exports = class SASLAuthenticator {
         // This is not present in SaslAuthenticateV0, so we default to `"0"`
         this.sessionLifetime = authResponse.sessionLifetimeMs || UNLIMITED_SESSION_LIFETIME
 
-        if (!authExpectResponse) {
+        if (!response) {
           return
         }
 
@@ -66,10 +59,24 @@ module.exports = class SASLAuthenticator {
         return response.parse(payloadDecoded)
       }
 
-      return this.connection.sendAuthRequest({ request, response, authExpectResponse })
+      return this.connection.sendAuthRequest({ request, response })
     }
 
-    const Authenticator = AUTHENTICATORS[mechanism]
-    await new Authenticator(this.connection, this.logger, saslAuthenticate).authenticate()
+    if (
+      !this.connection.sasl.authenticationProvider &&
+      Object.keys(BUILT_IN_AUTHENTICATION_PROVIDERS).includes(mechanism)
+    ) {
+      this.connection.sasl.authenticationProvider = BUILT_IN_AUTHENTICATION_PROVIDERS[mechanism](
+        this.connection.sasl
+      )
+    }
+    await this.connection.sasl
+      .authenticationProvider({
+        host: this.connection.host,
+        port: this.connection.port,
+        logger: this.logger.namespace(`SaslAuthenticator-${mechanism}`),
+        saslAuthenticate,
+      })
+      .authenticate()
   }
 }
