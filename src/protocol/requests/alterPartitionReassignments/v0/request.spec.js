@@ -5,7 +5,6 @@ const RequestV0Protocol = require('./request')
 describe('Protocol > Requests > AlterPartitionReassignments > v0', () => {
   test('request', async () => {
     const { buffer } = await RequestV0Protocol({
-      timeout: 5000,
       topics: [
         {
           topic: 'test-topic-c8d8ca3d95495c6b900d',
@@ -16,6 +15,7 @@ describe('Protocol > Requests > AlterPartitionReassignments > v0', () => {
           partitionAssignment: [{ partition: 0, replicas: [0, 1, 2] }],
         },
       ],
+      timeout: 5000,
     }).encode()
     expect(buffer).toEqual(Buffer.from(require('../fixtures/v0_request.json')))
   })
