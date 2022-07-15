@@ -70,6 +70,9 @@ const requests = {
   ExpireDelegationToken: noImplementedRequestDefinitions,
   DescribeDelegationToken: noImplementedRequestDefinitions,
   DeleteGroups: require('./deleteGroups'),
+  ElectLeaders: noImplementedRequestDefinitions,
+  IncrementalAlterConfigs: noImplementedRequestDefinitions,
+  AlterPartitionReassignments: require('./alterPartitionReassignments'),
 }
 
 const names = Object.keys(apiKeys)
