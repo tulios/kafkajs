@@ -37,11 +37,13 @@ describe('Broker > alterPartitionReassignments', () => {
       topics: [{ topic: topicName1 }, { topic: topicName2 }],
     })
 
+    console.log('created Topic')
+
     const response = await broker.alterPartitionReassignments({
       topics: [
         {
           topic: topicName1,
-          partitionAssignment: [{ partition: 0, replicas: [1, 2] }],
+          partitionAssignment: [{ partition: 0, replicas: [0, 2] }],
         },
         {
           topic: topicName2,

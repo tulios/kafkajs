@@ -253,6 +253,16 @@ export interface ITopicMetadata {
   partitions: PartitionMetadata[]
 }
 
+export interface ReplicaAssignment {
+  partition: number
+  replicas: Array<number>
+}
+
+export interface IPartitionReassignment {
+  topic: string,
+  partitionAssignment: Array<ReplicaAssignment>
+}
+
 export enum AclResourceTypes {
   UNKNOWN = 0,
   ANY = 1,

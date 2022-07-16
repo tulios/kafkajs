@@ -15,23 +15,27 @@ const { failure, createErrorFromCode } = require('../../../error')
  */
 
 const decodeResponses = decoder => ({
-  topic: decoder.readString(),
-  partitions: decoder.readArray(decodePartitions),
+  topic: decoder.readUVarIntString(),
+  partitions: decoder.readUVarIntArray(decodePartitions),
 })
 
-const decodePartitions = decoder => ({
-  partition: decoder.readInt32(),
-  errorCode: decoder.readInt16(),
-})
+const decodePartitions = decoder => {
+  const partition = decoder.readInt32()
+  return {
+    partition,
+    errorCode: decoder.readInt16(),
+  }
+}
 
 const decode = async rawData => {
   const decoder = new Decoder(rawData)
+  decoder.readUVarInt()
   const throttleTime = decoder.readInt32()
   const errorCode = decoder.readInt16()
   return {
     throttleTime,
     errorCode,
-    responses: decoder.readArray(decodeResponses),
+    responses: decoder.readUVarIntArray(decodeResponses),
   }
 }
 
