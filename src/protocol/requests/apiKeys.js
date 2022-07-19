@@ -45,4 +45,5 @@ module.exports = {
   ElectPreferredLeaders: 43,
   IncrementalAlterConfigs: 44,
   AlterPartitionReassignments: 45,
+  ListPartitionReassignments: 46,
 }
