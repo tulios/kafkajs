@@ -1,7 +1,6 @@
 const { createConnectionPool, connectionOpts, secureRandom, newLogger } = require('testHelpers')
 
 const Broker = require('../index')
-const topicNameComparator = (a, b) => a.topic.localeCompare(b.topic)
 
 describe('Broker > alterPartitionReassignments', () => {
   let seedBroker, broker
@@ -31,27 +30,33 @@ describe('Broker > alterPartitionReassignments', () => {
   test('request', async () => {
     await broker.connect()
     const topicName1 = `test-topic-${secureRandom()}`
-    const topicName2 = `test-topic-${secureRandom()}`
 
     await broker.createTopics({
-      topics: [{ topic: topicName1 }, { topic: topicName2 }],
+      topics: [
+        {
+          topic: topicName1,
+          replicaAssignment: [
+            { partition: 0, replicas: [2, 1] },
+            { partition: 1, replicas: [0, 2] },
+          ],
+        },
+      ],
     })
-
-    console.log('created Topic')
 
     const response = await broker.alterPartitionReassignments({
       topics: [
         {
           topic: topicName1,
-          partitionAssignment: [{ partition: 0, replicas: [0, 2] }],
-        },
-        {
-          topic: topicName2,
-          partitionAssignment: [{ partition: 0, replicas: [0, 1] }],
+          partitionAssignment: [
+            { partition: 0, replicas: [1, 0] },
+            { partition: 1, replicas: [2, 1] },
+          ],
         },
       ],
       timeout: 5000,
     })
+
+    response.responses[0].partitions.sort((a, b) => b.partition - a.partition)
 
     expect(response).toEqual({
       throttleTime: 0,
@@ -59,13 +64,12 @@ describe('Broker > alterPartitionReassignments', () => {
       responses: [
         {
           topic: topicName1,
-          partitions: [{ partition: 0, errorCode: 0 }],
+          partitions: [
+            { partition: 1, errorCode: 0 },
+            { partition: 0, errorCode: 0 },
+          ],
         },
-        {
-          topic: topicName2,
-          partitions: [{ partition: 0, errorCode: 0 }],
-        },
-      ].sort(topicNameComparator),
+      ],
     })
   })
 })

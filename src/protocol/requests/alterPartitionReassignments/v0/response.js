@@ -14,24 +14,32 @@ const { failure, createErrorFromCode } = require('../../../error')
  *    error_message => COMPACT_NULLABLE_STRING
  */
 
-const decodeResponses = decoder => ({
-  topic: decoder.readUVarIntString(),
-  partitions: decoder.readUVarIntArray(decodePartitions),
-})
+const decodeResponses = decoder => {
+  const response = {
+    topic: decoder.readUVarIntString(),
+    partitions: decoder.readUVarIntArray(decodePartitions),
+  }
+
+  decoder.readUVarIntBytes()
+  return response
+}
 
 const decodePartitions = decoder => {
-  const partition = decoder.readInt32()
-  return {
-    partition,
+  const partition = {
+    partition: decoder.readInt32(),
     errorCode: decoder.readInt16(),
   }
+  decoder.readUVarIntString()
+  decoder.readUVarIntBytes()
+  return partition
 }
 
 const decode = async rawData => {
   const decoder = new Decoder(rawData)
-  decoder.readUVarInt()
+  decoder.readUVarIntBytes()
   const throttleTime = decoder.readInt32()
   const errorCode = decoder.readInt16()
+  decoder.readUVarIntString()
   return {
     throttleTime,
     errorCode,

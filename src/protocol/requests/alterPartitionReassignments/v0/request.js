@@ -17,10 +17,10 @@ module.exports = ({ topics, timeout = 5000 }) => ({
   apiName: 'AlterPartitionReassignments',
   encode: async () => {
     return new Encoder()
-      .writeUVarInt(0)
+      .writeUVarIntBytes()
       .writeInt32(timeout)
       .writeUVarIntArray(topics.map(encodeTopics))
-      .writeUVarInt(0)
+      .writeUVarIntBytes()
   },
 })
 
@@ -28,14 +28,14 @@ const encodeTopics = ({ topic, partitionAssignment }) => {
   return new Encoder()
     .writeUVarIntString(topic)
     .writeUVarIntArray(partitionAssignment.map(encodePartitionAssignment))
-    .writeUVarInt(0)
+    .writeUVarIntBytes()
 }
 
 const encodePartitionAssignment = ({ partition, replicas }) => {
   return new Encoder()
     .writeInt32(partition)
-    .writeUVarIntArray(replicas, 'int32')
-    .writeUVarInt(0)
+    .writeUVarIntArray(replicas.map(encodeReplicas))
+    .writeUVarIntBytes()
 }
 
 const encodeReplicas = replica => {
