@@ -9,7 +9,7 @@ const { ListPartitionReassignments: apiKey } = require('../../apiKeys')
  *    partition_indexes => INT32
  */
 
-module.exports = ({ topics, timeout = 5000 }) => ({
+module.exports = ({ topics = null, timeout = 5000 }) => ({
   apiKey,
   apiVersion: 0,
   apiName: 'ListPartitionReassignments',
@@ -17,7 +17,7 @@ module.exports = ({ topics, timeout = 5000 }) => ({
     return new Encoder()
       .writeUVarIntBytes()
       .writeInt32(timeout)
-      .writeUVarIntArray(topics.map(encodeTopics))
+      .writeUVarIntArray(topics === null ? topics : topics.map(encodeTopics))
       .writeUVarIntBytes()
   },
 })

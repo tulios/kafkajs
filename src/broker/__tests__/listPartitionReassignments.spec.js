@@ -58,8 +58,6 @@ describe('Broker > alterPartitionReassignments', () => {
       ],
     })
 
-    console.log(topicName)
-
     response.topics[0].partitions[0].replicas.sort()
     expect(response).toEqual({
       throttleTime: 0,
