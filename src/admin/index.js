@@ -1411,6 +1411,13 @@ module.exports = ({
     })
   }
 
+  /**
+   * Alter the replicas partitions are assigned to for a topic
+   * @param {Object} request
+   * @param {import("../../types").IPartitionReassignment[]} request.topics topics and the paritions to be reassigned
+   * @param {number} [request.timeout]
+   * @returns {Promise}
+   */
   const alterPartitionReassignments = async ({ topics, timeout }) => {
     if (!topics || !Array.isArray(topics)) {
       throw new KafkaJSNonRetriableError(`Invalid topics array ${topics}`)
