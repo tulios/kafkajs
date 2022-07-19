@@ -71,5 +71,6 @@ describe('Broker > alterPartitionReassignments', () => {
         },
       ],
     })
+    await broker.deleteTopics({ topics: [topicName1] })
   })
 })
