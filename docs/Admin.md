@@ -684,32 +684,33 @@ KafkaJSProtocolError: Security features are disabled
 ## <a name="alter-partition-reassignments"></a> Alter Partition Reassignments
 This is used to reassign the replicas that partitions are on. This method will throw exceptions in the case of errors.
 
-```javascript
+```typescript
 await admin.alterPartitionReassignments({
-  topics: <IPartitionReassignment[]>
+  topics: <PartitionReassignment[]>,
   timeout: <Number> // optional - 5000 default
 })
 ```
 
-IPartitionReassignment Structure:
-```javascript
+PartitionReassignment Structure:
+```typescript
 {
   topic: <String>,
-  partitionAssignment: <Array> // Example: [{ partition: 0, replicas: [0,1,2] }]
+  partitionAssignment: <Number[]> // Example: [{ partition: 0, replicas: [0,1,2] }]
 }
+```
 
 ## <a name="list-partition-reassignments"></a> List Partition Reassignments
 This is used to list current partition reassignments in progress. This method will throw exceptions in the case of errors and resolve to ListPartitionReassignmentsResponse on success. If a requested partition does not exist it will not be included in the response.
 
 ```javascript
 await admin.listPartitionReassignments({
-  topics: <TopicPartitions[]> // optional, if null then all topics will be returned.
+  topics: <TopicPartitions[]>, // optional, if null then all topics will be returned.
   timeout: <Number> // optional - 5000 default
 })
 ```
 
 TopicPartitions Structure:
-```javascript
+```typescript
 {
   topic: <String>,
   partitions: <Array>
@@ -717,7 +718,7 @@ TopicPartitions Structure:
 ```
 
 Resulting ListPartitionReassignmentsResponse Structure:
-```javascript
+```typescript
 {
   errorCode: <Number>,
   throttleTime: <Number>, // duration in ms for which the request was throttled due to a quota violation, or zero if the request did not violate any quota.
@@ -725,19 +726,19 @@ Resulting ListPartitionReassignmentsResponse Structure:
 }
 ```
 OngoingTopicReassignment Structure:
-```javascript
+```typescript
 {
   topic: <String>,
   partitions: <OngoingPartitionReassignment[]>
 }
 ```
 OngoingPartitionReassignment Structure:
-```javascript
+```typescript
 {
   partitionIndex: <Number>,
-  replicas: <Array>, // The current replica set
-  addingReplicas: <Array> // The set of replicas being added
-  removingReplicas: <Array> // The set of replicas being removed
+  replicas: <Number[]>, // The current replica set
+  addingReplicas: <Number[]> // The set of replicas being added
+  removingReplicas: <Number[]> // The set of replicas being removed
 }
 ```
 **Note:** If a partition is not going through a reassignment, its AddingReplicas and RemovingReplicas fields will simply be empty.
