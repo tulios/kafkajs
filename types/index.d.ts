@@ -258,7 +258,7 @@ export interface ReplicaAssignment {
   replicas: Array<number>
 }
 
-export interface IPartitionReassignment {
+export interface PartitionReassignment {
   topic: string,
   partitionAssignment: Array<ReplicaAssignment>
 }
