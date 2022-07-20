@@ -889,7 +889,7 @@ module.exports = class Broker {
    * @param {number} [request.timeout]
    * @returns {Promise}
    */
-  async listPartitionReassignments({ topics, timeout }) {
+  async listPartitionReassignments({ topics = null, timeout }) {
     const listPartitionReassignments = this.lookupRequest(
       apiKeys.ListPartitionReassignments,
       requests.ListPartitionReassignments

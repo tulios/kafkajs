@@ -40,7 +40,7 @@ describe('Broker > alterPartitionReassignments', () => {
       ],
     })
 
-    broker.alterPartitionReassignments({
+    await broker.alterPartitionReassignments({
       topics: [
         {
           topic: topicName,
@@ -71,6 +71,7 @@ describe('Broker > alterPartitionReassignments', () => {
         },
       ],
     })
+
     await broker.deleteTopics({ topics: [topicName] })
   })
 })

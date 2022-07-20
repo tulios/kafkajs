@@ -1487,6 +1487,69 @@ module.exports = ({
     })
   }
 
+  /**
+   * List the partition reassignments in progress.
+   * If a partition is not going through a reassignment, its AddingReplicas and RemovingReplicas fields will simply be empty.
+   * If a partition doesn't exist, no response will be returned for it.
+   * @param {Object} request
+   * @param {import("../../types").TopicPartitions[]} request.topics topics and the paritions to be returned, if this is null will return all the topics.
+   * @param {number} [request.timeout]
+   * @returns {Promise<import("../../types").ListPartitionReassignmentsResponse>}
+   */
+  const listPartitionReassignments = async ({ topics = null, timeout }) => {
+    if (topics) {
+      if (!Array.isArray(topics)) {
+        throw new KafkaJSNonRetriableError(`Invalid topics array ${topics}`)
+      }
+
+      if (topics.filter(({ topic }) => typeof topic !== 'string').length > 0) {
+        throw new KafkaJSNonRetriableError(
+          'Invalid topics array, the topic names have to be a valid string'
+        )
+      }
+
+      const topicNames = new Set(topics.map(({ topic }) => topic))
+      if (topicNames.size < topics.length) {
+        throw new KafkaJSNonRetriableError(
+          'Invalid topics array, it cannot have multiple entries for the same topic'
+        )
+      }
+
+      for (const { topic, partitions } of topics) {
+        if (!partitions || !Array.isArray(partitions)) {
+          throw new KafkaJSNonRetriableError(
+            `Invalid partition array: ${partitions} for topic: ${topic}`
+          )
+        }
+
+        if (
+          partitions.filter(partition => typeof partition !== 'number' || partition < 0).length >= 1
+        ) {
+          throw new KafkaJSNonRetriableError(
+            `Invalid partition array: ${partitions} for topic: ${topic}. The partition indices have to be a valid number greater than 0.`
+          )
+        }
+      }
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        return await broker.listPartitionReassignments({ topics, timeout })
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not reassign partitions', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
   /** @type {import("../../types").Admin["on"]} */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {
@@ -1536,5 +1599,6 @@ module.exports = ({
     createAcls,
     deleteTopicRecords,
     alterPartitionReassignments,
+    listPartitionReassignments,
   }
 }

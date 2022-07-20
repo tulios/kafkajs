@@ -478,6 +478,24 @@ export interface DeleteAclResponse {
   filterResponses: DeleteAclFilterResponses[]
 }
 
+export interface ListPartitionReassignmentsResponse {
+  errorCode: number
+  throttleTime: number
+  topics: OngoingTopicReassignment[]
+}
+
+export interface OngoingTopicReassignment {
+  topic: string
+  partitions: OngoingPartitionReassignment[]
+}
+
+export interface OngoingPartitionReassignment {
+  partitionIndex: number
+  replicas: number[]
+  addingReplicas?: number[]
+  removingReplicas?: number[]
+}
+
 export type Admin = {
   connect(): Promise<void>
   disconnect(): Promise<void>
@@ -521,6 +539,14 @@ export type Admin = {
   deleteAcls(options: { filters: AclFilter[] }): Promise<DeleteAclResponse>
   createAcls(options: { acl: AclEntry[] }): Promise<boolean>
   deleteTopicRecords(options: { topic: string; partitions: SeekEntry[] }): Promise<void>
+  alterPartitionReassignments(request: {
+    topics: IPartitionReassignment[]
+    timeout?: number
+  }): Promise<any>
+  listPartitionReassignments(request: {
+    topics?: TopicPartitions[]
+    timeout?: number
+  }): Promise<ListPartitionReassignmentsResponse>
   logger(): Logger
   on(
     eventName: AdminEvents['CONNECT'],
@@ -666,6 +692,11 @@ export type Broker = {
     timeout?: number
     compression?: CompressionTypes
   }): Promise<any>
+  alterPartitionReassignments(request: {
+    topics: IPartitionReassignment[]
+    timeout?: number
+  }): Promise<any>
+  listPartitionReassignments(request: { topics?: TopicPartitions[]; timeout?: number }): Promise<ListPartitionReassignmentsResponse>
 }
 
 interface MessageSetEntry {
