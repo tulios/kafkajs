@@ -1,7 +1,5 @@
 const RequestV0Protocol = require('./request')
 
-/* TO-DO: Update the fixtures, data, and errors */
-
 describe('Protocol > Requests > AlterPartitionReassignments > v0', () => {
   test('request', async () => {
     const { buffer } = await RequestV0Protocol({
