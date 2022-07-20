@@ -720,8 +720,6 @@ TopicPartitions Structure:
 Resulting ListPartitionReassignmentsResponse Structure:
 ```typescript
 {
-  errorCode: <Number>,
-  throttleTime: <Number>, // duration in ms for which the request was throttled due to a quota violation, or zero if the request did not violate any quota.
   topics: <OngoingTopicReassignment[]>
 }
 ```

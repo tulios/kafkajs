@@ -479,8 +479,6 @@ export interface DeleteAclResponse {
 }
 
 export interface ListPartitionReassignmentsResponse {
-  errorCode: number
-  throttleTime: number
   topics: OngoingTopicReassignment[]
 }
 

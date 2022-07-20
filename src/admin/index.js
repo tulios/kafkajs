@@ -1538,7 +1538,9 @@ module.exports = ({
       try {
         await cluster.refreshMetadata()
         const broker = await cluster.findControllerBroker()
-        return await broker.listPartitionReassignments({ topics, timeout })
+        const response = await broker.listPartitionReassignments({ topics, timeout })
+
+        return { topics: response.topics }
       } catch (e) {
         if (e.type === 'NOT_CONTROLLER') {
           logger.warn('Could not reassign partitions', { error: e.message, retryCount, retryTime })
