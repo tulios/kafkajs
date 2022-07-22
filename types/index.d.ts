@@ -538,7 +538,7 @@ export type Admin = {
   createAcls(options: { acl: AclEntry[] }): Promise<boolean>
   deleteTopicRecords(options: { topic: string; partitions: SeekEntry[] }): Promise<void>
   alterPartitionReassignments(request: {
-    topics: IPartitionReassignment[]
+    topics: PartitionReassignment[]
     timeout?: number
   }): Promise<any>
   listPartitionReassignments(request: {
