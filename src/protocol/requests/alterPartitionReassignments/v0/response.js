@@ -20,7 +20,7 @@ const decodeResponses = decoder => {
     partitions: decoder.readUVarIntArray(decodePartitions),
   }
 
-  decoder.readUVarIntBytes()
+  decoder.readTaggedFields()
   return response
 }
 
@@ -30,13 +30,13 @@ const decodePartitions = decoder => {
     errorCode: decoder.readInt16(),
   }
   decoder.readUVarIntString()
-  decoder.readUVarIntBytes()
+  decoder.readTaggedFields()
   return partition
 }
 
 const decode = async rawData => {
   const decoder = new Decoder(rawData)
-  decoder.readUVarIntBytes()
+  decoder.readTaggedFields()
   const throttleTime = decoder.readInt32()
   const errorCode = decoder.readInt16()
   decoder.readUVarIntString()

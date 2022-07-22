@@ -28,7 +28,7 @@ const decodePartitions = decoder => {
   }
 
   // Read tagged fields
-  decoder.readUVarIntBytes()
+  decoder.readTaggedFields()
   return partition
 }
 
@@ -39,14 +39,14 @@ const decodeTopics = decoder => {
   }
 
   // Read tagged fields
-  decoder.readUVarIntBytes()
+  decoder.readTaggedFields()
   return topic
 }
 const decode = async rawData => {
   const decoder = new Decoder(rawData)
 
   // Read tagged fields
-  decoder.readUVarIntBytes()
+  decoder.readTaggedFields()
   const throttleTime = decoder.readInt32()
   const errorCode = decoder.readInt16()
   // Read error message

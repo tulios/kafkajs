@@ -201,11 +201,13 @@ module.exports = class Decoder {
     return array
   }
 
+  /* According to the protocol type documentation: https://kafka.apache.org/protocol#protocol_types,
+  a compact array with length zero is a null array. An array with length 1 is an empty array. */
   readUVarIntArray(reader) {
     const length = this.readUVarInt()
 
     if (length === 0) {
-      return []
+      return null
     }
 
     const array = new Array(length - 1)
@@ -260,6 +262,24 @@ module.exports = class Decoder {
     }
     result |= currentByte << i
     return result >>> 0
+  }
+
+  readTaggedFields() {
+    const numberOfTaggedFields = this.readUVarInt()
+
+    if (numberOfTaggedFields === 0) {
+      return null
+    }
+
+    const taggedFields = {}
+
+    for (let i = 0; i < numberOfTaggedFields; i++) {
+      // Right now this will read tag, the field length, and then length number of bytes for the field value skipping over the tag
+      this.readUVarInt()
+      this.readUVarIntBytes()
+    }
+
+    return taggedFields
   }
 
   readVarLong() {
