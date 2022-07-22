@@ -691,7 +691,7 @@ export type Broker = {
     compression?: CompressionTypes
   }): Promise<any>
   alterPartitionReassignments(request: {
-    topics: IPartitionReassignment[]
+    topics: PartitionReassignment[]
     timeout?: number
   }): Promise<any>
   listPartitionReassignments(request: { topics?: TopicPartitions[]; timeout?: number }): Promise<ListPartitionReassignmentsResponse>
