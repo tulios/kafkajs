@@ -870,7 +870,7 @@ module.exports = class Broker {
   /**
    * @public
    * @param {Object} request
-   * @param {import("../../types").IPartitionReassignment[]} request.topics
+   * @param {import("../../types").PartitionReassignment[]} request.topics
    * @param {number} [request.timeout]
    * @returns {Promise}
    */
