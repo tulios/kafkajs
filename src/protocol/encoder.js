@@ -346,6 +346,8 @@ module.exports = class Encoder {
     if (type === 'object') {
       this.writeUVarInt(array.length + 1)
       this.writeEncoderArray(array)
+    } else if (array === null) {
+      this.writeUVarInt(0)
     } else {
       const objectArray = array.filter(v => typeof v === 'object')
       this.writeUVarInt(objectArray.length + 1)

@@ -868,6 +868,36 @@ module.exports = class Broker {
   }
 
   /**
+   * @public
+   * @param {Object} request
+   * @param {import("../../types").PartitionReassignment[]} request.topics
+   * @param {number} [request.timeout]
+   * @returns {Promise}
+   */
+  async alterPartitionReassignments({ topics, timeout }) {
+    const alterPartitionReassignments = this.lookupRequest(
+      apiKeys.AlterPartitionReassignments,
+      requests.AlterPartitionReassignments
+    )
+    return await this[PRIVATE.SEND_REQUEST](alterPartitionReassignments({ topics, timeout }))
+  }
+
+  /**
+   * @public
+   * @param {Object} request
+   * @param {import("../../types").TopicPartitions[]} request.topics can be null
+   * @param {number} [request.timeout]
+   * @returns {Promise}
+   */
+  async listPartitionReassignments({ topics = null, timeout }) {
+    const listPartitionReassignments = this.lookupRequest(
+      apiKeys.ListPartitionReassignments,
+      requests.ListPartitionReassignments
+    )
+    return await this[PRIVATE.SEND_REQUEST](listPartitionReassignments({ topics, timeout }))
+  }
+
+  /**
    * @private
    */
   async [PRIVATE.SEND_REQUEST](protocolRequest) {

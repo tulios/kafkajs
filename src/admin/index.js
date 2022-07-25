@@ -1411,6 +1411,147 @@ module.exports = ({
     })
   }
 
+  /**
+   * Alter the replicas partitions are assigned to for a topic
+   * @param {Object} request
+   * @param {import("../../types").IPartitionReassignment[]} request.topics topics and the paritions to be reassigned
+   * @param {number} [request.timeout]
+   * @returns {Promise}
+   */
+  const alterPartitionReassignments = async ({ topics, timeout }) => {
+    if (!topics || !Array.isArray(topics)) {
+      throw new KafkaJSNonRetriableError(`Invalid topics array ${topics}`)
+    }
+
+    if (topics.filter(({ topic }) => typeof topic !== 'string').length > 0) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid topics array, the topic names have to be a valid string'
+      )
+    }
+
+    const topicNames = new Set(topics.map(({ topic }) => topic))
+    if (topicNames.size < topics.length) {
+      throw new KafkaJSNonRetriableError(
+        'Invalid topics array, it cannot have multiple entries for the same topic'
+      )
+    }
+
+    for (const { topic, partitionAssignment } of topics) {
+      if (!partitionAssignment || !Array.isArray(partitionAssignment)) {
+        throw new KafkaJSNonRetriableError(
+          `Invalid partitions array: ${partitionAssignment} for topic: ${topic}`
+        )
+      }
+
+      for (const { partition, replicas } of partitionAssignment) {
+        if (
+          partition === null ||
+          partition === undefined ||
+          typeof partition !== 'number' ||
+          partition < 0
+        ) {
+          throw new KafkaJSNonRetriableError(
+            `Invalid partitions index: ${partition} for topic: ${topic}`
+          )
+        }
+
+        if (!replicas || !Array.isArray(replicas)) {
+          throw new KafkaJSNonRetriableError(
+            `Invalid replica assignment: ${replicas} for topic: ${topic} on partition: ${partition}`
+          )
+        }
+
+        if (replicas.filter(replica => typeof replica !== 'number' || replica < 0).length >= 1) {
+          throw new KafkaJSNonRetriableError(
+            `Invalid replica assignment: ${replicas} for topic: ${topic} on partition: ${partition}. Replicas must be a non negative number`
+          )
+        }
+      }
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        await broker.alterPartitionReassignments({ topics, timeout })
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not reassign partitions', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
+   * List the partition reassignments in progress.
+   * If a partition is not going through a reassignment, its AddingReplicas and RemovingReplicas fields will simply be empty.
+   * If a partition doesn't exist, no response will be returned for it.
+   * @param {Object} request
+   * @param {import("../../types").TopicPartitions[]} request.topics topics and the paritions to be returned, if this is null will return all the topics.
+   * @param {number} [request.timeout]
+   * @returns {Promise<import("../../types").ListPartitionReassignmentsResponse>}
+   */
+  const listPartitionReassignments = async ({ topics = null, timeout }) => {
+    if (topics) {
+      if (!Array.isArray(topics)) {
+        throw new KafkaJSNonRetriableError(`Invalid topics array ${topics}`)
+      }
+
+      if (topics.filter(({ topic }) => typeof topic !== 'string').length > 0) {
+        throw new KafkaJSNonRetriableError(
+          'Invalid topics array, the topic names have to be a valid string'
+        )
+      }
+
+      const topicNames = new Set(topics.map(({ topic }) => topic))
+      if (topicNames.size < topics.length) {
+        throw new KafkaJSNonRetriableError(
+          'Invalid topics array, it cannot have multiple entries for the same topic'
+        )
+      }
+
+      for (const { topic, partitions } of topics) {
+        if (!partitions || !Array.isArray(partitions)) {
+          throw new KafkaJSNonRetriableError(
+            `Invalid partition array: ${partitions} for topic: ${topic}`
+          )
+        }
+
+        if (
+          partitions.filter(partition => typeof partition !== 'number' || partition < 0).length >= 1
+        ) {
+          throw new KafkaJSNonRetriableError(
+            `Invalid partition array: ${partitions} for topic: ${topic}. The partition indices have to be a valid number greater than 0.`
+          )
+        }
+      }
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const broker = await cluster.findControllerBroker()
+        const response = await broker.listPartitionReassignments({ topics, timeout })
+
+        return { topics: response.topics }
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not reassign partitions', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
   /** @type {import("../../types").Admin["on"]} */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {
@@ -1459,5 +1600,7 @@ module.exports = ({
     deleteAcls,
     createAcls,
     deleteTopicRecords,
+    alterPartitionReassignments,
+    listPartitionReassignments,
   }
 }

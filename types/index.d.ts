@@ -253,6 +253,16 @@ export interface ITopicMetadata {
   partitions: PartitionMetadata[]
 }
 
+export interface ReplicaAssignment {
+  partition: number
+  replicas: Array<number>
+}
+
+export interface PartitionReassignment {
+  topic: string,
+  partitionAssignment: Array<ReplicaAssignment>
+}
+
 export enum AclResourceTypes {
   UNKNOWN = 0,
   ANY = 1,
@@ -468,6 +478,22 @@ export interface DeleteAclResponse {
   filterResponses: DeleteAclFilterResponses[]
 }
 
+export interface ListPartitionReassignmentsResponse {
+  topics: OngoingTopicReassignment[]
+}
+
+export interface OngoingTopicReassignment {
+  topic: string
+  partitions: OngoingPartitionReassignment[]
+}
+
+export interface OngoingPartitionReassignment {
+  partitionIndex: number
+  replicas: number[]
+  addingReplicas?: number[]
+  removingReplicas?: number[]
+}
+
 export type Admin = {
   connect(): Promise<void>
   disconnect(): Promise<void>
@@ -511,6 +537,14 @@ export type Admin = {
   deleteAcls(options: { filters: AclFilter[] }): Promise<DeleteAclResponse>
   createAcls(options: { acl: AclEntry[] }): Promise<boolean>
   deleteTopicRecords(options: { topic: string; partitions: SeekEntry[] }): Promise<void>
+  alterPartitionReassignments(request: {
+    topics: PartitionReassignment[]
+    timeout?: number
+  }): Promise<void>
+  listPartitionReassignments(request: {
+    topics?: TopicPartitions[]
+    timeout?: number
+  }): Promise<ListPartitionReassignmentsResponse>
   logger(): Logger
   on(
     eventName: AdminEvents['CONNECT'],
@@ -656,6 +690,11 @@ export type Broker = {
     timeout?: number
     compression?: CompressionTypes
   }): Promise<any>
+  alterPartitionReassignments(request: {
+    topics: PartitionReassignment[]
+    timeout?: number
+  }): Promise<any>
+  listPartitionReassignments(request: { topics?: TopicPartitions[]; timeout?: number }): Promise<ListPartitionReassignmentsResponse>
 }
 
 interface MessageSetEntry {

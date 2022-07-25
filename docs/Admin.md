@@ -680,3 +680,63 @@ Be aware that the security features might be disabled in your cluster. In that c
 ```sh
 KafkaJSProtocolError: Security features are disabled
 ```
+
+## <a name="alter-partition-reassignments"></a> Alter Partition Reassignments
+This is used to reassign the replicas that partitions are on. This method will throw exceptions in the case of errors.
+
+```typescript
+await admin.alterPartitionReassignments({
+  topics: <PartitionReassignment[]>,
+  timeout: <Number> // optional - 5000 default
+})
+```
+
+PartitionReassignment Structure:
+```typescript
+{
+  topic: <String>,
+  partitionAssignment: <Number[]> // Example: [{ partition: 0, replicas: [0,1,2] }]
+}
+```
+
+## <a name="list-partition-reassignments"></a> List Partition Reassignments
+This is used to list current partition reassignments in progress. This method will throw exceptions in the case of errors and resolve to ListPartitionReassignmentsResponse on success. If a requested partition does not exist it will not be included in the response.
+
+```javascript
+await admin.listPartitionReassignments({
+  topics: <TopicPartitions[]>, // optional, if null then all topics will be returned.
+  timeout: <Number> // optional - 5000 default
+})
+```
+
+TopicPartitions Structure:
+```typescript
+{
+  topic: <String>,
+  partitions: <Array>
+}
+```
+
+Resulting ListPartitionReassignmentsResponse Structure:
+```typescript
+{
+  topics: <OngoingTopicReassignment[]>
+}
+```
+OngoingTopicReassignment Structure:
+```typescript
+{
+  topic: <String>,
+  partitions: <OngoingPartitionReassignment[]>
+}
+```
+OngoingPartitionReassignment Structure:
+```typescript
+{
+  partitionIndex: <Number>,
+  replicas: <Number[]>, // The current replica set
+  addingReplicas: <Number[]> // The set of replicas being added
+  removingReplicas: <Number[]> // The set of replicas being removed
+}
+```
+**Note:** If a partition is not going through a reassignment, its AddingReplicas and RemovingReplicas fields will simply be empty.
