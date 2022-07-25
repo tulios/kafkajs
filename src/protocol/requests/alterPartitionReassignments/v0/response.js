@@ -1,3 +1,7 @@
+const {
+  KafkaJSAggregateError,
+  KafkaJSAlterPartitionReassignmentsError,
+} = require('../../../../errors')
 const Decoder = require('../../../decoder')
 const { failure, createErrorFromCode } = require('../../../error')
 
@@ -49,16 +53,30 @@ const decode = async rawData => {
 
 const parse = async data => {
   if (failure(data.errorCode)) {
-    throw createErrorFromCode(data.errorCode)
+    throw new KafkaJSAlterPartitionReassignmentsError(createErrorFromCode(data.errorCode))
   }
 
-  const partitionsWithError = data.responses.flatMap(response =>
-    response.partitions.filter(partition => failure(partition.errorCode))
+  const topicPartitionsWithError = data.responses.flatMap(({ partitions, topic }) =>
+    partitions
+      .filter(partition => failure(partition.errorCode))
+      .map(partition => ({
+        ...partition,
+        topic,
+      }))
   )
 
-  const partitionWithError = partitionsWithError[0]
-  if (partitionWithError) {
-    throw createErrorFromCode(partitionWithError.errorCode)
+  if (topicPartitionsWithError.length > 0) {
+    throw new KafkaJSAggregateError(
+      'Errors altering partition reassignments',
+      topicPartitionsWithError.map(
+        ({ topic, partition, errorCode }) =>
+          new KafkaJSAlterPartitionReassignmentsError(
+            createErrorFromCode(errorCode),
+            topic,
+            partition
+          )
+      )
+    )
   }
 
   return data

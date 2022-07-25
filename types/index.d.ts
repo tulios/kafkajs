@@ -1141,10 +1141,21 @@ export class KafkaJSProtocolError extends KafkaJSError {
   constructor(e: Error | string)
 }
 
+export class KafkaJSAggregateError extends Error {
+  readonly errors: (Error | string)[]
+  constructor(message: Error | string, errors: (Error | string)[])
+}
+
 export class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
   readonly topic: string
   readonly partition: number
   constructor(e: Error | string, metadata?: KafkaJSOffsetOutOfRangeMetadata)
+}
+
+export class KafkaJSAlterPartitionReassignmentsError extends KafkaJSProtocolError {
+  readonly topic?: string
+  readonly partition?: number
+  constructor(e: Error | string, topic?: string, partition?: number)
 }
 
 export class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {

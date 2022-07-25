@@ -238,6 +238,16 @@ class KafkaJSCreateTopicError extends KafkaJSProtocolError {
     this.name = 'KafkaJSCreateTopicError'
   }
 }
+
+class KafkaJSAlterPartitionReassignmentsError extends KafkaJSProtocolError {
+  constructor(e, topicName, partition) {
+    super(e)
+    this.topic = topicName
+    this.partition = partition
+    this.name = 'KafkaJSAlterPartitionReassignmentsError'
+  }
+}
+
 class KafkaJSAggregateError extends Error {
   constructor(message, errors) {
     super(message)
@@ -283,6 +293,7 @@ module.exports = {
   KafkaJSCreateTopicError,
   KafkaJSAggregateError,
   KafkaJSFetcherRebalanceError,
+  KafkaJSAlterPartitionReassignmentsError,
   isRebalancing,
   isKafkaJSError,
 }
