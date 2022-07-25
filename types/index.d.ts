@@ -540,7 +540,7 @@ export type Admin = {
   alterPartitionReassignments(request: {
     topics: PartitionReassignment[]
     timeout?: number
-  }): Promise<any>
+  }): Promise<void>
   listPartitionReassignments(request: {
     topics?: TopicPartitions[]
     timeout?: number
