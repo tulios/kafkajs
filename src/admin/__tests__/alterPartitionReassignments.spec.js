@@ -116,7 +116,18 @@ describe('Admin', () => {
             { topic: topicName + 'x', partitionAssignment: [{ partition: 0, replicas: [2, 1] }] },
           ],
         })
-      ).rejects.toHaveProperty('message', 'This server does not host this topic-partition')
+      ).rejects.toThrow(
+        expect.objectContaining({
+          message: 'Errors altering partition reassignments',
+          errors: expect.arrayContaining([
+            expect.objectContaining({
+              message: 'This server does not host this topic-partition',
+              topic: topicName + 'x',
+              partition: 0,
+            }),
+          ]),
+        })
+      )
     })
 
     test('throws an error trying to assign invalid broker', async () => {
@@ -148,7 +159,18 @@ describe('Admin', () => {
             },
           ],
         })
-      ).rejects.toHaveProperty('message', 'Replica assignment is invalid')
+      ).rejects.toThrow(
+        expect.objectContaining({
+          message: 'Errors altering partition reassignments',
+          errors: expect.arrayContaining([
+            expect.objectContaining({
+              message: 'Replica assignment is invalid',
+              topic: topicName,
+              partition: 0,
+            }),
+          ]),
+        })
+      )
     })
 
     test('reassign partitions', async () => {
