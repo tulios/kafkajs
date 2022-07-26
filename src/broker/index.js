@@ -584,8 +584,7 @@ module.exports = class Broker {
    * @param {object} request
    * @param {string[]} request.topics An array of topics to be deleted
    * @param {number} [request.timeout=5000] The time in ms to wait for a topic to be completely deleted on the
-   *                                controller node. Values <= 0 will trigger topic deletion and return
-   *                                immediately
+   *                                controller node.
    * @returns {Promise}
    */
   async deleteTopics({ topics, timeout = 5000 }) {
