@@ -238,7 +238,7 @@ export interface ITopicConfig {
   topic: string
   numPartitions?: number
   replicationFactor?: number
-  replicaAssignment?: object[]
+  replicaAssignment?: ReplicaAssignment[]
   configEntries?: IResourceConfigEntry[]
 }
 

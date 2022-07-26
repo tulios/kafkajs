@@ -93,6 +93,18 @@ describe('Admin', () => {
       ).resolves.toEqual(true)
     })
 
+    test('creating topic with manual replica assignment', async () => {
+      admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
+
+      await admin.connect()
+      await expect(
+        admin.createTopics({
+          waitForLeaders: false,
+          topics: [{ topic: topicName, replicaAssignment: [{ partition: 0, replicas: [0, 1] }] }],
+        })
+      ).resolves.toEqual(true)
+    })
+
     test('retries if the controller has moved', async () => {
       const cluster = createCluster()
       const broker = { createTopics: jest.fn(() => true) }
