@@ -32,6 +32,9 @@ const createFetchManager = ({
 
   const createFetchers = () => {
     const nodeIds = getNodeIds()
+    if (nodeIds.length === 0) {
+      throw new KafkaJSFetcherRebalanceError()
+    }
     const partitionAssignments = new Map()
 
     const validateShouldRebalance = () => {
