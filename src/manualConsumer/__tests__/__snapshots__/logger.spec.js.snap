@@ -1,0 +1,12 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Consumer gives access to its logger 1`] = `
+Object {
+  "debug": [Function],
+  "error": [Function],
+  "info": [Function],
+  "namespace": [Function],
+  "setLogLevel": [Function],
+  "warn": [Function],
+}
+`;
