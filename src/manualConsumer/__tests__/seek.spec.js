@@ -1,6 +1,5 @@
-const createAdmin = require('../../admin')
 const createProducer = require('../../producer')
-const createConsumer = require('../index')
+const createManualConsumer = require('../index')
 const { KafkaJSNonRetriableError } = require('../../errors')
 
 const {
@@ -10,15 +9,13 @@ const {
   createModPartitioner,
   newLogger,
   waitForMessages,
-  waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
-describe('Consumer', () => {
-  let topicName, groupId, cluster, producer, consumer
+describe('ManualConsumer', () => {
+  let topicName, cluster, producer, consumer
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
-    groupId = `consumer-group-id-${secureRandom()}`
 
     cluster = createCluster()
     producer = createProducer({
@@ -27,9 +24,8 @@ describe('Consumer', () => {
       logger: newLogger(),
     })
 
-    consumer = createConsumer({
+    consumer = createManualConsumer({
       cluster,
-      groupId,
       logger: newLogger(),
     })
   })
@@ -76,7 +72,7 @@ describe('Consumer', () => {
       it('throws an error if called before consumer run', () => {
         expect(() => consumer.seek({ topic: topicName, partition: 0, offset: '1' })).toThrow(
           KafkaJSNonRetriableError,
-          'Consumer group was not initialized, consumer#run must be called first'
+          'Consumer was not initialized, consumer#run must be called first'
         )
       })
 
@@ -94,7 +90,6 @@ describe('Consumer', () => {
         consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
         consumer.seek({ topic: topicName, partition: 0, offset: 100 })
 
-        await waitForConsumerToJoinGroup(consumer)
         await expect(waitForMessages(messagesConsumed, { number: 1 })).resolves.toEqual([
           expect.objectContaining({
             topic: topicName,
@@ -102,73 +97,6 @@ describe('Consumer', () => {
             message: expect.objectContaining({ offset: '0' }),
           }),
         ])
-      })
-
-      describe('When "autoCommit" is false', () => {
-        let admin
-
-        beforeEach(() => {
-          admin = createAdmin({ logger: newLogger(), cluster })
-        })
-
-        afterEach(async () => {
-          admin && (await admin.disconnect())
-        })
-
-        it('should not commit the offset', async () => {
-          await Promise.all([consumer, producer, admin].map(client => client.connect()))
-
-          await producer.send({
-            acks: 1,
-            topic: topicName,
-            messages: [1, 2, 3].map(n => ({ key: `key-${n}`, value: `value-${n}` })),
-          })
-          await consumer.subscribe({ topic: topicName, fromBeginning: true })
-
-          let messagesConsumed = []
-          consumer.run({
-            autoCommit: false,
-            eachMessage: async event => messagesConsumed.push(event),
-          })
-          consumer.seek({ topic: topicName, partition: 0, offset: 2 })
-
-          await waitForConsumerToJoinGroup(consumer)
-          await expect(waitForMessages(messagesConsumed, { number: 1 })).resolves.toEqual([
-            expect.objectContaining({
-              topic: topicName,
-              partition: 0,
-              message: expect.objectContaining({ offset: '2' }),
-            }),
-          ])
-
-          await expect(admin.fetchOffsets({ groupId, topics: [topicName] })).resolves.toEqual([
-            {
-              topic: topicName,
-              partitions: expect.arrayContaining([
-                expect.objectContaining({
-                  partition: 0,
-                  offset: '-1',
-                }),
-              ]),
-            },
-          ])
-
-          messagesConsumed = []
-          consumer.seek({ topic: topicName, partition: 0, offset: 1 })
-
-          await expect(waitForMessages(messagesConsumed, { number: 2 })).resolves.toEqual([
-            expect.objectContaining({
-              topic: topicName,
-              partition: 0,
-              message: expect.objectContaining({ offset: '1' }),
-            }),
-            expect.objectContaining({
-              topic: topicName,
-              partition: 0,
-              message: expect.objectContaining({ offset: '2' }),
-            }),
-          ])
-        })
       })
     })
 
@@ -198,11 +126,9 @@ describe('Consumer', () => {
         await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
         const messagesConsumed = []
-        // must be called after run because the ConsumerGroup must be initialized
         consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
         consumer.seek({ topic: topicName, partition: 1, offset: 1 })
 
-        await waitForConsumerToJoinGroup(consumer)
         await expect(waitForMessages(messagesConsumed, { number: 3 })).resolves.toEqual(
           expect.arrayContaining([
             expect.objectContaining({
@@ -247,12 +173,10 @@ describe('Consumer', () => {
         await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
         const messagesConsumed = []
-        // must be called after run because the ConsumerGroup must be initialized
         consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
         consumer.seek({ topic: topicName, partition: 0, offset: 2 })
         consumer.seek({ topic: topicName, partition: 1, offset: 1 })
 
-        await waitForConsumerToJoinGroup(consumer)
         await expect(waitForMessages(messagesConsumed, { number: 2 })).resolves.toEqual(
           expect.arrayContaining([
             expect.objectContaining({
@@ -289,7 +213,6 @@ describe('Consumer', () => {
         consumer.seek({ topic: topicName, partition: 0, offset: 1 })
         consumer.seek({ topic: topicName, partition: 0, offset: 2 })
 
-        await waitForConsumerToJoinGroup(consumer)
         await expect(waitForMessages(messagesConsumed, { number: 1 })).resolves.toEqual(
           expect.arrayContaining([
             expect.objectContaining({

@@ -10,6 +10,7 @@ export class Kafka {
   constructor(config: KafkaConfig)
   producer(config?: ProducerConfig): Producer
   consumer(config: ConsumerConfig): Consumer
+  manualConsumer(config: BaseConsumerConfig): ManualConsumer
   admin(config?: AdminConfig): Admin
   logger(): Logger
 }
@@ -145,13 +146,9 @@ export interface IHeaders {
   [key: string]: Buffer | string | (Buffer | string)[] | undefined
 }
 
-export interface ConsumerConfig {
-  groupId: string
+export interface BaseConsumerConfig {
   partitionAssigners?: PartitionAssigner[]
   metadataMaxAge?: number
-  sessionTimeout?: number
-  rebalanceTimeout?: number
-  heartbeatInterval?: number
   maxBytesPerPartition?: number
   minBytes?: number
   maxBytes?: number
@@ -161,6 +158,13 @@ export interface ConsumerConfig {
   maxInFlightRequests?: number
   readUncommitted?: boolean
   rackId?: string
+}
+
+export interface ConsumerConfig extends BaseConsumerConfig {
+  groupId: string
+  sessionTimeout?: number
+  rebalanceTimeout?: number
+  heartbeatInterval?: number
 }
 
 export type PartitionAssigner = (config: {
@@ -1016,18 +1020,43 @@ export type ConsumerRunConfig = {
   eachMessage?: EachMessageHandler
 }
 
+export interface ManualConsumerEachMessagePayload {
+  topic: string
+  partition: number
+  message: KafkaMessage
+  pause(): () => void
+}
+
+export interface ManualConsumerEachBatchPayload {
+  batch: Batch
+  resolveOffset(offset: string): void
+  pause(): () => void
+  isRunning(): boolean
+  isStale(): boolean
+}
+
+export type ManualConsumerEachBatchHandler = (payload: ManualConsumerEachBatchPayload) => Promise<void>
+export type ManualConsumerEachMessageHandler = (payload: ManualConsumerEachMessagePayload) => Promise<void>
+
+export type ManualConsumerRunConfig = {
+  eachBatchAutoResolve?: boolean
+  partitionsConsumedConcurrently?: number
+  eachBatch?: ManualConsumerEachBatchHandler
+  eachMessage?: ManualConsumerEachMessageHandler
+}
+
 /**
  * @deprecated Replaced by ConsumerSubscribeTopics
  */
 export type ConsumerSubscribeTopic = { topic: string | RegExp; fromBeginning?: boolean }
 export type ConsumerSubscribeTopics = { topics: (string | RegExp)[]; fromBeginning?: boolean }
 
-export type Consumer = {
+type BaseConsumer<T> = {
   connect(): Promise<void>
   disconnect(): Promise<void>
   subscribe(subscription: ConsumerSubscribeTopics | ConsumerSubscribeTopic): Promise<void>
   stop(): Promise<void>
-  run(config?: ConsumerRunConfig): Promise<void>
+  run(config?: T): Promise<void>
   commitOffsets(topicPartitions: Array<TopicPartitionOffsetAndMetadata>): Promise<void>
   seek(topicPartitionOffset: TopicPartitionOffset): void
   describeGroup(): Promise<GroupDescription>
@@ -1105,6 +1134,9 @@ export type Consumer = {
   logger(): Logger
   readonly events: ConsumerEvents
 }
+
+export type Consumer = BaseConsumer<ConsumerRunConfig>
+export type ManualConsumer = BaseConsumer<ManualConsumerRunConfig>
 
 export enum CompressionTypes {
   None = 0,

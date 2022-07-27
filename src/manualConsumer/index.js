@@ -1,12 +1,14 @@
 const Long = require('../utils/long')
-const createRetry = require('../retry')
 const { initialRetryTime } = require('../retry/defaults')
-const ConsumerGroup = require('./consumerGroup')
+const ManualConsumer = require('./manualConsumer')
 const Runner = require('./runner')
-const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentationEvents')
+const {
+  events,
+  wrap: wrapEvent,
+  unwrap: unwrapEvent,
+} = require('../consumer/instrumentationEvents')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
 const { KafkaJSNonRetriableError } = require('../errors')
-const { roundRobin } = require('./assigners')
 const { EARLIEST_OFFSET, LATEST_OFFSET } = require('../constants')
 const ISOLATION_LEVEL = require('../protocol/isolationLevel')
 const sharedPromiseTo = require('../utils/sharedPromiseTo')
@@ -27,13 +29,9 @@ const specialOffsets = [
 /**
  * @param {Object} params
  * @param {import("../../types").Cluster} params.cluster
- * @param {String} params.groupId
  * @param {import('../../types').RetryOptions} [params.retry]
  * @param {import('../../types').Logger} params.logger
  * @param {import('../../types').PartitionAssigner[]} [params.partitionAssigners]
- * @param {number} [params.sessionTimeout]
- * @param {number} [params.rebalanceTimeout]
- * @param {number} [params.heartbeatInterval]
  * @param {number} [params.maxBytesPerPartition]
  * @param {number} [params.minBytes]
  * @param {number} [params.maxBytes]
@@ -43,17 +41,12 @@ const specialOffsets = [
  * @param {InstrumentationEventEmitter} [params.instrumentationEmitter]
  * @param {number} params.metadataMaxAge
  *
- * @returns {import("../../types").Consumer}
+ * @returns {import("../../types").ManualConsumer}
  */
 module.exports = ({
   cluster,
-  groupId,
   retry,
   logger: rootLogger,
-  partitionAssigners = [roundRobin],
-  sessionTimeout = 30000,
-  rebalanceTimeout = 60000,
-  heartbeatInterval = 3000,
   maxBytesPerPartition = 1048576, // 1MB
   minBytes = 1,
   maxBytes = 10485760, // 10MB
@@ -63,76 +56,60 @@ module.exports = ({
   instrumentationEmitter: rootInstrumentationEmitter,
   metadataMaxAge,
 }) => {
-  if (!groupId) {
-    throw new KafkaJSNonRetriableError('Consumer groupId must be a non-empty string.')
-  }
-
-  const logger = rootLogger.namespace('Consumer')
+  const logger = rootLogger.namespace('ManualConsumer')
   const instrumentationEmitter = rootInstrumentationEmitter || new InstrumentationEventEmitter()
-  const assigners = partitionAssigners.map(createAssigner =>
-    createAssigner({ groupId, logger, cluster })
-  )
 
   /** @type {Record<string, { fromBeginning?: boolean }>} */
   const topics = {}
   let runner = null
-  /** @type {ConsumerGroup} */
-  let consumerGroup = null
+  let manualConsumer = null
   let restartTimeout = null
 
-  if (heartbeatInterval >= sessionTimeout) {
-    throw new KafkaJSNonRetriableError(
-      `Consumer heartbeatInterval (${heartbeatInterval}) must be lower than sessionTimeout (${sessionTimeout}). It is recommended to set heartbeatInterval to approximately a third of the sessionTimeout.`
-    )
-  }
-
-  /** @type {import("../../types").Consumer["connect"]} */
+  /** @type {import("../../types").ManualConsumer["connect"]} */
   const connect = async () => {
     await cluster.connect()
     instrumentationEmitter.emit(CONNECT)
   }
 
-  /** @type {import("../../types").Consumer["disconnect"]} */
+  /** @type {import("../../types").ManualConsumer["disconnect"]} */
   const disconnect = async () => {
     try {
       await stop()
-      logger.debug('consumer has stopped, disconnecting', { groupId })
+      logger.debug('consumer has stopped, disconnecting')
       await cluster.disconnect()
       instrumentationEmitter.emit(DISCONNECT)
     } catch (e) {
       logger.error(`Caught error when disconnecting the consumer: ${e.message}`, {
         stack: e.stack,
-        groupId,
       })
       throw e
     }
   }
 
-  /** @type {import("../../types").Consumer["stop"]} */
+  /** @type {import("../../types").ManualConsumer["stop"]} */
   const stop = sharedPromiseTo(async () => {
     try {
       if (runner) {
         await runner.stop()
         runner = null
-        consumerGroup = null
+        manualConsumer = null
         instrumentationEmitter.emit(STOP)
       }
 
       clearTimeout(restartTimeout)
-      logger.info('Stopped', { groupId })
+      logger.info('Stopped')
     } catch (e) {
       logger.error(`Caught error when stopping the consumer: ${e.message}`, {
         stack: e.stack,
-        groupId,
       })
 
       throw e
     }
   })
 
-  /** @type {import("../../types").Consumer["subscribe"]} */
+  /** @type {import("../../types").ManualConsumer["subscribe"]} */
   const subscribe = async ({ topic, topics: subscriptionTopics, fromBeginning = false }) => {
-    if (consumerGroup) {
+    if (manualConsumer) {
       throw new KafkaJSNonRetriableError('Cannot subscribe to topic while consumer is running')
     }
 
@@ -167,7 +144,6 @@ module.exports = ({
           .filter(topicName => topicRegExp.test(topicName))
 
         logger.debug('Subscription based on RegExp', {
-          groupId,
           topicRegExp: topicRegExp.toString(),
           matchedTopics,
         })
@@ -185,34 +161,27 @@ module.exports = ({
     await cluster.addMultipleTargetTopics(topicsToSubscribe)
   }
 
-  /** @type {import("../../types").Consumer["run"]} */
+  /** @type {import("../../types").ManualConsumer["run"]} */
   const run = async ({
-    autoCommit = true,
-    autoCommitInterval = null,
-    autoCommitThreshold = null,
     eachBatchAutoResolve = true,
     partitionsConsumedConcurrently: concurrency = 1,
     eachBatch = null,
     eachMessage = null,
   } = {}) => {
-    if (consumerGroup) {
-      logger.warn('consumer#run was called, but the consumer is already running', { groupId })
+    if (manualConsumer) {
+      logger.warn('consumer#run was called, but the consumer is already running')
       return
     }
 
     const start = async onCrash => {
-      logger.info('Starting', { groupId })
+      logger.info('Starting')
 
-      consumerGroup = new ConsumerGroup({
+      manualConsumer = new ManualConsumer({
         logger: rootLogger,
         topics: keys(topics),
         topicConfigurations: topics,
         retry,
         cluster,
-        groupId,
-        assigners,
-        sessionTimeout,
-        rebalanceTimeout,
         maxBytesPerPartition,
         minBytes,
         maxBytes,
@@ -221,18 +190,13 @@ module.exports = ({
         isolationLevel,
         rackId,
         metadataMaxAge,
-        autoCommit,
-        autoCommitInterval,
-        autoCommitThreshold,
       })
 
       runner = new Runner({
         logger: rootLogger,
-        consumerGroup,
+        manualConsumer,
         instrumentationEmitter,
-        heartbeatInterval,
         retry,
-        autoCommit,
         eachBatchAutoResolve,
         eachBatch,
         eachMessage,
@@ -245,7 +209,6 @@ module.exports = ({
 
     const onCrash = async e => {
       logger.error(`Crash: ${e.name}: ${e.message}`, {
-        groupId,
         retryCount: e.retryCount,
         stack: e.stack,
       })
@@ -276,7 +239,6 @@ module.exports = ({
               {
                 error: error.message || error,
                 cause: e.message || e,
-                groupId,
               }
             )
 
@@ -285,7 +247,6 @@ module.exports = ({
 
       instrumentationEmitter.emit(CRASH, {
         error: e,
-        groupId,
         restart: shouldRestart,
       })
 
@@ -294,7 +255,6 @@ module.exports = ({
         logger.error(`Restarting the consumer in ${retryTime}ms`, {
           retryCount: e.retryCount,
           retryTime,
-          groupId,
         })
 
         restartTimeout = setTimeout(() => start(onCrash), retryTime)
@@ -304,7 +264,7 @@ module.exports = ({
     await start(onCrash)
   }
 
-  /** @type {import("../../types").Consumer["on"]} */
+  /** @type {import("../../types").ManualConsumer["on"]} */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {
       throw new KafkaJSNonRetriableError(`Event name should be one of ${eventKeys}`)
@@ -321,69 +281,7 @@ module.exports = ({
     })
   }
 
-  /**
-   * @type {import("../../types").Consumer["commitOffsets"]}
-   * @param topicPartitions
-   *   Example: [{ topic: 'topic-name', partition: 0, offset: '1', metadata: 'event-id-3' }]
-   */
-  const commitOffsets = async (topicPartitions = []) => {
-    const commitsByTopic = topicPartitions.reduce(
-      (payload, { topic, partition, offset, metadata = null }) => {
-        if (!topic) {
-          throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
-        }
-
-        if (isNaN(partition)) {
-          throw new KafkaJSNonRetriableError(
-            `Invalid partition, expected a number received ${partition}`
-          )
-        }
-
-        let commitOffset
-        try {
-          commitOffset = Long.fromValue(offset)
-        } catch (_) {
-          throw new KafkaJSNonRetriableError(`Invalid offset, expected a long received ${offset}`)
-        }
-
-        if (commitOffset.lessThan(0)) {
-          throw new KafkaJSNonRetriableError('Offset must not be a negative number')
-        }
-
-        if (metadata !== null && typeof metadata !== 'string') {
-          throw new KafkaJSNonRetriableError(
-            `Invalid offset metadata, expected string or null, received ${metadata}`
-          )
-        }
-
-        const topicCommits = payload[topic] || []
-
-        topicCommits.push({ partition, offset: commitOffset, metadata })
-
-        return { ...payload, [topic]: topicCommits }
-      },
-      {}
-    )
-
-    if (!consumerGroup) {
-      throw new KafkaJSNonRetriableError(
-        'Consumer group was not initialized, consumer#run must be called first'
-      )
-    }
-
-    const topics = Object.keys(commitsByTopic)
-
-    return runner.commitOffsets({
-      topics: topics.map(topic => {
-        return {
-          topic,
-          partitions: commitsByTopic[topic],
-        }
-      }),
-    })
-  }
-
-  /** @type {import("../../types").Consumer["seek"]} */
+  /** @type {import("../../types").ManualConsumer["seek"]} */
   const seek = ({ topic, partition, offset }) => {
     if (!topic) {
       throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
@@ -406,27 +304,17 @@ module.exports = ({
       throw new KafkaJSNonRetriableError('Offset must not be a negative number')
     }
 
-    if (!consumerGroup) {
+    if (!manualConsumer) {
       throw new KafkaJSNonRetriableError(
-        'Consumer group was not initialized, consumer#run must be called first'
+        'Consumer was not initialized, consumer#run must be called first'
       )
     }
 
-    consumerGroup.seek({ topic, partition, offset: seekOffset.toString() })
-  }
-
-  /** @type {import("../../types").Consumer["describeGroup"]} */
-  const describeGroup = async () => {
-    const coordinator = await cluster.findGroupCoordinator({ groupId })
-    const retrier = createRetry(retry)
-    return retrier(async () => {
-      const { groups } = await coordinator.describeGroups({ groupIds: [groupId] })
-      return groups.find(group => group.groupId === groupId)
-    })
+    manualConsumer.seek({ topic, partition, offset: seekOffset.toString() })
   }
 
   /**
-   * @type {import("../../types").Consumer["pause"]}
+   * @type {import("../../types").ManualConsumer["pause"]}
    * @param topicPartitions
    *   Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    */
@@ -446,30 +334,30 @@ module.exports = ({
       }
     }
 
-    if (!consumerGroup) {
+    if (!manualConsumer) {
       throw new KafkaJSNonRetriableError(
-        'Consumer group was not initialized, consumer#run must be called first'
+        'Consumer was not initialized, consumer#run must be called first'
       )
     }
 
-    consumerGroup.pause(topicPartitions)
+    manualConsumer.pause(topicPartitions)
   }
 
   /**
-   * Returns the list of topic partitions paused on this consumer
+   * Returns the list of topic partitions paused on this manualConsumer
    *
-   * @type {import("../../types").Consumer["paused"]}
+   * @type {import("../../types").ManualConsumer["paused"]}
    */
   const paused = () => {
-    if (!consumerGroup) {
+    if (!manualConsumer) {
       return []
     }
 
-    return consumerGroup.paused()
+    return manualConsumer.paused()
   }
 
   /**
-   * @type {import("../../types").Consumer["resume"]}
+   * @type {import("../../types").ManualConsumer["resume"]}
    * @param topicPartitions
    *  Example: [{ topic: 'topic-name', partitions: [1, 2] }]
    */
@@ -489,13 +377,13 @@ module.exports = ({
       }
     }
 
-    if (!consumerGroup) {
+    if (!manualConsumer) {
       throw new KafkaJSNonRetriableError(
-        'Consumer group was not initialized, consumer#run must be called first'
+        'Consumer was not initialized, consumer#run must be called first'
       )
     }
 
-    consumerGroup.resume(topicPartitions)
+    manualConsumer.resume(topicPartitions)
   }
 
   /**
@@ -509,9 +397,7 @@ module.exports = ({
     subscribe,
     stop,
     run,
-    commitOffsets,
     seek,
-    describeGroup,
     pause,
     paused,
     resume,

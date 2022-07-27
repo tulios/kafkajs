@@ -1,5 +1,5 @@
 const createProducer = require('../../producer')
-const createConsumer = require('../index')
+const createManualConsumer = require('../index')
 const {
   secureRandom,
   createCluster,
@@ -7,15 +7,13 @@ const {
   createModPartitioner,
   newLogger,
   waitFor,
-  waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
-describe('Consumer', () => {
-  let topicName, groupId, cluster, producer, consumer
+describe('ManualConsumer', () => {
+  let topicName, cluster, producer, consumer
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
-    groupId = `consumer-group-id-${secureRandom()}`
 
     await createTopic({ topic: topicName })
 
@@ -26,9 +24,8 @@ describe('Consumer', () => {
       logger: newLogger(),
     })
 
-    consumer = createConsumer({
+    consumer = createManualConsumer({
       cluster,
-      groupId,
       logger: newLogger(),
     })
 
@@ -73,87 +70,11 @@ describe('Consumer', () => {
         })
 
       consumer.run({ eachMessage })
-      await waitForConsumerToJoinGroup(consumer)
       await expect(waitFor(() => succeeded)).resolves.toBeTruthy()
 
       // retry the same message
       expect(messages.map(m => m.offset)).toEqual(['0', '0'])
       expect(messages.map(m => m.key.toString())).toEqual([`key-${key1}`, `key-${key1}`])
-    })
-
-    it('commits the previous offsets', async () => {
-      let raisedError = false
-      consumer.run({
-        eachMessage: async event => {
-          if (event.message.key.toString() === `key-${key3}`) {
-            raisedError = true
-            throw new Error('some error')
-          }
-        },
-      })
-
-      await waitForConsumerToJoinGroup(consumer)
-      await expect(waitFor(() => raisedError)).resolves.toBeTruthy()
-      const coordinator = await cluster.findGroupCoordinator({ groupId })
-      const offsets = await coordinator.offsetFetch({
-        groupId,
-        topics: [
-          {
-            topic: topicName,
-            partitions: [{ partition: 0 }],
-          },
-        ],
-      })
-
-      expect(offsets).toEqual({
-        clientSideThrottleTime: expect.optional(0),
-        throttleTime: 0,
-        errorCode: 0,
-        responses: [
-          {
-            partitions: [{ errorCode: 0, metadata: '', offset: '2', partition: 0 }],
-            topic: topicName,
-          },
-        ],
-      })
-    })
-
-    it('does not commit the offset if autoCommit=false', async () => {
-      let raisedError = false
-      consumer.run({
-        autoCommit: false,
-        eachMessage: async event => {
-          if (event.message.key.toString() === `key-${key3}`) {
-            raisedError = true
-            throw new Error('some error')
-          }
-        },
-      })
-
-      await waitForConsumerToJoinGroup(consumer)
-      await expect(waitFor(() => raisedError)).resolves.toBeTruthy()
-      const coordinator = await cluster.findGroupCoordinator({ groupId })
-      const offsets = await coordinator.offsetFetch({
-        groupId,
-        topics: [
-          {
-            topic: topicName,
-            partitions: [{ partition: 0 }],
-          },
-        ],
-      })
-
-      expect(offsets).toEqual({
-        clientSideThrottleTime: expect.optional(0),
-        throttleTime: 0,
-        errorCode: 0,
-        responses: [
-          {
-            partitions: [{ errorCode: 0, metadata: '', offset: '-1', partition: 0 }], // the offset stays the same
-            topic: topicName,
-          },
-        ],
-      })
     })
   })
 
@@ -191,7 +112,6 @@ describe('Consumer', () => {
 
       consumer.run({ eachBatch })
 
-      await waitForConsumerToJoinGroup(consumer)
       await expect(waitFor(() => succeeded)).resolves.toBeTruthy()
 
       // retry the same batch
@@ -201,46 +121,6 @@ describe('Consumer', () => {
         `key-${key1}-key-${key2}-key-${key3}`,
         `key-${key1}-key-${key2}-key-${key3}`,
       ])
-    })
-
-    it('commits the previous offsets', async () => {
-      let raisedError = false
-      consumer.run({
-        eachBatch: async ({ batch, resolveOffset }) => {
-          for (const message of batch.messages) {
-            if (message.key.toString() === `key-${key3}`) {
-              raisedError = true
-              throw new Error('some error')
-            }
-            resolveOffset(message.offset)
-          }
-        },
-      })
-
-      await waitForConsumerToJoinGroup(consumer)
-      await expect(waitFor(() => raisedError)).resolves.toBeTruthy()
-      const coordinator = await cluster.findGroupCoordinator({ groupId })
-      const offsets = await coordinator.offsetFetch({
-        groupId,
-        topics: [
-          {
-            topic: topicName,
-            partitions: [{ partition: 0 }],
-          },
-        ],
-      })
-
-      expect(offsets).toEqual({
-        clientSideThrottleTime: expect.optional(0),
-        throttleTime: 0,
-        errorCode: 0,
-        responses: [
-          {
-            partitions: [{ errorCode: 0, metadata: '', offset: '2', partition: 0 }],
-            topic: topicName,
-          },
-        ],
-      })
     })
   })
 })

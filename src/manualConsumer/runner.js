@@ -1,12 +1,12 @@
 const { EventEmitter } = require('events')
 const Long = require('../utils/long')
 const createRetry = require('../retry')
-const { isKafkaJSError, isRebalancing } = require('../errors')
+const { isKafkaJSError } = require('../errors')
 
 const {
-  events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS, REBALANCING },
-} = require('./instrumentationEvents')
-const createFetchManager = require('./fetchManager')
+  events: { FETCH, FETCH_START, START_BATCH_PROCESS, END_BATCH_PROCESS },
+} = require('../consumer/instrumentationEvents')
+const createFetchManager = require('../consumer/fetchManager')
 
 const isSameOffset = (offsetA, offsetB) => Long.fromValue(offsetA).equals(Long.fromValue(offsetB))
 const CONSUMING_START = 'consuming-start'
@@ -16,44 +16,38 @@ module.exports = class Runner extends EventEmitter {
   /**
    * @param {object} options
    * @param {import("../../types").Logger} options.logger
-   * @param {import("./consumerGroup")} options.consumerGroup
+   * @param {import("./manualConsumer")} options.manualConsumer
    * @param {import("../instrumentation/emitter")} options.instrumentationEmitter
    * @param {boolean} [options.eachBatchAutoResolve=true]
    * @param {number} options.concurrency
    * @param {(payload: import("../../types").EachBatchPayload) => Promise<void>} [options.eachBatch]
    * @param {(payload: import("../../types").EachMessagePayload) => Promise<void>} [options.eachMessage]
-   * @param {number} [options.heartbeatInterval]
    * @param {(reason: Error) => void} options.onCrash
    * @param {import("../../types").RetryOptions} [options.retry]
-   * @param {boolean} [options.autoCommit=true]
    */
   constructor({
     logger,
-    consumerGroup,
+    manualConsumer,
     instrumentationEmitter,
     eachBatchAutoResolve = true,
     concurrency,
     eachBatch,
     eachMessage,
-    heartbeatInterval,
     onCrash,
     retry,
-    autoCommit = true,
   }) {
     super()
     this.logger = logger.namespace('Runner')
-    this.consumerGroup = consumerGroup
+    this.manualConsumer = manualConsumer
     this.instrumentationEmitter = instrumentationEmitter
     this.eachBatchAutoResolve = eachBatchAutoResolve
     this.eachBatch = eachBatch
     this.eachMessage = eachMessage
-    this.heartbeatInterval = heartbeatInterval
     this.retrier = createRetry(Object.assign({}, retry))
     this.onCrash = onCrash
-    this.autoCommit = autoCommit
     this.fetchManager = createFetchManager({
       logger: this.logger,
-      getNodeIds: () => this.consumerGroup.getNodeIds(),
+      getNodeIds: () => this.manualConsumer.getNodeIds(),
       fetch: nodeId => this.fetch(nodeId),
       handler: batch => this.handleBatch(batch),
       concurrency,
@@ -80,8 +74,8 @@ module.exports = class Runner extends EventEmitter {
     }
 
     try {
-      await this.consumerGroup.connect()
-      await this.consumerGroup.joinAndSync()
+      await this.manualConsumer.connect()
+      await this.manualConsumer.assignPartitions()
     } catch (e) {
       return this.onCrash(e)
     }
@@ -94,10 +88,7 @@ module.exports = class Runner extends EventEmitter {
     if (!this.running) {
       this.consuming = false
 
-      this.logger.info('consumer not running, exiting', {
-        groupId: this.consumerGroup.groupId,
-        memberId: this.consumerGroup.memberId,
-      })
+      this.logger.info('consumer not running, exiting')
 
       return
     }
@@ -112,34 +103,6 @@ module.exports = class Runner extends EventEmitter {
       try {
         await this.fetchManager.start()
       } catch (e) {
-        if (isRebalancing(e)) {
-          this.logger.warn('The group is rebalancing, re-joining', {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            error: e.message,
-          })
-
-          this.instrumentationEmitter.emit(REBALANCING, {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-          })
-
-          await this.consumerGroup.joinAndSync()
-          return
-        }
-
-        if (e.type === 'UNKNOWN_MEMBER_ID') {
-          this.logger.error('The coordinator is not aware of this member, re-joining the group', {
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            error: e.message,
-          })
-
-          this.consumerGroup.memberId = null
-          await this.consumerGroup.joinAndSync()
-          return
-        }
-
         if (e.name === 'KafkaJSNotImplemented') {
           return bail(e)
         }
@@ -149,8 +112,6 @@ module.exports = class Runner extends EventEmitter {
         }
 
         this.logger.debug('Error while scheduling fetch manager, trying again...', {
-          groupId: this.consumerGroup.groupId,
-          memberId: this.consumerGroup.memberId,
           error: e.message,
           stack: e.stack,
           retryCount,
@@ -175,17 +136,13 @@ module.exports = class Runner extends EventEmitter {
       return
     }
 
-    this.logger.debug('stop consumer group', {
-      groupId: this.consumerGroup.groupId,
-      memberId: this.consumerGroup.memberId,
-    })
+    this.logger.debug('stop consumer')
 
     this.running = false
 
     try {
       await this.fetchManager.stop()
       await this.waitForConsumer()
-      await this.consumerGroup.leave()
     } catch (e) {}
   }
 
@@ -195,35 +152,21 @@ module.exports = class Runner extends EventEmitter {
         return resolve()
       }
 
-      this.logger.debug('waiting for consumer to finish...', {
-        groupId: this.consumerGroup.groupId,
-        memberId: this.consumerGroup.memberId,
-      })
+      this.logger.debug('waiting for consumer to finish...')
 
       this.once(CONSUMING_STOP, () => resolve())
     })
-  }
-
-  async heartbeat() {
-    try {
-      await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
-    } catch (e) {
-      if (isRebalancing(e)) {
-        await this.autoCommitOffsets()
-      }
-      throw e
-    }
   }
 
   async processEachMessage(batch) {
     const { topic, partition } = batch
 
     const pause = () => {
-      this.consumerGroup.pause([{ topic, partitions: [partition] }])
-      return () => this.consumerGroup.resume([{ topic, partitions: [partition] }])
+      this.manualConsumer.pause([{ topic, partitions: [partition] }])
+      return () => this.manualConsumer.resume([{ topic, partitions: [partition] }])
     }
     for (const message of batch.messages) {
-      if (!this.running || this.consumerGroup.hasSeekOffset({ topic, partition })) {
+      if (!this.running || this.manualConsumer.hasSeekOffset({ topic, partition })) {
         break
       }
 
@@ -232,7 +175,6 @@ module.exports = class Runner extends EventEmitter {
           topic,
           partition,
           message,
-          heartbeat: () => this.heartbeat(),
           pause,
         })
       } catch (e) {
@@ -245,17 +187,12 @@ module.exports = class Runner extends EventEmitter {
             error: e,
           })
         }
-
-        // In case of errors, commit the previously consumed offsets unless autoCommit is disabled
-        await this.autoCommitOffsets()
         throw e
       }
 
-      this.consumerGroup.resolveOffset({ topic, partition, offset: message.offset })
-      await this.heartbeat()
-      await this.autoCommitOffsetsIfNecessary()
+      this.manualConsumer.resolveOffset({ topic, partition, offset: message.offset })
 
-      if (this.consumerGroup.isPaused(topic, partition)) {
+      if (this.manualConsumer.isPaused(topic, partition)) {
         break
       }
     }
@@ -266,8 +203,8 @@ module.exports = class Runner extends EventEmitter {
     const lastFilteredMessage = batch.messages[batch.messages.length - 1]
 
     const pause = () => {
-      this.consumerGroup.pause([{ topic, partitions: [partition] }])
-      return () => this.consumerGroup.resume([{ topic, partitions: [partition] }])
+      this.manualConsumer.pause([{ topic, partitions: [partition] }])
+      return () => this.manualConsumer.resume([{ topic, partitions: [partition] }])
     }
 
     try {
@@ -292,27 +229,11 @@ module.exports = class Runner extends EventEmitter {
               ? batch.lastOffset()
               : offset
 
-          this.consumerGroup.resolveOffset({ topic, partition, offset: offsetToResolve })
+          this.manualConsumer.resolveOffset({ topic, partition, offset: offsetToResolve })
         },
-        heartbeat: () => this.heartbeat(),
-        /**
-         * Pause consumption for the current topic-partition being processed
-         */
         pause,
-        /**
-         * Commit offsets if provided. Otherwise commit most recent resolved offsets
-         * if the autoCommit conditions are met.
-         *
-         * @param {import('../../types').OffsetsByTopicPartition} [offsets] Optional.
-         */
-        commitOffsetsIfNecessary: async offsets => {
-          return offsets
-            ? this.consumerGroup.commitOffsets(offsets)
-            : this.consumerGroup.commitOffsetsIfNecessary()
-        },
-        uncommittedOffsets: () => this.consumerGroup.uncommittedOffsets(),
         isRunning: () => this.running,
-        isStale: () => this.consumerGroup.hasSeekOffset({ topic, partition }),
+        isStale: () => this.manualConsumer.hasSeekOffset({ topic, partition }),
       })
     } catch (e) {
       if (!isKafkaJSError(e)) {
@@ -324,26 +245,19 @@ module.exports = class Runner extends EventEmitter {
           error: e,
         })
       }
-
-      // eachBatch has a special resolveOffset which can be used
-      // to keep track of the messages
-      await this.autoCommitOffsets()
       throw e
     }
 
     // resolveOffset for the last offset can be disabled to allow the users of eachBatch to
     // stop their consumers without resolving unprocessed offsets (issues/18)
     if (this.eachBatchAutoResolve) {
-      this.consumerGroup.resolveOffset({ topic, partition, offset: batch.lastOffset() })
+      this.manualConsumer.resolveOffset({ topic, partition, offset: batch.lastOffset() })
     }
   }
 
   async fetch(nodeId) {
     if (!this.running) {
-      this.logger.debug('consumer not running, exiting', {
-        groupId: this.consumerGroup.groupId,
-        memberId: this.consumerGroup.memberId,
-      })
+      this.logger.debug('consumer not running, exiting')
 
       return []
     }
@@ -352,7 +266,7 @@ module.exports = class Runner extends EventEmitter {
 
     this.instrumentationEmitter.emit(FETCH_START, { nodeId })
 
-    const batches = await this.consumerGroup.fetch(nodeId)
+    const batches = await this.manualConsumer.fetch(nodeId)
 
     this.instrumentationEmitter.emit(FETCH, {
       /**
@@ -368,19 +282,12 @@ module.exports = class Runner extends EventEmitter {
       nodeId,
     })
 
-    if (batches.length === 0) {
-      await this.heartbeat()
-    }
-
     return batches
   }
 
   async handleBatch(batch) {
     if (!this.running) {
-      this.logger.debug('consumer not running, exiting', {
-        groupId: this.consumerGroup.groupId,
-        memberId: this.consumerGroup.memberId,
-      })
+      this.logger.debug('consumer not running, exiting')
 
       return
     }
@@ -408,7 +315,7 @@ module.exports = class Runner extends EventEmitter {
 
       /**
        * If the batch contained only control records or only aborted messages then we still
-       * need to resolve and auto-commit to ensure the consumer can move forward.
+       * need to resolve to ensure the consumer can move forward.
        *
        * We also need to emit batch instrumentation events to allow any listeners keeping
        * track of offsets to know about the latest point of consumption.
@@ -419,25 +326,19 @@ module.exports = class Runner extends EventEmitter {
        */
       if (batch.isEmptyDueToFiltering()) {
         this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
-
-        this.consumerGroup.resolveOffset({
+        this.manualConsumer.resolveOffset({
           topic: batch.topic,
           partition: batch.partition,
           offset: batch.lastOffset(),
         })
-        await this.autoCommitOffsetsIfNecessary()
-
         this.instrumentationEmitter.emit(END_BATCH_PROCESS, {
           ...payload,
           duration: Date.now() - startBatchProcess,
         })
-
-        await this.heartbeat()
         return
       }
 
       if (batch.isEmpty()) {
-        await this.heartbeat()
         return
       }
 
@@ -453,66 +354,8 @@ module.exports = class Runner extends EventEmitter {
         ...payload,
         duration: Date.now() - startBatchProcess,
       })
-
-      await this.autoCommitOffsets()
-      await this.heartbeat()
     }
 
     await onBatch(batch)
-  }
-
-  autoCommitOffsets() {
-    if (this.autoCommit) {
-      return this.consumerGroup.commitOffsets()
-    }
-  }
-
-  autoCommitOffsetsIfNecessary() {
-    if (this.autoCommit) {
-      return this.consumerGroup.commitOffsetsIfNecessary()
-    }
-  }
-
-  commitOffsets(offsets) {
-    if (!this.running) {
-      this.logger.debug('consumer not running, exiting', {
-        groupId: this.consumerGroup.groupId,
-        memberId: this.consumerGroup.memberId,
-        offsets,
-      })
-      return
-    }
-
-    return this.retrier(async (bail, retryCount, retryTime) => {
-      try {
-        await this.consumerGroup.commitOffsets(offsets)
-      } catch (e) {
-        if (!this.running) {
-          this.logger.debug('consumer not running, exiting', {
-            error: e.message,
-            groupId: this.consumerGroup.groupId,
-            memberId: this.consumerGroup.memberId,
-            offsets,
-          })
-          return
-        }
-
-        if (e.name === 'KafkaJSNotImplemented') {
-          return bail(e)
-        }
-
-        this.logger.debug('Error while committing offsets, trying again...', {
-          groupId: this.consumerGroup.groupId,
-          memberId: this.consumerGroup.memberId,
-          error: e.message,
-          stack: e.stack,
-          retryCount,
-          retryTime,
-          offsets,
-        })
-
-        throw e
-      }
-    })
   }
 }

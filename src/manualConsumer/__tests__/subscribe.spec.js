@@ -5,22 +5,18 @@ const {
   createTopic,
   waitForMessages,
   createModPartitioner,
-  waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
-const createConsumer = require('../index')
+const createManualConsumer = require('../index')
 const createProducer = require('../../producer')
 
-describe('Consumer', () => {
-  let groupId, cluster, consumer, producer
+describe('ManualConsumer', () => {
+  let cluster, consumer, producer
 
   beforeEach(async () => {
-    groupId = `consumer-group-id-${secureRandom()}`
-
     cluster = createCluster()
-    consumer = createConsumer({
+    consumer = createManualConsumer({
       cluster,
-      groupId,
       maxWaitTimeInMs: 1,
       maxBytesPerPartition: 180,
       logger: newLogger(),
@@ -61,7 +57,6 @@ describe('Consumer', () => {
       })
 
       consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
-      await waitForConsumerToJoinGroup(consumer)
 
       await producer.connect()
       await producer.sendBatch({
@@ -107,7 +102,6 @@ describe('Consumer', () => {
           await consumer.subscribe({ topic, fromBeginning: true })
 
           consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
-          await waitForConsumerToJoinGroup(consumer)
 
           await producer.connect()
           await producer.sendBatch({
@@ -140,7 +134,6 @@ describe('Consumer', () => {
           })
 
           consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
-          await waitForConsumerToJoinGroup(consumer)
 
           await producer.connect()
           await producer.sendBatch({

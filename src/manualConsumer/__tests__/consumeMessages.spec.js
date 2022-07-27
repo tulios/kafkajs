@@ -1,8 +1,7 @@
 jest.setTimeout(30000)
 
-const createAdmin = require('../../admin')
 const createProducer = require('../../producer')
-const createConsumer = require('../index')
+const createManualConsumer = require('../index')
 const { Types } = require('../../protocol/message/compression')
 const ISOLATION_LEVEL = require('../../protocol/isolationLevel')
 const sleep = require('../../utils/sleep')
@@ -17,24 +16,18 @@ const {
   waitForMessages,
   waitForNextEvent,
   testIfKafkaAtLeast_0_11,
-  waitForConsumerToJoinGroup,
   generateMessages,
 } = require('testHelpers')
 
-describe('Consumer', () => {
-  let topicName, groupId, cluster, producer, consumer, admin
+describe('ManualConsumer', () => {
+  let topicName, cluster, producer, consumer
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
-    groupId = `consumer-group-id-${secureRandom()}`
 
     await createTopic({ topic: topicName })
 
     cluster = createCluster()
-    admin = createAdmin({
-      cluster,
-      logger: newLogger(),
-    })
 
     producer = createProducer({
       cluster,
@@ -42,16 +35,14 @@ describe('Consumer', () => {
       logger: newLogger(),
     })
 
-    consumer = createConsumer({
+    consumer = createManualConsumer({
       cluster,
-      groupId,
       maxWaitTimeInMs: 100,
       logger: newLogger(),
     })
   })
 
   afterEach(async () => {
-    admin && (await admin.disconnect())
     consumer && (await consumer.disconnect())
     producer && (await producer.disconnect())
   })
@@ -65,7 +56,6 @@ describe('Consumer', () => {
 
     const messagesConsumed = []
     consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
-    await waitForConsumerToJoinGroup(consumer)
 
     const messages = Array(100)
       .fill()
@@ -136,8 +126,6 @@ describe('Consumer', () => {
       },
     })
 
-    await waitForConsumerToJoinGroup(consumer)
-
     const messages = Array(100)
       .fill()
       .map(() => {
@@ -151,112 +139,6 @@ describe('Consumer', () => {
     expect(hitConcurrencyLimit).toBeTrue()
   })
 
-  it('concurrent heartbeats are consolidated and respect heartbeatInterval', async () => {
-    const partitionsConsumedConcurrently = 5
-    const numberPartitions = 10
-    const heartbeatInterval = 50
-    consumer = createConsumer({
-      cluster,
-      groupId,
-      maxWaitTimeInMs: 0,
-      heartbeatInterval,
-      logger: newLogger(),
-    })
-    topicName = `test-topic-${secureRandom()}`
-    await createTopic({
-      topic: topicName,
-      partitions: numberPartitions,
-    })
-    await consumer.connect()
-    await producer.connect()
-
-    let then = Date.now()
-    const heartbeats = []
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
-    consumer.on(consumer.events.HEARTBEAT, () => {
-      const now = Date.now()
-      heartbeats.push(now - then)
-      then = now
-    })
-
-    const messagesConsumed = []
-    consumer.run({
-      partitionsConsumedConcurrently,
-      eachBatch: async ({ batch: { messages }, heartbeat }) => {
-        for (const event of messages) {
-          await Promise.all([heartbeat(), heartbeat()])
-          await sleep(1)
-          messagesConsumed.push(event)
-        }
-      },
-    })
-
-    await waitForConsumerToJoinGroup(consumer)
-
-    const messages = Array(200)
-      .fill()
-      .map(() => {
-        const value = secureRandom()
-        return { key: `key-${value}`, value: `value-${value}` }
-      })
-
-    await producer.send({ acks: 1, topic: topicName, messages })
-    await waitForMessages(messagesConsumed, { number: messages.length })
-
-    expect(messagesConsumed.length).toEqual(messages.length)
-    for (const deltaTime of heartbeats) {
-      expect(deltaTime).toBeGreaterThanOrEqual(heartbeatInterval)
-    }
-  })
-
-  it('heartbeats are exposed in the eachMessage handler', async () => {
-    consumer = createConsumer({
-      cluster,
-      groupId,
-      heartbeatInterval: 50,
-      logger: newLogger(),
-    })
-
-    topicName = `test-topic-${secureRandom()}`
-    await createTopic({
-      topic: topicName,
-      partitions: 1,
-    })
-
-    await consumer.connect()
-    await producer.connect()
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
-
-    const messagesConsumed = []
-
-    let heartbeats = 0
-    consumer.on(consumer.events.HEARTBEAT, () => {
-      heartbeats++
-    })
-
-    consumer.run({
-      eachMessage: async payload => {
-        await new Promise(resolve => {
-          setTimeout(resolve, 100)
-        })
-
-        await payload.heartbeat()
-        messagesConsumed.push(payload.message)
-
-        await new Promise(resolve => {
-          setTimeout(resolve, 100)
-        })
-      },
-    })
-
-    await waitForConsumerToJoinGroup(consumer)
-
-    await producer.send({ acks: 1, topic: topicName, messages: [{ key: 'value', value: 'value' }] })
-    await waitForMessages(messagesConsumed, { number: 1 })
-
-    expect(heartbeats).toBe(1)
-  })
-
   it('consume GZIP messages', async () => {
     await consumer.connect()
     await producer.connect()
@@ -264,7 +146,6 @@ describe('Consumer', () => {
 
     const messagesConsumed = []
     consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
-    await waitForConsumerToJoinGroup(consumer)
 
     const key1 = secureRandom()
     const message1 = { key: `key-${key1}`, value: `value-${key1}` }
@@ -308,20 +189,11 @@ describe('Consumer', () => {
     const batchesConsumed = []
     const functionsExposed = []
     consumer.run({
-      eachBatch: async ({
-        batch,
-        resolveOffset,
-        heartbeat,
-        isRunning,
-        isStale,
-        uncommittedOffsets,
-      }) => {
+      eachBatch: async ({ batch, resolveOffset, isRunning, isStale }) => {
         batchesConsumed.push(batch)
-        functionsExposed.push(resolveOffset, heartbeat, isRunning, isStale, uncommittedOffsets)
+        functionsExposed.push(resolveOffset, isRunning, isStale)
       },
     })
-
-    await waitForConsumerToJoinGroup(consumer)
 
     const key1 = secureRandom()
     const message1 = { key: `key-${key1}`, value: `value-${key1}` }
@@ -354,69 +226,7 @@ describe('Consumer', () => {
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
-      expect.any(Function),
-      expect.any(Function),
     ])
-  })
-
-  it('commits the last offsets processed before stopping', async () => {
-    jest.spyOn(cluster, 'refreshMetadataIfNecessary')
-
-    await Promise.all([admin.connect(), consumer.connect(), producer.connect()])
-    await consumer.subscribe({ topic: topicName, fromBeginning: true })
-
-    const messagesConsumed = []
-    consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
-    await waitForConsumerToJoinGroup(consumer)
-
-    // stop the consumer right after processing the batch, the offsets should be
-    // committed in the end
-    consumer.on(consumer.events.END_BATCH_PROCESS, async () => {
-      await consumer.stop()
-    })
-
-    const messages = Array(100)
-      .fill()
-      .map(() => {
-        const value = secureRandom()
-        return { key: `key-${value}`, value: `value-${value}` }
-      })
-
-    await producer.send({ acks: 1, topic: topicName, messages })
-    await waitForMessages(messagesConsumed, { number: messages.length })
-
-    expect(cluster.refreshMetadataIfNecessary).toHaveBeenCalled()
-
-    expect(messagesConsumed[0]).toEqual(
-      expect.objectContaining({
-        topic: topicName,
-        partition: 0,
-        message: expect.objectContaining({
-          key: Buffer.from(messages[0].key),
-          value: Buffer.from(messages[0].value),
-          offset: '0',
-        }),
-      })
-    )
-
-    expect(messagesConsumed[messagesConsumed.length - 1]).toEqual(
-      expect.objectContaining({
-        topic: topicName,
-        partition: 0,
-        message: expect.objectContaining({
-          key: Buffer.from(messages[messages.length - 1].key),
-          value: Buffer.from(messages[messages.length - 1].value),
-          offset: '99',
-        }),
-      })
-    )
-
-    // check if all offsets are present
-    expect(messagesConsumed.map(m => m.message.offset)).toEqual(messages.map((_, i) => `${i}`))
-    const response = await admin.fetchOffsets({ groupId, topics: [topicName] })
-    const { partitions } = response.find(({ topic }) => topic === topicName)
-    const partition = partitions.find(({ partition }) => partition === 0)
-    expect(partition.offset).toEqual('100') // check if offsets were committed
   })
 
   testIfKafkaAtLeast_0_11('consume messages with 0.11 format', async () => {
@@ -430,9 +240,8 @@ describe('Consumer', () => {
       logger: newLogger(),
     })
 
-    consumer = createConsumer({
+    consumer = createManualConsumer({
       cluster,
-      groupId,
       maxWaitTimeInMs: 100,
       logger: newLogger(),
     })
@@ -446,7 +255,6 @@ describe('Consumer', () => {
 
     const messagesConsumed = []
     consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
-    await waitForConsumerToJoinGroup(consumer)
 
     const generateMessagesWitHeaders = () =>
       generateMessages({ number: 103 }).map((message, i) => ({
@@ -563,9 +371,8 @@ describe('Consumer', () => {
       logger: newLogger(),
     })
 
-    consumer = createConsumer({
+    consumer = createManualConsumer({
       cluster,
-      groupId,
       maxWaitTimeInMs: 100,
       logger: newLogger(),
     })
@@ -576,7 +383,6 @@ describe('Consumer', () => {
 
     const messagesConsumed = []
     consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
-    await waitForConsumerToJoinGroup(consumer)
 
     const key1 = secureRandom()
     const message1 = {
@@ -642,8 +448,6 @@ describe('Consumer', () => {
       },
     })
 
-    await waitForConsumerToJoinGroup(consumer)
-
     const key1 = secureRandom()
     const message1 = { key: `key-${key1}`, value: `value-${key1}` }
     const key2 = secureRandom()
@@ -658,9 +462,8 @@ describe('Consumer', () => {
 
   describe('discarding messages after seeking', () => {
     it('stops consuming messages when fetched batch has gone stale', async () => {
-      consumer = createConsumer({
+      consumer = createManualConsumer({
         cluster: createCluster(),
-        groupId,
         logger: newLogger(),
 
         // make sure we fetch a batch of messages
@@ -698,9 +501,8 @@ describe('Consumer', () => {
     })
 
     it('resolves a batch as stale when seek was called while processing it', async () => {
-      consumer = createConsumer({
+      consumer = createManualConsumer({
         cluster: createCluster(),
-        groupId,
         logger: newLogger(),
 
         // make sure we fetch a batch of messages
@@ -723,7 +525,7 @@ describe('Consumer', () => {
       const offsetsConsumed = []
 
       consumer.run({
-        eachBatch: async ({ batch, isStale, heartbeat, resolveOffset }) => {
+        eachBatch: async ({ batch, isStale, resolveOffset }) => {
           for (const message of batch.messages) {
             if (isStale()) break
 
@@ -734,7 +536,6 @@ describe('Consumer', () => {
             }
 
             resolveOffset(message.offset)
-            await heartbeat()
           }
         },
       })
@@ -745,9 +546,8 @@ describe('Consumer', () => {
     })
 
     it('skips messages fetched while seek was called', async () => {
-      consumer = createConsumer({
+      consumer = createManualConsumer({
         cluster: createCluster(),
-        groupId,
         maxWaitTimeInMs: 1000,
         logger: newLogger(),
       })
@@ -767,19 +567,15 @@ describe('Consumer', () => {
 
       const offsetsConsumed = []
 
-      const eachBatch = async ({ batch, heartbeat }) => {
+      const eachBatch = async ({ batch }) => {
         for (const message of batch.messages) {
           offsetsConsumed.push(message.offset)
         }
-
-        await heartbeat()
       }
 
       consumer.run({
         eachBatch,
       })
-
-      await waitForConsumerToJoinGroup(consumer)
 
       await waitFor(() => offsetsConsumed.length === messages.length, { delay: 50 })
       await waitForNextEvent(consumer, consumer.events.FETCH_START)
@@ -795,9 +591,8 @@ describe('Consumer', () => {
   })
 
   it('discards messages received when pausing while fetch is in-flight', async () => {
-    consumer = createConsumer({
+    consumer = createManualConsumer({
       cluster: createCluster(),
-      groupId,
       maxWaitTimeInMs: 200,
       logger: newLogger(),
     })
@@ -817,19 +612,16 @@ describe('Consumer', () => {
 
     const offsetsConsumed = []
 
-    const eachBatch = async ({ batch, heartbeat }) => {
+    const eachBatch = async ({ batch }) => {
       for (const message of batch.messages) {
         offsetsConsumed.push(message.offset)
       }
-
-      await heartbeat()
     }
 
     consumer.run({
       eachBatch,
     })
 
-    await waitForConsumerToJoinGroup(consumer)
     await waitFor(() => offsetsConsumed.length === messages.length, { delay: 50 })
     await waitForNextEvent(consumer, consumer.events.FETCH_START)
 
@@ -853,9 +645,8 @@ describe('Consumer', () => {
         maxInFlightRequests: 1,
       })
 
-      consumer = createConsumer({
+      consumer = createManualConsumer({
         cluster,
-        groupId,
         maxWaitTimeInMs: 100,
         logger: newLogger(),
       })
@@ -872,7 +663,6 @@ describe('Consumer', () => {
       consumer.run({
         eachMessage: async event => messagesConsumed.push(event),
       })
-      await waitForConsumerToJoinGroup(consumer)
 
       await producer.sendBatch({
         topicMessages: [{ topic: topicName, messages: idempotentMessages }],
@@ -898,9 +688,8 @@ describe('Consumer', () => {
         maxInFlightRequests: 1,
       })
 
-      consumer = createConsumer({
+      consumer = createManualConsumer({
         cluster,
-        groupId,
         maxWaitTimeInMs: 100,
         logger: newLogger(),
       })
@@ -921,7 +710,6 @@ describe('Consumer', () => {
       consumer.run({
         eachMessage: async event => messagesConsumed.push(event),
       })
-      await waitForConsumerToJoinGroup(consumer)
 
       // We can send non-transaction messages
       await producer.sendBatch({
@@ -974,9 +762,8 @@ describe('Consumer', () => {
         maxInFlightRequests: 1,
       })
 
-      consumer = createConsumer({
+      consumer = createManualConsumer({
         cluster,
-        groupId,
         maxWaitTimeInMs: 100,
         logger: newLogger(),
       })
@@ -997,7 +784,6 @@ describe('Consumer', () => {
       consumer.run({
         eachMessage: async event => messagesConsumed.push(event),
       })
-      await waitForConsumerToJoinGroup(consumer)
 
       const abortedTxn1 = await producer.transaction()
       await abortedTxn1.sendBatch({
@@ -1046,9 +832,8 @@ describe('Consumer', () => {
           maxInFlightRequests: 1,
         })
 
-        consumer = createConsumer({
+        consumer = createManualConsumer({
           cluster,
-          groupId,
           maxWaitTimeInMs: 100,
           logger: newLogger(),
           isolationLevel,
@@ -1067,7 +852,6 @@ describe('Consumer', () => {
         consumer.run({
           eachMessage: async event => messagesConsumed.push(event),
         })
-        await waitForConsumerToJoinGroup(consumer)
 
         const abortedTxn1 = await producer.transaction()
         await abortedTxn1.sendBatch({
@@ -1085,233 +869,6 @@ describe('Consumer', () => {
         expect(messagesConsumed[messagesConsumed.length - 1].message.value.toString()).toMatch(
           /value-aborted-txn1-99/
         )
-      }
-    )
-
-    testIfKafkaAtLeast_0_11(
-      'respects offsets sent by a committed transaction ("consume-transform-produce" flow)',
-      async () => {
-        cluster = createCluster()
-        producer = createProducer({
-          cluster,
-          logger: newLogger(),
-          transactionalId: `transactional-id-${secureRandom()}`,
-          maxInFlightRequests: 1,
-        })
-
-        consumer = createConsumer({
-          cluster,
-          groupId,
-          maxWaitTimeInMs: 100,
-          logger: newLogger(),
-        })
-
-        await consumer.connect()
-        await producer.connect()
-        await consumer.subscribe({ topic: topicName, fromBeginning: true })
-
-        // 1. Run consumer with "autoCommit=false"
-
-        let messagesConsumed = []
-        let uncommittedOffsetsPerMessage = []
-        let getCurrentUncommittedOffsets
-
-        const eachBatch = async ({ batch, uncommittedOffsets, heartbeat, resolveOffset }) => {
-          for (const message of batch.messages) {
-            messagesConsumed.push(message)
-            resolveOffset(message.offset)
-            uncommittedOffsetsPerMessage.push(uncommittedOffsets())
-            getCurrentUncommittedOffsets = uncommittedOffsets
-          }
-
-          await heartbeat()
-        }
-
-        consumer.run({
-          autoCommit: false,
-          eachBatch,
-        })
-        await waitForConsumerToJoinGroup(consumer)
-
-        // 2. Produce messages and consume
-
-        const partition = 0
-        const messages = generateMessages().map(message => ({
-          ...message,
-          partition,
-        }))
-        await producer.send({
-          acks: 1,
-          topic: topicName,
-          messages,
-        })
-
-        const number = messages.length
-        await waitForMessages(messagesConsumed, {
-          number,
-        })
-
-        expect(messagesConsumed[0].value.toString()).toMatch(/value-0/)
-        expect(messagesConsumed[99].value.toString()).toMatch(/value-99/)
-        expect(uncommittedOffsetsPerMessage).toHaveLength(messagesConsumed.length)
-
-        // 3. Send offsets in a transaction and commit
-        const txnToCommit = await producer.transaction()
-        await txnToCommit.sendOffsets({
-          consumerGroupId: groupId,
-          topics: uncommittedOffsetsPerMessage[97].topics,
-        })
-        await txnToCommit.commit()
-
-        // Restart consumer
-        await consumer.stop()
-        messagesConsumed = []
-        uncommittedOffsetsPerMessage = []
-
-        consumer.run({ eachBatch, autoCommit: false })
-
-        // Assert we only consume the messages that were after the sent offset
-        await waitForMessages(messagesConsumed, {
-          number: 2,
-        })
-
-        expect(messagesConsumed).toHaveLength(2)
-        expect(messagesConsumed[0].value.toString()).toMatch(/value-98/)
-        expect(messagesConsumed[1].value.toString()).toMatch(/value-99/)
-
-        const lastUncommittedOffsets = uncommittedOffsetsPerMessage.pop()
-        expect(getCurrentUncommittedOffsets()).toEqual(lastUncommittedOffsets)
-        expect(getCurrentUncommittedOffsets()).toEqual({
-          topics: [
-            {
-              topic: topicName,
-              partitions: [{ partition: partition.toString(), offset: '100' }],
-            },
-          ],
-        })
-
-        const txn2ToCommit = await producer.transaction()
-        await txn2ToCommit.sendOffsets({
-          consumerGroupId: groupId,
-          topics: lastUncommittedOffsets.topics,
-        })
-        await txn2ToCommit.commit()
-
-        expect(getCurrentUncommittedOffsets()).toEqual({
-          topics: [],
-        })
-      }
-    )
-
-    testIfKafkaAtLeast_0_11(
-      'does not respect offsets sent by an aborted transaction ("consume-transform-produce" flow)',
-      async () => {
-        cluster = createCluster({
-          isolationLevel: ISOLATION_LEVEL.READ_COMMITTED,
-        })
-        producer = createProducer({
-          cluster,
-          logger: newLogger(),
-          transactionalId: `transactional-id-${secureRandom()}`,
-          maxInFlightRequests: 1,
-        })
-
-        consumer = createConsumer({
-          cluster,
-          groupId,
-          maxWaitTimeInMs: 100,
-          logger: newLogger(),
-          isolationLevel: ISOLATION_LEVEL.READ_COMMITTED,
-        })
-
-        await consumer.connect()
-        await producer.connect()
-        await consumer.subscribe({ topic: topicName, fromBeginning: true })
-
-        // 1. Run consumer with "autoCommit=false"
-
-        let messagesConsumed = []
-        let uncommittedOffsetsPerMessage = []
-        let getCurrentUncommittedOffsets
-
-        const eachBatch = async ({ batch, uncommittedOffsets, heartbeat, resolveOffset }) => {
-          for (const message of batch.messages) {
-            messagesConsumed.push(message)
-            resolveOffset(message.offset)
-            uncommittedOffsetsPerMessage.push(uncommittedOffsets())
-            getCurrentUncommittedOffsets = uncommittedOffsets
-          }
-
-          await heartbeat()
-        }
-
-        consumer.run({
-          autoCommit: false,
-          eachBatch,
-        })
-        await waitForConsumerToJoinGroup(consumer)
-
-        // 2. Produce messages and consume
-
-        const partition = 0
-        const messages = generateMessages().map(message => ({
-          ...message,
-          partition,
-        }))
-        await producer.send({
-          acks: 1,
-          topic: topicName,
-          messages,
-        })
-
-        await waitFor(() => messagesConsumed.length >= messages.length, {
-          ignoreTimeout: false,
-          timeoutMessage: `Failed to consume all produced messages`,
-        })
-        await consumer.stop()
-
-        expect(messagesConsumed[0].value.toString()).toMatch(/value-0/)
-        expect(messagesConsumed[99].value.toString()).toMatch(/value-99/)
-        expect(uncommittedOffsetsPerMessage).toHaveLength(messagesConsumed.length)
-
-        // 3. Send offsets in a transaction and abort
-        const txnToAbort = await producer.transaction()
-        await txnToAbort.sendOffsets({
-          consumerGroupId: groupId,
-          topics: uncommittedOffsetsPerMessage[98].topics,
-        })
-        await txnToAbort.abort()
-
-        // Restart consumer
-        messagesConsumed = []
-        uncommittedOffsetsPerMessage = []
-
-        consumer.run({
-          autoCommit: false,
-          eachBatch,
-        })
-
-        await waitFor(() => messagesConsumed.length >= 1, {
-          ignoreTimeout: false,
-          timeoutMessage: 'Failed to consume any messages after transaction was aborted',
-        })
-
-        expect(messagesConsumed[0].value.toString()).toMatch(/value-0/)
-
-        await waitFor(() => messagesConsumed.length >= messages.length, {
-          ignoreTimeout: false,
-          timeoutMessage: 'Failed to consume all messages after transaction was aborted',
-        })
-
-        expect(messagesConsumed[messagesConsumed.length - 1].value.toString()).toMatch(/value-99/)
-
-        const lastUncommittedOffsets = uncommittedOffsetsPerMessage.pop()
-        expect(getCurrentUncommittedOffsets()).toEqual(lastUncommittedOffsets)
-        expect(getCurrentUncommittedOffsets()).toEqual({
-          topics: [
-            { topic: topicName, partitions: [{ partition: partition.toString(), offset: '100' }] },
-          ],
-        })
       }
     )
   })

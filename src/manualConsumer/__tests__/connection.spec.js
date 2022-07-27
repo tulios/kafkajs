@@ -1,5 +1,5 @@
 const createProducer = require('../../producer')
-const createConsumer = require('../index')
+const createManualConsumer = require('../index')
 
 const {
   secureRandom,
@@ -12,15 +12,13 @@ const {
   sslBrokers,
   saslBrokers,
   waitFor,
-  waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
-describe('Consumer', () => {
-  let topicName, groupId, cluster, producer, consumer
+describe('ManualConsumer', () => {
+  let topicName, cluster, producer, consumer
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
-    groupId = `consumer-group-id-${secureRandom()}`
 
     await createTopic({ topic: topicName })
 
@@ -34,9 +32,8 @@ describe('Consumer', () => {
 
   test('support SSL connections', async () => {
     cluster = createCluster(sslConnectionOpts(), sslBrokers())
-    consumer = createConsumer({
+    consumer = createManualConsumer({
       cluster,
-      groupId,
       maxWaitTimeInMs: 1,
       logger: newLogger(),
     })
@@ -48,9 +45,8 @@ describe('Consumer', () => {
     test(`support SASL ${e.name} connections`, async () => {
       cluster = createCluster(e.opts(), saslBrokers())
 
-      consumer = createConsumer({
+      consumer = createManualConsumer({
         cluster,
-        groupId,
         maxWaitTimeInMs: 1,
         logger: newLogger(),
       })
@@ -60,9 +56,8 @@ describe('Consumer', () => {
   }
 
   test('reconnects the cluster if disconnected', async () => {
-    consumer = createConsumer({
+    consumer = createManualConsumer({
       cluster,
-      groupId,
       maxWaitTimeInMs: 1,
       maxBytesPerPartition: 180,
       logger: newLogger(),
@@ -80,13 +75,11 @@ describe('Consumer', () => {
     await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
     const messages = []
-    consumer.run({
+    await consumer.run({
       eachMessage: async ({ message }) => {
         messages.push(message)
       },
     })
-
-    await waitForConsumerToJoinGroup(consumer)
 
     expect(cluster.isConnected()).toEqual(true)
     await cluster.disconnect()

@@ -1,5 +1,5 @@
 const createProducer = require('../../producer')
-const createConsumer = require('../index')
+const createManualConsumer = require('../index')
 const { KafkaJSNonRetriableError } = require('../../errors')
 
 const {
@@ -8,19 +8,13 @@ const {
   createTopic,
   newLogger,
   waitForMessages,
-  waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
-describe('Consumer', () => {
-  /**
-   * @type {import('../../../types').Consumer}
-   */
-  let consumer
-  let groupId, producer, topics
+describe('ManualConsumer', () => {
+  let producer, consumer, topics
 
   beforeEach(async () => {
     topics = [`test-topic-${secureRandom()}`, `test-topic-${secureRandom()}`]
-    groupId = `consumer-group-id-${secureRandom()}`
 
     for (const topic of topics) {
       await createTopic({ topic, partitions: 2 })
@@ -33,9 +27,8 @@ describe('Consumer', () => {
     })
 
     const consumerCluster = createCluster()
-    consumer = createConsumer({
+    consumer = createManualConsumer({
       cluster: consumerCluster,
-      groupId,
       maxWaitTimeInMs: 1,
       maxBytesPerPartition: 180,
       logger: newLogger(),
@@ -64,7 +57,7 @@ describe('Consumer', () => {
     it('throws an error if Consumer#run has not been called', () => {
       expect(() => consumer.pause([{ topic: 'foo', partitions: [0] }])).toThrow(
         KafkaJSNonRetriableError,
-        'Consumer group was not initialized, consumer#run must be called first'
+        'Consumer was not initialized, consumer#run must be called first'
       )
     })
 
@@ -101,7 +94,6 @@ describe('Consumer', () => {
           })
         },
       })
-      await waitForConsumerToJoinGroup(consumer)
       await waitForMessages(messagesConsumed, { number: 3 })
       const [pausedTopic] = topics
       expect(consumer.paused()).toEqual([{ topic: pausedTopic, partitions: [0] }])
@@ -165,7 +157,6 @@ describe('Consumer', () => {
           }
         },
       })
-      await waitForConsumerToJoinGroup(consumer)
       await waitForMessages(messagesConsumed, { number: 3 })
       const [pausedTopic] = topics
       expect(consumer.paused()).toEqual([{ topic: pausedTopic, partitions: [0] }])
@@ -217,7 +208,6 @@ describe('Consumer', () => {
             batch: { topic, messages },
             pause,
             resolveOffset,
-            commitOffsetsIfNecessary,
           } = event
           messages.every(message => {
             const whichTopic = topics.indexOf(topic)
@@ -239,11 +229,9 @@ describe('Consumer', () => {
             resolveOffset(message.offset)
             return true
           })
-          await commitOffsetsIfNecessary()
         },
         eachBatchAutoResolve: false,
       })
-      await waitForConsumerToJoinGroup(consumer)
       await waitForMessages(messagesConsumed, { number: 5 })
       expect(consumer.paused()).toContainEqual({ topic: topics[0], partitions: [0] })
       expect(consumer.paused()).toContainEqual({ topic: topics[1], partitions: [1] })
@@ -272,7 +260,6 @@ describe('Consumer', () => {
       const messagesConsumed = []
       consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
 
-      await waitForConsumerToJoinGroup(consumer)
       await waitForMessages(messagesConsumed, { number: 2 })
 
       expect(consumer.paused()).toEqual([])
@@ -340,7 +327,6 @@ describe('Consumer', () => {
       const messagesConsumed = []
       consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
 
-      await waitForConsumerToJoinGroup(consumer)
       await waitForMessages(messagesConsumed, { number: messages.length * partitions.length })
 
       expect(consumer.paused()).toEqual([])
@@ -408,8 +394,6 @@ describe('Consumer', () => {
         },
       })
 
-      await waitForConsumerToJoinGroup(consumer)
-
       const consumedMessagesTillError = [
         ...(await waitForMessages(messagesConsumed, { delay: 1000 })),
       ]
@@ -468,8 +452,6 @@ describe('Consumer', () => {
         },
       })
 
-      await waitForConsumerToJoinGroup(consumer)
-
       const consumedMessagesTillError = [
         ...(await waitForMessages(messagesConsumed, { number: 2 })),
       ]
@@ -520,9 +502,8 @@ describe('Consumer', () => {
   describe('when all topics are paused', () => {
     it('does not fetch messages and wait maxWaitTimeInMs per attempt', async () => {
       const consumerCluster = createCluster()
-      consumer = createConsumer({
+      consumer = createManualConsumer({
         cluster: consumerCluster,
-        groupId,
         maxWaitTimeInMs: 100,
         maxBytesPerPartition: 180,
         logger: newLogger(),
@@ -537,7 +518,6 @@ describe('Consumer', () => {
 
       const eachMessage = jest.fn()
       consumer.run({ eachMessage })
-      await waitForConsumerToJoinGroup(consumer)
 
       consumer.pause([{ topic: topic1 }, { topic: topic2 }])
 
@@ -562,7 +542,7 @@ describe('Consumer', () => {
     it('throws an error if Consumer#run has not been called', () => {
       expect(() => consumer.pause([{ topic: 'foo', partitions: [0] }])).toThrow(
         KafkaJSNonRetriableError,
-        'Consumer group was not initialized, consumer#run must be called first'
+        'Consumer was not initialized, consumer#run must be called first'
       )
     })
 
@@ -582,8 +562,6 @@ describe('Consumer', () => {
 
       const [pausedTopic, activeTopic] = topics
       consumer.pause([{ topic: pausedTopic }])
-
-      await waitForConsumerToJoinGroup(consumer)
 
       for (const topic of topics) {
         await producer.send({ acks: 1, topic, messages: [message] })
@@ -632,7 +610,6 @@ describe('Consumer', () => {
       const messagesConsumed = []
       consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
 
-      await waitForConsumerToJoinGroup(consumer)
       await waitForMessages(messagesConsumed, { number: messages.length * partitions.length })
 
       const [pausedPartition, activePartition] = partitions

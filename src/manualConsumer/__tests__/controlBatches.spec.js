@@ -1,6 +1,6 @@
 jest.setTimeout(15000)
 const createProducer = require('../../producer')
-const createConsumer = require('../index')
+const createManualConsumer = require('../index')
 const crypto = require('crypto')
 
 const {
@@ -13,16 +13,14 @@ const {
   waitForMessages,
   waitFor,
   generateMessages,
-  waitForConsumerToJoinGroup,
 } = require('testHelpers')
 
-describe('Consumer', () => {
-  let topicName, groupId, transactionalId, cluster, producer, consumer
+describe('ManualConsumer', () => {
+  let topicName, transactionalId, cluster, producer, consumer
   const maxBytes = 170
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
-    groupId = `consumer-group-id-${secureRandom()}`
     transactionalId = `transaction-id-${secureRandom()}`
 
     await createTopic({ topic: topicName })
@@ -39,9 +37,8 @@ describe('Consumer', () => {
       logger: newLogger(),
     })
 
-    consumer = createConsumer({
+    consumer = createManualConsumer({
       cluster,
-      groupId,
       maxWaitTimeInMs: 100,
       maxBytes,
       maxBytesPerPartition: maxBytes,
@@ -64,17 +61,15 @@ describe('Consumer', () => {
     const messagesConsumed = []
     consumer.run({
       eachBatchAutoResolve: false,
-      eachBatch: async ({ batch, resolveOffset, heartbeat, isRunning, isStale }) => {
+      eachBatch: async ({ batch, resolveOffset, isRunning, isStale }) => {
         for (const message of batch.messages) {
           if (!isRunning() || isStale()) break
           messagesConsumed.push(message)
           resolveOffset(message.offset)
-          await heartbeat()
         }
       },
     })
 
-    await waitForConsumerToJoinGroup(consumer)
     const messagesTransaction1 = generateMessages({ number: 20 })
 
     const transaction = await producer.transaction()

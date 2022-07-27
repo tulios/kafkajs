@@ -1,5 +1,5 @@
 const createProducer = require('../../producer')
-const createConsumer = require('../index')
+const createManualConsumer = require('../index')
 
 const {
   secureRandom,
@@ -8,16 +8,14 @@ const {
   createModPartitioner,
   newLogger,
   waitForMessages,
-  waitForConsumerToJoinGroup,
   addPartitions,
 } = require('testHelpers')
 
-describe('Consumer', () => {
-  let topicName, groupId, producer, consumer1, consumer2
+describe('ManualConsumer', () => {
+  let topicName, producer, consumer
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
-    groupId = `consumer-group-id-${secureRandom()}`
 
     await createTopic({ topic: topicName })
 
@@ -27,45 +25,26 @@ describe('Consumer', () => {
       logger: newLogger(),
     })
 
-    consumer1 = createConsumer({
+    consumer = createManualConsumer({
       cluster: createCluster({ metadataMaxAge: 50 }),
-      groupId,
-      heartbeatInterval: 100,
-      maxWaitTimeInMs: 100,
-      logger: newLogger(),
-    })
-
-    consumer2 = createConsumer({
-      cluster: createCluster({ metadataMaxAge: 3000 }),
-      groupId,
-      heartbeatInterval: 100,
       maxWaitTimeInMs: 100,
       logger: newLogger(),
     })
   })
 
   afterEach(async () => {
-    consumer1 && (await consumer1.disconnect())
-    consumer2 && (await consumer2.disconnect())
+    consumer && (await consumer.disconnect())
     producer && (await producer.disconnect())
   })
 
-  test('trigger rebalance if partitions change after metadata update', async () => {
-    await consumer1.connect()
-    await consumer2.connect()
+  test('consumes newly added partitions after metadata update', async () => {
+    await consumer.connect()
     await producer.connect()
 
-    await consumer1.subscribe({ topic: topicName, fromBeginning: true })
-    await consumer2.subscribe({ topic: topicName, fromBeginning: true })
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
 
     const messagesConsumed = []
-    consumer1.run({ eachMessage: async event => messagesConsumed.push(event) })
-    consumer2.run({ eachMessage: async event => messagesConsumed.push(event) })
-
-    await Promise.all([
-      waitForConsumerToJoinGroup(consumer1),
-      waitForConsumerToJoinGroup(consumer2),
-    ])
+    consumer.run({ eachMessage: async event => messagesConsumed.push(event) })
 
     let messages = Array(2)
       .fill()
