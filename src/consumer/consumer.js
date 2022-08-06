@@ -4,7 +4,8 @@ const arrayDiff = require('../utils/arrayDiff')
 const createRetry = require('../retry')
 const sharedPromiseTo = require('../utils/sharedPromiseTo')
 
-const OffsetManager = require('./offsetManager')
+const GroupOffsetManager = require('./offsetManager/groupOffsetManager')
+const ManualOffsetManager = require('./offsetManager/manualOffsetManager')
 const Batch = require('./batch')
 const SeekOffsets = require('./seekOffsets')
 const SubscriptionState = require('./subscriptionState')
@@ -37,7 +38,7 @@ const PRIVATE = {
   SHARED_HEARTBEAT: Symbol('private:ConsumerGroup:sharedHeartbeat'),
 }
 
-module.exports = class ConsumerGroup {
+module.exports = class Consumer {
   /**
    * @param {object} options
    * @param {import('../../types').RetryOptions} options.retry
@@ -89,7 +90,7 @@ module.exports = class ConsumerGroup {
     this.topics = topics
     this.topicsSubscribed = topics
     this.topicConfigurations = topicConfigurations
-    this.logger = logger.namespace('ConsumerGroup')
+    this.logger = logger.namespace('Consumer')
     this.instrumentationEmitter = instrumentationEmitter
     this.retrier = createRetry(Object.assign({}, retry))
     this.assigners = assigners
@@ -307,7 +308,7 @@ module.exports = class ConsumerGroup {
 
     this.topics = currentMemberAssignment.map(({ topic }) => topic)
     this.subscriptionState.assign(currentMemberAssignment)
-    this.offsetManager = new OffsetManager({
+    this.offsetManager = new GroupOffsetManager({
       cluster: this.cluster,
       topicConfigurations: this.topicConfigurations,
       instrumentationEmitter: this.instrumentationEmitter,
@@ -371,6 +372,41 @@ module.exports = class ConsumerGroup {
     })
   }
 
+  async assignPartitions() {
+    const memberAssignment = this.topics.map(topic => {
+      const partitionMetadata = this.cluster.findTopicPartitionMetadata(topic)
+      return {
+        topic,
+        partitions: partitionMetadata.map(metadata => metadata.partitionId),
+      }
+    })
+    this.subscriptionState.assign(memberAssignment)
+    this.partitionsPerSubscribedTopic = this.generatePartitionsPerSubscribedTopic()
+
+    const offsetManagerMemberAssignment = memberAssignment.reduce(
+      (partitionsByTopic, { topic, partitions }) => ({
+        ...partitionsByTopic,
+        [topic]: partitions,
+      }),
+      {}
+    )
+
+    if (!this.offsetManager) {
+      this.offsetManager = new ManualOffsetManager({
+        cluster: this.cluster,
+        topicConfigurations: this.topicConfigurations,
+        instrumentationEmitter: this.instrumentationEmitter,
+        memberAssignment: offsetManagerMemberAssignment,
+      })
+    } else {
+      // we're re-assigning partitions due to metadata updates:
+      // preserve the resolved offsets for existing partitions by only updating
+      // the member assignment rather than re-instantiating the offset manager.
+      this.offsetManager.updateMemberAssignment(offsetManagerMemberAssignment)
+    }
+    await this.offsetManager.resolveOffsets()
+  }
+
   /**
    * @param {import("../../types").TopicPartition} topicPartition
    */
@@ -428,15 +464,21 @@ module.exports = class ConsumerGroup {
   }
 
   async commitOffsetsIfNecessary() {
-    await this.offsetManager.commitOffsetsIfNecessary()
+    if (this.groupId) {
+      await this.offsetManager.commitOffsetsIfNecessary()
+    }
   }
 
   async commitOffsets(offsets) {
-    await this.offsetManager.commitOffsets(offsets)
+    if (this.groupId) {
+      await this.offsetManager.commitOffsets(offsets)
+    }
   }
 
   uncommittedOffsets() {
-    return this.offsetManager.uncommittedOffsets()
+    if (this.groupId) {
+      return this.offsetManager.uncommittedOffsets()
+    }
   }
 
   async heartbeat({ interval }) {
@@ -453,7 +495,9 @@ module.exports = class ConsumerGroup {
 
       await this.seekOffsets(topicPartitions)
 
-      const committedOffsets = this.offsetManager.committedOffsets()
+      const offsets = this.groupId
+        ? this.offsetManager.committedOffsets()
+        : this.offsetManager.resolvedOffsets
       const activeTopicPartitions = this.getActiveTopicPartitions()
 
       const requests = topicPartitions
@@ -465,7 +509,7 @@ module.exports = class ConsumerGroup {
                 /**
                  * When recovering from OffsetOutOfRange, each partition can recover
                  * concurrently, which invalidates resolved and committed offsets as part
-                 * of the recovery mechanism (see OffsetManager.clearOffsets). In concurrent
+                 * of the recovery mechanism (see GroupOffsetManager.clearOffsets). In concurrent
                  * scenarios this can initiate a new fetch with invalid offsets.
                  *
                  * This was further highlighted by https://github.com/tulios/kafkajs/pull/570,
@@ -476,8 +520,7 @@ module.exports = class ConsumerGroup {
                  * See the following pull request which explains the context of the problem:
                  * @issue https://github.com/tulios/kafkajs/pull/578
                  */
-                committedOffsets[topic][partition] != null &&
-                activeTopicPartitions[topic].has(partition)
+                offsets[topic][partition] != null && activeTopicPartitions[topic].has(partition)
             )
             .map(partition => ({
               partition,
@@ -559,7 +602,11 @@ module.exports = class ConsumerGroup {
       })
 
       await this.cluster.refreshMetadata()
-      await this.joinAndSync()
+      if (this.groupId) {
+        await this.joinAndSync()
+      } else {
+        await this.assignPartitions()
+      }
       return
     }
 
@@ -571,7 +618,11 @@ module.exports = class ConsumerGroup {
         unknownPartitions: e.unknownPartitions,
       })
 
-      await this.joinAndSync()
+      if (this.groupId) {
+        await this.joinAndSync()
+      } else {
+        await this.assignPartitions()
+      }
       return
     }
 

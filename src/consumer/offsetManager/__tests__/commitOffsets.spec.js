@@ -1,9 +1,9 @@
-const OffsetManager = require('../index')
+const GroupOffsetManager = require('../groupOffsetManager')
 const InstrumentationEventEmitter = require('../../../instrumentation/emitter')
 const { createErrorFromCode } = require('../../../protocol/error')
 const NOT_COORDINATOR_FOR_GROUP_CODE = 16
 
-describe('Consumer > OffsetMananger > commitOffsets', () => {
+describe('Consumer > GroupOffsetMananger > commitOffsets', () => {
   let offsetManager,
     topic1,
     topic2,
@@ -35,7 +35,7 @@ describe('Consumer > OffsetMananger > commitOffsets', () => {
       offsetCommit: jest.fn(),
     }
 
-    offsetManager = new OffsetManager({
+    offsetManager = new GroupOffsetManager({
       cluster: mockCluster,
       memberAssignment,
       groupId,

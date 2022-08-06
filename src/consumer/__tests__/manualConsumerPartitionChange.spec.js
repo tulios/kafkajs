@@ -1,5 +1,5 @@
 const createProducer = require('../../producer')
-const createManualConsumer = require('../index')
+const createConsumer = require('../../consumer/index')
 
 const {
   secureRandom,
@@ -25,7 +25,7 @@ describe('ManualConsumer', () => {
       logger: newLogger(),
     })
 
-    consumer = createManualConsumer({
+    consumer = createConsumer({
       cluster: createCluster({ metadataMaxAge: 50 }),
       maxWaitTimeInMs: 100,
       logger: newLogger(),

@@ -1,11 +1,11 @@
 const Long = require('../../utils/long')
-const isInvalidOffset = require('../../consumer/offsetManager/isInvalidOffset')
+const isInvalidOffset = require('./isInvalidOffset')
 const initializeConsumerOffsets = require('./initializeConsumerOffsets')
 
 const { keys, assign } = Object
 const indexTopics = topics => topics.reduce((obj, topic) => assign(obj, { [topic]: {} }), {})
 
-module.exports = class OffsetManager {
+module.exports = class ManualOffsetManager {
   /**
    * @param {Object} options
    * @param {import("../../../types").Cluster} options.cluster
@@ -72,7 +72,7 @@ module.exports = class OffsetManager {
    *
    * @param {import("../../../types").TopicPartitionOffset} topicPartitionOffset
    */
-  seek({ topic, partition, offset }) {
+  async seek({ topic, partition, offset }) {
     if (!this.memberAssignment[topic] || !this.memberAssignment[topic].includes(partition)) {
       return
     }
@@ -126,7 +126,7 @@ module.exports = class OffsetManager {
 
     if (hasUnresolvedPartitions()) {
       const topicOffsets = await this.cluster.fetchTopicsOffset(unresolvedPartitions)
-      const offsets = initializeConsumerOffsets(topicOffsets)
+      const offsets = initializeConsumerOffsets(topicOffsets, topicOffsets)
       offsets.forEach(({ topic, partitions }) => {
         this.resolvedOffsets[topic] = partitions.reduce(indexPartitions, {
           ...this.resolvedOffsets[topic],

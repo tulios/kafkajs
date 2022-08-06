@@ -11,7 +11,7 @@ const indexTopics = topics => topics.reduce((obj, topic) => assign(obj, { [topic
 const PRIVATE = {
   COMMITTED_OFFSETS: Symbol('private:OffsetManager:committedOffsets'),
 }
-module.exports = class OffsetManager {
+module.exports = class GroupOffsetManager {
   /**
    * @param {Object} options
    * @param {import("../../../types").Cluster} options.cluster

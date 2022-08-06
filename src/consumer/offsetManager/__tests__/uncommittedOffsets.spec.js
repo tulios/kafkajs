@@ -1,6 +1,6 @@
-const OffsetManager = require('../index')
+const GroupOffsetManager = require('../groupOffsetManager')
 
-describe('Consumer > OffsetMananger > uncommittedOffsets', () => {
+describe('Consumer > GroupOffsetMananger > uncommittedOffsets', () => {
   let offsetManager, topic1, topic2, memberAssignment
 
   beforeEach(() => {
@@ -12,7 +12,7 @@ describe('Consumer > OffsetMananger > uncommittedOffsets', () => {
       [topic2]: [0, 1, 2, 3],
     }
 
-    offsetManager = new OffsetManager({ memberAssignment })
+    offsetManager = new GroupOffsetManager({ memberAssignment })
   })
 
   it('returns all resolved offsets which have not been committed', () => {

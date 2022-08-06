@@ -1,11 +1,12 @@
-const ConsumerGroup = require('../consumerGroup')
+const Consumer = require('../consumer')
 const { newLogger } = require('testHelpers')
 
-describe('ConsumerGroup', () => {
-  let consumerGroup
+describe('Consumer', () => {
+  let consumer
 
   beforeEach(() => {
-    consumerGroup = new ConsumerGroup({
+    consumer = new Consumer({
+      groupId: 'test-consumer',
       logger: newLogger(),
       topics: ['topic1'],
       cluster: {},
@@ -15,21 +16,21 @@ describe('ConsumerGroup', () => {
   describe('uncommittedOffsets', () => {
     it("calls the offset manager's uncommittedOffsets", async () => {
       const mockOffsets = { topics: [] }
-      consumerGroup.offsetManager = { uncommittedOffsets: jest.fn(() => mockOffsets) }
+      consumer.offsetManager = { uncommittedOffsets: jest.fn(() => mockOffsets) }
 
-      expect(consumerGroup.uncommittedOffsets()).toStrictEqual(mockOffsets)
-      expect(consumerGroup.offsetManager.uncommittedOffsets).toHaveBeenCalled()
+      expect(consumer.uncommittedOffsets()).toStrictEqual(mockOffsets)
+      expect(consumer.offsetManager.uncommittedOffsets).toHaveBeenCalled()
     })
   })
 
   describe('commitOffsets', () => {
     it("calls the offset manager's commitOffsets", async () => {
-      consumerGroup.offsetManager = { commitOffsets: jest.fn(() => Promise.resolve()) }
+      consumer.offsetManager = { commitOffsets: jest.fn(() => Promise.resolve()) }
 
       const offsets = { topics: [{ partitions: [{ offset: '0', partition: 0 }] }] }
-      await consumerGroup.commitOffsets(offsets)
-      expect(consumerGroup.offsetManager.commitOffsets).toHaveBeenCalledTimes(1)
-      expect(consumerGroup.offsetManager.commitOffsets).toHaveBeenCalledWith(offsets)
+      await consumer.commitOffsets(offsets)
+      expect(consumer.offsetManager.commitOffsets).toHaveBeenCalledTimes(1)
+      expect(consumer.offsetManager.commitOffsets).toHaveBeenCalledWith(offsets)
     })
   })
 })

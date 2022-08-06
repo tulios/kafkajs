@@ -8,7 +8,6 @@ const LoggerConsole = require('./loggers/console')
 const Cluster = require('./cluster')
 const createProducer = require('./producer')
 const createConsumer = require('./consumer')
-const createManualConsumer = require('./manualConsumer')
 const createAdmin = require('./admin')
 const ISOLATION_LEVEL = require('./protocol/isolationLevel')
 const defaultSocketFactory = require('./network/socketFactory')
@@ -175,49 +174,6 @@ module.exports = class Client {
       sessionTimeout,
       rebalanceTimeout,
       heartbeatInterval,
-      maxBytesPerPartition,
-      minBytes,
-      maxBytes,
-      maxWaitTimeInMs,
-      isolationLevel,
-      instrumentationEmitter,
-      rackId,
-      metadataMaxAge,
-    })
-  }
-
-  /**
-   * @public
-   */
-  manualConsumer({
-    metadataMaxAge = DEFAULT_METADATA_MAX_AGE,
-    maxBytesPerPartition,
-    minBytes,
-    maxBytes,
-    maxWaitTimeInMs,
-    retry = { retries: 5 },
-    allowAutoTopicCreation,
-    maxInFlightRequests,
-    readUncommitted = false,
-    rackId = '',
-  } = {}) {
-    const isolationLevel = readUncommitted
-      ? ISOLATION_LEVEL.READ_UNCOMMITTED
-      : ISOLATION_LEVEL.READ_COMMITTED
-
-    const instrumentationEmitter = new InstrumentationEventEmitter()
-    const cluster = this[PRIVATE.CREATE_CLUSTER]({
-      metadataMaxAge,
-      allowAutoTopicCreation,
-      maxInFlightRequests,
-      isolationLevel,
-      instrumentationEmitter,
-    })
-
-    return createManualConsumer({
-      retry: { ...this[PRIVATE.CLUSTER_RETRY], ...retry },
-      logger: this[PRIVATE.LOGGER],
-      cluster,
       maxBytesPerPartition,
       minBytes,
       maxBytes,
