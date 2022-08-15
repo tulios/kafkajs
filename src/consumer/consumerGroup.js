@@ -747,8 +747,13 @@ module.exports = class ConsumerGroup {
   }
 
   getActiveTopicPartitions() {
-    return this.subscriptionState
-      .active()
-      .reduce((acc, { topic, partitions }) => ({ ...acc, [topic]: new Set(partitions) }), {})
+    const activeSubscriptionState = this.subscriptionState.active()
+
+    const activeTopicPartitions = {}
+    activeSubscriptionState.forEach(({ topic, partitions }) => {
+      activeTopicPartitions[topic] = new Set(partitions)
+    })
+
+    return activeTopicPartitions
   }
 }
