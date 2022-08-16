@@ -1,0 +1,223 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Migrating to v2.0.0 · KafkaJS</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="v2.0.0 is the first major version of KafkaJS released since 2018. For most users, the required changes in order to upgrade from 1.x.x are very minor, but it is still important to read through the list of changes to know what, if any, changes need to be made."/><meta name="docsearch:version" content="2.1.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Migrating to v2.0.0 · KafkaJS"/><meta property="og:type" content="website"/><meta property="og:url" content="https://kafka.js.org/"/><meta property="og:description" content="v2.0.0 is the first major version of KafkaJS released since 2018. For most users, the required changes in order to upgrade from 1.x.x are very minor, but it is still important to read through the list of changes to know what, if any, changes need to be made."/><meta property="og:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://kafka.js.org/img/kafkajs_circle.png"/><link rel="shortcut icon" href="/img/favicon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css"/><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-133751873-1"></script><script>
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments); }
+              gtag('js', new Date());
+              gtag('config', 'UA-133751873-1');
+            </script><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/kafkajs-logoV2.svg" alt="KafkaJS"/><h2 class="headerTitleWithLogo">KafkaJS</h2></a><a href="/versions"><h3>2.1.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/2.1.0/getting-started" target="_self">Docs</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class=""><a href="https://github.com/tulios/kafkajs" target="_self">GitHub</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Migration Guides</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Usage</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/2.1.0/introduction">Intro to Kafka</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/getting-started">Getting Started</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/configuration">Client Configuration</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/producing">Producing Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/transactions">Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/consuming">Consuming Messages</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/admin">Admin Client</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/instrumentation-events">Instrumentation Events</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/custom-logger">Custom Logger</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/retry-detailed">Retry Mechanism Explained</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/faq">FAQ</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/pre-releases">Pre-releases</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Examples</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/2.1.0/running-kafka-in-development">Running Kafka in Development</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/producer-example">Producer</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/consumer-example">Consumer</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Migration Guides</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/docs/2.1.0/migration-guide-v2.0.0">Migrating to v2.0.0</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Developing KafkaJS</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/2.1.0/contribution-guide">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/development-environment">Development Environment</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/testing">Testing</a></li><li class="navListItem"><a class="navItem" href="/docs/2.1.0/development-resources">Resources</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/tulios/kafkajs/edit/master/docs/MigrationGuide-2-0-0.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">Migrating to v2.0.0</h1></header><article><div><span><p>v2.0.0 is the first major version of KafkaJS released since 2018. For most users, the required changes in order to upgrade from 1.x.x are very minor, but it is still important to read through the list of changes to know what, if any, changes need to be made.</p>
+<h2><a class="anchor" aria-hidden="true" id="producer-new-default-partitioner"></a><a href="#producer-new-default-partitioner" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Producer: New default partitioner</h2>
+<blockquote>
+<p>🚨  <strong>Important!</strong> 🚨</p>
+<p>Not selecting the right partitioner will cause messages to be produced to different partitions than in versions previous to 2.0.0.</p>
+</blockquote>
+<p>The default partitioner distributes messages consistently based on a hash of the message <code>key</code>. v1.8.0 introduced a new partitioner called <code>JavaCompatiblePartitioner</code> that behaves the same way, but fixes a bug where in some circumstances a message with the same key would be distributed to different partitions when produced with KafkaJS and the Java client.</p>
+<p><strong>In v2.0.0 the following changes have been made</strong>:</p>
+<ul>
+<li><code>JavaCompatiblePartitioner</code> is renamed <code>DefaultPartitioner</code></li>
+<li>The partitioner previously called <code>JavaCompatiblePartitioner</code> is selected as the default partitioner if no partitioner is configured.</li>
+<li>The old <code>DefaultPartitioner</code> is renamed <code>LegacyPartitioner</code></li>
+</ul>
+<p>If no partitioner is selected when creating the producer, a warning will be logged. This warning can be silenced either by specifying a partitioner to use or by setting the environment variable <code>KAFKAJS_NO_PARTITIONER_WARNING</code>. This warning will be removed in a future version.</p>
+<h3><a class="anchor" aria-hidden="true" id="what-do-i-need-to-do"></a><a href="#what-do-i-need-to-do" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>What do I need to do?</h3>
+<p>What you need to do depends on what partitioner you were previously using and whether or not co-partitioning is important to you.</p>
+<h4><a class="anchor" aria-hidden="true" id="i-was-previously-using-the-default-partitioner-and-i-want-to-keep-the-same-behavior"></a><a href="#i-was-previously-using-the-default-partitioner-and-i-want-to-keep-the-same-behavior" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>&quot;I was previously using the default partitioner and I want to keep the same behavior&quot;</h4>
+<p>Import the <code>LegacyPartitioner</code> and configure your producer to use it:</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">const</span> { Partitioners } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+kafka.producer({ <span class="hljs-attr">createPartitioner</span>: Partitioners.LegacyPartitioner })
+</code></pre>
+<h4><a class="anchor" aria-hidden="true" id="i-was-previously-using-the-javacompatiblepartitioner-and-i-want-to-keep-that-behavior"></a><a href="#i-was-previously-using-the-javacompatiblepartitioner-and-i-want-to-keep-that-behavior" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>&quot;I was previously using the <code>JavaCompatiblePartitioner</code> and I want to keep that behavior&quot;</h4>
+<p>The new <code>DefaultPartitioner</code> is re-exported as <code>JavaCompatiblePartitioner</code>, so existing code will continue to work. However, that export will be removed in a future version, so it's recommended to either remove the partitioner from the configuration or explicitly configure it to use what is now the default partitioner:</p>
+<pre><code class="hljs css language-js"><span class="hljs-comment">// Rely on the default partitioner being compatible with the Java partitioner</span>
+kafka.producer()
+
+<span class="hljs-comment">// Or explicitly use the default partitioner</span>
+<span class="hljs-keyword">const</span> { Partitioners } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+kafka.producer({ <span class="hljs-attr">createPartitioner</span>: Partitioners.DefaultPartitioner })
+</code></pre>
+<h4><a class="anchor" aria-hidden="true" id="i-use-a-custom-partitioner"></a><a href="#i-use-a-custom-partitioner" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>&quot;I use a custom partitioner&quot;</h4>
+<p>No need to do anything unless you are using either of the two built-in partitioners.</p>
+<h4><a class="anchor" aria-hidden="true" id="its-not-important-to-me-that-messages-with-the-same-key-end-up-in-the-same-partition-as-in-previous-versions"></a><a href="#its-not-important-to-me-that-messages-with-the-same-key-end-up-in-the-same-partition-as-in-previous-versions" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>&quot;It's not important to me that messages with the same key end up in the same partition as in previous versions&quot;</h4>
+<p>Use the new default partitioner.</p>
+<pre><code class="hljs css language-js">kafka.producer()
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="request-timeouts-enabled"></a><a href="#request-timeouts-enabled" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Request timeouts enabled</h2>
+<p>v1.5.1 added a request timeout mechanism. Due to some issues with the initial implementation, this was not enabled by default, but could be enabled using the undocumented <code>enforceRequestTimeout</code> flag. The issues have long since been ironed out and request timeout enforcement is is now enabled by default in v2.0.0.</p>
+<p>The request timeout mechanism can be disabled like so:</p>
+<pre><code class="hljs css language-javascript"><span class="hljs-keyword">new</span> Kafka({ <span class="hljs-attr">enforceRequestTimeout</span>: <span class="hljs-literal">false</span> })
+</code></pre>
+<p>See <a href="/docs/2.0.0/configuration#request-timeout">Request Timeout</a> for more details.</p>
+<h2><a class="anchor" aria-hidden="true" id="consumer-supporting-duplicate-header-keys"></a><a href="#consumer-supporting-duplicate-header-keys" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Consumer: Supporting duplicate header keys</h2>
+<p>If a message has more than one header value for the same key, previous versions of KafkaJS would discard all but one of the values. Now, it instead returns each value as an array.</p>
+<pre><code class="hljs css language-js"><span class="hljs-comment">/**
+ * Given a message like this:
+ * {
+ *   headers: {
+ *     event: "birthday",
+ *     participants: "Alice",
+ *     participants: "Bob"
+ *   }
+ * }
+ */</span>
+
+<span class="hljs-comment">// Before</span>
+&gt; message.headers
+{
+    <span class="hljs-attr">event</span>: &lt;Buffer 62 69 72 74 68 64 61 79&gt;,
+    participants: &lt;Buffer 42 6f 62&gt;
+}
+
+// After
+&gt; message.headers
+{
+    event: &lt;Buffer 62 69 72 74 68 64 61 79&gt;,
+    participants: [
+        &lt;Buffer 41 6c 69 63 65&gt;,
+        &lt;Buffer 42 6f 62&gt;
+    ]
+}
+</code></pre>
+<p>Adapt your code by handling header values potentially being arrays:</p>
+<pre><code class="hljs css language-js"><span class="hljs-comment">// Before</span>
+<span class="hljs-keyword">const</span> participants = message.headers[<span class="hljs-string">"participants"</span>].toString()
+
+<span class="hljs-comment">// After</span>
+<span class="hljs-keyword">const</span> participants = <span class="hljs-built_in">Array</span>.isArray(message.headers[<span class="hljs-string">"participants"</span>])
+    ? message.headers[<span class="hljs-string">"participants"</span>].map(<span class="hljs-function"><span class="hljs-params">participant</span> =&gt;</span> participant.toString()).join(<span class="hljs-string">", "</span>)
+    : message.headers[<span class="hljs-string">"participants"</span>].toString()
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="admin-gettopicmetadata-removed"></a><a href="#admin-gettopicmetadata-removed" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Admin: <code>getTopicMetadata</code> removed</h2>
+<p>The <code>getTopicMetadata</code> method of the admin client has been replaced by <code>fetchTopicMetadata</code>. <code>getTopicMetadata</code> had limitations that did not allow it to get metadata for all topics in the cluster.</p>
+<p>See <a href="/docs/2.0.0/admin#a-name-fetch-topic-metadata-a-fetch-topic-metadata">Fetch Topic Metadata</a> for details.</p>
+<h2><a class="anchor" aria-hidden="true" id="admin-fetchoffsets-accepts-topics-instead-of-topic"></a><a href="#admin-fetchoffsets-accepts-topics-instead-of-topic" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Admin: <code>fetchOffsets</code> accepts <code>topics</code> instead of <code>topic</code></h2>
+<p><code>fetchOffsets</code> used to only be able to fetch offsets for a single topic, but now it can fetch for multiple topics.</p>
+<p>To adapt your current code, pass in an array of <code>topics</code> instead of a single <code>topic</code> string, and handle the promise resolving to an array with each item being an object with a topic and an array of partition-offsets.</p>
+<pre><code class="hljs css language-js"><span class="hljs-comment">// Before</span>
+<span class="hljs-keyword">const</span> partitions = <span class="hljs-keyword">await</span> admin.fetchOffsets({ groupId, <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-a'</span> })
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> { partition, offset } <span class="hljs-keyword">of</span> partitions) {
+    admin.logger().info(<span class="hljs-string">`<span class="hljs-subst">${groupId}</span> is at offset <span class="hljs-subst">${offset}</span> of partition <span class="hljs-subst">${partition}</span>`</span>)
+}
+
+<span class="hljs-comment">// After</span>
+<span class="hljs-keyword">const</span> topics = <span class="hljs-keyword">await</span> admin.fetchOffsets({ groupId, <span class="hljs-attr">topics</span>: [<span class="hljs-string">'topic-a'</span>, <span class="hljs-string">'topic-b'</span>] })
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> topic <span class="hljs-keyword">of</span> topics) {
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> { partition, offset } <span class="hljs-keyword">of</span> partitions) {
+        admin.logger().info(<span class="hljs-string">`<span class="hljs-subst">${groupId}</span> is at offset <span class="hljs-subst">${offset}</span> of <span class="hljs-subst">${topic}</span>:<span class="hljs-subst">${partition}</span>`</span>)
+    }
+}
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="admin-createtopics-respects-cluster-settings-numpartitions-and-defaultreplicationfactor"></a><a href="#admin-createtopics-respects-cluster-settings-numpartitions-and-defaultreplicationfactor" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Admin: <code>createTopics</code> respects cluster settings <code>num.partitions</code> and <code>default.replication.factor</code></h2>
+<p>Previously, <code>admin.createTopics</code> would default to creating topics with 1 partition and a replication factor of 1. It will now instead respect the cluster settings for partition count and replication factor. If the cluster does not have a default partition count or replication factor, topic creation will fail with an error.</p>
+<p>To continue to create topics with 1 partition and a replication factor of 1, either configure the cluster with those defaults or provide them when creating the topic:</p>
+<pre><code class="hljs css language-js"><span class="hljs-keyword">await</span> admin.createTopics({
+  <span class="hljs-attr">topics</span>: [{ <span class="hljs-attr">topic</span>: <span class="hljs-string">'topic-name'</span>, <span class="hljs-attr">numPartitions</span>: <span class="hljs-number">1</span>, <span class="hljs-attr">replicationFactor</span>: <span class="hljs-number">1</span> }]
+})
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="removed-support-for-node-10-and-12"></a><a href="#removed-support-for-node-10-and-12" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Removed support for Node 10 and 12</h2>
+<p>KafkaJS supports all currently supported versions of NodeJS. If you are currently using NodeJS 10 or 12, you will get a warning when installing KafkaJS, and there is no guarantee that it will function. We <strong>strongly</strong> encourage you to upgrade to a supported, secure version of NodeJS.</p>
+<h2><a class="anchor" aria-hidden="true" id="originalerror-property-replaced-with-cause"></a><a href="#originalerror-property-replaced-with-cause" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><code>originalError</code> property replaced with <code>cause</code></h2>
+<p>Some errors that are triggered by other errors, such as <code>KafkaJSNumberOfRetriesExceeded</code>, used to have a property called <code>originalError</code> that contained a reference to the cause. This has been renamed <code>cause</code> to closer align with the <a href="https://tc39.es/proposal-error-cause/">Error Cause</a> specification.</p>
+<h2><a class="anchor" aria-hidden="true" id="typescript-resourcetypes-replaced-by-aclresourcetypes-and-configresourcetypes"></a><a href="#typescript-resourcetypes-replaced-by-aclresourcetypes-and-configresourcetypes" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Typescript: <code>ResourceTypes</code> replaced by <code>AclResourceTypes</code> and <code>ConfigResourceTypes</code></h2>
+<p>The <code>ResourceTypes</code> enum has been split into <code>AclResourceTypes</code> and <code>ConfigResourceTypes</code>. The enum values happened to be the same for the two, even though they were actually unrelated to each other.</p>
+<p>To migrate, simply import <code>ConfigResourceTypes</code> instead of <code>ResourceTypes</code> when operating on configs, and <code>AclResourceTypes</code> when operating on ACLs.</p>
+<pre><code class="hljs css language-ts"><span class="hljs-comment">// Before</span>
+<span class="hljs-keyword">import</span> { ResourceTypes } <span class="hljs-keyword">from</span> <span class="hljs-string">'kafkajs'</span>
+<span class="hljs-keyword">await</span> admin.describeConfigs({
+  includeSynonyms: <span class="hljs-literal">false</span>,
+  resources: [
+    {
+      <span class="hljs-keyword">type</span>: ResourceTypes.TOPIC,
+      name: <span class="hljs-string">'topic-name'</span>
+    }
+  ]
+})
+
+<span class="hljs-comment">// After</span>
+<span class="hljs-keyword">const</span> { ConfigResourceTypes } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'kafkajs'</span>)
+
+<span class="hljs-keyword">await</span> admin.describeConfigs({
+  includeSynonyms: <span class="hljs-literal">false</span>,
+  resources: [
+    {
+      <span class="hljs-keyword">type</span>: ConfigResourceTypes.TOPIC,
+      name: <span class="hljs-string">'topic-name'</span>
+    }
+  ]
+})
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="typescript-topicpartitionoffsetandmedata-removed"></a><a href="#typescript-topicpartitionoffsetandmedata-removed" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Typescript: <code>TopicPartitionOffsetAndMedata</code> removed</h2>
+<p>Use <code>TopicPartitionOffsetAndMetadata</code> instead.</p>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/2.1.0/consumer-example"><span class="arrow-prev">← </span><span>Consumer</span></a><a class="docs-next button" href="/docs/2.1.0/contribution-guide"><span>Contributing</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#producer-new-default-partitioner">Producer: New default partitioner</a><ul class="toc-headings"><li><a href="#what-do-i-need-to-do">What do I need to do?</a></li></ul></li><li><a href="#request-timeouts-enabled">Request timeouts enabled</a></li><li><a href="#consumer-supporting-duplicate-header-keys">Consumer: Supporting duplicate header keys</a></li><li><a href="#admin-gettopicmetadata-removed">Admin: <code>getTopicMetadata</code> removed</a></li><li><a href="#admin-fetchoffsets-accepts-topics-instead-of-topic">Admin: <code>fetchOffsets</code> accepts <code>topics</code> instead of <code>topic</code></a></li><li><a href="#admin-createtopics-respects-cluster-settings-numpartitions-and-defaultreplicationfactor">Admin: <code>createTopics</code> respects cluster settings <code>num.partitions</code> and <code>default.replication.factor</code></a></li><li><a href="#removed-support-for-node-10-and-12">Removed support for Node 10 and 12</a></li><li><a href="#originalerror-property-replaced-with-cause"><code>originalError</code> property replaced with <code>cause</code></a></li><li><a href="#typescript-resourcetypes-replaced-by-aclresourcetypes-and-configresourcetypes">Typescript: <code>ResourceTypes</code> replaced by <code>AclResourceTypes</code> and <code>ConfigResourceTypes</code></a></li><li><a href="#typescript-topicpartitionoffsetandmedata-removed">Typescript: <code>TopicPartitionOffsetAndMedata</code> removed</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/kafkajs-logoV2.svg" alt="KafkaJS" width="52" height="84"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Usage</a></div><div><h5>Community</h5><a href="https://kafkajs-slackin.herokuapp.com">Slack</a></div><div><h5>More</h5><a href="https://github.com/tulios/kafkajs">GitHub</a><a class="github-button" href="https://github.com/tulios/kafkajs" data-icon="octicon-star" data-count-href="/tulios/kafkajs/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a><a href="https://badge.fury.io/js/kafkajs"><img src="https://badge.fury.io/js/kafkajs.svg" alt="npm version" height="18"/></a></div></section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '7c56b6be30976fce32eb287e2af6cf06',
+                indexName: 'kafka_js',
+                inputSelector: '#search_input_react',
+                algoliaOptions: {}
+              });
+            </script></body></html>
