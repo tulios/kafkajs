@@ -33,4 +33,4 @@ The rebalancing state is enforced on the broker side. When a consumer tries to c
 
 ## Didn't find what you were looking for?
 
-Please [open an issue](https://github.com/tulios/kafkajs/issues) or [join our Slack community](https://kafkajs-slackin.herokuapp.com)
+Please [open an issue](https://github.com/tulios/kafkajs/issues) or [join our Slack community](https://join.slack.com/t/kafkajs/shared_invite/zt-1ezd5395v-SOpTqYoYfRCyPKOkUggK0A)
