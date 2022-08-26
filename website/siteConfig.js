@@ -9,7 +9,8 @@
 // site configuration options.
 
 const repoUrl = 'https://github.com/tulios/kafkajs'
-const slackUrl = 'https://kafkajs-slackin.herokuapp.com/'
+const slackUrl =
+  'https://join.slack.com/t/kafkajs/shared_invite/zt-1ezd5395v-SOpTqYoYfRCyPKOkUggK0A'
 
 const siteConfig = {
   title: 'KafkaJS',
