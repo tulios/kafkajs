@@ -238,7 +238,7 @@ export interface ITopicConfig {
   topic: string
   numPartitions?: number
   replicationFactor?: number
-  replicaAssignment?: object[]
+  replicaAssignment?: ReplicaAssignment[]
   configEntries?: IResourceConfigEntry[]
 }
 
@@ -251,6 +251,16 @@ export interface ITopicPartitionConfig {
 export interface ITopicMetadata {
   name: string
   partitions: PartitionMetadata[]
+}
+
+export interface ReplicaAssignment {
+  partition: number
+  replicas: Array<number>
+}
+
+export interface PartitionReassignment {
+  topic: string,
+  partitionAssignment: Array<ReplicaAssignment>
 }
 
 export enum AclResourceTypes {
@@ -468,6 +478,22 @@ export interface DeleteAclResponse {
   filterResponses: DeleteAclFilterResponses[]
 }
 
+export interface ListPartitionReassignmentsResponse {
+  topics: OngoingTopicReassignment[]
+}
+
+export interface OngoingTopicReassignment {
+  topic: string
+  partitions: OngoingPartitionReassignment[]
+}
+
+export interface OngoingPartitionReassignment {
+  partitionIndex: number
+  replicas: number[]
+  addingReplicas?: number[]
+  removingReplicas?: number[]
+}
+
 export type Admin = {
   connect(): Promise<void>
   disconnect(): Promise<void>
@@ -511,6 +537,14 @@ export type Admin = {
   deleteAcls(options: { filters: AclFilter[] }): Promise<DeleteAclResponse>
   createAcls(options: { acl: AclEntry[] }): Promise<boolean>
   deleteTopicRecords(options: { topic: string; partitions: SeekEntry[] }): Promise<void>
+  alterPartitionReassignments(request: {
+    topics: PartitionReassignment[]
+    timeout?: number
+  }): Promise<void>
+  listPartitionReassignments(request: {
+    topics?: TopicPartitions[]
+    timeout?: number
+  }): Promise<ListPartitionReassignmentsResponse>
   logger(): Logger
   on(
     eventName: AdminEvents['CONNECT'],
@@ -656,6 +690,11 @@ export type Broker = {
     timeout?: number
     compression?: CompressionTypes
   }): Promise<any>
+  alterPartitionReassignments(request: {
+    topics: PartitionReassignment[]
+    timeout?: number
+  }): Promise<any>
+  listPartitionReassignments(request: { topics?: TopicPartitions[]; timeout?: number }): Promise<ListPartitionReassignmentsResponse>
 }
 
 interface MessageSetEntry {
@@ -1102,10 +1141,21 @@ export class KafkaJSProtocolError extends KafkaJSError {
   constructor(e: Error | string)
 }
 
+export class KafkaJSAggregateError extends Error {
+  readonly errors: (Error | string)[]
+  constructor(message: Error | string, errors: (Error | string)[])
+}
+
 export class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
   readonly topic: string
   readonly partition: number
   constructor(e: Error | string, metadata?: KafkaJSOffsetOutOfRangeMetadata)
+}
+
+export class KafkaJSAlterPartitionReassignmentsError extends KafkaJSProtocolError {
+  readonly topic?: string
+  readonly partition?: number
+  constructor(e: Error | string, topic?: string, partition?: number)
 }
 
 export class KafkaJSNumberOfRetriesExceeded extends KafkaJSNonRetriableError {

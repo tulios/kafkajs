@@ -1,4 +1,4 @@
-[![npm version](https://img.shields.io/npm/v/kafkajs?color=%2344cc11&label=stable)](https://www.npmjs.com/package/kafkajs) [![npm pre-release version](https://img.shields.io/npm/v/kafkajs/beta?label=pre-release)](https://www.npmjs.com/package/kafkajs) [![Build Status](https://dev.azure.com/tulios/kafkajs/_apis/build/status/tulios.kafkajs?branchName=master)](https://dev.azure.com/tulios/kafkajs/_build/latest?definitionId=2&branchName=master) [![Slack Channel](https://kafkajs-slackin.herokuapp.com/badge.svg)](https://kafkajs-slackin.herokuapp.com/)
+[![npm version](https://img.shields.io/npm/v/kafkajs?color=%2344cc11&label=stable)](https://www.npmjs.com/package/kafkajs) [![npm pre-release version](https://img.shields.io/npm/v/kafkajs/beta?label=pre-release)](https://www.npmjs.com/package/kafkajs) [![Build Status](https://dev.azure.com/tulios/kafkajs/_apis/build/status/tulios.kafkajs?branchName=master)](https://dev.azure.com/tulios/kafkajs/_build/latest?definitionId=2&branchName=master) [![Slack Channel](https://join.slack.com/t/kafkajs/shared_invite/zt-1ezd5395v-SOpTqYoYfRCyPKOkUggK0Abadge.svg)](https://join.slack.com/t/kafkajs/shared_invite/zt-1ezd5395v-SOpTqYoYfRCyPKOkUggK0A)
 <br />
 <p align="center">
   <a href="https://kafka.js.org">
@@ -73,7 +73,7 @@ KafkaJS is a modern [Apache Kafka](https://kafka.apache.org/) client for Node.js
   </table>
 </p>
 
-*To become a sponsor, [reach out in our Slack community](https://kafkajs-slackin.herokuapp.com/) to get in touch with one of the maintainers. Also consider becoming a Github Sponsor by following any of the links under "[Sponsor this project](https://github.com/tulios/kafkajs#sponsors)" in the sidebar.*
+*To become a sponsor, [reach out in our Slack community](https://join.slack.com/t/kafkajs/shared_invite/zt-1ezd5395v-SOpTqYoYfRCyPKOkUggK0A) to get in touch with one of the maintainers. Also consider becoming a Github Sponsor by following any of the links under "[Sponsor this project](https://github.com/tulios/kafkajs#sponsors)" in the sidebar.*
 
 ### <a name="features"></a> Features
 
@@ -154,7 +154,7 @@ See [Developing KafkaJS](https://kafka.js.org/docs/contribution-guide) for infor
 
 ### <a name="help-wanted"></a> Help wanted 🤝
 
-We welcome contributions to KafkaJS, but we also want to see a thriving third-party ecosystem. If you would like to create an open-source project that builds on top of KafkaJS, [please get in touch](https://kafkajs-slackin.herokuapp.com/) and we'd be happy to provide feedback and support.
+We welcome contributions to KafkaJS, but we also want to see a thriving third-party ecosystem. If you would like to create an open-source project that builds on top of KafkaJS, [please get in touch](https://join.slack.com/t/kafkajs/shared_invite/zt-1ezd5395v-SOpTqYoYfRCyPKOkUggK0A) and we'd be happy to provide feedback and support.
 
 Here are some projects that we would like to build, but haven't yet been able to prioritize:
 
@@ -164,7 +164,7 @@ Here are some projects that we would like to build, but haven't yet been able to
 
 ### <a name="contact"></a> Contact 💬
 
-[Join our Slack community](https://kafkajs-slackin.herokuapp.com/)
+[Join our Slack community](https://join.slack.com/t/kafkajs/shared_invite/zt-1ezd5395v-SOpTqYoYfRCyPKOkUggK0A)
 
 ## <a name="license"></a> License
 
