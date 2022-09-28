@@ -170,7 +170,7 @@ module.exports = class Runner extends EventEmitter {
       })
   }
 
-  async stop() {
+  async stop(leaveGroup = true) {
     if (!this.running) {
       return
     }
@@ -178,6 +178,8 @@ module.exports = class Runner extends EventEmitter {
     this.logger.debug('stop consumer group', {
       groupId: this.consumerGroup.groupId,
       memberId: this.consumerGroup.memberId,
+      groupInstanceId: this.consumerGroup.groupInstanceId,
+      leaveGroup,
     })
 
     this.running = false
@@ -185,7 +187,9 @@ module.exports = class Runner extends EventEmitter {
     try {
       await this.fetchManager.stop()
       await this.waitForConsumer()
-      await this.consumerGroup.leave()
+      if (leaveGroup) {
+        await this.consumerGroup.leave()
+      }
     } catch (e) {}
   }
 
@@ -198,6 +202,7 @@ module.exports = class Runner extends EventEmitter {
       this.logger.debug('waiting for consumer to finish...', {
         groupId: this.consumerGroup.groupId,
         memberId: this.consumerGroup.memberId,
+        groupInstanceId: this.consumerGroup.groupInstanceId,
       })
 
       this.once(CONSUMING_STOP, () => resolve())

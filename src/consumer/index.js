@@ -48,6 +48,7 @@ const specialOffsets = [
 module.exports = ({
   cluster,
   groupId,
+  groupInstanceId = null,
   retry,
   logger: rootLogger,
   partitionAssigners = [roundRobin],
@@ -93,10 +94,10 @@ module.exports = ({
   }
 
   /** @type {import("../../types").Consumer["disconnect"]} */
-  const disconnect = async () => {
+  const disconnect = async ({ leaveGroup = true }) => {
     try {
-      await stop()
-      logger.debug('consumer has stopped, disconnecting', { groupId })
+      await stop(leaveGroup)
+      logger.debug('consumer has stopped, disconnecting', { groupId, groupInstanceId, leaveGroup })
       await cluster.disconnect()
       instrumentationEmitter.emit(DISCONNECT)
     } catch (e) {
@@ -109,17 +110,17 @@ module.exports = ({
   }
 
   /** @type {import("../../types").Consumer["stop"]} */
-  const stop = sharedPromiseTo(async () => {
+  const stop = sharedPromiseTo(async (leaveGroup = true) => {
     try {
       if (runner) {
-        await runner.stop()
+        await runner.stop(leaveGroup)
         runner = null
         consumerGroup = null
         instrumentationEmitter.emit(STOP)
       }
 
       clearTimeout(restartTimeout)
-      logger.info('Stopped', { groupId })
+      logger.info('Stopped', { groupId, groupInstanceId, leaveGroup })
     } catch (e) {
       logger.error(`Caught error when stopping the consumer: ${e.message}`, {
         stack: e.stack,
@@ -201,7 +202,7 @@ module.exports = ({
     }
 
     const start = async onCrash => {
-      logger.info('Starting', { groupId })
+      logger.info('Starting', { groupId, groupInstanceId })
 
       consumerGroup = new ConsumerGroup({
         logger: rootLogger,
@@ -210,6 +211,7 @@ module.exports = ({
         retry,
         cluster,
         groupId,
+        groupInstanceId,
         assigners,
         sessionTimeout,
         rebalanceTimeout,

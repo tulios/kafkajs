@@ -66,6 +66,7 @@ module.exports = class ConsumerGroup {
     cluster,
     groupId,
     topics,
+    groupInstanceId,
     topicConfigurations,
     logger,
     instrumentationEmitter,
@@ -86,6 +87,7 @@ module.exports = class ConsumerGroup {
     /** @type {import("../../types").Cluster} */
     this.cluster = cluster
     this.groupId = groupId
+    this.groupInstanceId = groupInstanceId
     this.topics = topics
     this.topicsSubscribed = topics
     this.topicConfigurations = topicConfigurations
@@ -130,13 +132,14 @@ module.exports = class ConsumerGroup {
     this.lastRequest = Date.now()
 
     this[PRIVATE.SHARED_HEARTBEAT] = sharedPromiseTo(async ({ interval }) => {
-      const { groupId, generationId, memberId } = this
+      const { groupId, generationId, memberId, groupInstanceId } = this
       const now = Date.now()
 
       if (memberId && now >= this.lastRequest + interval) {
         const payload = {
           groupId,
           memberId,
+          groupInstanceId,
           groupGenerationId: generationId,
         }
 
@@ -162,7 +165,7 @@ module.exports = class ConsumerGroup {
   }
 
   async [PRIVATE.JOIN]() {
-    const { groupId, sessionTimeout, rebalanceTimeout } = this
+    const { groupId, sessionTimeout, rebalanceTimeout, groupInstanceId } = this
 
     this.coordinator = await this.cluster.findGroupCoordinator({ groupId })
 
@@ -171,6 +174,7 @@ module.exports = class ConsumerGroup {
       sessionTimeout,
       rebalanceTimeout,
       memberId: this.memberId || '',
+      groupInstanceId,
       groupProtocols: this.assigners.map(assigner =>
         assigner.protocol({
           topics: this.topicsSubscribed,
@@ -186,9 +190,9 @@ module.exports = class ConsumerGroup {
   }
 
   async leave() {
-    const { groupId, memberId } = this
+    const { groupId, memberId, groupInstanceId } = this
     if (memberId) {
-      await this.coordinator.leaveGroup({ groupId, memberId })
+      await this.coordinator.leaveGroup({ groupId, memberId, groupInstanceId })
       this.memberId = null
     }
   }
@@ -199,6 +203,7 @@ module.exports = class ConsumerGroup {
       groupId,
       generationId,
       memberId,
+      groupInstanceId,
       members,
       groupProtocol,
       topics,
@@ -234,6 +239,7 @@ module.exports = class ConsumerGroup {
       groupId,
       generationId,
       memberId,
+      groupInstanceId,
       groupAssignment: assignment,
     })
 
@@ -325,6 +331,7 @@ module.exports = class ConsumerGroup {
       groupId,
       generationId,
       memberId,
+      groupInstanceId,
     })
   }
 
@@ -344,6 +351,7 @@ module.exports = class ConsumerGroup {
           groupId: this.groupId,
           memberId: this.memberId,
           leaderId: this.leaderId,
+          groupInstanceId: this.groupInstanceId,
           isLeader: this.isLeader(),
           memberAssignment,
           groupProtocol: this.groupProtocol,

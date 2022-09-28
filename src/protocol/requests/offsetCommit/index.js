@@ -67,6 +67,20 @@ const versions = {
       response,
     }
   },
+  7: ({ groupId, groupGenerationId, memberId, groupInstanceId, topics }) => {
+    const request = require('./v7/request')
+    const response = require('./v7/response')
+    return {
+      request: request({
+        groupId,
+        groupGenerationId,
+        memberId,
+        groupInstanceId,
+        topics,
+      }),
+      response,
+    }
+  },
 }
 
 module.exports = {
