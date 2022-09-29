@@ -36,16 +36,18 @@ Example using [Winston](https://github.com/winstonjs/winston):
 ```javascript
 const { logLevel } = require('kafkajs')
 const winston = require('winston')
-const toWinstonLogLevel = level => switch(level) {
-    case logLevel.ERROR:
-    case logLevel.NOTHING:
-        return 'error'
-    case logLevel.WARN:
-        return 'warn'
-    case logLevel.INFO:
-        return 'info'
-    case logLevel.DEBUG:
-        return 'debug'
+const toWinstonLogLevel = level => {
+    switch(level) {
+        case logLevel.ERROR:
+        case logLevel.NOTHING:
+            return 'error'
+        case logLevel.WARN:
+            return 'warn'
+        case logLevel.INFO:
+            return 'info'
+        case logLevel.DEBUG:
+            return 'debug'
+    }
 }
 
 const WinstonLogCreator = logLevel => {

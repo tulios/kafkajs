@@ -15,7 +15,7 @@ Contributions are made to this repo via Issues and Pull Requests (PRs). A few ge
 
 Issues should be used to report problems with the library, request a new feature, or to discuss potential changes before a PR is created. Please follow the issue template that's provided when you first create an issue in order to collect all the necessary information.
 
-Issues are not a support channel. Please use [StackOverflow](https://stackoverflow.com/questions/tagged/kafkajs), [Slack](https://kafkajs-slackin.herokuapp.com/) or other online resources instead. [Limited support from a maintainer](https://github.com/sponsors/Nevon?frequency=one-time&sponsor=Nevon) is available to sponsors.
+Issues are not a support channel. Please use [StackOverflow](https://stackoverflow.com/questions/tagged/kafkajs), [Slack](https://join.slack.com/t/kafkajs/shared_invite/zt-1ezd5395v-SOpTqYoYfRCyPKOkUggK0A) or other online resources instead. [Limited support from a maintainer](https://github.com/sponsors/Nevon?frequency=one-time&sponsor=Nevon) is available to sponsors.
 
 If you find an issue that addresses the problem you're having, please add your own reproduction information to the existing issue rather than creating a new one. Adding a [reaction](https://github.blog/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/) can also help be indicating to our maintainers that a particular problem is affecting more than just the reporter.
 
@@ -37,4 +37,4 @@ Once a PR is merged and the master build is successful, a pre-release version of
 
 ## Getting Help
 
-Join our [Slack community](https://kafkajs-slackin.herokuapp.com/) if you have questions about the contribution process or otherwise want to get in touch.
+Join our [Slack community](https://join.slack.com/t/kafkajs/shared_invite/zt-1ezd5395v-SOpTqYoYfRCyPKOkUggK0A) if you have questions about the contribution process or otherwise want to get in touch.

@@ -41,7 +41,9 @@ class Footer extends React.Component {
           </div>
           <div>
             <h5>Community</h5>
-            <a href="https://kafkajs-slackin.herokuapp.com">Slack</a>
+            <a href="https://join.slack.com/t/kafkajs/shared_invite/zt-1ezd5395v-SOpTqYoYfRCyPKOkUggK0A">
+              Slack
+            </a>
           </div>
           <div>
             <h5>More</h5>
