@@ -313,10 +313,10 @@ module.exports = class Consumer {
       topicConfigurations: this.topicConfigurations,
       instrumentationEmitter: this.instrumentationEmitter,
       memberAssignment: currentMemberAssignment.reduce(
-        (partitionsByTopic, { topic, partitions }) => ({
-          ...partitionsByTopic,
-          [topic]: partitions,
-        }),
+        (partitionsByTopic, { topic, partitions }) => {
+          partitionsByTopic[topic] = partitions
+          return partitionsByTopic
+        },
         {}
       ),
       autoCommit: this.autoCommit,
@@ -336,10 +336,10 @@ module.exports = class Consumer {
         await this[PRIVATE.JOIN]()
         await this[PRIVATE.SYNC]()
 
-        const memberAssignment = this.assigned().reduce(
-          (result, { topic, partitions }) => ({ ...result, [topic]: partitions }),
-          {}
-        )
+        const memberAssignment = this.assigned().reduce((result, { topic, partitions }) => {
+          result[topic] = partitions
+          return result
+        }, {})
 
         const payload = {
           groupId: this.groupId,
@@ -384,10 +384,10 @@ module.exports = class Consumer {
     this.partitionsPerSubscribedTopic = this.generatePartitionsPerSubscribedTopic()
 
     const offsetManagerMemberAssignment = memberAssignment.reduce(
-      (partitionsByTopic, { topic, partitions }) => ({
-        ...partitionsByTopic,
-        [topic]: partitions,
-      }),
+      (partitionsByTopic, { topic, partitions }) => {
+        partitionsByTopic[topic] = partitions
+        return partitionsByTopic
+      },
       {}
     )
 
