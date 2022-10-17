@@ -28,13 +28,17 @@ export type Authenticator = {
   authenticate: () => Promise<void>
 }
 
+export type SaslAuthenticateArgs<ParseResult> = {
+  request: SaslAuthenticationRequest
+  response?: SaslAuthenticationResponse<ParseResult>
+}
+
 export type AuthenticationProviderArgs = {
   host: string
   port: number
   logger: Logger
   saslAuthenticate: <ParseResult>(
-    request: SaslAuthenticationRequest,
-    response?: SaslAuthenticationResponse<ParseResult>
+    args: SaslAuthenticateArgs<ParseResult>
   ) => Promise<ParseResult | void>
 }
 
@@ -259,7 +263,7 @@ export interface ReplicaAssignment {
 }
 
 export interface PartitionReassignment {
-  topic: string,
+  topic: string
   partitionAssignment: Array<ReplicaAssignment>
 }
 
@@ -694,7 +698,10 @@ export type Broker = {
     topics: PartitionReassignment[]
     timeout?: number
   }): Promise<any>
-  listPartitionReassignments(request: { topics?: TopicPartitions[]; timeout?: number }): Promise<ListPartitionReassignmentsResponse>
+  listPartitionReassignments(request: {
+    topics?: TopicPartitions[]
+    timeout?: number
+  }): Promise<ListPartitionReassignmentsResponse>
 }
 
 interface MessageSetEntry {
