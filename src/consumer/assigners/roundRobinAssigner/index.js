@@ -6,7 +6,7 @@ const { MemberMetadata, MemberAssignment } = require('../../assignerProtocol')
  */
 module.exports = ({ cluster }) => ({
   name: 'RoundRobinAssigner',
-  version: 1,
+  version: 0,
 
   /**
    * Assign the topics to the provided members.
