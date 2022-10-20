@@ -95,9 +95,14 @@ module.exports = ({
   }
 
   /** @type {import("../../types").Consumer["disconnect"]} */
-  const disconnect = async (lAllowCrashReconnect = true) => {
+  const disconnect = async allowReconnectAfterRebalance => {
     try {
-      allowCrashReconnect = lAllowCrashReconnect
+      if (
+        allowReconnectAfterRebalance !== undefined &&
+        typeof allowReconnectAfterRebalance === 'boolean'
+      ) {
+        allowCrashReconnect = allowReconnectAfterRebalance
+      }
       await stop()
       logger.debug('consumer has stopped, disconnecting', { groupId })
       await cluster.disconnect()

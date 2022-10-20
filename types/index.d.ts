@@ -189,7 +189,7 @@ export type Cluster = {
   addMultipleTargetTopics(topics: string[]): Promise<void>
   isConnected(): boolean
   connect(): Promise<void>
-  disconnect(): Promise<void>
+  disconnect(allowReconnectAfterRebalance?: boolean): Promise<void>
   refreshMetadata(): Promise<void>
   refreshMetadataIfNecessary(): Promise<void>
   addTargetTopic(topic: string): Promise<void>
