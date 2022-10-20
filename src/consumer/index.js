@@ -95,7 +95,7 @@ module.exports = ({
   }
 
   /** @type {import("../../types").Consumer["disconnect"]} */
-  const disconnect = async (lAllowCrashReconnect = false) => {
+  const disconnect = async (lAllowCrashReconnect = true) => {
     try {
       allowCrashReconnect = lAllowCrashReconnect
       await stop()
