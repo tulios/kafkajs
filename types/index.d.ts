@@ -189,7 +189,7 @@ export type Cluster = {
   addMultipleTargetTopics(topics: string[]): Promise<void>
   isConnected(): boolean
   connect(): Promise<void>
-  disconnect(allowReconnectAfterRebalance?: boolean): Promise<void>
+  disconnect(): Promise<void>
   refreshMetadata(): Promise<void>
   refreshMetadataIfNecessary(): Promise<void>
   addTargetTopic(topic: string): Promise<void>
@@ -1031,7 +1031,7 @@ export type ConsumerSubscribeTopics = { topics: (string | RegExp)[]; fromBeginni
 
 export type Consumer = {
   connect(): Promise<void>
-  disconnect(): Promise<void>
+  disconnect(allowReconnectAfterRebalance?: boolean): Promise<void>
   subscribe(subscription: ConsumerSubscribeTopics | ConsumerSubscribeTopic): Promise<void>
   stop(): Promise<void>
   run(config?: ConsumerRunConfig): Promise<void>
