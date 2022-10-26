@@ -270,7 +270,7 @@ module.exports = class Connection {
 
     await this.requestQueue.waitForPendingRequests()
     this.requestQueue.destroy()
-
+    await this.socket.
     if (this.socket) {
       this.socket.end()
       this.socket.unref()
@@ -307,7 +307,9 @@ module.exports = class Connection {
       .add(Long.fromValue(remainingNanosSince).divide(1000000))
 
     const reauthenticateAt = millisSince.add(this.reauthenticationThreshold)
-    return reauthenticateAt.greaterThanOrEqual(this.sessionLifetime)
+    const shouldReauthenticate = reauthenticateAt.greaterThanOrEqual(this.sessionLifetime)
+    this.logger.debug(`Got shouldReauthenticate of ${shouldReauthenticate} for ${this.clientId}`);
+    return shouldReauthenticate;
   }
 
   /** @public */
@@ -325,6 +327,7 @@ module.exports = class Connection {
     /**
      * TODO: rewrite removing the async promise executor
      */
+    this.logger.debug(`Sending auth request for ${this.clientId}`);
 
     /* eslint-disable no-async-promise-executor */
     return new Promise(async (resolve, reject) => {

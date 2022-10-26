@@ -60,6 +60,7 @@ module.exports = class ConnectionPool {
   }
 
   async destroy() {
+    logger.debug(`destroying connection pool for ${this.clientId}`)
     await Promise.all(this.map(c => c.disconnect()))
   }
 }
