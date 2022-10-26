@@ -186,7 +186,9 @@ module.exports = class Runner extends EventEmitter {
       await this.fetchManager.stop()
       await this.waitForConsumer()
       await this.consumerGroup.leave()
-    } catch (e) {}
+    } catch (error) {
+      this.logger.debug('caught exception stopping runner', { error })
+    }
   }
 
   waitForConsumer() {
@@ -209,7 +211,13 @@ module.exports = class Runner extends EventEmitter {
       await this.consumerGroup.heartbeat({ interval: this.heartbeatInterval })
     } catch (e) {
       if (isRebalancing(e)) {
+        this.logger.debug(
+          'auto-committing offsets since consumer group is rebalancing during heartbeat'
+        )
         await this.autoCommitOffsets()
+        this.logger.debug(
+          'auto-committed offsets since consumer group is rebalancing during heartbeat'
+        )
       }
       throw e
     }
@@ -418,6 +426,7 @@ module.exports = class Runner extends EventEmitter {
        * @see https://github.com/apache/kafka/blob/9aa660786e46c1efbf5605a6a69136a1dac6edb9/clients/src/main/java/org/apache/kafka/clients/consumer/internals/Fetcher.java#L1499-L1505
        */
       if (batch.isEmptyDueToFiltering()) {
+        this.logger.debug('batch was empty due to filtering, resolving and auto-committing')
         this.instrumentationEmitter.emit(START_BATCH_PROCESS, payload)
 
         this.consumerGroup.resolveOffset({

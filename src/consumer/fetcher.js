@@ -66,6 +66,7 @@ const createFetcher = ({
           }
         }
       } catch (error) {
+        logger.debug(`fetcher error `, { error })
         isRunning = false
         emitter.emit('end')
         throw error

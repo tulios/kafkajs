@@ -234,6 +234,7 @@ module.exports = class Cluster {
             e.type === 'UNKNOWN_TOPIC_OR_PARTITION' ||
             e.type === 'TOPIC_AUTHORIZATION_FAILED'
           ) {
+            this.logger.debug(`Got topic error ${e.type}. Setting targetTopics to previoustopics`)
             this.targetTopics = previousTopics
           }
 
@@ -266,6 +267,10 @@ module.exports = class Cluster {
         e.name === 'KafkaJSLockTimeout' ||
         e.name === 'KafkaJSConnectionError'
       ) {
+        this.logger.debug(`Broker not found. Got ${e.name} error, refreshing metadata`, {
+          nodeId,
+          error: e,
+        })
         await this.refreshMetadata()
       }
 
@@ -366,6 +371,7 @@ module.exports = class Cluster {
           // During maintenance the current coordinator can go down; findBroker will
           // refresh metadata and re-throw the error. findGroupCoordinator has to re-throw
           // the error to go through the retry cycle.
+          this.logger.debug(`ECONNREFUSED - during findGroupCoordinator`)
           throw e
         }
 
