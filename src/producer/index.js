@@ -228,6 +228,7 @@ module.exports = ({
      * @return {Promise}
      */
     disconnect: async () => {
+      logger.debug(`Disconnecting producer`)
       connectionStatus = CONNECTION_STATUS.DISCONNECTING
       await cluster.disconnect()
       connectionStatus = CONNECTION_STATUS.DISCONNECTED
