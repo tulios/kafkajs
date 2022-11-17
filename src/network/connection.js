@@ -355,7 +355,7 @@ module.exports = class Connection {
         const requestPayload = await request.encode()
 
         this.failIfNotConnected()
-        this.socket.write(requestPayload.buffer, 'binary')
+        this.socket.write(requestPayload, 'binary')
       } catch (e) {
         reject(e)
       }
