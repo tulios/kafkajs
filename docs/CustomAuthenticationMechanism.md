@@ -24,13 +24,17 @@ configure your brokers.
 A custom authentication mechanism needs to fulfill the following interface:
 
 ```ts
+type SaslAuthenticateArgs<ParseResult> = {
+  request: SaslAuthenticationRequest
+  response?: SaslAuthenticationResponse<ParseResult>
+}
+
 type AuthenticationProviderArgs = {
   host: string
   port: number
   logger: Logger
   saslAuthenticate: <ParseResult>(
-    request: SaslAuthenticationRequest,
-    response?: SaslAuthenticationResponse<ParseResult>
+    args: SaslAuthenticateArgs<ParseResult>
   ) => Promise<ParseResult | void>
 }
 
