@@ -66,7 +66,7 @@
     "jest-circus": "^25.1.0",
     "jest-extended": "^0.11.2",
     "jest-junit": "^10.0.0",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "lint-staged": "^9.2.0",
     "mockdate": "^2.0.5",
     "prettier": "^1.18.2",
