@@ -63,7 +63,7 @@ module.exports = ({
     }
 
     for (const { topic, messages } of topicMessages) {
-      if (!messages) {
+      if (!messages || !Array.isArray(messages)) {
         throw new KafkaJSNonRetriableError(
           `Invalid messages array [${messages}] for topic "${topic}"`
         )
