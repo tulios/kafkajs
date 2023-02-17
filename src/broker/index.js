@@ -77,8 +77,8 @@ module.exports = class Broker {
    * @returns {Promise}
    */
   async connect() {
+    await this.lock.acquire()
     try {
-      await this.lock.acquire()
       if (this.isConnected()) {
         return
       }

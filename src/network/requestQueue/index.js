@@ -9,6 +9,7 @@ const PRIVATE = {
 }
 
 const REQUEST_QUEUE_EMPTY = 'requestQueueEmpty'
+const CHECK_PENDING_REQUESTS_INTERVAL = 10
 
 module.exports = class RequestQueue extends EventEmitter {
   /**
@@ -102,23 +103,14 @@ module.exports = class RequestQueue extends EventEmitter {
   }
 
   maybeThrottle(clientSideThrottleTime) {
-    if (clientSideThrottleTime) {
+    if (clientSideThrottleTime !== null && clientSideThrottleTime > 0) {
+      this.logger.debug(`Client side throttling in effect for ${clientSideThrottleTime}ms`)
       const minimumThrottledUntil = Date.now() + clientSideThrottleTime
       this.throttledUntil = Math.max(minimumThrottledUntil, this.throttledUntil)
     }
   }
 
-  /**
-   * @typedef {Object} PushedRequest
-   * @property {import("./socketRequest").RequestEntry} entry
-   * @property {boolean} expectResponse
-   * @property {Function} sendRequest
-   * @property {number} [requestTimeout]
-   *
-   * @public
-   * @param {PushedRequest} pushedRequest
-   */
-  push(pushedRequest) {
+  createSocketRequest(pushedRequest) {
     const { correlationId } = pushedRequest.entry
     const defaultRequestTimeout = this.requestTimeout
     const customRequestTimeout = pushedRequest.requestTimeout
@@ -148,6 +140,23 @@ module.exports = class RequestQueue extends EventEmitter {
         this[PRIVATE.EMIT_REQUEST_QUEUE_EMPTY]()
       },
     })
+
+    return socketRequest
+  }
+
+  /**
+   * @typedef {Object} PushedRequest
+   * @property {import("./socketRequest").RequestEntry} entry
+   * @property {boolean} expectResponse
+   * @property {Function} sendRequest
+   * @property {number} [requestTimeout]
+   *
+   * @public
+   * @param {PushedRequest} pushedRequest
+   */
+  push(pushedRequest) {
+    const { correlationId } = pushedRequest.entry
+    const socketRequest = this.createSocketRequest(pushedRequest)
 
     if (this.canSendSocketRequestImmediately()) {
       this.sendSocketRequest(socketRequest)
@@ -300,12 +309,15 @@ module.exports = class RequestQueue extends EventEmitter {
     // will be fine, and potentially fix up a new timeout if needed at that time.
     // Note that if we're merely "overloaded" by having too many inflight requests
     // we will anyways check the queue when one of them gets fulfilled.
-    const timeUntilUnthrottled = this.throttledUntil - Date.now()
-    if (timeUntilUnthrottled > 0 && !this.throttleCheckTimeoutId) {
+    let scheduleAt = this.throttledUntil - Date.now()
+    if (!this.throttleCheckTimeoutId) {
+      if (this.pending.length > 0) {
+        scheduleAt = scheduleAt > 0 ? scheduleAt : CHECK_PENDING_REQUESTS_INTERVAL
+      }
       this.throttleCheckTimeoutId = setTimeout(() => {
         this.throttleCheckTimeoutId = null
         this.checkPendingRequests()
-      }, timeUntilUnthrottled)
+      }, scheduleAt)
     }
   }
 }
