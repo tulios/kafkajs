@@ -4,7 +4,7 @@ const createFetchManager = require('./fetchManager')
 const Batch = require('./batch')
 const { newLogger } = require('testHelpers')
 const waitFor = require('../utils/waitFor')
-const { KafkaJSNonRetriableError } = require('../errors')
+const { KafkaJSNonRetriableError, KafkaJSNoBrokerAvailableError } = require('../errors')
 
 describe('FetchManager', () => {
   let fetchManager, fetch, handler, getNodeIds, concurrency, batchSize
@@ -93,5 +93,11 @@ describe('FetchManager', () => {
       getNodeIds.mockImplementation(() => seq(0))
       await expect(fetchManagerPromise).rejects.toThrow('Node not found')
     })
+  })
+
+  it('should throw an error when there are no brokers available', async () => {
+    getNodeIds.mockImplementation(() => seq(0))
+
+    await expect(fetchManager.start()).rejects.toThrowError(new KafkaJSNoBrokerAvailableError())
   })
 })

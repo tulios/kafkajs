@@ -144,7 +144,7 @@ module.exports = class Runner extends EventEmitter {
           return bail(e)
         }
 
-        if (e.name === 'KafkaJSConnectionError') {
+        if (e.name === 'KafkaJSNoBrokerAvailableError') {
           return bail(e)
         }
 
