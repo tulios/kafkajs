@@ -394,6 +394,7 @@ module.exports = class Cluster {
         } catch (e) {
           this.logger.debug('Tried to find group coordinator', {
             nodeId,
+            groupId,
             error: e,
           })
 
