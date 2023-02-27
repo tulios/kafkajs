@@ -236,7 +236,7 @@ Take a look at [Retry](Configuration.md#retry) for more information.
 
 ## <a name="compression"></a> Compression
 
-Since KafkaJS aims to have as small footprint and as few dependencies as possible, only the GZIP codec is part of the core functionality. Providing plugins supporting other codecs might be considered in the future.
+Since KafkaJS aims to have as small footprint and as few dependencies as possible, only the GZIP codec is part of the core functionality, other codecs are available as packages.
 
 ### <a name="compression-gzip"></a> GZIP
 
@@ -313,7 +313,7 @@ Configuration options can be passed to the factory function to control compressi
 
 ### <a name="compression-other"></a> Other
 
-Any other codec than GZIP can be easily implemented using existing libraries.
+Any other codec can be easily implemented using existing libraries.
 
 A codec is an object with two `async` functions: `compress` and `decompress`. Import the libraries and define the codec object:
 
