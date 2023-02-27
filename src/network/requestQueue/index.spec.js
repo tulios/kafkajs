@@ -211,6 +211,28 @@ describe('Network > RequestQueue', () => {
       expect(sentAt).toBeGreaterThanOrEqual(before + clientSideThrottleTime)
     })
 
+    it('ensure request is sent when client-side throttling delay is marginal', async () => {
+      const sendDone = new Promise(resolve => {
+        request.sendRequest = () => {
+          resolve(Date.now())
+        }
+      })
+
+      expect(requestQueue.canSendSocketRequestImmediately()).toBe(true)
+      const socketRequest = requestQueue.createSocketRequest(request)
+      requestQueue.pending.push(socketRequest)
+
+      const before = Date.now()
+      const clientSideThrottleTime = 1
+      requestQueue.maybeThrottle(clientSideThrottleTime)
+      // Sleep until the marginal delay is passed before calling scheduleCheckPendingRequests()
+      await sleep(clientSideThrottleTime)
+      requestQueue.scheduleCheckPendingRequests()
+
+      const sentAt = await sendDone
+      expect(sentAt).toBeGreaterThanOrEqual(before + clientSideThrottleTime)
+    })
+
     it('does not allow for a inflight correlation ids collision', async () => {
       requestQueue.inflight.set(request.entry.correlationId, 'already existing inflight')
       expect(() => {

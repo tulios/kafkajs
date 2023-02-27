@@ -77,8 +77,8 @@ module.exports = class Broker {
    * @returns {Promise}
    */
   async connect() {
+    await this.lock.acquire()
     try {
-      await this.lock.acquire()
       if (this.isConnected()) {
         return
       }
@@ -584,8 +584,7 @@ module.exports = class Broker {
    * @param {object} request
    * @param {string[]} request.topics An array of topics to be deleted
    * @param {number} [request.timeout=5000] The time in ms to wait for a topic to be completely deleted on the
-   *                                controller node. Values <= 0 will trigger topic deletion and return
-   *                                immediately
+   *                                controller node.
    * @returns {Promise}
    */
   async deleteTopics({ topics, timeout = 5000 }) {
@@ -865,6 +864,36 @@ module.exports = class Broker {
   async deleteAcls({ filters }) {
     const deleteAcls = this.lookupRequest(apiKeys.DeleteAcls, requests.DeleteAcls)
     return await this[PRIVATE.SEND_REQUEST](deleteAcls({ filters }))
+  }
+
+  /**
+   * @public
+   * @param {Object} request
+   * @param {import("../../types").PartitionReassignment[]} request.topics
+   * @param {number} [request.timeout]
+   * @returns {Promise}
+   */
+  async alterPartitionReassignments({ topics, timeout }) {
+    const alterPartitionReassignments = this.lookupRequest(
+      apiKeys.AlterPartitionReassignments,
+      requests.AlterPartitionReassignments
+    )
+    return await this[PRIVATE.SEND_REQUEST](alterPartitionReassignments({ topics, timeout }))
+  }
+
+  /**
+   * @public
+   * @param {Object} request
+   * @param {import("../../types").TopicPartitions[]} request.topics can be null
+   * @param {number} [request.timeout]
+   * @returns {Promise}
+   */
+  async listPartitionReassignments({ topics = null, timeout }) {
+    const listPartitionReassignments = this.lookupRequest(
+      apiKeys.ListPartitionReassignments,
+      requests.ListPartitionReassignments
+    )
+    return await this[PRIVATE.SEND_REQUEST](listPartitionReassignments({ topics, timeout }))
   }
 
   /**

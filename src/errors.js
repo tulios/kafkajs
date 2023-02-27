@@ -238,6 +238,16 @@ class KafkaJSCreateTopicError extends KafkaJSProtocolError {
     this.name = 'KafkaJSCreateTopicError'
   }
 }
+
+class KafkaJSAlterPartitionReassignmentsError extends KafkaJSProtocolError {
+  constructor(e, topicName, partition) {
+    super(e)
+    this.topic = topicName
+    this.partition = partition
+    this.name = 'KafkaJSAlterPartitionReassignmentsError'
+  }
+}
+
 class KafkaJSAggregateError extends Error {
   constructor(message, errors) {
     super(message)
@@ -256,7 +266,9 @@ class KafkaJSNoBrokerAvailableError extends KafkaJSError {
 }
 
 const isRebalancing = e =>
-  e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
+  e.type === 'REBALANCE_IN_PROGRESS' ||
+  e.type === 'NOT_COORDINATOR_FOR_GROUP' ||
+  e.type === 'ILLEGAL_GENERATION'
 
 const isKafkaJSError = e => e instanceof KafkaJSError
 
@@ -291,6 +303,7 @@ module.exports = {
   KafkaJSAggregateError,
   KafkaJSFetcherRebalanceError,
   KafkaJSNoBrokerAvailableError,
+  KafkaJSAlterPartitionReassignmentsError,
   isRebalancing,
   isKafkaJSError,
 }

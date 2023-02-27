@@ -319,8 +319,8 @@ module.exports = class Connection {
    * @public
    * @returns {Promise}
    */
-  sendAuthRequest({ authExpectResponse = false, request, response }) {
-    this.authExpectResponse = authExpectResponse
+  sendAuthRequest({ request, response }) {
+    this.authExpectResponse = !!response
 
     /**
      * TODO: rewrite removing the async promise executor
@@ -355,7 +355,7 @@ module.exports = class Connection {
         const requestPayload = await request.encode()
 
         this.failIfNotConnected()
-        this.socket.write(requestPayload.buffer, 'binary')
+        this.socket.write(requestPayload, 'binary')
       } catch (e) {
         reject(e)
       }

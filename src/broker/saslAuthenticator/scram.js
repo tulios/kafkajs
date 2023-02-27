@@ -108,13 +108,15 @@ class SCRAM {
   }
 
   /**
-   * @param {Connection} connection
+   * @param {SASLOptions} sasl
    * @param {Logger} logger
    * @param {Function} saslAuthenticate
    * @param {DigestDefinition} digestDefinition
    */
-  constructor(connection, logger, saslAuthenticate, digestDefinition) {
-    this.connection = connection
+  constructor(sasl, host, port, logger, saslAuthenticate, digestDefinition) {
+    this.sasl = sasl
+    this.host = host
+    this.port = port
     this.logger = logger
     this.saslAuthenticate = saslAuthenticate
     this.digestDefinition = digestDefinition
@@ -127,10 +129,9 @@ class SCRAM {
 
   async authenticate() {
     const { PREFIX } = this
-    const { host, port, sasl } = this.connection
-    const broker = `${host}:${port}`
+    const broker = `${this.host}:${this.port}`
 
-    if (sasl.username == null || sasl.password == null) {
+    if (this.sasl.username == null || this.sasl.password == null) {
       throw new KafkaJSSASLAuthenticationError(`${this.PREFIX}: Invalid username or password`)
     }
 
@@ -169,7 +170,6 @@ class SCRAM {
     const response = scram.firstMessage.response
 
     return this.saslAuthenticate({
-      authExpectResponse: true,
       request,
       response,
     })
@@ -202,7 +202,6 @@ class SCRAM {
     const response = scram.finalMessage.response
 
     return this.saslAuthenticate({
-      authExpectResponse: true,
       request,
       response,
     })
@@ -287,7 +286,7 @@ class SCRAM {
    * @private
    */
   encodedUsername() {
-    const { username } = this.connection.sasl
+    const { username } = this.sasl
     return SCRAM.sanitizeString(username).toString('utf-8')
   }
 
@@ -295,7 +294,7 @@ class SCRAM {
    * @private
    */
   encodedPassword() {
-    const { password } = this.connection.sasl
+    const { password } = this.sasl
     return password.toString('utf-8')
   }
 
