@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.2.4] - 2023-02-27
+
+### Added
+  - Include `groupId` in debug log when failing to find group coordinator #1522
+
+### Fixed
+  - Rejoin group after ILLEGAL_GENERATION error #1474
+  - Fix consumer getting stuck after very brief throttling #1532
+  - Prevent infinite crash loop when no brokers are available #1408
+
 ## [2.2.3] - 2022-11-21
 
 ### Fixed
