@@ -95,7 +95,7 @@ describe('FetchManager', () => {
     })
   })
 
-  it('should throw an error when there are no avaiblae brokers', async () => {
+  it('should throw an error when there are no brokers available', async () => {
     getNodeIds.mockImplementation(() => seq(0))
 
     await expect(fetchManager.start()).rejects.toThrowError(new KafkaJSNoBrokerAvailableError())
