@@ -76,7 +76,7 @@ signalTraps.forEach(type => {
 ## <a name="typescript-producer-example"></a> Typescript Example
 
 ```typescript
-import { Kafka, logCreator, logLevel, Producer, ProducerBatch } from 'kafkajs'
+import { Kafka, Message, Producer, ProducerBatch, TopicMessages } from 'kafkajs'
 
 interface CustomMessageFormat { a: string }
 
