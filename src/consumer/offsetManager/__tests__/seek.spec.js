@@ -1,6 +1,6 @@
-const OffsetManager = require('../index')
+const GroupOffsetManager = require('../groupOffsetManager')
 
-describe('Consumer > OffsetMananger > seek', () => {
+describe('Consumer > GroupOffsetMananger > seek', () => {
   let offsetManager, coordinator
   beforeEach(() => {
     const memberAssignment = {
@@ -9,7 +9,7 @@ describe('Consumer > OffsetMananger > seek', () => {
     }
 
     coordinator = { offsetCommit: jest.fn() }
-    offsetManager = new OffsetManager({ memberAssignment })
+    offsetManager = new GroupOffsetManager({ memberAssignment })
     offsetManager.getCoordinator = jest.fn(() => coordinator)
   })
 

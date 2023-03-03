@@ -19,14 +19,15 @@ describe('Consumer', () => {
     ).toThrowWithMessage(KafkaJSNonRetriableError, errorMessage)
   })
 
-  it('throws when groupId is missing', () => {
-    const errorMessage = 'Consumer groupId must be a non-empty string.'
+  it('throws when calling describeGroup for consumer without group', async () => {
+    const consumer = createConsumer({
+      cluster: createCluster(),
+      logger: newLogger(),
+    })
 
-    expect(() =>
-      createConsumer({
-        cluster: createCluster(),
-        logger: newLogger(),
-      })
-    ).toThrowWithMessage(KafkaJSNonRetriableError, errorMessage)
+    await expect(consumer.describeGroup()).rejects.toHaveProperty(
+      'message',
+      'describeGroup is not supported for consumers without a group'
+    )
   })
 })

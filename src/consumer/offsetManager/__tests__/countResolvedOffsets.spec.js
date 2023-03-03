@@ -1,6 +1,6 @@
-const OffsetManager = require('../index')
+const GroupOffsetManager = require('../groupOffsetManager')
 
-describe('Consumer > OffsetMananger > countResolvedOffsets', () => {
+describe('Consumer > GroupOffsetMananger > countResolvedOffsets', () => {
   let offsetManager
   const resolveOffsets = (topic, partition, { count, startFrom = 0 }) => {
     Array(count)
@@ -20,7 +20,7 @@ describe('Consumer > OffsetMananger > countResolvedOffsets', () => {
       topic2: [0, 1, 2, 3, 4, 5],
     }
 
-    offsetManager = new OffsetManager({
+    offsetManager = new GroupOffsetManager({
       memberAssignment,
       cluster: {
         committedOffsets: jest.fn(() => new Map()),

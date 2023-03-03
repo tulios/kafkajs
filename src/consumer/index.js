@@ -1,7 +1,7 @@
 const Long = require('../utils/long')
 const createRetry = require('../retry')
 const { initialRetryTime } = require('../retry/defaults')
-const ConsumerGroup = require('./consumerGroup')
+const Consumer = require('./consumer')
 const Runner = require('./runner')
 const { events, wrap: wrapEvent, unwrap: unwrapEvent } = require('./instrumentationEvents')
 const InstrumentationEventEmitter = require('../instrumentation/emitter')
@@ -63,10 +63,6 @@ module.exports = ({
   instrumentationEmitter: rootInstrumentationEmitter,
   metadataMaxAge,
 }) => {
-  if (!groupId) {
-    throw new KafkaJSNonRetriableError('Consumer groupId must be a non-empty string.')
-  }
-
   const logger = rootLogger.namespace('Consumer')
   const instrumentationEmitter = rootInstrumentationEmitter || new InstrumentationEventEmitter()
   const assigners = partitionAssigners.map(createAssigner =>
@@ -76,8 +72,8 @@ module.exports = ({
   /** @type {Record<string, { fromBeginning?: boolean }>} */
   const topics = {}
   let runner = null
-  /** @type {ConsumerGroup} */
-  let consumerGroup = null
+  /** @type {Consumer} */
+  let consumer = null
   let restartTimeout = null
 
   if (heartbeatInterval >= sessionTimeout) {
@@ -114,7 +110,7 @@ module.exports = ({
       if (runner) {
         await runner.stop()
         runner = null
-        consumerGroup = null
+        consumer = null
         instrumentationEmitter.emit(STOP)
       }
 
@@ -132,7 +128,7 @@ module.exports = ({
 
   /** @type {import("../../types").Consumer["subscribe"]} */
   const subscribe = async ({ topic, topics: subscriptionTopics, fromBeginning = false }) => {
-    if (consumerGroup) {
+    if (consumer) {
       throw new KafkaJSNonRetriableError('Cannot subscribe to topic while consumer is running')
     }
 
@@ -195,7 +191,7 @@ module.exports = ({
     eachBatch = null,
     eachMessage = null,
   } = {}) => {
-    if (consumerGroup) {
+    if (consumer) {
       logger.warn('consumer#run was called, but the consumer is already running', { groupId })
       return
     }
@@ -203,7 +199,7 @@ module.exports = ({
     const start = async onCrash => {
       logger.info('Starting', { groupId })
 
-      consumerGroup = new ConsumerGroup({
+      consumer = new Consumer({
         logger: rootLogger,
         topics: keys(topics),
         topicConfigurations: topics,
@@ -228,7 +224,7 @@ module.exports = ({
 
       runner = new Runner({
         logger: rootLogger,
-        consumerGroup,
+        consumer,
         instrumentationEmitter,
         heartbeatInterval,
         retry,
@@ -365,9 +361,9 @@ module.exports = ({
       {}
     )
 
-    if (!consumerGroup) {
+    if (!consumer) {
       throw new KafkaJSNonRetriableError(
-        'Consumer group was not initialized, consumer#run must be called first'
+        'Consumer was not initialized, consumer#run must be called first'
       )
     }
 
@@ -406,17 +402,23 @@ module.exports = ({
       throw new KafkaJSNonRetriableError('Offset must not be a negative number')
     }
 
-    if (!consumerGroup) {
+    if (!consumer) {
       throw new KafkaJSNonRetriableError(
-        'Consumer group was not initialized, consumer#run must be called first'
+        'Consumer was not initialized, consumer#run must be called first'
       )
     }
 
-    consumerGroup.seek({ topic, partition, offset: seekOffset.toString() })
+    consumer.seek({ topic, partition, offset: seekOffset.toString() })
   }
 
   /** @type {import("../../types").Consumer["describeGroup"]} */
   const describeGroup = async () => {
+    if (!groupId) {
+      throw new KafkaJSNonRetriableError(
+        'describeGroup is not supported for consumers without a group'
+      )
+    }
+
     const coordinator = await cluster.findGroupCoordinator({ groupId })
     const retrier = createRetry(retry)
     return retrier(async () => {
@@ -446,13 +448,13 @@ module.exports = ({
       }
     }
 
-    if (!consumerGroup) {
+    if (!consumer) {
       throw new KafkaJSNonRetriableError(
-        'Consumer group was not initialized, consumer#run must be called first'
+        'Consumer was not initialized, consumer#run must be called first'
       )
     }
 
-    consumerGroup.pause(topicPartitions)
+    consumer.pause(topicPartitions)
   }
 
   /**
@@ -461,11 +463,11 @@ module.exports = ({
    * @type {import("../../types").Consumer["paused"]}
    */
   const paused = () => {
-    if (!consumerGroup) {
+    if (!consumer) {
       return []
     }
 
-    return consumerGroup.paused()
+    return consumer.paused()
   }
 
   /**
@@ -489,13 +491,13 @@ module.exports = ({
       }
     }
 
-    if (!consumerGroup) {
+    if (!consumer) {
       throw new KafkaJSNonRetriableError(
-        'Consumer group was not initialized, consumer#run must be called first'
+        'Consumer was not initialized, consumer#run must be called first'
       )
     }
 
-    consumerGroup.resume(topicPartitions)
+    consumer.resume(topicPartitions)
   }
 
   /**
