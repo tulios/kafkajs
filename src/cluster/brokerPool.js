@@ -206,7 +206,10 @@ module.exports = class BrokerPool {
         const replacedBrokersDisconnects = replacedBrokers.map(broker => broker.disconnect())
         await Promise.all([...brokerDisconnects, ...replacedBrokersDisconnects])
       } catch (e) {
-        if (e.type === 'LEADER_NOT_AVAILABLE') {
+        if (
+          e.type === 'LEADER_NOT_AVAILABLE' ||
+          (broker.allowAutoTopicCreation && e.type === 'UNKNOWN_TOPIC_OR_PARTITION')
+        ) {
           throw e
         }
 
