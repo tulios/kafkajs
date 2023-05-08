@@ -225,7 +225,6 @@ describe('Network > RequestQueue', () => {
       const before = Date.now()
       const clientSideThrottleTime = 1
       requestQueue.maybeThrottle(clientSideThrottleTime)
-      // Sleep until the marginal delay is passed before calling scheduleCheckPendingRequests()
       await sleep(clientSideThrottleTime)
       requestQueue.scheduleCheckPendingRequests()
 
