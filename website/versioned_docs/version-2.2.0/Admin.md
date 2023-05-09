@@ -655,7 +655,7 @@ await admin.describeAcls({
   host: '*',
   permissionType: AclPermissionTypes.ALLOW,
   operation: AclOperationTypes.ANY,
-  resourcePatternTypeFilter: ResourcePatternTypes.LITERAL,
+  resourcePatternType: ResourcePatternTypes.LITERAL,
 })
 // {
 //   resources: [
