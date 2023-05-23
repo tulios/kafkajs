@@ -185,6 +185,11 @@ module.exports = ({
     await cluster.addMultipleTargetTopics(topicsToSubscribe)
   }
 
+  /** @type {import("../../types").Consumer["unsubscribe"]} */
+  const unsubscribe = async topicName => {
+    await cluster.removeTargetTopic(topicName)
+  }
+
   /** @type {import("../../types").Consumer["run"]} */
   const run = async ({
     autoCommit = true,
@@ -507,6 +512,7 @@ module.exports = ({
     connect,
     disconnect,
     subscribe,
+    unsubscribe,
     stop,
     run,
     commitOffsets,

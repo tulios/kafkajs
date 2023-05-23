@@ -210,6 +210,21 @@ module.exports = class Cluster {
 
   /**
    * @public
+   * @param {string} topic
+   * @return {Promise}
+   */
+  async removeTargetTopic(topic) {
+    await this.mutatingTargetTopics.acquire()
+
+    try {
+      this.targetTopics.delete(topic)
+    } finally {
+      await this.mutatingTargetTopics.release()
+    }
+  }
+
+  /**
+   * @public
    * @param {string[]} topics
    * @return {Promise}
    */
