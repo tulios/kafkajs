@@ -93,6 +93,7 @@ describe('Admin', () => {
               clientHost: expect.any(String),
               clientId: expect.any(String),
               memberId: expect.any(String),
+              groupInstanceId: expect.any(Object),
               memberAssignment: expect.anything(),
               memberMetadata: expect.anything(),
             },
@@ -100,6 +101,7 @@ describe('Admin', () => {
           protocol: 'RoundRobinAssigner',
           protocolType: 'consumer',
           state: 'Stable',
+          authorizedOperations: expect.any(Number),
         }))
       )
     })
@@ -117,6 +119,7 @@ describe('Admin', () => {
             protocol: '',
             protocolType: '',
             state: 'Dead',
+            authorizedOperations: expect.any(Number) || null,
           },
         ],
       })

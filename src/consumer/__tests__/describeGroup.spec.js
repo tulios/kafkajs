@@ -56,6 +56,7 @@ describe('Consumer', () => {
             clientHost: expect.any(String),
             clientId: expect.any(String),
             memberId: expect.any(String),
+            groupInstanceId: expect.any(Object),
             memberAssignment: expect.anything(),
             memberMetadata: expect.anything(),
           },
@@ -63,6 +64,7 @@ describe('Consumer', () => {
         protocol: 'RoundRobinAssigner',
         protocolType: 'consumer',
         state: 'Stable',
+        authorizedOperations: expect.anything(),
       })
     })
   })

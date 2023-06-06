@@ -14,7 +14,7 @@ const {
 } = require('testHelpers')
 
 describe('Consumer > Instrumentation Events', () => {
-  let topicName, groupId, cluster, producer, consumer, consumer2, message, emitter
+  let topicName, groupId, cluster, producer, consumer, consumer2, consumer2Clone, message, emitter
 
   const createTestConsumer = (opts = {}) =>
     createConsumer({
@@ -37,6 +37,7 @@ describe('Consumer > Instrumentation Events', () => {
 
     emitter = new InstrumentationEventEmitter()
     cluster = createCluster({ instrumentationEmitter: emitter, metadataMaxAge: 50 })
+
     producer = createProducer({
       cluster,
       createPartitioner: createModPartitioner,
@@ -49,11 +50,12 @@ describe('Consumer > Instrumentation Events', () => {
   afterEach(async () => {
     consumer && (await consumer.disconnect())
     consumer2 && (await consumer2.disconnect())
+    consumer2Clone && (await consumer2Clone.disconnect())
     producer && (await producer.disconnect())
   })
 
   test('on throws an error when provided with an invalid event name', () => {
-    consumer = createTestConsumer()
+    consumer = createTestConsumer({ id: 1 })
     expect(() => consumer.on('NON_EXISTENT_EVENT', () => {})).toThrow(
       /Event name should be one of consumer.events./
     )
@@ -441,9 +443,12 @@ describe('Consumer > Instrumentation Events', () => {
     const onRebalancing = jest.fn()
 
     const groupId = `consumer-group-id-${secureRandom()}`
+    const groupInstanceId = `group-instance-id-${secureRandom()}`
+    const groupInstanceId2 = `group-instance-id-${secureRandom()}`
 
     consumer = createTestConsumer({
       groupId,
+      groupInstanceId,
       cluster: createCluster({
         instrumentationEmitter: new InstrumentationEventEmitter(),
         metadataMaxAge: 50,
@@ -452,6 +457,7 @@ describe('Consumer > Instrumentation Events', () => {
 
     consumer2 = createTestConsumer({
       groupId,
+      groupInstanceId: groupInstanceId2,
       cluster: createCluster({
         instrumentationEmitter: new InstrumentationEventEmitter(),
         metadataMaxAge: 50,
@@ -487,9 +493,72 @@ describe('Consumer > Instrumentation Events', () => {
       type: 'consumer.rebalancing',
       payload: {
         groupId: groupId,
-        memberId: memberId,
+        memberId: expect.stringContaining(groupInstanceId),
       },
     })
+  })
+
+  it('rebalance only once when a consumer rejoins with same static id', async () => {
+    const onRebalancing = jest.fn()
+
+    const groupId = `consumer-group-id-${secureRandom()}`
+    const groupInstanceId = `group-instance-id-${secureRandom()}`
+    const groupInstanceId2 = `group-instance-id-${secureRandom()}`
+
+    consumer = createTestConsumer({
+      groupId,
+      groupInstanceId,
+      cluster: createCluster({
+        instrumentationEmitter: new InstrumentationEventEmitter(),
+        metadataMaxAge: 50,
+      }),
+    })
+
+    consumer2 = createTestConsumer({
+      groupId,
+      groupInstanceId: groupInstanceId2,
+      cluster: createCluster({
+        instrumentationEmitter: new InstrumentationEventEmitter(),
+        metadataMaxAge: 50,
+      }),
+    })
+
+    consumer2Clone = createTestConsumer({
+      groupId,
+      groupInstanceId: groupInstanceId2,
+      cluster: createCluster({
+        instrumentationEmitter: new InstrumentationEventEmitter(),
+        metadataMaxAge: 50,
+      }),
+    })
+
+    let memberId
+    consumer.on(consumer.events.GROUP_JOIN, async event => {
+      memberId = memberId || event.payload.memberId
+    })
+
+    consumer.on(consumer.events.REBALANCING, async event => {
+      onRebalancing(event)
+    })
+
+    await consumer.connect()
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+    consumer.run({ eachMessage: () => true })
+    await waitForConsumerToJoinGroup(consumer, { label: 'consumer1' })
+
+    await consumer2.connect()
+    await consumer2.subscribe({ topic: topicName, fromBeginning: true })
+    consumer2.run({ eachMessage: () => true })
+    await waitForConsumerToJoinGroup(consumer2, { label: 'consumer2' })
+
+    await consumer2.disconnect()
+
+    await consumer2Clone.connect()
+    await consumer2Clone.subscribe({ topic: topicName })
+    consumer2Clone.run({ eachMessage: () => true })
+    await waitForConsumerToJoinGroup(consumer2Clone, { label: 'consumer2Clone' })
+
+    expect(onRebalancing).toBeCalledTimes(1)
   })
 
   it('emits request events', async () => {

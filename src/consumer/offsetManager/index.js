@@ -25,6 +25,7 @@ module.exports = class OffsetManager {
    * @param {string} options.groupId
    * @param {number} options.generationId
    * @param {string} options.memberId
+   * @param {string} options.groupInstanceId
    */
   constructor({
     cluster,
@@ -38,6 +39,7 @@ module.exports = class OffsetManager {
     groupId,
     generationId,
     memberId,
+    groupInstanceId,
   }) {
     this.cluster = cluster
     this.coordinator = coordinator
@@ -54,6 +56,7 @@ module.exports = class OffsetManager {
     this.groupId = groupId
     this.generationId = generationId
     this.memberId = memberId
+    this.groupInstanceId = groupInstanceId
 
     this.autoCommit = autoCommit
     this.autoCommitInterval = autoCommitInterval
@@ -244,7 +247,7 @@ module.exports = class OffsetManager {
   }
 
   async commitOffsets(offsets = {}) {
-    const { groupId, generationId, memberId } = this
+    const { groupId, generationId, memberId, groupInstanceId } = this
     const { topics = this.uncommittedOffsets().topics } = offsets
 
     if (topics.length === 0) {
@@ -256,6 +259,7 @@ module.exports = class OffsetManager {
       groupId,
       memberId,
       groupGenerationId: generationId,
+      groupInstanceId,
       topics,
     }
 
