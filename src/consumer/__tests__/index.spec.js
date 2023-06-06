@@ -14,17 +14,20 @@ const waitFor = require('../../utils/waitFor')
 const uniq = require('../../utils/uniq')
 
 describe('Consumer', () => {
-  let topicName, groupId, consumer, consumer2, producer
+  let topicName, groupId, consumer, consumer2, producer, groupInstanceId, groupInstanceId2
 
   describe('#run', () => {
     beforeEach(async () => {
       topicName = `test-topic-${secureRandom()}`
       groupId = `consumer-group-id-${secureRandom()}`
+      groupInstanceId = `group-instance-id-${secureRandom()}`
+      groupInstanceId2 = `group-instance-id-${secureRandom()}`
 
       await createTopic({ topic: topicName })
       consumer = createConsumer({
         cluster: createCluster({ metadataMaxAge: 50 }),
         groupId,
+        groupInstanceId,
         heartbeatInterval: 100,
         maxWaitTimeInMs: 100,
         logger: newLogger(),
@@ -32,6 +35,7 @@ describe('Consumer', () => {
       consumer2 = createConsumer({
         cluster: createCluster({ metadataMaxAge: 50 }),
         groupId,
+        groupInstanceId: groupInstanceId2,
         heartbeatInterval: 100,
         maxWaitTimeInMs: 100,
         logger: newLogger(),

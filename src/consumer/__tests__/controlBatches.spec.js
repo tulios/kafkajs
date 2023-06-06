@@ -17,12 +17,13 @@ const {
 } = require('testHelpers')
 
 describe('Consumer', () => {
-  let topicName, groupId, transactionalId, cluster, producer, consumer
+  let topicName, groupId, transactionalId, cluster, producer, consumer, groupInstanceId
   const maxBytes = 170
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
     groupId = `consumer-group-id-${secureRandom()}`
+    groupInstanceId = `group-instance-id-${secureRandom()}`
     transactionalId = `transaction-id-${secureRandom()}`
 
     await createTopic({ topic: topicName })
@@ -42,6 +43,7 @@ describe('Consumer', () => {
     consumer = createConsumer({
       cluster,
       groupId,
+      groupInstanceId,
       maxWaitTimeInMs: 100,
       maxBytes,
       maxBytesPerPartition: maxBytes,

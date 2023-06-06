@@ -151,6 +151,7 @@ export interface IHeaders {
 
 export interface ConsumerConfig {
   groupId: string
+  groupInstanceId?: string
   partitionAssigners?: PartitionAssigner[]
   metadataMaxAge?: number
   sessionTimeout?: number
@@ -661,6 +662,7 @@ export type Broker = {
     groupId: string
     groupGenerationId: number
     memberId: string
+    groupInstanceId?: string
     retentionTime?: number
     topics: TopicOffsets[]
   }): Promise<any>
@@ -970,6 +972,7 @@ export type ConsumerReceivedUnsubcribedTopicsEvent = InstrumentationEvent<{
   groupId: string
   generationId: number
   memberId: string
+  groupInstanceId?: string
   assignedTopics: string[]
   topicsSubscribed: string[]
   topicsNotSubscribed: string[]

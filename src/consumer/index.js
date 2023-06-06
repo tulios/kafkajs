@@ -28,6 +28,7 @@ const specialOffsets = [
  * @param {Object} params
  * @param {import("../../types").Cluster} params.cluster
  * @param {String} params.groupId
+ * @param {String} [params.groupInstanceId=null]
  * @param {import('../../types').RetryOptions} [params.retry]
  * @param {import('../../types').Logger} params.logger
  * @param {import('../../types').PartitionAssigner[]} [params.partitionAssigners]
@@ -48,6 +49,7 @@ const specialOffsets = [
 module.exports = ({
   cluster,
   groupId,
+  groupInstanceId = null,
   retry,
   logger: rootLogger,
   partitionAssigners = [roundRobin],
@@ -210,6 +212,7 @@ module.exports = ({
         retry,
         cluster,
         groupId,
+        groupInstanceId,
         assigners,
         sessionTimeout,
         rebalanceTimeout,

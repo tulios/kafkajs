@@ -13,11 +13,12 @@ const {
 } = require('testHelpers')
 
 describe('Consumer', () => {
-  let topicName, groupId, cluster, producer, consumer
+  let topicName, groupId, cluster, producer, consumer, groupInstanceId
 
   beforeEach(async () => {
     topicName = `test-topic-${secureRandom()}`
     groupId = `consumer-group-id-${secureRandom()}`
+    groupInstanceId = `group-instance-id-${secureRandom()}`
 
     await createTopic({ topic: topicName })
 
@@ -31,6 +32,7 @@ describe('Consumer', () => {
     consumer = createConsumer({
       cluster,
       groupId,
+      groupInstanceId,
       logger: newLogger(),
     })
   })
