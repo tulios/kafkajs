@@ -66,6 +66,9 @@ module.exports = class SASLAuthenticator {
       !this.connection.sasl.authenticationProvider &&
       Object.keys(BUILT_IN_AUTHENTICATION_PROVIDERS).includes(mechanism)
     ) {
+      if (Object.isFrozen(this.connection.sasl)) {
+        this.connection.sasl = Object.assign({}, this.connection.sasl)
+      }
       this.connection.sasl.authenticationProvider = BUILT_IN_AUTHENTICATION_PROVIDERS[mechanism](
         this.connection.sasl
       )
