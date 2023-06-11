@@ -549,6 +549,10 @@ export type Admin = {
     topics?: TopicPartitions[]
     timeout?: number
   }): Promise<ListPartitionReassignmentsResponse>
+  offsetDelete(request: {
+    groupId: string,
+    topics: TopicPartitions[],
+  }): Promise<void>
   logger(): Logger
   on(
     eventName: AdminEvents['CONNECT'],
@@ -702,6 +706,10 @@ export type Broker = {
     topics?: TopicPartitions[]
     timeout?: number
   }): Promise<ListPartitionReassignmentsResponse>
+  offsetDelete(request: {
+    groupId: string,
+    topics: TopicPartitions[],
+  }): Promise<void>
 }
 
 interface MessageSetEntry {
