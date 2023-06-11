@@ -63,6 +63,14 @@ module.exports = ({
     }
   }
 
+  const validateSasl = sasl => {
+    if (Object.isFrozen(sasl)) {
+      throw new KafkaJSNonRetriableError(
+        `Failed to connect: sasl object must be unfrozen`
+      )
+    }
+  }
+
   const getBrokers = async () => {
     let list
 
@@ -81,6 +89,7 @@ module.exports = ({
     }
 
     validateBrokers(list)
+    validateSasl(sasl)
 
     return list
   }
