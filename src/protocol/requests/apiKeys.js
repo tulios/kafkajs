@@ -46,4 +46,5 @@ module.exports = {
   IncrementalAlterConfigs: 44,
   AlterPartitionReassignments: 45,
   ListPartitionReassignments: 46,
+  OffsetDelete: 47,
 }

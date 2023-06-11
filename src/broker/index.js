@@ -897,6 +897,16 @@ module.exports = class Broker {
   }
 
   /**
+   * @param {Object} request
+   * @param {string} request.groupId
+   * @param {import("../../types").TopicPartitions[]} request.topics
+   */
+  async offsetDelete({ groupId, topics }) {
+    const offsetDelete = this.lookupRequest(apiKeys.OffsetDelete, requests.OffsetDelete)
+    return await this[PRIVATE.SEND_REQUEST](offsetDelete({ groupId, topics }))
+  }
+
+  /**
    * @private
    */
   async [PRIVATE.SEND_REQUEST](protocolRequest) {

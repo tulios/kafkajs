@@ -74,6 +74,7 @@ const requests = {
   IncrementalAlterConfigs: noImplementedRequestDefinitions,
   AlterPartitionReassignments: require('./alterPartitionReassignments'),
   ListPartitionReassignments: require('./listPartitionReassignments'),
+  OffsetDelete: require('./offsetDelete'),
 }
 
 const names = Object.keys(apiKeys)
