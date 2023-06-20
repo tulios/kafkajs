@@ -323,7 +323,7 @@ module.exports = class RequestQueue extends EventEmitter {
         this.throttleCheckTimeoutId = null
         this.throttleCurrentTimestamp = Date.now()
         this.checkPendingRequests()
-      }, Math.max(timeUntilUnthrottled, 0))
+      }, timeUntilUnthrottled)
     }
   }
 }
