@@ -9,7 +9,6 @@ const PRIVATE = {
 }
 
 const REQUEST_QUEUE_EMPTY = 'requestQueueEmpty'
-const CHECK_PENDING_REQUESTS_INTERVAL = 10
 
 module.exports = class RequestQueue extends EventEmitter {
   /**
@@ -55,6 +54,13 @@ module.exports = class RequestQueue extends EventEmitter {
      * @type {number}
      */
     this.throttledUntil = -1
+
+    /**
+     * Current timestamp when the throttling was set
+     *
+     * @type {number}
+     */
+    this.throttleCurrentTimestamp = 0
 
     /**
      * Timeout id if we have scheduled a check for pending requests due to client-side throttling
@@ -105,7 +111,8 @@ module.exports = class RequestQueue extends EventEmitter {
   maybeThrottle(clientSideThrottleTime) {
     if (clientSideThrottleTime !== null && clientSideThrottleTime > 0) {
       this.logger.debug(`Client side throttling in effect for ${clientSideThrottleTime}ms`)
-      const minimumThrottledUntil = Date.now() + clientSideThrottleTime
+      this.throttleCurrentTimestamp = Date.now()
+      const minimumThrottledUntil = this.throttleCurrentTimestamp + clientSideThrottleTime
       this.throttledUntil = Math.max(minimumThrottledUntil, this.throttledUntil)
     }
   }
@@ -309,15 +316,14 @@ module.exports = class RequestQueue extends EventEmitter {
     // will be fine, and potentially fix up a new timeout if needed at that time.
     // Note that if we're merely "overloaded" by having too many inflight requests
     // we will anyways check the queue when one of them gets fulfilled.
-    let scheduleAt = this.throttledUntil - Date.now()
-    if (!this.throttleCheckTimeoutId) {
-      if (this.pending.length > 0) {
-        scheduleAt = scheduleAt > 0 ? scheduleAt : CHECK_PENDING_REQUESTS_INTERVAL
-      }
+    const timeUntilUnthrottled = this.throttledUntil - this.throttleCurrentTimestamp
+
+    if (timeUntilUnthrottled > 0 && !this.throttleCheckTimeoutId) {
       this.throttleCheckTimeoutId = setTimeout(() => {
         this.throttleCheckTimeoutId = null
+        this.throttleCurrentTimestamp = Date.now()
         this.checkPendingRequests()
-      }, scheduleAt)
+      }, timeUntilUnthrottled)
     }
   }
 }
