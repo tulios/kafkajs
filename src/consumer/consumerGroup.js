@@ -43,6 +43,7 @@ module.exports = class ConsumerGroup {
    * @param {import('../../types').RetryOptions} options.retry
    * @param {import('../../types').Cluster} options.cluster
    * @param {string} options.groupId
+   * @param {string} options.groupInstanceId
    * @param {string[]} options.topics
    * @param {Record<string, { fromBeginning?: boolean }>} options.topicConfigurations
    * @param {import('../../types').Logger} options.logger
@@ -65,6 +66,7 @@ module.exports = class ConsumerGroup {
     retry,
     cluster,
     groupId,
+    groupInstanceId,
     topics,
     topicConfigurations,
     logger,
@@ -86,6 +88,7 @@ module.exports = class ConsumerGroup {
     /** @type {import("../../types").Cluster} */
     this.cluster = cluster
     this.groupId = groupId
+    this.groupInstanceId = groupInstanceId
     this.topics = topics
     this.topicsSubscribed = topics
     this.topicConfigurations = topicConfigurations
@@ -130,13 +133,14 @@ module.exports = class ConsumerGroup {
     this.lastRequest = Date.now()
 
     this[PRIVATE.SHARED_HEARTBEAT] = sharedPromiseTo(async ({ interval }) => {
-      const { groupId, generationId, memberId } = this
+      const { groupId, generationId, memberId, groupInstanceId } = this
       const now = Date.now()
 
       if (memberId && now >= this.lastRequest + interval) {
         const payload = {
           groupId,
           memberId,
+          groupInstanceId,
           groupGenerationId: generationId,
         }
 
@@ -162,7 +166,7 @@ module.exports = class ConsumerGroup {
   }
 
   async [PRIVATE.JOIN]() {
-    const { groupId, sessionTimeout, rebalanceTimeout } = this
+    const { groupId, sessionTimeout, rebalanceTimeout, groupInstanceId } = this
 
     this.coordinator = await this.cluster.findGroupCoordinator({ groupId })
 
@@ -171,6 +175,7 @@ module.exports = class ConsumerGroup {
       sessionTimeout,
       rebalanceTimeout,
       memberId: this.memberId || '',
+      groupInstanceId,
       groupProtocols: this.assigners.map(assigner =>
         assigner.protocol({
           topics: this.topicsSubscribed,
@@ -182,13 +187,14 @@ module.exports = class ConsumerGroup {
     this.leaderId = groupData.leaderId
     this.memberId = groupData.memberId
     this.members = groupData.members
+    this.groupInstanceId = groupData.groupInstanceId
     this.groupProtocol = groupData.groupProtocol
   }
 
   async leave() {
-    const { groupId, memberId } = this
+    const { groupId, memberId, groupInstanceId } = this
     if (memberId) {
-      await this.coordinator.leaveGroup({ groupId, memberId })
+      await this.coordinator.leaveGroup({ groupId, memberId, groupInstanceId })
       this.memberId = null
     }
   }
@@ -199,6 +205,7 @@ module.exports = class ConsumerGroup {
       groupId,
       generationId,
       memberId,
+      groupInstanceId,
       members,
       groupProtocol,
       topics,
@@ -234,6 +241,7 @@ module.exports = class ConsumerGroup {
       groupId,
       generationId,
       memberId,
+      groupInstanceId,
       groupAssignment: assignment,
     })
 

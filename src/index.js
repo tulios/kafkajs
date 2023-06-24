@@ -137,6 +137,7 @@ module.exports = class Client {
    */
   consumer({
     groupId,
+    groupInstanceId,
     partitionAssigners,
     metadataMaxAge = DEFAULT_METADATA_MAX_AGE,
     sessionTimeout,
@@ -170,6 +171,7 @@ module.exports = class Client {
       logger: this[PRIVATE.LOGGER],
       cluster,
       groupId,
+      groupInstanceId,
       partitionAssigners,
       sessionTimeout,
       rebalanceTimeout,

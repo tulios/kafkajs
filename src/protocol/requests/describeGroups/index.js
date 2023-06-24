@@ -14,6 +14,16 @@ const versions = {
     const response = require('./v2/response')
     return { request: request({ groupIds }), response }
   },
+  3: ({ groupIds }) => {
+    const request = require('./v3/request')
+    const response = require('./v3/response')
+    return { request: request({ groupIds }), response }
+  },
+  4: ({ groupIds }) => {
+    const request = require('./v4/request')
+    const response = require('./v4/response')
+    return { request: request({ groupIds }), response }
+  },
 }
 
 module.exports = {
