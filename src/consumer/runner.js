@@ -124,7 +124,11 @@ module.exports = class Runner extends EventEmitter {
             memberId: this.consumerGroup.memberId,
           })
 
-          await this.consumerGroup.joinAndSync()
+          try {
+            await this.consumerGroup.joinAndSync()
+          } catch (e) {
+            return this.onCrash(e)
+          }
           return
         }
 
@@ -136,7 +140,11 @@ module.exports = class Runner extends EventEmitter {
           })
 
           this.consumerGroup.memberId = null
-          await this.consumerGroup.joinAndSync()
+          try {
+            await this.consumerGroup.joinAndSync()
+          } catch (e) {
+            return this.onCrash(e)
+          }
           return
         }
 
