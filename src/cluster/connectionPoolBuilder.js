@@ -38,6 +38,8 @@ module.exports = ({
   instrumentationEmitter = null,
   reauthenticationThreshold,
 }) => {
+  const brokerList = await getBrokers()
+  const randomBrokerList = shuffle(brokerList)
   let index = 0
 
   const isValidBroker = broker => {
@@ -89,9 +91,6 @@ module.exports = ({
   return {
     build: async ({ host, port, rack } = {}) => {
       if (!host) {
-        const brokerList = await getBrokers()
-
-        const randomBrokerList = shuffle(brokerList)
         const randomBroker = randomBrokerList[index++ % randomBrokerList.length]
 
         host = randomBroker.split(':')[0]
