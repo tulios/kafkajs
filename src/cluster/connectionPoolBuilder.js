@@ -91,9 +91,8 @@ module.exports = ({
       if (!host) {
         if (!randomBrokerList) {
           const brokerList = await getBrokers()
-          const randomBrokerList = shuffle(brokerList)
+          let randomBrokerList = shuffle(brokerList)
         }
-
         const randomBroker = randomBrokerList[index++ % randomBrokerList.length]
 
         host = randomBroker.split(':')[0]
