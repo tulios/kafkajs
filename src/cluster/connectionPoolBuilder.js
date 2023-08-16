@@ -39,6 +39,7 @@ module.exports = ({
   reauthenticationThreshold,
 }) => {
   let index = 0
+  let randomBrokerList
 
   const isValidBroker = broker => {
     return broker && typeof broker === 'string' && broker.length > 0
@@ -91,7 +92,7 @@ module.exports = ({
       if (!host) {
         if (!randomBrokerList) {
           const brokerList = await getBrokers()
-          const randomBrokerList = shuffle(brokerList)
+          randomBrokerList = shuffle(brokerList)
         }
 
         const randomBroker = randomBrokerList[index++ % randomBrokerList.length]
