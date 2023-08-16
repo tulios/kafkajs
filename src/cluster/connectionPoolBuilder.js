@@ -78,10 +78,12 @@ module.exports = ({
         throw wrappedError
       }
     } else {
-      list = shuffle(brokers)
+      list = brokers
     }
 
     validateBrokers(list)
+
+    list = shuffle(list)
 
     return list
   }
