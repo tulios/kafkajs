@@ -223,13 +223,17 @@ module.exports = class BrokerPool {
    * @returns {Promise<null>}
    */
   async refreshMetadataIfNecessary(topics) {
+    const findTopicsWithoutMetadata = () => {
+      const topicsWithoutMetadata = new Set(topics)
+      this.metadata.topicMetadata.forEach(metadata => topicsWithoutMetadata.delete(metadata.topic))
+      return topicsWithoutMetadata
+    }
+
     const shouldRefresh =
       this.metadata == null ||
       this.metadataExpireAt == null ||
       Date.now() > this.metadataExpireAt ||
-      !topics.every(topic =>
-        this.metadata.topicMetadata.some(topicMetadata => topicMetadata.topic === topic)
-      )
+      findTopicsWithoutMetadata().size > 0
 
     if (shouldRefresh) {
       return this.refreshMetadata(topics)
