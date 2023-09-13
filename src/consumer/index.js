@@ -165,7 +165,7 @@ module.exports = ({
           .map(({ topic: topicName }) => topicName)
           .filter(topicName => {
             const topicRegExp = new RegExp(subscription)
-            return topicRegExp.test(topicName);
+            return topicRegExp.test(topicName)
           })
 
         logger.debug('Subscription based on RegExp', {
