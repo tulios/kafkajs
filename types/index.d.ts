@@ -577,7 +577,7 @@ export type Admin = {
   readonly events: AdminEvents
 }
 
-export const PartitionAssigners: { roundRobin: PartitionAssigner }
+export const PartitionAssigners: { roundRobin: PartitionAssigner, range: PartitionAssigner }
 
 export interface ISerializer<T> {
   encode(value: T): Buffer
