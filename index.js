@@ -12,8 +12,6 @@ const ResourcePatternTypes = require('./src/protocol/resourcePatternTypes')
 const { isRebalancing, isKafkaJSError, ...errors } = require('./src/errors')
 const { LEVELS } = require('./src/loggers')
 
-// local two
-
 module.exports = {
   Kafka,
   PartitionAssigners,

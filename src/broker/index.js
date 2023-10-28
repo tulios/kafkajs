@@ -422,6 +422,10 @@ module.exports = class Broker {
    * @returns {Promise}
    */
   async leaveGroup({ groupId, memberId, groupInstanceId }) {
+    if (groupInstanceId) {
+      // No leave group needed for static members
+      return;
+    }
     const leaveGroup = this.lookupRequest(apiKeys.LeaveGroup, requests.LeaveGroup)
     return await this[PRIVATE.SEND_REQUEST](leaveGroup({ groupId, memberId, groupInstanceId }))
   }
