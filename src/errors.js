@@ -239,6 +239,14 @@ class KafkaJSCreateTopicError extends KafkaJSProtocolError {
   }
 }
 
+class KafkaJSDeleteTopicError extends KafkaJSProtocolError {
+  constructor(e, topicName) {
+    super(e)
+    this.topic = topicName
+    this.name = 'KafkaJSDeleteTopicError'
+  }
+}
+
 class KafkaJSAlterPartitionReassignmentsError extends KafkaJSProtocolError {
   constructor(e, topicName, partition) {
     super(e)
@@ -304,6 +312,7 @@ module.exports = {
   KafkaJSFetcherRebalanceError,
   KafkaJSNoBrokerAvailableError,
   KafkaJSAlterPartitionReassignmentsError,
+  KafkaJSDeleteTopicError,
   isRebalancing,
   isKafkaJSError,
 }

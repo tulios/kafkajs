@@ -270,8 +270,25 @@ module.exports = ({
 
         await cluster.refreshMetadata()
       } catch (e) {
-        if (['NOT_CONTROLLER', 'UNKNOWN_TOPIC_OR_PARTITION'].includes(e.type)) {
-          logger.warn('Could not delete topics', { error: e.message, retryCount, retryTime })
+        if (
+          e.name === 'KafkaJSAggregateError' &&
+          e.errors.some(error => error.type.includes('UNKNOWN_TOPIC_OR_PARTITION'))
+        ) {
+          logger.warn('Could not delete topics', {
+            error: e.message,
+            retryCount,
+            retryTime,
+            topics: e.errors.map(error => error.topic),
+          })
+          throw e
+        }
+
+        if ('NOT_CONTROLLER'.includes(e.type)) {
+          logger.warn('Could not delete topics', {
+            error: e.message,
+            retryCount,
+            retryTime,
+          })
           throw e
         }
 
