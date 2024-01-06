@@ -67,5 +67,29 @@ describe('Protocol > Requests > Metadata > v0', () => {
         createErrorFromCode(5).message
       )
     })
+
+    test('when topicErrorCode is UNKNOWN_TOPIC_OR_PARTITION', async () => {
+      decoded.topicMetadata[0].topicErrorCode = 3
+      await expect(response.parse(decoded)).rejects.toMatchObject({
+        message: createErrorFromCode(3).message,
+        retriable: false,
+        type: 'UNKNOWN_TOPIC_OR_PARTITION',
+        code: 3,
+        name: 'KafkaJSUnknownTopic',
+        topic: 'test-topic-1',
+      })
+    })
+
+    test('when topicErrorCode is TOPIC_AUTHORIZATION_FAILED', async () => {
+      decoded.topicMetadata[0].topicErrorCode = 29
+      await expect(response.parse(decoded)).rejects.toMatchObject({
+        message: createErrorFromCode(29).message,
+        retriable: false,
+        type: 'TOPIC_AUTHORIZATION_FAILED',
+        code: 29,
+        name: 'KafkaJSTopicAuthorizationFailed',
+        topic: 'test-topic-1',
+      })
+    })
   })
 })
