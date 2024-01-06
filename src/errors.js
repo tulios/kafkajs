@@ -38,6 +38,21 @@ class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
   }
 }
 
+class KafkaJSUnknownTopic extends KafkaJSProtocolError {
+  constructor(e, { topic }) {
+    super(e, { retriable: false })
+    this.topic = topic
+    this.name = 'KafkaJSUnknownTopic'
+  }
+}
+
+class KafkaJSTopicAuthorizationFailed extends KafkaJSProtocolError {
+  constructor(e, { topic }) {
+    super(e, { retriable: false })
+    this.topic = topic
+    this.name = 'KafkaJSTopicAuthorizationFailed'
+  }
+}
 class KafkaJSMemberIdRequired extends KafkaJSProtocolError {
   constructor(e, { memberId }) {
     super(e)
@@ -304,6 +319,8 @@ module.exports = {
   KafkaJSFetcherRebalanceError,
   KafkaJSNoBrokerAvailableError,
   KafkaJSAlterPartitionReassignmentsError,
+  KafkaJSUnknownTopic,
+  KafkaJSTopicAuthorizationFailed,
   isRebalancing,
   isKafkaJSError,
 }

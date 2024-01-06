@@ -1,5 +1,6 @@
 const Decoder = require('../../../decoder')
-const { failure, createErrorFromCode } = require('../../../error')
+const { failure, createErrorFromCode, errorCodesByType } = require('../../../error')
+const { KafkaJSUnknownTopic, KafkaJSTopicAuthorizationFailed } = require('../../../../errors')
 
 /**
  * Metadata Response (Version: 0) => [brokers] [topic_metadata]
@@ -51,7 +52,17 @@ const decode = async rawData => {
 const parse = async data => {
   const topicsWithErrors = data.topicMetadata.filter(topic => failure(topic.topicErrorCode))
   if (topicsWithErrors.length > 0) {
-    const { topicErrorCode } = topicsWithErrors[0]
+    const { topic, topicErrorCode } = topicsWithErrors[0]
+    if (topicErrorCode === errorCodesByType['UNKNOWN_TOPIC_OR_PARTITION']) {
+      throw new KafkaJSUnknownTopic(createErrorFromCode(topicErrorCode), {
+        topic,
+      })
+    }
+    if (topicErrorCode === errorCodesByType['TOPIC_AUTHORIZATION_FAILED']) {
+      throw new KafkaJSTopicAuthorizationFailed(createErrorFromCode(topicErrorCode), {
+        topic,
+      })
+    }
     throw createErrorFromCode(topicErrorCode)
   }
 
