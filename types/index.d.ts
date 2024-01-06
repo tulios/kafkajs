@@ -1159,6 +1159,16 @@ export class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
   constructor(e: Error | string, metadata?: KafkaJSOffsetOutOfRangeMetadata)
 }
 
+export class KafkaJSUnknownTopic extends KafkaJSProtocolError {
+  constructor(e: Error | string, metadata?: KafkaJSUnknownTopicMetadata)
+  readonly topic: string
+}
+
+export class KafkaJSTopicAuthorizationFailed extends KafkaJSProtocolError {
+  constructor(e: Error | string, metadata?: KafkaJSTopicAuthorizationFailedMetadata)
+  readonly topic: string
+}
+
 export class KafkaJSAlterPartitionReassignmentsError extends KafkaJSProtocolError {
   readonly topic?: string
   readonly partition?: number
@@ -1275,6 +1285,13 @@ export interface KafkaJSErrorMetadata {
 export interface KafkaJSOffsetOutOfRangeMetadata {
   topic: string
   partition: number
+}
+
+export interface KafkaJSUnknownTopicMetadata {
+  topic: string
+}
+export interface KafkaJSTopicAuthorizationFailedMetadata {
+  topic: string
 }
 
 export interface KafkaJSNumberOfRetriesExceededMetadata {
