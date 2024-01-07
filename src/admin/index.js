@@ -272,7 +272,7 @@ module.exports = ({
       } catch (e) {
         if (
           e.name === 'KafkaJSAggregateError' &&
-          e.errors.some(error => error.type.includes('UNKNOWN_TOPIC_OR_PARTITION'))
+          e.errors.some(error => error.type === 'UNKNOWN_TOPIC_OR_PARTITION')
         ) {
           logger.warn('Could not delete topics', {
             error: e.message,
@@ -283,7 +283,7 @@ module.exports = ({
           throw e
         }
 
-        if ('NOT_CONTROLLER'.includes(e.type)) {
+        if (e.type === 'NOT_CONTROLLER') {
           logger.warn('Could not delete topics', {
             error: e.message,
             retryCount,
