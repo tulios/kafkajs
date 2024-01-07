@@ -40,9 +40,10 @@ class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
 
 class KafkaJSUnknownTopic extends KafkaJSProtocolError {
   constructor(e, { topic }) {
-    super(e, { retriable: false })
+    super(e)
     this.topic = topic
     this.name = 'KafkaJSUnknownTopic'
+    this.message = `${this.message} [${this.topic}]`
   }
 }
 
@@ -51,6 +52,7 @@ class KafkaJSTopicAuthorizationFailed extends KafkaJSProtocolError {
     super(e, { retriable: false })
     this.topic = topic
     this.name = 'KafkaJSTopicAuthorizationFailed'
+    this.message = `${this.message} [${this.topic})]`
   }
 }
 class KafkaJSMemberIdRequired extends KafkaJSProtocolError {
