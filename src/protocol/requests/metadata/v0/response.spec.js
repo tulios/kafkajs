@@ -71,7 +71,7 @@ describe('Protocol > Requests > Metadata > v0', () => {
     test('when topicErrorCode is UNKNOWN_TOPIC_OR_PARTITION', async () => {
       decoded.topicMetadata[0].topicErrorCode = 3
       await expect(response.parse(decoded)).rejects.toMatchObject({
-        message: createErrorFromCode(3).message,
+        message: createErrorFromCode(3).message + ' [test-topic-1]',
         retriable: false,
         type: 'UNKNOWN_TOPIC_OR_PARTITION',
         code: 3,
@@ -83,7 +83,7 @@ describe('Protocol > Requests > Metadata > v0', () => {
     test('when topicErrorCode is TOPIC_AUTHORIZATION_FAILED', async () => {
       decoded.topicMetadata[0].topicErrorCode = 29
       await expect(response.parse(decoded)).rejects.toMatchObject({
-        message: createErrorFromCode(29).message,
+        message: createErrorFromCode(29).message + ' [test-topic-1]',
         retriable: false,
         type: 'TOPIC_AUTHORIZATION_FAILED',
         code: 29,

@@ -24,7 +24,7 @@ const errorCodes = [
   {
     type: 'UNKNOWN_TOPIC_OR_PARTITION',
     code: 3,
-    retriable: false,
+    retriable: true,
     message: 'This server does not host this topic-partition',
   },
   {

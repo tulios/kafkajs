@@ -1290,6 +1290,7 @@ export interface KafkaJSOffsetOutOfRangeMetadata {
 export interface KafkaJSUnknownTopicMetadata {
   topic: string
 }
+
 export interface KafkaJSTopicAuthorizationFailedMetadata {
   topic: string
 }
