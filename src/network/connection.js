@@ -445,6 +445,7 @@ module.exports = class Connection {
           error: e.message,
           correlationId,
           size,
+          topic: e.topic,
         })
       }
 

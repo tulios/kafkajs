@@ -592,10 +592,16 @@ const staleMetadata = e =>
     e.type
   )
 
+const errorCodesByType = errorCodes.reduce((codesByType, error) => {
+  codesByType[error.type] = error.code
+  return codesByType
+}, {})
+
 module.exports = {
   failure,
   errorCodes,
   createErrorFromCode,
   failIfVersionNotSupported,
   staleMetadata,
+  errorCodesByType,
 }

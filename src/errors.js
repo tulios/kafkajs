@@ -38,6 +38,29 @@ class KafkaJSOffsetOutOfRange extends KafkaJSProtocolError {
   }
 }
 
+/**
+ * Wraps 'UNKNOWN_TOPIC_OR_PARTITION' (code=3) but is only
+ * used in cases where it is clearly the topic that is unknown
+ * (e.g. a `metadata` request has no partition parameter)
+ */
+class KafkaJSUnknownTopic extends KafkaJSProtocolError {
+  constructor(e, { topic }) {
+    super(e, { retriable: false })
+    this.topic = topic
+    this.name = 'KafkaJSUnknownTopic'
+    this.message = `${this.message} [${this.topic}]`
+  }
+}
+
+class KafkaJSTopicAuthorizationFailed extends KafkaJSProtocolError {
+  constructor(e, { topic }) {
+    super(e, { retriable: false })
+    this.topic = topic
+    this.name = 'KafkaJSTopicAuthorizationFailed'
+    this.message = `${this.message} [${this.topic}]`
+  }
+}
+
 class KafkaJSMemberIdRequired extends KafkaJSProtocolError {
   constructor(e, { memberId }) {
     super(e)
@@ -304,6 +327,8 @@ module.exports = {
   KafkaJSFetcherRebalanceError,
   KafkaJSNoBrokerAvailableError,
   KafkaJSAlterPartitionReassignmentsError,
+  KafkaJSUnknownTopic,
+  KafkaJSTopicAuthorizationFailed,
   isRebalancing,
   isKafkaJSError,
 }
