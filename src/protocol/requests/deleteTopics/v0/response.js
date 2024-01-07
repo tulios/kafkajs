@@ -1,5 +1,6 @@
 const Decoder = require('../../../decoder')
 const { failure, createErrorFromCode } = require('../../../error')
+const { KafkaJSDeleteTopicError, KafkaJSAggregateError } = require('../../../../errors')
 
 /**
  * DeleteTopics Response (Version: 0) => [topic_error_codes]
@@ -25,7 +26,12 @@ const decode = async rawData => {
 const parse = async data => {
   const topicsWithError = data.topicErrors.filter(({ errorCode }) => failure(errorCode))
   if (topicsWithError.length > 0) {
-    throw createErrorFromCode(topicsWithError[0].errorCode)
+    throw new KafkaJSAggregateError(
+      'Delete topics error',
+      topicsWithError.map(
+        error => new KafkaJSDeleteTopicError(createErrorFromCode(error.errorCode), error.topic)
+      )
+    )
   }
 
   return data

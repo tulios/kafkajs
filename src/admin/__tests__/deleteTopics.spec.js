@@ -48,6 +48,16 @@ describe('Admin', () => {
       await expect(admin.deleteTopics({ topics: [topicName] })).resolves.toBe()
     })
 
+    test('failt to delete not existing topic', async () => {
+      admin = createAdmin({ cluster: createCluster(), logger: newLogger() })
+
+      await admin.connect()
+      await expect(admin.deleteTopics({ topics: [topicName] })).rejects.toHaveProperty(
+        'message',
+        'Delete topics error'
+      )
+    })
+
     test('remove deleted topics from the cluster target group', async () => {
       const cluster = createCluster()
       admin = createAdmin({ cluster, logger: newLogger() })
