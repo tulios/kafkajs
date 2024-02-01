@@ -349,7 +349,7 @@ await consumer.subscribe({ topics: ['example'] })
 
 // you don't need to await consumer#run
 consumer.run({ eachMessage: async ({ topic, message }) => true })
-consumer.seek({ topic: 'example', partition: 0, offset: 12384 })
+consumer.seek({ topic: 'example', partition: 0, offset: "12384" })
 ```
 
 Upon seeking to an offset, any messages in active batches are marked as stale and discarded, making sure the next message read for the partition is from the offset sought to. Make sure to check `isStale()` before processing a message using [the `eachBatch` interface](#each-batch) of `consumer.run`.
