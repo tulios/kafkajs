@@ -9,7 +9,6 @@ const PRIVATE = {
 }
 
 const REQUEST_QUEUE_EMPTY = 'requestQueueEmpty'
-const CHECK_PENDING_REQUESTS_INTERVAL = 10
 
 module.exports = class RequestQueue extends EventEmitter {
   /**
@@ -304,20 +303,26 @@ module.exports = class RequestQueue extends EventEmitter {
    * the pending request queue eventually.
    */
   scheduleCheckPendingRequests() {
-    // If we're throttled: Schedule checkPendingRequests when the throttle
-    // should be resolved. If there is already something scheduled we assume that that
+    // If there is already something scheduled we assume that that
     // will be fine, and potentially fix up a new timeout if needed at that time.
+    if (this.throttleCheckTimeoutId) {
+      return
+    }
+
+    if (this.pending.length === 0) {
+      return
+    }
+
+    // If we're throttled: Schedule checkPendingRequests when the throttle
+    // should be resolved.
+    const timeUntilUnthrottled = this.throttledUntil - Date.now()
     // Note that if we're merely "overloaded" by having too many inflight requests
     // we will anyways check the queue when one of them gets fulfilled.
-    let scheduleAt = this.throttledUntil - Date.now()
-    if (!this.throttleCheckTimeoutId) {
-      if (this.pending.length > 0) {
-        scheduleAt = scheduleAt > 0 ? scheduleAt : CHECK_PENDING_REQUESTS_INTERVAL
-      }
-      this.throttleCheckTimeoutId = setTimeout(() => {
-        this.throttleCheckTimeoutId = null
-        this.checkPendingRequests()
-      }, scheduleAt)
-    }
+    const scheduleAt = Math.max(timeUntilUnthrottled, 0)
+
+    this.throttleCheckTimeoutId = setTimeout(() => {
+      this.throttleCheckTimeoutId = null
+      this.checkPendingRequests()
+    }, scheduleAt)
   }
 }
