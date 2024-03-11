@@ -61,7 +61,7 @@
     "execa": "^2.0.3",
     "glob": "^7.1.4",
     "husky": "^3.0.1",
-    "ip": "^1.1.5",
+    "ip": "^2.0.1",
     "jest": "^25.1.0",
     "jest-circus": "^25.1.0",
     "jest-extended": "^0.11.2",
@@ -70,7 +70,7 @@
     "lint-staged": "^9.2.0",
     "mockdate": "^2.0.5",
     "prettier": "^1.18.2",
-    "semver": "^6.2.0",
+    "semver": "^7.5.2",
     "typescript": "^3.8.3",
     "uuid": "^3.3.2"
   },
