@@ -18,6 +18,7 @@ const {
   KafkaJSStaleTopicMetadataAssignment,
   isRebalancing,
 } = require('../errors')
+const { profile } = require('console')
 
 const { keys } = Object
 
@@ -440,7 +441,11 @@ module.exports = class ConsumerGroup {
   }
 
   async commitOffsets(offsets) {
+    this.logger.info({ message: 'Starting to commit  offsets', payload: { offsets } })
+    const startTime = new Date()
     await this.offsetManager.commitOffsets(offsets)
+    const timeDiffMili = new Date().getTime() - startTime.getTime()
+    this.logger.info({ message: 'Completed Committing offsets', payload: { timeDiffMili } })
   }
 
   uncommittedOffsets() {
