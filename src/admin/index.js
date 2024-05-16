@@ -987,6 +987,46 @@ module.exports = ({
   }
 
   /**
+   *
+   * @param {Object} request
+   * @param {string} request.groupId
+   * @param {import("../../types").TopicPartitions[]} request.topics
+   * @returns {Promise<void>}
+   */
+  const offsetDelete = ({ groupId, topics }) => {
+    if (!groupId || typeof groupId !== 'string') {
+      throw new KafkaJSNonRetriableError(`Invalid groupId value ${groupId}`)
+    }
+
+    if (!topics || !Array.isArray(topics)) {
+      throw new KafkaJSNonRetriableError(`Invalid partitions value ${topics}`)
+    }
+
+    if (topics.length === 0) {
+      return
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadataIfNecessary()
+
+        const coordinator = await cluster.findGroupCoordinator({ groupId })
+
+        await coordinator.offsetDelete({ groupId, topics })
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER' || e.type === 'COORDINATOR_NOT_AVAILABLE') {
+          logger.warn('Could not delete groups', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
+  /**
    * Delete topic records up to the selected partition offsets
    *
    * @param {string} topic
@@ -1602,5 +1642,6 @@ module.exports = ({
     deleteTopicRecords,
     alterPartitionReassignments,
     listPartitionReassignments,
+    offsetDelete,
   }
 }
