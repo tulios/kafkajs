@@ -86,15 +86,23 @@ module.exports = ({
     )
   }
 
+  let allowCrashReconnect = true
   /** @type {import("../../types").Consumer["connect"]} */
   const connect = async () => {
+    allowCrashReconnect = true
     await cluster.connect()
     instrumentationEmitter.emit(CONNECT)
   }
 
   /** @type {import("../../types").Consumer["disconnect"]} */
-  const disconnect = async () => {
+  const disconnect = async allowReconnectAfterRebalance => {
     try {
+      if (
+        allowReconnectAfterRebalance !== undefined &&
+        typeof allowReconnectAfterRebalance === 'boolean'
+      ) {
+        allowCrashReconnect = allowReconnectAfterRebalance
+      }
       await stop()
       logger.debug('consumer has stopped, disconnecting', { groupId })
       await cluster.disconnect()
@@ -201,6 +209,10 @@ module.exports = ({
     }
 
     const start = async onCrash => {
+      if (!allowCrashReconnect) {
+        return
+      }
+
       logger.info('Starting', { groupId })
 
       consumerGroup = new ConsumerGroup({
@@ -254,7 +266,7 @@ module.exports = ({
         cluster.removeBroker({ host: e.host, port: e.port })
       }
 
-      await disconnect()
+      await disconnect(allowCrashReconnect)
 
       const getOriginalCause = error => {
         if (error.cause) {
@@ -286,8 +298,12 @@ module.exports = ({
       instrumentationEmitter.emit(CRASH, {
         error: e,
         groupId,
-        restart: shouldRestart,
+        restart: shouldRestart && allowCrashReconnect,
       })
+
+      if (!allowCrashReconnect) {
+        return
+      }
 
       if (shouldRestart) {
         const retryTime = e.retryTime || (retry && retry.initialRetryTime) || initialRetryTime
