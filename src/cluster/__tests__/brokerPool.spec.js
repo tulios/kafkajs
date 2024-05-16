@@ -280,6 +280,58 @@ describe('Cluster > BrokerPool', () => {
       expect(brokerPool.metadata).not.toEqual(null)
     })
 
+    it('retries on UNKNOWN_TOPIC_OR_PARTITION errors', async () => {
+      const unknownTopicError = new KafkaJSProtocolError({
+        type: 'UNKNOWN_TOPIC_OR_PARTITION',
+        code: 3,
+        retriable: true,
+        message: 'This server does not host this topic-partition',
+      })
+
+      brokerPool.findConnectedBroker = jest.fn(() => brokerPool.seedBroker)
+      jest.spyOn(brokerPool.seedBroker, 'metadata').mockImplementationOnce(() => {
+        throw unknownTopicError
+      })
+
+      expect(brokerPool.metadata).toEqual(null)
+      await brokerPool.refreshMetadata([topicName])
+      expect(brokerPool.metadata).not.toEqual(null)
+    })
+
+    describe(`without allowAutoTopicCreation`, () => {
+      beforeEach(async () => {
+        brokerPool && (await brokerPool.disconnect())
+        topicName = `test-topic-${secureRandom()}`
+        brokerPool = new BrokerPool({
+          connectionPoolBuilder: createConnectionBuilder(),
+          allowAutoTopicCreation: false,
+          logger: newLogger(),
+        })
+        await brokerPool.connect()
+      })
+
+      afterEach(async () => {
+        brokerPool && (await brokerPool.disconnect())
+      })
+
+      it('does not retry on UNKNOWN_TOPIC_OR_PARTITION errors', async () => {
+        const unknownTopicError = new KafkaJSProtocolError({
+          type: 'UNKNOWN_TOPIC_OR_PARTITION',
+          code: 3,
+          retriable: true,
+          message: 'This server does not host this topic-partition',
+        })
+
+        brokerPool.findConnectedBroker = jest.fn(() => brokerPool.seedBroker)
+        jest.spyOn(brokerPool.seedBroker, 'metadata').mockImplementationOnce(() => {
+          throw unknownTopicError
+        })
+
+        expect(brokerPool.metadata).toEqual(null)
+        await expect(brokerPool.refreshMetadata([topicName])).rejects.toEqual(unknownTopicError)
+      })
+    })
+
     describe('when replacing nodeIds with different host/port/rack', () => {
       let lastBroker
 
