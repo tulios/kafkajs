@@ -21,6 +21,8 @@ import {
   KafkaJSStaleTopicMetadataAssignment,
   PartitionMetadata,
   KafkaJSServerDoesNotSupportApiKey,
+  KafkaJSUnknownTopic,
+  KafkaJSTopicAuthorizationFailed
 } from './index'
 
 const { roundRobin } = PartitionAssigners
@@ -338,3 +340,6 @@ new KafkaJSServerDoesNotSupportApiKey(
     apiName: 'Produce',
   }
 )
+
+new KafkaJSUnknownTopic('This server does not host this topic-partition', { topic: 'my_topic' })
+new KafkaJSTopicAuthorizationFailed('Not authorized to access topics: [Topic authorization failed]', { topic: 'my_topic' })

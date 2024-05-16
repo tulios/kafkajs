@@ -101,7 +101,10 @@ describe('Admin', () => {
         admin.fetchTopicMetadata({
           topics: [existingTopicName, newTopicName],
         })
-      ).rejects.toHaveProperty('message', 'This server does not host this topic-partition')
+      ).rejects.toHaveProperty(
+        'message',
+        `This server does not host this topic-partition [${newTopicName}]`
+      )
     })
   })
 })
