@@ -3,9 +3,14 @@ module.exports = ({ topic, partitionMetadata, messages, partitioner }) => {
     return {}
   }
 
-  return messages.reduce((result, message) => {
+  const grouping = {}
+  for (const message of messages) {
     const partition = partitioner({ topic, partitionMetadata, message })
-    const current = result[partition] || []
-    return Object.assign(result, { [partition]: [...current, message] })
-  }, {})
+    if (grouping[partition] === undefined) {
+      grouping[partition] = []
+    }
+    grouping[partition].push(message)
+  }
+
+  return grouping
 }
