@@ -1,5 +1,6 @@
 const { KafkaJSConnectionError, KafkaJSNonRetriableError } = require('../errors')
 const ConnectionPool = require('../network/connectionPool')
+const shuffle = require('../utils/shuffle')
 
 /**
  * @typedef {Object} ConnectionPoolBuilder
@@ -38,6 +39,7 @@ module.exports = ({
   reauthenticationThreshold,
 }) => {
   let index = 0
+  let randomBrokerList
 
   const isValidBroker = broker => {
     return broker && typeof broker === 'string' && broker.length > 0
@@ -88,9 +90,12 @@ module.exports = ({
   return {
     build: async ({ host, port, rack } = {}) => {
       if (!host) {
-        const list = await getBrokers()
+        if (!randomBrokerList) {
+          const brokerList = await getBrokers()
+          randomBrokerList = shuffle(brokerList)
+        }
 
-        const randomBroker = list[index++ % list.length]
+        const randomBroker = randomBrokerList[index++ % randomBrokerList.length]
 
         host = randomBroker.split(':')[0]
         port = Number(randomBroker.split(':')[1])
