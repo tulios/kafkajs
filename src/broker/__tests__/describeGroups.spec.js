@@ -9,10 +9,11 @@ const {
 const createConsumer = require('../../consumer')
 
 describe('Broker > DescribeGroups', () => {
-  let groupId, topicName, seedBroker, broker, cluster, consumer
+  let groupId, topicName, seedBroker, broker, cluster, consumer, groupInstanceId
 
   beforeEach(async () => {
     groupId = `consumer-group-id-${secureRandom()}`
+    groupInstanceId = `group-instance-id-${secureRandom()}`
     topicName = `test-topic-${secureRandom()}`
     seedBroker = new Broker({
       connectionPool: createConnectionPool(),
@@ -37,6 +38,7 @@ describe('Broker > DescribeGroups', () => {
     consumer = createConsumer({
       cluster,
       groupId,
+      groupInstanceId,
       maxWaitTimeInMs: 1,
       logger: newLogger(),
     })
@@ -55,7 +57,6 @@ describe('Broker > DescribeGroups', () => {
     const response = await broker.describeGroups({ groupIds: [groupId] })
 
     expect(response).toEqual({
-      clientSideThrottleTime: expect.optional(0),
       throttleTime: 0,
       groups: [
         {
@@ -67,12 +68,14 @@ describe('Broker > DescribeGroups', () => {
               clientId: expect.any(String),
               memberAssignment: expect.anything(),
               memberId: expect.any(String),
+              groupInstanceId: expect.anything(),
               memberMetadata: expect.anything(),
             },
           ],
           protocol: 'RoundRobinAssigner',
           protocolType: 'consumer',
           state: 'Stable',
+          authorizedOperations: expect.any(Number),
         },
       ],
     })

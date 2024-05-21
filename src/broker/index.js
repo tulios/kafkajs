@@ -317,7 +317,7 @@ module.exports = class Broker {
       []
     )
 
-    return await this[PRIVATE.SEND_REQUEST](
+    const res = await this[PRIVATE.SEND_REQUEST](
       fetch({
         replicaId,
         isolationLevel,
@@ -328,6 +328,7 @@ module.exports = class Broker {
         rackId,
       })
     )
+    return res
   }
 
   /**
@@ -336,11 +337,14 @@ module.exports = class Broker {
    * @param {string} request.groupId The group id
    * @param {number} request.groupGenerationId The generation of the group
    * @param {string} request.memberId The member id assigned by the group coordinator
+   * @param {string} request.groupInstanceId
    * @returns {Promise}
    */
-  async heartbeat({ groupId, groupGenerationId, memberId }) {
+  async heartbeat({ groupId, groupGenerationId, memberId, groupInstanceId }) {
     const heartbeat = this.lookupRequest(apiKeys.Heartbeat, requests.Heartbeat)
-    return await this[PRIVATE.SEND_REQUEST](heartbeat({ groupId, groupGenerationId, memberId }))
+    return await this[PRIVATE.SEND_REQUEST](
+      heartbeat({ groupId, groupGenerationId, memberId, groupInstanceId })
+    )
   }
 
   /**
@@ -365,6 +369,7 @@ module.exports = class Broker {
    * @param {number} request.rebalanceTimeout The maximum time that the coordinator will wait for each member
    *                                  to rejoin when rebalancing the group
    * @param {string} [request.memberId=""] The assigned consumer id or an empty string for a new consumer
+   * @param {string} [request.groupInstanceId=""] The assigned group instance id or an empty string for a new consumer
    * @param {string} [request.protocolType="consumer"] Unique name for class of protocols implemented by group
    * @param {Array} request.groupProtocols List of protocols that the member supports (assignment strategy)
    *                                [{ name: 'AssignerName', metadata: '{"version": 1, "topics": []}' }]
@@ -375,6 +380,7 @@ module.exports = class Broker {
     sessionTimeout,
     rebalanceTimeout,
     memberId = '',
+    groupInstanceId, // TODO: make this empty by default
     protocolType = 'consumer',
     groupProtocols,
   }) {
@@ -386,13 +392,18 @@ module.exports = class Broker {
           sessionTimeout,
           rebalanceTimeout,
           memberId: assignedMemberId,
+          groupInstanceId,
           protocolType,
           groupProtocols,
         })
       )
 
     try {
-      return await makeRequest()
+      const initialJoinData = await makeRequest()
+      if (initialJoinData.errorCode !== 79) {
+        return initialJoinData
+      }
+      return await makeRequest(initialJoinData.memberId)
     } catch (error) {
       if (error.name === 'KafkaJSMemberIdRequired') {
         return makeRequest(error.memberId)
@@ -407,11 +418,12 @@ module.exports = class Broker {
    * @param {object} request
    * @param {string} request.groupId
    * @param {string} request.memberId
+   * @param {string} request.groupInstanceId
    * @returns {Promise}
    */
-  async leaveGroup({ groupId, memberId }) {
+  async leaveGroup({ groupId, memberId, groupInstanceId }) {
     const leaveGroup = this.lookupRequest(apiKeys.LeaveGroup, requests.LeaveGroup)
-    return await this[PRIVATE.SEND_REQUEST](leaveGroup({ groupId, memberId }))
+    return await this[PRIVATE.SEND_REQUEST](leaveGroup({ groupId, memberId, groupInstanceId }))
   }
 
   /**
@@ -420,16 +432,18 @@ module.exports = class Broker {
    * @param {string} request.groupId
    * @param {number} request.generationId
    * @param {string} request.memberId
+   * @param {string} request.groupInstanceId
    * @param {object} request.groupAssignment
    * @returns {Promise}
    */
-  async syncGroup({ groupId, generationId, memberId, groupAssignment }) {
+  async syncGroup({ groupId, generationId, memberId, groupAssignment, groupInstanceId }) {
     const syncGroup = this.lookupRequest(apiKeys.SyncGroup, requests.SyncGroup)
     return await this[PRIVATE.SEND_REQUEST](
       syncGroup({
         groupId,
         generationId,
         memberId,
+        groupInstanceId,
         groupAssignment,
       })
     )
@@ -476,8 +490,7 @@ module.exports = class Broker {
    * @param {string} request.groupId
    * @param {number} request.groupGenerationId
    * @param {string} request.memberId
-   * @param {number} [request.retentionTime=-1] -1 signals to the broker that its default configuration
-   *                                    should be used.
+   * @param {string} request.groupInstanceId
    * @param {object} request.topics Topics to commit offsets, e.g:
    *                  [
    *                    {
@@ -489,14 +502,14 @@ module.exports = class Broker {
    *                  ]
    * @returns {Promise}
    */
-  async offsetCommit({ groupId, groupGenerationId, memberId, retentionTime, topics }) {
+  async offsetCommit({ groupId, groupGenerationId, memberId, groupInstanceId, topics }) {
     const offsetCommit = this.lookupRequest(apiKeys.OffsetCommit, requests.OffsetCommit)
     return await this[PRIVATE.SEND_REQUEST](
       offsetCommit({
         groupId,
         groupGenerationId,
         memberId,
-        retentionTime,
+        groupInstanceId,
         topics,
       })
     )
