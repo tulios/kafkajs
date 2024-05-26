@@ -1,8 +1,8 @@
 const Long = require('../../../utils/long')
 const sleep = require('../../../utils/sleep')
-const OffsetManager = require('../index')
+const GroupOffsetManager = require('../groupOffsetManager')
 
-describe('Consumer > OffsetMananger > commitOffsetsIfNecessary', () => {
+describe('Consumer > GroupOffsetMananger > commitOffsetsIfNecessary', () => {
   let offsetManager, mockCommitOffsets
 
   beforeEach(() => {
@@ -11,7 +11,7 @@ describe('Consumer > OffsetMananger > commitOffsetsIfNecessary', () => {
       topic2: [0, 1, 2, 3, 4, 5],
     }
 
-    offsetManager = new OffsetManager({
+    offsetManager = new GroupOffsetManager({
       memberAssignment,
       cluster: {
         committedOffsets: jest.fn(() => ({})),

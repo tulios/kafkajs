@@ -11,7 +11,7 @@ const indexTopics = topics => topics.reduce((obj, topic) => assign(obj, { [topic
 const PRIVATE = {
   COMMITTED_OFFSETS: Symbol('private:OffsetManager:committedOffsets'),
 }
-module.exports = class OffsetManager {
+module.exports = class GroupOffsetManager {
   /**
    * @param {Object} options
    * @param {import("../../../types").Cluster} options.cluster
@@ -296,14 +296,16 @@ module.exports = class OffsetManager {
       return isInvalidOffset(this.committedOffsets()[topic][partition])
     }
 
-    const pendingPartitions = this.topics
-      .map(topic => ({
-        topic,
-        partitions: this.memberAssignment[topic]
-          .filter(invalidOffset(topic))
-          .map(partition => ({ partition })),
-      }))
-      .filter(t => t.partitions.length > 0)
+    const pendingPartitions = this.topics.reduce((result, topic) => {
+      const partitions = this.memberAssignment[topic]
+        .filter(invalidOffset(topic))
+        .map(partition => ({ partition }))
+
+      if (partitions.length > 0) {
+        result.push({ topic, partitions })
+      }
+      return result
+    }, [])
 
     if (pendingPartitions.length === 0) {
       return

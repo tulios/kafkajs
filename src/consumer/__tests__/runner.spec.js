@@ -26,7 +26,7 @@ describe('Consumer > Runner', () => {
 
   const createTestRunner = partial => {
     return new Runner({
-      consumerGroup,
+      consumer: consumerGroup,
       onCrash,
       instrumentationEmitter,
       logger: newLogger(),
@@ -49,6 +49,7 @@ describe('Consumer > Runner', () => {
     eachBatch = jest.fn()
     onCrash = jest.fn()
     consumerGroup = {
+      groupId: 'test-consumer',
       getNodeIds: jest.fn(() => [1, 2, 3]),
       connect: jest.fn(),
       join: jest.fn(),
