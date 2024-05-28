@@ -284,7 +284,7 @@ authentication mechanism.
 
 ## Connection Timeout
 
-Time in milliseconds to wait for a successful connection. The default value is: `1000`.
+Time in milliseconds to wait for a successful connection. The default value is: `10000`.
 
 ```javascript
 new Kafka({
