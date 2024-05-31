@@ -161,14 +161,16 @@ module.exports = ({
     for (const subscription of subscriptions) {
       const isRegExp = subscription instanceof RegExp
       if (isRegExp) {
-        const topicRegExp = subscription
         const matchedTopics = metadata.topicMetadata
           .map(({ topic: topicName }) => topicName)
-          .filter(topicName => topicRegExp.test(topicName))
+          .filter(topicName => {
+            const topicRegExp = new RegExp(subscription)
+            return topicRegExp.test(topicName)
+          })
 
         logger.debug('Subscription based on RegExp', {
           groupId,
-          topicRegExp: topicRegExp.toString(),
+          topicRegExp: subscription.toString(),
           matchedTopics,
         })
 
