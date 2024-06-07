@@ -204,14 +204,14 @@ The usual usage pattern for offsets stored outside of Kafka is as follows:
 
 ## <a name="from-beginning"></a> fromBeginning
 
-The consumer group will use the latest committed offset when starting to fetch messages. If the offset is invalid or not defined, `fromBeginning` defines the behavior of the consumer group. This can be configured when subscribing to a topic:
+By default the consumer group will use the latest committed offset when starting to fetch messages if the offset is invalid or not defined. `fromBeginning` defines the behavior of the consumer group. This can be configured when subscribing to a topic:
 
 ```javascript
 await consumer.subscribe({ topics: ['test-topic'], fromBeginning: true })
 await consumer.subscribe({ topics: ['other-topic'], fromBeginning: false })
 ```
 
-When `fromBeginning` is `true`, the group will use the earliest offset. If set to `false`, it will use the latest offset. The default is `false`.
+When `fromBeginning` is `true`, the group will use the earliest offset in case offset is invalid or not defined. If set to `false`, it will use the latest offset. The default is `false`.
 
 ## <a name="options"></a> Options
 
