@@ -217,7 +217,7 @@ const kafka = new Kafka({
       host: 'https://my-oauth-server.com',
       path: '/oauth/token',
       // Refresh the token 15 seconds before it expires
-      refreshThreshold: 15000,
+      refreshThresholdMs: 15000,
     }),
   },
 })
@@ -271,8 +271,8 @@ If an authentication mechanism is not supported out of the box in KafkaJS, a cus
 mechanism can be introduced as a plugin:
 
 ```js
-{ 
-  sasl: { 
+{
+  sasl: {
       mechanism: <mechanism name>,
       authenticationProvider: ({ host, port, logger, saslAuthenticate }) => { authenticate: () => Promise<void> }
   }
