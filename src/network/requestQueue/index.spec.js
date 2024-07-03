@@ -269,6 +269,21 @@ describe('Network > RequestQueue', () => {
       expect(request.entry.resolve).toHaveBeenCalledWith(expect.objectContaining({ size, payload }))
     })
 
+    it('does not start checking for pending requests needlessly (in an infinite loop)', async () => {
+      const checkPendingRequests = jest.spyOn(requestQueue, 'checkPendingRequests')
+
+      // fulfill request is called as soon as the connection starts, so
+      // this emulates the beginning of a successful connection to the cluster
+      requestQueue.fulfillRequest({
+        correlationId: request.entry.correlationId,
+        payload,
+        size,
+      })
+
+      await sleep(1000)
+      expect(checkPendingRequests).toHaveBeenCalledTimes(1)
+    })
+
     describe('when there are pending requests', () => {
       beforeEach(() => {
         while (requestQueue.inflight.size < requestQueue.maxInFlightRequests) {

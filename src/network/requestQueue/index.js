@@ -294,7 +294,9 @@ module.exports = class RequestQueue extends EventEmitter {
       this[PRIVATE.EMIT_QUEUE_SIZE_EVENT]()
     }
 
+    // if (this.pending.length) {
     this.scheduleCheckPendingRequests()
+    // }
   }
 
   /**
