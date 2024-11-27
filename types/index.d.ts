@@ -533,7 +533,7 @@ export type Admin = {
     resources: ResourceConfigQuery[]
     includeSynonyms: boolean
   }): Promise<DescribeConfigResponse>
-  alterConfigs(configs: { validateOnly: boolean; resources: IResourceConfig[] }): Promise<any>
+  alterConfigs(configs: { validateOnly?: boolean; resources: IResourceConfig[] }): Promise<any>
   listGroups(): Promise<{ groups: GroupOverview[] }>
   deleteGroups(groupIds: string[]): Promise<DeleteGroupsResult[]>
   describeGroups(groupIds: string[]): Promise<GroupDescriptions>
