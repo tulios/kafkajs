@@ -266,9 +266,7 @@ class KafkaJSNoBrokerAvailableError extends KafkaJSError {
 }
 
 const isRebalancing = e =>
-  e.type === 'REBALANCE_IN_PROGRESS' ||
-  e.type === 'NOT_COORDINATOR_FOR_GROUP' ||
-  e.type === 'ILLEGAL_GENERATION'
+  e.type === 'REBALANCE_IN_PROGRESS' || e.type === 'NOT_COORDINATOR_FOR_GROUP'
 
 const isKafkaJSError = e => e instanceof KafkaJSError
 

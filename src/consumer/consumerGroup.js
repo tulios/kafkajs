@@ -361,8 +361,9 @@ module.exports = class ConsumerGroup {
           throw new KafkaJSError(e)
         }
 
-        if (e.type === 'UNKNOWN_MEMBER_ID') {
+        if (e.type === 'UNKNOWN_MEMBER_ID' || e.type === 'ILLEGAL_GENERATION') {
           this.memberId = null
+          this.groupGenerationId = null
           throw new KafkaJSError(e)
         }
 
