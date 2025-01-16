@@ -60,4 +60,8 @@ module.exports = class Lock {
       return waitingLock()
     }
   }
+
+  isLocked() {
+    return this[PRIVATE.LOCKED]
+  }
 }

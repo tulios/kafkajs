@@ -1,5 +1,5 @@
 const Decoder = require('../../../decoder')
-const { failure, createErrorFromCode } = require('../../../error')
+const { createErrorFromCode, errorCodes, failure } = require('../../../error')
 
 /**
  * Metadata Response (Version: 0) => [brokers] [topic_metadata]
@@ -17,6 +17,10 @@ const { failure, createErrorFromCode } = require('../../../error')
  *       replicas => INT32
  *       isr => INT32
  */
+
+const unknownTopicOrPartitionErrorCode = errorCodes.find(
+  v => v.type === 'UNKNOWN_TOPIC_OR_PARTITION'
+).code
 
 const broker = decoder => ({
   nodeId: decoder.readInt32(),
@@ -52,7 +56,21 @@ const parse = async data => {
   const topicsWithErrors = data.topicMetadata.filter(topic => failure(topic.topicErrorCode))
   if (topicsWithErrors.length > 0) {
     const { topicErrorCode } = topicsWithErrors[0]
-    throw createErrorFromCode(topicErrorCode)
+    const error = createErrorFromCode(topicErrorCode)
+    const unknownTopics = topicsWithErrors
+      .filter(topic => topic.topicErrorCode === unknownTopicOrPartitionErrorCode)
+      .map(topic => topic.topic)
+    if (unknownTopics.length > 0) {
+      /**
+       * Add an additional "unknownTopics" property when the Kafka metadata
+       * request finds an unknown topic.  There are multiple versions of the
+       * metadata request but all of them use the v0 parse method.  I didn't
+       * create a new error type for this since this error won't be handled
+       * in the same way for other Kafka requests.
+       */
+      error.unknownTopics = unknownTopics
+    }
+    throw error
   }
 
   const errors = data.topicMetadata.flatMap(topic => {
