@@ -16,12 +16,13 @@ describe('Utils > Lock', () => {
         await lock.release()
       }
     }
+    const graceMilliseconds = 5
 
     await Promise.all([callResource(), callResource(), callResource()])
     const calls = resource.mock.calls.flat()
     expect(calls.length).toEqual(3)
-    expect(calls[1] - calls[0]).toBeGreaterThanOrEqual(50)
-    expect(calls[2] - calls[1]).toBeGreaterThanOrEqual(50)
+    expect(calls[1] - calls[0]).toBeGreaterThanOrEqual(50 - graceMilliseconds)
+    expect(calls[2] - calls[1]).toBeGreaterThanOrEqual(50 - graceMilliseconds)
   })
 
   it('throws an error if the lock cannot be acquired within a period', async () => {

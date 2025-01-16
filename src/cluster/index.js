@@ -108,11 +108,29 @@ module.exports = class Cluster {
     })
 
     this[PRIVATE.REFRESH_METADATA] = sharedPromiseTo(async () => {
-      return await this.brokerPool.refreshMetadata(Array.from(this.targetTopics))
+      try {
+        return await this.brokerPool.refreshMetadata(Array.from(this.targetTopics))
+      } catch (e) {
+        if (e.type === 'UNKNOWN_TOPIC_OR_PARTITION' && e.unknownTopics) {
+          await this.removeMultipleTargetTopics(e.unknownTopics)
+          return await this.brokerPool.refreshMetadata(Array.from(this.targetTopics))
+        } else {
+          throw e
+        }
+      }
     })
 
     this[PRIVATE.REFRESH_METADATA_IF_NECESSARY] = sharedPromiseTo(async () => {
-      return await this.brokerPool.refreshMetadataIfNecessary(Array.from(this.targetTopics))
+      try {
+        return await this.brokerPool.refreshMetadataIfNecessary(Array.from(this.targetTopics))
+      } catch (e) {
+        if (e.type === 'UNKNOWN_TOPIC_OR_PARTITION' && e.unknownTopics) {
+          await this.removeMultipleTargetTopics(e.unknownTopics)
+          return await this.brokerPool.refreshMetadataIfNecessary(Array.from(this.targetTopics))
+        } else {
+          throw e
+        }
+      }
     })
 
     this[PRIVATE.FIND_CONTROLLER_BROKER] = sharedPromiseTo(async () => {
@@ -242,6 +260,32 @@ module.exports = class Cluster {
       }
     } finally {
       await this.mutatingTargetTopics.release()
+    }
+  }
+
+  /**
+   * @public
+   * @param {string[]} topics
+   * @return {Promise}
+   */
+  async removeMultipleTargetTopics(topics) {
+    /* this may be called from addMultipleTargetTopics which already acquired the lock */
+    const isLockNeeded = !this.mutatingTargetTopics.isLocked()
+
+    if (isLockNeeded) {
+      await this.mutatingTargetTopics.acquire()
+    }
+
+    try {
+      for (const topic of topics) {
+        if (this.targetTopics.has(topic)) {
+          this.targetTopics.delete(topic)
+        }
+      }
+    } finally {
+      if (isLockNeeded) {
+        await this.mutatingTargetTopics.release()
+      }
     }
   }
 
