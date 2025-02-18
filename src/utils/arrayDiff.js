@@ -2,9 +2,10 @@ module.exports = (a, b) => {
   const result = []
   const length = a.length
   let i = 0
+  const bSet = new Set(b)
 
   while (i < length) {
-    if (b.indexOf(a[i]) === -1) {
+    if (!bSet.has(a[i])) {
       result.push(a[i])
     }
     i += 1
