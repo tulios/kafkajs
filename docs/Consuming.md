@@ -32,7 +32,7 @@ await consumer.connect()
 await consumer.subscribe({ topics: [/topic-(eu|us)-.*/i] })
 ```
 
-When suppling a regular expression, the consumer will not match topics created after the subscription. If your broker has `topic-A` and `topic-B`, you subscribe to `/topic-.*/`, then `topic-C` is created, your consumer would not be automatically subscribed to `topic-C`.
+When supplying a regular expression, the consumer will not match topics created after the subscription. For example, if your broker has `topic-A` and `topic-B`, and you subscribe to `/topic-.*/`, then if `topic-C` is created later, your consumer will not be automatically subscribed to `topic-C`.
 
 KafkaJS offers you two ways to process your data: `eachMessage` and `eachBatch`
 
