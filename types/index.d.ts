@@ -43,7 +43,7 @@ export type AuthenticationProviderArgs = {
 }
 
 export type Mechanism = {
-  mechanism: string
+  mechanism: SASLMechanism
   authenticationProvider: (args: AuthenticationProviderArgs) => Authenticator
 }
 
