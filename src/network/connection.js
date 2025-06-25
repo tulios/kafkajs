@@ -236,7 +236,7 @@ module.exports = class Connection {
       })
 
       try {
-        timeoutId = setTimeout(onTimeout, this.connectionTimeout)
+        timeoutId = setTimeout(onTimeout, Math.max(0, this.connectionTimeout))
         this.socket = createSocket({
           socketFactory: this.socketFactory,
           host: this.host,

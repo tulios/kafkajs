@@ -290,7 +290,11 @@ module.exports = ({
       })
 
       if (shouldRestart) {
-        const retryTime = e.retryTime || (retry && retry.initialRetryTime) || initialRetryTime
+        // make sure retryTime is not negative
+        const retryTime = Math.max(
+          0,
+          e.retryTime || (retry && retry.initialRetryTime) || initialRetryTime
+        )
         logger.error(`Restarting the consumer in ${retryTime}ms`, {
           retryCount: e.retryCount,
           retryTime,

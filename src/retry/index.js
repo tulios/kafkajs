@@ -33,6 +33,9 @@ const createRetriable = (configs, resolve, reject, fn) => {
   const retry = (retryTime, retryCount = 0) => {
     if (aborted) return
 
+    // make sure retryTime is not negative
+    retryTime = Math.max(0, retryTime)
+
     const nextRetryTime = calculateExponentialRetryTime(retryTime)
     const shouldRetry = retryCount < retries
 
