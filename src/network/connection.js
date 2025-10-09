@@ -1,7 +1,7 @@
 const createSocket = require('./socket')
 const createRequest = require('../protocol/request')
 const Decoder = require('../protocol/decoder')
-const { KafkaJSConnectionError, KafkaJSConnectionClosedError } = require('../errors')
+const { KafkaJSConnectionError, KafkaJSConnectionClosedError, isRebalancing } = require('../errors')
 const { INT_32_MAX_VALUE } = require('../constants')
 const getEnv = require('../env')
 const RequestQueue = require('./requestQueue')
@@ -113,6 +113,7 @@ module.exports = class Connection {
 
     this.logDebug = log('debug')
     this.logError = log('error')
+    this.logWarn = log('warn')
 
     const env = getEnv()
     this.shouldLogBuffers = env.KAFKAJS_DEBUG_PROTOCOL_BUFFERS === '1'
@@ -441,11 +442,19 @@ module.exports = class Connection {
       return data
     } catch (e) {
       if (logResponseError) {
-        this.logError(`Response ${requestInfo(entry)}`, {
-          error: e.message,
-          correlationId,
-          size,
-        })
+        if (isRebalancing(e)) {
+          this.logWarn(`Response ${requestInfo(entry)}`, {
+            error: e.message,
+            correlationId,
+            size,
+          })
+        } else {
+          this.logError(`Response ${requestInfo(entry)}`, {
+            error: e.message,
+            correlationId,
+            size,
+          })
+        }
       }
 
       const isBuffer = Buffer.isBuffer(payload)
