@@ -314,6 +314,8 @@ module.exports = class RequestQueue extends EventEmitter {
       if (this.pending.length > 0) {
         scheduleAt = scheduleAt > 0 ? scheduleAt : CHECK_PENDING_REQUESTS_INTERVAL
       }
+      // Prevent negative or invalid delays
+      scheduleAt = Math.max(1, scheduleAt || 1)
       this.throttleCheckTimeoutId = setTimeout(() => {
         this.throttleCheckTimeoutId = null
         this.checkPendingRequests()
