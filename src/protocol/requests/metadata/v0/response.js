@@ -52,7 +52,9 @@ const parse = async data => {
   const topicsWithErrors = data.topicMetadata.filter(topic => failure(topic.topicErrorCode))
   if (topicsWithErrors.length > 0) {
     const { topicErrorCode } = topicsWithErrors[0]
-    throw createErrorFromCode(topicErrorCode)
+    const error = createErrorFromCode(topicErrorCode)
+    error.problematicTopics = topicsWithErrors.map(t => t.topic)
+    throw error
   }
 
   const errors = data.topicMetadata.flatMap(topic => {

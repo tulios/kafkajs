@@ -169,7 +169,20 @@ module.exports = class Cluster {
    * @returns {Promise<void>}
    */
   async refreshMetadata() {
-    await this[PRIVATE.REFRESH_METADATA]()
+    try {
+      await this[PRIVATE.REFRESH_METADATA]()
+    } catch (e) {
+      if (
+        e.type === 'UNKNOWN_TOPIC_OR_PARTITION' &&
+        e.problematicTopics &&
+        e.problematicTopics.length
+      ) {
+        for (const topic of e.problematicTopics) {
+          this.targetTopics.delete(topic)
+        }
+      }
+      throw e
+    }
   }
 
   /**

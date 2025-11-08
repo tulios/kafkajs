@@ -1,6 +1,13 @@
-const { createConnectionPool, connectionOpts, secureRandom, newLogger } = require('testHelpers')
+const {
+  createConnectionPool,
+  connectionOpts,
+  secureRandom,
+  newLogger,
+  createCluster,
+} = require('testHelpers')
 
 const Broker = require('../index')
+const createProducer = require('../../producer')
 const topicNameComparator = (a, b) => a.topic.localeCompare(b.topic)
 
 describe('Broker > deleteTopics', () => {
@@ -48,5 +55,55 @@ describe('Broker > deleteTopics', () => {
         { topic: topicName2, errorCode: 0 },
       ].sort(topicNameComparator),
     })
+  })
+
+  test('post deletion a topic, message should be published to other targeted topics with Publisher API', async () => {
+    await broker.connect()
+    const cluster = createCluster({ allowAutoTopicCreation: false })
+    const producer = createProducer({
+      cluster,
+      logger: newLogger(),
+    })
+    try {
+      const topic1 = `test-topic-${secureRandom()}`
+      const topic2 = `test-topic-${secureRandom()}`
+
+      // Create both topics
+      await broker.createTopics({
+        topics: [{ topic: topic1 }, { topic: topic2 }],
+      })
+
+      await producer.connect()
+
+      await producer.send({
+        topic: topic1,
+        messages: [{ key: 'key1', value: 'value1' }],
+      })
+
+      await producer.send({
+        topic: topic2,
+        messages: [{ key: 'key2', value: 'value2' }],
+      })
+
+      // Delete topic1
+      const deleteResponse = await broker.deleteTopics({
+        topics: [topic1],
+      })
+
+      expect(deleteResponse.topicErrors).toEqual(
+        expect.arrayContaining([{ topic: topic1, errorCode: 0 }])
+      )
+      await expect(
+        producer.send({
+          topic: topic2,
+          messages: [{ key: 'key3', value: 'value3' }],
+        })
+      ).toResolve()
+    } catch (error) {
+      console.error('error ', error)
+    } finally {
+      await producer.disconnect()
+      await broker.disconnect()
+    }
   })
 })
