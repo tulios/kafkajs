@@ -365,6 +365,55 @@ consumer.run({
 consumer.seek({ topic: 'example', partition: 0, offset: "12384" })
 ```
 
+## <a name="partition-assigners"></a> Partition assigners
+
+The consumer can be configured with different strategies for distributing partitions among the consumer group members. The strategy is set via the `partitionAssigners` option.
+
+KafkaJS ships with two built-in assigners:
+
+| Assigner | Rebalance type | Description |
+|----------|---------------|-------------|
+| `roundRobin` (default) | **Eager** | All partitions are revoked and reassigned on every rebalance. Simple but causes a brief processing pause across all consumers. |
+| `cooperativeSticky` | **Cooperative (incremental)** | Only partitions that change ownership are revoked. All other partitions continue processing without interruption. Minimizes partition movement. |
+
+### <a name="cooperative-sticky-assigner"></a> Cooperative sticky assigner
+
+The cooperative sticky assigner implements [KIP-429](https://cwiki.apache.org/confluence/display/KAFKA/KIP-429%3A+Kafka+Consumer+Incremental+Rebalance+Protocol) (incremental cooperative rebalancing). It has two key properties:
+
+1. **Sticky** -- existing partition-to-consumer mappings are preserved whenever possible, minimizing unnecessary partition movement.
+2. **Cooperative** -- only the partitions that actually *change ownership* are briefly unassigned. All other partitions remain assigned and consumers continue processing them without interruption.
+
+#### Usage
+
+```javascript
+const { PartitionAssigners: { cooperativeSticky } } = require('kafkajs')
+
+kafka.consumer({
+    groupId: 'my-group',
+    partitionAssigners: [cooperativeSticky]
+})
+```
+
+#### How it works
+
+When a rebalance is triggered (e.g. a new consumer joins or an existing one leaves), the cooperative sticky assigner performs the rebalance in two rounds:
+
+**Round 1:** The assigner computes the ideal balanced assignment. Partitions that need to transfer from one consumer to another are *revoked* from the current owner but *not yet assigned* to the new owner. Consumers whose partitions are unaffected continue processing without any interruption.
+
+**Round 2:** The revoked partitions are now unowned. A second join-and-sync cycle automatically assigns them to their new owners, completing the transfer.
+
+This two-round protocol means only the specific partitions being transferred experience a brief pause -- all other consumers and partitions are unaffected.
+
+#### When to use
+
+Use the cooperative sticky assigner when:
+
+- You have many consumers and want to minimize rebalance disruption
+- Your workload is sensitive to processing gaps (e.g. real-time event processing)
+- You frequently scale consumers up and down
+
+The default round robin assigner is simpler and sufficient for workloads where brief processing pauses during rebalances are acceptable.
+
 ## <a name="custom-partition-assigner"></a> Custom partition assigner
 
 It's possible to configure the strategy the consumer will use to distribute partitions amongst the consumer group. KafkaJS has a round robin assigner configured by default.

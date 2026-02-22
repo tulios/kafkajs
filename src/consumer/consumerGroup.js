@@ -113,6 +113,7 @@ module.exports = class ConsumerGroup {
     this.memberId = null
     this.members = null
     this.groupProtocol = null
+    this.needsCooperativeRejoin = false
 
     this.partitionsPerSubscribedTopic = null
     /**
@@ -307,6 +308,22 @@ module.exports = class ConsumerGroup {
 
     this.topics = currentMemberAssignment.map(({ topic }) => topic)
     this.subscriptionState.assign(currentMemberAssignment)
+
+    // Notify stateful assigners (e.g. CooperativeStickyAssigner) of the new assignment
+    // so they can encode owned partitions in the next protocol() call.
+    const assignmentMap = currentMemberAssignment.reduce(
+      (acc, { topic, partitions }) => ({ ...acc, [topic]: partitions }),
+      {}
+    )
+    for (const assigner of this.assigners) {
+      if (typeof assigner.onAssignment === 'function') {
+        const needsRejoin = assigner.onAssignment({
+          assignment: assignmentMap,
+          generationId: this.generationId,
+        })
+        if (needsRejoin) this.needsCooperativeRejoin = true
+      }
+    }
     this.offsetManager = new OffsetManager({
       cluster: this.cluster,
       topicConfigurations: this.topicConfigurations,
@@ -331,42 +348,58 @@ module.exports = class ConsumerGroup {
   joinAndSync() {
     const startJoin = Date.now()
     return this.retrier(async bail => {
-      try {
-        await this[PRIVATE.JOIN]()
-        await this[PRIVATE.SYNC]()
+      // Cooperative sticky may require 2 rounds: round 1 revokes transferred partitions,
+      // round 2 assigns them to their new owners.  The while loop handles this automatically:
+      // if SYNC detected revocations (needsCooperativeRejoin = true) we immediately do
+      // another JOIN + SYNC without exiting the retrier or starting the fetch loop.
+      while (true) {
+        try {
+          this.needsCooperativeRejoin = false
+          await this[PRIVATE.JOIN]()
+          await this[PRIVATE.SYNC]()
 
-        const memberAssignment = this.assigned().reduce(
-          (result, { topic, partitions }) => ({ ...result, [topic]: partitions }),
-          {}
-        )
+          const memberAssignment = this.assigned().reduce(
+            (result, { topic, partitions }) => ({ ...result, [topic]: partitions }),
+            {}
+          )
 
-        const payload = {
+          const payload = {
+            groupId: this.groupId,
+            memberId: this.memberId,
+            leaderId: this.leaderId,
+            isLeader: this.isLeader(),
+            memberAssignment,
+            groupProtocol: this.groupProtocol,
+            duration: Date.now() - startJoin,
+          }
+
+          this.instrumentationEmitter.emit(GROUP_JOIN, payload)
+          this.logger.info('Consumer has joined the group', payload)
+        } catch (e) {
+          if (isRebalancing(e)) {
+            // Rebalance in progress isn't a retriable protocol error since the consumer
+            // has to go through find coordinator and join again before it can
+            // actually retry the operation. We wrap the original error in a retriable error
+            // here instead in order to restart the join + sync sequence using the retrier.
+            throw new KafkaJSError(e)
+          }
+
+          if (e.type === 'UNKNOWN_MEMBER_ID') {
+            this.memberId = null
+            throw new KafkaJSError(e)
+          }
+
+          bail(e)
+          return
+        }
+
+        // No cooperative round-2 needed (or already done) – we're done.
+        if (!this.needsCooperativeRejoin) break
+
+        this.logger.info('Cooperative sticky: triggering round 2 to hand off revoked partitions', {
           groupId: this.groupId,
           memberId: this.memberId,
-          leaderId: this.leaderId,
-          isLeader: this.isLeader(),
-          memberAssignment,
-          groupProtocol: this.groupProtocol,
-          duration: Date.now() - startJoin,
-        }
-
-        this.instrumentationEmitter.emit(GROUP_JOIN, payload)
-        this.logger.info('Consumer has joined the group', payload)
-      } catch (e) {
-        if (isRebalancing(e)) {
-          // Rebalance in progress isn't a retriable protocol error since the consumer
-          // has to go through find coordinator and join again before it can
-          // actually retry the operation. We wrap the original error in a retriable error
-          // here instead in order to restart the join + sync sequence using the retrier.
-          throw new KafkaJSError(e)
-        }
-
-        if (e.type === 'UNKNOWN_MEMBER_ID') {
-          this.memberId = null
-          throw new KafkaJSError(e)
-        }
-
-        bail(e)
+        })
       }
     })
   }
