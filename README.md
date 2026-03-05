@@ -35,22 +35,27 @@
 
 ## <a name="about"></a> About the Project
 
-KafkaJS is a modern [Apache Kafka](https://kafka.apache.org/) client for Node.js. It is compatible with Kafka 0.10+ and offers native support for 0.11 features.
+KafkaJS is a modern [Apache Kafka](https://kafka.apache.org/) client for Node.js. It is compatible with Kafka 0.10+ through **Kafka 4.2.0** (KRaft-native) and offers native support for 0.11+ features.
 
 <small>KAFKA is a registered trademark of The Apache Software Foundation and has been licensed for use by KafkaJS. KafkaJS has no affiliation with and is not endorsed by The Apache Software Foundation.</small>
 
 ### <a name="features"></a> Features
 
-* Producer
+* Producer with idempotent and transactional support
 * Consumer groups with pause, resume, and seek
+* Share Groups / Kafka Queues (Kafka 4.0+ / KIP-932) - full protocol support for ShareFetch, ShareAcknowledge, ShareGroupHeartbeat, ShareGroupDescribe
+* KRaft-native support (ZooKeeper removed since Kafka 4.0)
+* KRaft voter management (AddRaftVoter, RemoveRaftVoter, UpdateRaftVoter)
 * Transactional support for producers and consumers
-* Message headers
+* Message headers (thread-safe RecordHeader)
 * GZIP compression
   * Snappy, LZ4 and ZSTD compression through pluggable codecs
 * Plain, SSL and SASL_SSL implementations
 * Support for SCRAM-SHA-256 and SCRAM-SHA-512
 * Support for AWS IAM authentication
-* Admin client
+* Admin client with partition reassignment, ACL management, and more
+* All 84 Kafka API keys (0-83) fully implemented through Kafka 4.2.0
+* UUID wire type support for Share Group and KRaft topic/voter identifiers
 
 ### <a name="getting-started"></a> Getting Started
 
@@ -106,6 +111,7 @@ Learn more about using [KafkaJS on the official site!](https://kafka.js.org)
 - [Configuring KafkaJS](https://kafka.js.org/docs/configuration)
 - [Example Producer](https://kafka.js.org/docs/producer-example)
 - [Example Consumer](https://kafka.js.org/docs/consumer-example)
+- [Upgrade Guide for Kafka 4.2.0](./UPGRADE.md)
 
 > _Read something on the website that didn't work with the latest stable version?_  
 [Check the pre-release versions](https://kafka.js.org/docs/pre-releases) - the website is updated on every merge to master.

@@ -5,6 +5,7 @@ const scram256AuthenticatorProvider = require('./scram256')
 const scram512AuthenticatorProvider = require('./scram512')
 const awsIAMAuthenticatorProvider = require('./awsIam')
 const oauthBearerAuthenticatorProvider = require('./oauthBearer')
+const gssapiAuthenticatorProvider = require('./gssapi')
 const { KafkaJSSASLAuthenticationError } = require('../../errors')
 
 const BUILT_IN_AUTHENTICATION_PROVIDERS = {
@@ -13,6 +14,7 @@ const BUILT_IN_AUTHENTICATION_PROVIDERS = {
   OAUTHBEARER: oauthBearerAuthenticatorProvider,
   'SCRAM-SHA-256': scram256AuthenticatorProvider,
   'SCRAM-SHA-512': scram512AuthenticatorProvider,
+  GSSAPI: gssapiAuthenticatorProvider,
 }
 
 const UNLIMITED_SESSION_LIFETIME = '0'

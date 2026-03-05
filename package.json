@@ -1,6 +1,6 @@
 {
   "name": "kafkajs",
-  "version": "2.2.4",
+  "version": "3.0.0",
   "description": "A modern Apache Kafka client for node.js",
   "author": "Tulio Ornelas <ornelas.tulio@gmail.com>",
   "main": "index.js",
@@ -12,7 +12,8 @@
     "scram"
   ],
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
   },
   "repository": {
     "type": "git",
@@ -43,12 +44,17 @@
     "test:group:consumer:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:consumer --ci --maxWorkers=4 --no-watchman\"",
     "test:group:others:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml ./scripts/testWithKafka.sh \"yarn test:group:others --ci --maxWorkers=4 --no-watchman\"",
     "test:group:oauthbearer:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml COMPOSE_FILE='docker-compose.2_4_oauthbearer.yml' ./scripts/testWithKafka.sh \"yarn test:group:oauthbearer --ci --maxWorkers=4 --no-watchman\"",
+    "test:kraft": "KAFKA_VERSION=4.2 COMPOSE_FILE='docker-compose.4_2.yml' yarn lint && JEST_JUNIT_OUTPUT_NAME=test-report.xml KAFKA_VERSION=4.2 COMPOSE_FILE='docker-compose.4_2.yml' ./scripts/testWithKafka.sh 'yarn jest --ci --maxWorkers=4 --no-watchman --forceExit'",
+    "test:kraft:local": "KAFKA_VERSION=4.2 yarn jest --detectOpenHandles",
+    "test:kraft:broker:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml KAFKA_VERSION=4.2 COMPOSE_FILE='docker-compose.4_2.yml' ./scripts/testWithKafka.sh \"yarn test:group:broker --ci --maxWorkers=4 --no-watchman\"",
+    "test:kraft:admin:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml KAFKA_VERSION=4.2 COMPOSE_FILE='docker-compose.4_2.yml' ./scripts/testWithKafka.sh \"yarn test:group:admin --ci --maxWorkers=4 --no-watchman\"",
+    "test:kraft:producer:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml KAFKA_VERSION=4.2 COMPOSE_FILE='docker-compose.4_2.yml' ./scripts/testWithKafka.sh \"yarn test:group:producer --ci --maxWorkers=4 --no-watchman\"",
+    "test:kraft:consumer:ci": "JEST_JUNIT_OUTPUT_NAME=test-report.xml KAFKA_VERSION=4.2 COMPOSE_FILE='docker-compose.4_2.yml' ./scripts/testWithKafka.sh \"yarn test:group:consumer --ci --maxWorkers=4 --no-watchman\"",
     "test:types": "tsc -p types/"
   },
   "devDependencies": {
-    "@types/jest": "^27.4.0",
-    "@types/node": "^12.0.8",
-    "@typescript-eslint/typescript-estree": "^1.10.2",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.0.0",
     "eslint-config-standard": "^13.0.1",
@@ -61,17 +67,15 @@
     "execa": "^2.0.3",
     "glob": "^7.1.4",
     "husky": "^3.0.1",
-    "ip": "^1.1.5",
-    "jest": "^25.1.0",
-    "jest-circus": "^25.1.0",
-    "jest-extended": "^0.11.2",
-    "jest-junit": "^10.0.0",
+    "jest": "^29.7.0",
+    "jest-extended": "^4.0.0",
+    "jest-junit": "^16.0.0",
     "jsonwebtoken": "^9.0.0",
     "lint-staged": "^9.2.0",
-    "mockdate": "^2.0.5",
+    "mockdate": "^3.0.5",
     "prettier": "^1.18.2",
-    "semver": "^6.2.0",
-    "typescript": "^3.8.3",
+    "semver": "^7.6.0",
+    "typescript": "^5.0.0",
     "uuid": "^3.3.2"
   },
   "dependencies": {},

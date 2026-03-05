@@ -33,10 +33,18 @@ if [ -z "$(find_container_id)" ]; then
   fi
 fi
 
-$PWD/scripts/waitForKafka.js
-echo
-echo -e "Create SCRAM credentials"
-$PWD/scripts/createScramCredentials.sh
+# Use KRaft-compatible scripts when running Kafka 4.x+
+if [[ "${COMPOSE_FILE}" == *"4_2"* ]]; then
+  $PWD/scripts/waitForKafkaKRaft.js
+  echo
+  echo -e "Create SCRAM credentials (KRaft mode)"
+  $PWD/scripts/createScramCredentialsKRaft.sh
+else
+  $PWD/scripts/waitForKafka.js
+  echo
+  echo -e "Create SCRAM credentials"
+  $PWD/scripts/createScramCredentials.sh
+fi
 
 set +x
 echo

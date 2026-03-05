@@ -282,6 +282,21 @@ module.exports = class Decoder {
     return taggedFields
   }
 
+  // UUID is 16 bytes, returned as "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" string
+  // Nil UUID (all zeros) returns null
+  readUUID() {
+    const uuidBuffer = this.buffer.slice(this.offset, this.offset + 16)
+    this.offset += 16
+    const hex = uuidBuffer.toString('hex')
+    if (hex === '00000000000000000000000000000000') {
+      return null
+    }
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(
+      16,
+      20
+    )}-${hex.slice(20)}`
+  }
+
   readVarLong() {
     let currentByte
     let result = Long.fromInt(0)

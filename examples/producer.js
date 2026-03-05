@@ -1,10 +1,20 @@
 const fs = require('fs')
-const ip = require('ip')
+const os = require('os')
 
 const { Kafka, CompressionTypes, logLevel } = require('../index')
 const PrettyConsoleLogger = require('./prettyConsoleLogger')
 
-const host = process.env.HOST_IP || ip.address()
+const getLocalIP = () => {
+  const interfaces = os.networkInterfaces()
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) return iface.address
+    }
+  }
+  return '127.0.0.1'
+}
+
+const host = process.env.HOST_IP || getLocalIP()
 
 const kafka = new Kafka({
   logLevel: logLevel.INFO,

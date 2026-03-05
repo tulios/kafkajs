@@ -3,7 +3,7 @@ jest.setTimeout(90000)
 const retries = process.env.TEST_RETRIES != null ? parseInt(process.env.TEST_RETRIES, 10) : 0
 jest.retryTimes(retries)
 
-require('jest-extended')
+require('jest-extended/all')
 
 expect.extend({
   optional(v, value) {

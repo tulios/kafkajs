@@ -7,20 +7,40 @@ import {
   CompressionTypes,
   CompressionCodecs,
   ConfigResourceTypes,
+  ConfigOperationTypes,
   AclResourceTypes,
   AclOperationTypes,
   AclPermissionTypes,
   ResourcePatternTypes,
+  ShareAcknowledgeType,
+  ElectionType,
   LogEntry,
   KafkaJSError,
   KafkaJSOffsetOutOfRange,
   KafkaJSNumberOfRetriesExceeded,
   KafkaJSConnectionError,
+  KafkaJSConnectionClosedError,
   KafkaJSRequestTimeoutError,
   KafkaJSTopicMetadataNotLoaded,
   KafkaJSStaleTopicMetadataAssignment,
+  KafkaJSMemberIdRequired,
+  KafkaJSInvariantViolation,
+  KafkaJSInvalidVarIntError,
+  KafkaJSInvalidLongError,
+  KafkaJSCreateTopicError,
+  KafkaJSNoBrokerAvailableError,
   PartitionMetadata,
   KafkaJSServerDoesNotSupportApiKey,
+  ShareGroupDescribeResponse,
+  ShareFetchResponse,
+  ShareAcknowledgeResponse,
+  DescribeClusterResponse,
+  ElectLeadersResponse,
+  DescribeProducersResponse,
+  DescribeTransactionsResponse,
+  ListTransactionsResponse,
+  isRebalancing,
+  isKafkaJSError,
 } from './index'
 
 const { roundRobin } = PartitionAssigners
@@ -338,3 +358,125 @@ new KafkaJSServerDoesNotSupportApiKey(
     apiName: 'Produce',
   }
 )
+
+// NEW ERROR CLASSES
+new KafkaJSConnectionClosedError('Connection closed', { host: 'localhost', port: 9092 })
+new KafkaJSMemberIdRequired('Member id required', { memberId: 'member-1' })
+new KafkaJSInvariantViolation('Invariant violated')
+new KafkaJSInvalidVarIntError('Invalid VarInt')
+new KafkaJSInvalidLongError('Invalid Long')
+new KafkaJSCreateTopicError('Topic already exists', { topic: 'test-topic' })
+new KafkaJSNoBrokerAvailableError('No broker available')
+
+// UTILITY FUNCTIONS
+isRebalancing(new KafkaJSError('rebalancing'))
+isKafkaJSError(new Error('test'))
+
+// ENUMS
+const _setOp: ConfigOperationTypes = ConfigOperationTypes.SET
+const _deleteOp: ConfigOperationTypes = ConfigOperationTypes.DELETE
+const _appendOp: ConfigOperationTypes = ConfigOperationTypes.APPEND
+const _subtractOp: ConfigOperationTypes = ConfigOperationTypes.SUBTRACT
+
+const _acceptAck: ShareAcknowledgeType = ShareAcknowledgeType.ACCEPT
+const _releaseAck: ShareAcknowledgeType = ShareAcknowledgeType.RELEASE
+const _rejectAck: ShareAcknowledgeType = ShareAcknowledgeType.REJECT
+const _gapAck: ShareAcknowledgeType = ShareAcknowledgeType.GAP
+
+const _preferred: ElectionType = ElectionType.PREFERRED
+const _unclean: ElectionType = ElectionType.UNCLEAN
+
+// ADMIN - NEW METHODS
+const runAdminNew = async () => {
+  const admin = kafka.admin()
+  await admin.connect()
+
+  // incrementalAlterConfigs
+  await admin.incrementalAlterConfigs({
+    resources: [{
+      type: ConfigResourceTypes.TOPIC,
+      name: 'test-topic',
+      configEntries: [
+        { name: 'cleanup.policy', configOperation: ConfigOperationTypes.SET, value: 'compact' },
+      ],
+    }],
+  })
+
+  // electLeaders
+  const electionResult: ElectLeadersResponse = await admin.electLeaders({
+    electionType: ElectionType.PREFERRED,
+    topicPartitions: [{ topic: 'test-topic', partitions: [0] }],
+    timeout: 30000,
+  })
+  console.log(electionResult.throttleTime, electionResult.errorCode)
+
+  // deleteOffsets
+  await admin.deleteOffsets({
+    groupId: 'my-group',
+    topic: 'test-topic',
+    partitions: [{ partition: 0 }],
+  })
+
+  // describeLogDirs
+  const logDirs = await admin.describeLogDirs()
+  logDirs.brokers.forEach(b => {
+    console.log(b.brokerId, b.results)
+  })
+
+  // describeProducers
+  const producers: DescribeProducersResponse = await admin.describeProducers({
+    topics: [{ topic: 'test-topic', partitions: [0] }],
+  })
+  producers.topics.forEach(t => {
+    t.partitions.forEach(p => {
+      p.activeProducers.forEach(ap => {
+        console.log(ap.producerId, ap.producerEpoch, ap.lastSequence)
+      })
+    })
+  })
+
+  // describeTransactions
+  const txns: DescribeTransactionsResponse = await admin.describeTransactions({
+    transactionalIds: ['txn-1'],
+  })
+  txns.transactionStates.forEach(ts => {
+    console.log(ts.transactionalId, ts.state, ts.producerId, ts.topics)
+  })
+
+  // listTransactions
+  const txnList: ListTransactionsResponse = await admin.listTransactions({
+    stateFilters: ['Ongoing'],
+    producerIdFilters: [],
+  })
+  txnList.transactionStates.forEach(ts => {
+    console.log(ts.transactionalId, ts.transactionState)
+  })
+
+  // describeCluster
+  const cluster: DescribeClusterResponse = await admin.describeCluster()
+  cluster.brokers.forEach(b => {
+    console.log(b.nodeId, b.host, b.port, b.rack)
+  })
+  console.log(cluster.controller, cluster.clusterId)
+
+  // shareGroupDescribe
+  const shareGroups: ShareGroupDescribeResponse = await admin.shareGroupDescribe({
+    groupIds: ['share-group-1'],
+    includeAuthorizedOperations: true,
+  })
+  shareGroups.groups.forEach(g => {
+    console.log(g.groupId, g.groupState, g.groupEpoch)
+    g.members.forEach(m => {
+      console.log(m.memberId, m.rackId, m.subscribedTopicNames)
+      m.assignment.forEach(a => console.log(a.topicId, a.partitions))
+    })
+    g.topics.forEach(t => {
+      console.log(t.topicId, t.topicName)
+      t.partitions.forEach(p => console.log(p.partitionIndex, p.startOffset))
+    })
+  })
+
+  await admin.disconnect()
+}
+
+runAdminNew().catch(console.error)

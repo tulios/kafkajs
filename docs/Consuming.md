@@ -11,6 +11,19 @@ Creating the consumer:
 const consumer = kafka.consumer({ groupId: 'my-group' })
 ```
 
+### Static Membership
+
+Static membership (KIP-345) allows consumers to maintain their group assignment across restarts by providing a `groupInstanceId`. This reduces unnecessary rebalances when consumers restart:
+
+```javascript
+const consumer = kafka.consumer({
+  groupId: 'my-group',
+  groupInstanceId: 'instance-1',  // Unique per consumer instance
+})
+```
+
+When a consumer with a `groupInstanceId` disconnects, the broker waits for `session.timeout.ms` before triggering a rebalance. If the consumer reconnects with the same `groupInstanceId` within that window, it resumes its previous assignment without rebalancing.
+
 Subscribing to some topics:
 
 ```javascript

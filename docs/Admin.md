@@ -135,6 +135,7 @@ await admin.fetchTopicMetadata({ topics: <Array<String>> })
     partitionErrorCode: <Number>, // default: 0
     partitionId: <Number>,
     leader: <Number>,
+    leaderEpoch: <Number>,        // Available with Kafka 2.4+ (Metadata v7+)
     replicas: <Array<Number>>,
     isr: <Array<Number>>,
 }
@@ -681,6 +682,79 @@ Be aware that the security features might be disabled in your cluster. In that c
 KafkaJSProtocolError: Security features are disabled
 ```
 
+## <a name="incremental-alter-configs"></a> Incremental Alter Configs
+
+Incrementally update the configuration for the specified resources. Unlike `alterConfigs`, this method only changes the specified config entries without replacing all configs. This is the recommended way to modify configs on Kafka 2.3+ brokers.
+
+```javascript
+await admin.incrementalAlterConfigs({
+    validateOnly: false,
+    resources: <IncrementalAlterConfigsResource[]>
+})
+```
+
+`IncrementalAlterConfigsResource` structure:
+
+```javascript
+{
+    type: <ConfigResourceType>,
+    name: <String>,
+    configEntries: <IncrementalAlterConfigEntry[]>
+}
+```
+
+`IncrementalAlterConfigEntry` structure:
+
+```javascript
+{
+    name: <String>,
+    configOperation: <ConfigOperationTypes>,  // 0=SET, 1=DELETE, 2=APPEND, 3=SUBTRACT
+    value: <String>
+}
+```
+
+Config operation types:
+
+| Operation | Value | Description |
+|-----------|-------|-------------|
+| SET       | 0     | Set the value of the config entry |
+| DELETE    | 1     | Reset the config entry to its default value |
+| APPEND   | 2     | Append the value to the existing config (for list-type configs) |
+| SUBTRACT  | 3     | Remove the value from the existing config (for list-type configs) |
+
+Example:
+
+```javascript
+const { ConfigResourceTypes, ConfigOperationTypes } = require('kafkajs')
+
+await admin.incrementalAlterConfigs({
+    resources: [{
+        type: ConfigResourceTypes.TOPIC,
+        name: 'topic-name',
+        configEntries: [
+            { name: 'cleanup.policy', configOperation: ConfigOperationTypes.SET, value: 'compact' },
+            { name: 'max.message.bytes', configOperation: ConfigOperationTypes.DELETE, value: '' },
+        ]
+    }]
+})
+```
+
+Take a look at [configResourceTypes](https://github.com/tulios/kafkajs/blob/master/src/protocol/configResourceTypes.js) for a complete list of resources.
+
+Example response:
+
+```javascript
+{
+    resources: [{
+        errorCode: 0,
+        errorMessage: null,
+        resourceName: 'topic-name',
+        resourceType: 2,
+    }],
+    throttleTime: 0,
+}
+```
+
 ## <a name="alter-partition-reassignments"></a> Alter Partition Reassignments
 This is used to reassign the replicas that partitions are on. This method will throw exceptions in the case of errors.
 
@@ -740,3 +814,91 @@ OngoingPartitionReassignment Structure:
 }
 ```
 **Note:** If a partition is not going through a reassignment, its AddingReplicas and RemovingReplicas fields will simply be empty.
+
+## <a name="elect-leaders"></a> Elect Leaders
+
+Triggers a leader election for one or more partitions. This method requires Kafka 2.4+.
+
+```javascript
+await admin.electLeaders({
+  electionType: 0, // 0 = PREFERRED, 1 = UNCLEAN
+  topicPartitions: [{ topic: 'my-topic', partitions: [0, 1] }], // null = all partitions
+  timeout: 30000,
+})
+```
+
+## <a name="delete-offsets"></a> Delete Offsets
+
+Deletes consumer group offsets for specific topic partitions. The consumer group must not have any active members.
+
+```javascript
+await admin.deleteOffsets({
+  groupId: 'my-group',
+  topic: 'my-topic',
+  partitions: [{ partition: 0 }, { partition: 1 }],
+})
+```
+
+## <a name="describe-log-dirs"></a> Describe Log Dirs
+
+Returns information about log directories on all brokers.
+
+```javascript
+const logDirs = await admin.describeLogDirs({ topics: ['my-topic'] })
+// Returns log directory info for each broker
+```
+
+## <a name="describe-producers"></a> Describe Producers
+
+Returns information about active producers for the specified topic partitions.
+
+```javascript
+const result = await admin.describeProducers({
+  topics: [{ topic: 'my-topic', partitions: [0, 1] }],
+})
+```
+
+## <a name="describe-transactions"></a> Describe Transactions
+
+Returns details about active transactions.
+
+```javascript
+const result = await admin.describeTransactions({
+  transactionalIds: ['my-txn-id-1', 'my-txn-id-2'],
+})
+```
+
+## <a name="list-transactions"></a> List Transactions
+
+Lists active transactions, optionally filtering by state or producer ID.
+
+```javascript
+const result = await admin.listTransactions({
+  stateFilters: ['Ongoing'],
+  producerIdFilters: [],
+})
+```
+
+## <a name="share-group-describe"></a> Describe Share Groups
+
+> **Requires Kafka 4.0+**
+
+Describes one or more Share Groups (KIP-932). Share Groups provide queue-like consumption where multiple consumers process records from the same partitions concurrently with per-record acknowledgement.
+
+```javascript
+const result = await admin.shareGroupDescribe({
+  groupIds: ['my-share-group'],
+  includeAuthorizedOperations: false,
+})
+
+// result.groups[0]:
+// {
+//   groupId: 'my-share-group',
+//   groupState: 'Stable',
+//   groupEpoch: 1,
+//   assignorName: 'uniform',
+//   topics: [{ topicId, topicName, partitions: [...] }],
+//   members: [{ memberId, rackId, memberEpoch, clientId, clientHost, subscribedTopicNames, assignment }],
+//   authorizedOperations: 0,
+// }
+```

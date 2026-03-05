@@ -394,6 +394,25 @@ module.exports = class Encoder {
     return this
   }
 
+  // UUID is 16 bytes (two INT64 values: mostSignificantBits, leastSignificantBits)
+  // String format: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" or null for nil UUID (all zeros)
+  writeUUID(value) {
+    if (value == null) {
+      this.ensureAvailable(16)
+      for (let i = 0; i < 16; i++) {
+        this.buf[this.offset++] = 0
+      }
+      return this
+    }
+
+    const hex = value.replace(/-/g, '')
+    const uuidBuffer = Buffer.from(hex, 'hex')
+    this.ensureAvailable(16)
+    uuidBuffer.copy(this.buf, this.offset, 0, 16)
+    this.offset += 16
+    return this
+  }
+
   size() {
     // We can use the offset here directly, because we anyways will not re-encode the buffer when writing
     return this.offset

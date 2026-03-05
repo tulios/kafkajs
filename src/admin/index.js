@@ -764,6 +764,83 @@ module.exports = ({
     })
   }
 
+  const incrementalAlterConfigs = async ({ resources, validateOnly }) => {
+    if (!resources || !Array.isArray(resources)) {
+      throw new KafkaJSNonRetriableError(`Invalid resources array ${resources}`)
+    }
+
+    if (resources.length === 0) {
+      throw new KafkaJSNonRetriableError('Resources array cannot be empty')
+    }
+
+    const validResourceTypes = Object.values(CONFIG_RESOURCE_TYPES)
+    const invalidType = resources.find(r => !validResourceTypes.includes(r.type))
+
+    if (invalidType) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource type ${invalidType.type}: ${JSON.stringify(invalidType)}`
+      )
+    }
+
+    const invalidName = resources.find(r => !r.name || typeof r.name !== 'string')
+
+    if (invalidName) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource name ${invalidName.name}: ${JSON.stringify(invalidName)}`
+      )
+    }
+
+    const invalidConfigs = resources.find(r => !Array.isArray(r.configEntries))
+
+    if (invalidConfigs) {
+      const { configEntries } = invalidConfigs
+      throw new KafkaJSNonRetriableError(
+        `Invalid resource configEntries ${configEntries}: ${JSON.stringify(invalidConfigs)}`
+      )
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+        const controller = await cluster.findControllerBroker()
+        const resourcerByBroker = await groupResourcesByBroker({
+          resources,
+          defaultBroker: controller,
+        })
+
+        const incrementalAlterConfigsAction = async broker => {
+          const targetBroker = broker || controller
+          return targetBroker.incrementalAlterConfigs({
+            resources: resourcerByBroker.get(targetBroker),
+            validateOnly: !!validateOnly,
+          })
+        }
+
+        const brokers = Array.from(resourcerByBroker.keys())
+        const responses = await Promise.all(brokers.map(incrementalAlterConfigsAction))
+        const responseResources = responses.reduce(
+          (result, { responses: r }) => [...result, ...r],
+          []
+        )
+
+        return { resources: responseResources }
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not alter configs incrementally', {
+            error: e.message,
+            retryCount,
+            retryTime,
+          })
+          throw e
+        }
+
+        bail(e)
+      }
+    })
+  }
+
   /**
    * Fetch metadata for provided topics.
    *
@@ -1552,6 +1629,180 @@ module.exports = ({
     })
   }
 
+  /**
+   * Elect leaders for topic partitions.
+   * @param {Object} options
+   * @param {number} [options.electionType=0] 0=PREFERRED, 1=UNCLEAN
+   * @param {Object[]} [options.topicPartitions] null for all partitions
+   * @param {number} [options.timeout=30000]
+   */
+  const electLeaders = async ({
+    electionType = 0,
+    topicPartitions = null,
+    timeout = 30000,
+  } = {}) => {
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        const broker = await cluster.findControllerBroker()
+        return await broker.electLeaders({ electionType, topicPartitions, timeout })
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER') {
+          logger.warn('Could not elect leaders', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+        bail(e)
+      }
+    })
+  }
+
+  /**
+   * Delete consumer group offsets for specific topic partitions.
+   * @param {Object} options
+   * @param {string} options.groupId
+   * @param {string} options.topic
+   * @param {number[]} options.partitions
+   */
+  const deleteOffsets = async ({ groupId, topic, partitions }) => {
+    if (!groupId) {
+      throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
+    }
+    if (!topic) {
+      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    }
+
+    const topics = [{ topic, partitions: partitions.map(partition => ({ partition })) }]
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        const coordinator = await cluster.findGroupCoordinator({ groupId })
+        return await coordinator.offsetDelete({ groupId, topics })
+      } catch (e) {
+        if (e.type === 'NOT_COORDINATOR') {
+          logger.warn('Could not delete offsets', { error: e.message, retryCount, retryTime })
+          throw e
+        }
+        bail(e)
+      }
+    })
+  }
+
+  /**
+   * Describe log directories on specific brokers.
+   * @param {Object} [options]
+   * @param {Object[]} [options.topics] null for all topics
+   * @returns {Promise}
+   */
+  const describeLogDirs = async ({ topics = null } = {}) => {
+    const metadata = await cluster.metadata({ topics: [] })
+    const results = await Promise.all(
+      metadata.brokers.map(async ({ nodeId }) => {
+        const broker = await cluster.findBroker({ nodeId: String(nodeId) })
+        const response = await broker.describeLogDirs({ topics })
+        return { brokerId: nodeId, ...response }
+      })
+    )
+    return { brokers: results }
+  }
+
+  /**
+   * Describe active producers on topic partitions.
+   * @param {Object} options
+   * @param {Object[]} options.topics
+   * @returns {Promise}
+   */
+  const describeProducers = async ({ topics }) => {
+    if (!topics || !Array.isArray(topics)) {
+      throw new KafkaJSNonRetriableError(`Invalid topics array ${topics}`)
+    }
+
+    const metadata = await cluster.metadata({ topics: topics.map(t => t.topic) })
+    const brokerTopicPartitions = {}
+
+    for (const { topic, partitions } of topics) {
+      const topicMeta = metadata.topicMetadata.find(t => t.topic === topic)
+      if (!topicMeta) continue
+
+      for (const partition of partitions) {
+        const partMeta = topicMeta.partitionMetadata.find(p => p.partitionId === partition)
+        if (!partMeta) continue
+        const leader = partMeta.leader
+        if (!brokerTopicPartitions[leader]) brokerTopicPartitions[leader] = {}
+        if (!brokerTopicPartitions[leader][topic]) brokerTopicPartitions[leader][topic] = []
+        brokerTopicPartitions[leader][topic].push(partition)
+      }
+    }
+
+    const results = await Promise.all(
+      Object.entries(brokerTopicPartitions).map(async ([nodeId, topicMap]) => {
+        const broker = await cluster.findBroker({ nodeId: String(nodeId) })
+        const brokerTopics = Object.entries(topicMap).map(([topic, partitions]) => ({
+          topic,
+          partitions,
+        }))
+        return broker.describeProducers({ topics: brokerTopics })
+      })
+    )
+
+    return {
+      topics: results.reduce((acc, r) => acc.concat(r.topics || []), []),
+    }
+  }
+
+  /**
+   * Describe transactions by transactional IDs.
+   * @param {Object} options
+   * @param {string[]} options.transactionalIds
+   * @returns {Promise}
+   */
+  const describeTransactions = async ({ transactionalIds }) => {
+    if (!transactionalIds || !Array.isArray(transactionalIds)) {
+      throw new KafkaJSNonRetriableError(`Invalid transactionalIds array ${transactionalIds}`)
+    }
+
+    const coordinatorsByTxnId = {}
+    for (const txnId of transactionalIds) {
+      const coordinator = await cluster.findGroupCoordinator({
+        groupId: txnId,
+        coordinatorType: 1, // TRANSACTION coordinator
+      })
+      const nodeId = coordinator.nodeId
+      if (!coordinatorsByTxnId[nodeId])
+        coordinatorsByTxnId[nodeId] = { broker: coordinator, txnIds: [] }
+      coordinatorsByTxnId[nodeId].txnIds.push(txnId)
+    }
+
+    const results = await Promise.all(
+      Object.values(coordinatorsByTxnId).map(async ({ broker, txnIds }) => {
+        return broker.describeTransactions({ transactionalIds: txnIds })
+      })
+    )
+
+    return {
+      transactionStates: results.reduce((acc, r) => acc.concat(r.transactionStates || []), []),
+    }
+  }
+
+  /**
+   * List transactions across the cluster.
+   * @param {Object} [options]
+   * @param {string[]} [options.stateFilters=[]]
+   * @param {number[]} [options.producerIdFilters=[]]
+   * @returns {Promise}
+   */
+  const listTransactions = async ({ stateFilters = [], producerIdFilters = [] } = {}) => {
+    const metadata = await cluster.metadata({ topics: [] })
+    const results = await Promise.all(
+      metadata.brokers.map(async ({ nodeId }) => {
+        const broker = await cluster.findBroker({ nodeId: String(nodeId) })
+        return broker.listTransactions({ stateFilters, producerIdFilters })
+      })
+    )
+
+    return {
+      transactionStates: results.reduce((acc, r) => acc.concat(r.transactionStates || []), []),
+    }
+  }
+
   /** @type {import("../../types").Admin["on"]} */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {
@@ -1591,6 +1842,7 @@ module.exports = ({
     resetOffsets,
     describeConfigs,
     alterConfigs,
+    incrementalAlterConfigs,
     on,
     logger: getLogger,
     listGroups,
@@ -1602,5 +1854,11 @@ module.exports = ({
     deleteTopicRecords,
     alterPartitionReassignments,
     listPartitionReassignments,
+    electLeaders,
+    deleteOffsets,
+    describeLogDirs,
+    describeProducers,
+    describeTransactions,
+    listTransactions,
   }
 }

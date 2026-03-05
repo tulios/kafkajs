@@ -16,6 +16,11 @@ const versions = {
     const response = require('./v2/response')
     return { request: request({ coordinatorKey: groupId, coordinatorType }), response }
   },
+  3: ({ groupId, coordinatorType = COORDINATOR_TYPES.GROUP }) => {
+    const request = require('./v3/request')
+    const response = require('./v3/response')
+    return { request: request({ coordinatorKey: groupId, coordinatorType }), response }
+  },
 }
 
 module.exports = {

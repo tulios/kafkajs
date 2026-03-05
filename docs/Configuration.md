@@ -15,6 +15,19 @@ const kafka = new Kafka({
 })
 ```
 
+## Kafka Version Compatibility
+
+KafkaJS automatically negotiates protocol versions with the broker. No manual configuration is needed.
+
+| KafkaJS Version | Kafka Broker Versions | Node.js | npm |
+|----------------|----------------------|---------|-----|
+| 3.0.0+         | 1.0.0 - 4.2.0       | >= 20.0 | >= 10.0 |
+| 2.0.0 - 2.2.4  | 0.11.0 - 3.x        | >= 12.0 | >= 6.0  |
+
+### KRaft Mode (Kafka 4.0+)
+
+Apache Kafka 4.0 removed ZooKeeper. All Kafka 4.x clusters run in **KRaft mode**. KafkaJS connects to brokers (not ZooKeeper), so no client code changes are required. The client works identically with KRaft and ZooKeeper-based clusters.
+
 ## Client Id
 A logical identifier of an application. Can be used by brokers to apply quotas or trace requests to a specific application. Example: `booking-events-processor`.
 
@@ -86,7 +99,7 @@ Refer to [TLS create secure context](https://nodejs.org/dist/latest-v8.x/docs/ap
 
 ## SASL
 
-Kafka has support for using SASL to authenticate clients. The `sasl` option can be used to configure the authentication mechanism. Currently, KafkaJS supports `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512`, and `AWS` mechanisms.
+Kafka has support for using SASL to authenticate clients. The `sasl` option can be used to configure the authentication mechanism. KafkaJS supports all SASL mechanisms that Kafka supports: `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512`, `OAUTHBEARER`, `AWS` (IAM), and `GSSAPI` (Kerberos).
 
 Note that the broker may be configured to reject your authentication attempt if you are not using TLS, even if the credentials themselves are valid. In particular, never authenticate without TLS when using `PLAIN` as your authentication mechanism, as that will transmit your credentials unencrypted in plain text. See [SSL](#ssl) for more information on how to enable TLS.
 
@@ -259,6 +272,44 @@ You can also programmatically retrieve the `aws:userid` for currently available 
 
 A complete breakdown can be found in the IAM User Guide's
 [Reference on Policy Variables](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html#policy-vars-infotouse).
+
+### GSSAPI (Kerberos) Example
+
+GSSAPI provides strong mutual authentication using Kerberos tickets. This is common in enterprise environments with existing Kerberos infrastructure.
+
+**Prerequisites:**
+- Install the `kerberos` npm package: `npm install kerberos`
+- A Kerberos KDC (Key Distribution Center) must be running
+- A valid keytab file or TGT (Ticket Granting Ticket) must be available
+- Proper Kerberos configuration (`/etc/krb5.conf`)
+
+```javascript
+new Kafka({
+  clientId: 'my-app',
+  brokers: ['kafka1:9092', 'kafka2:9092'],
+  sasl: {
+    mechanism: 'gssapi',
+    serviceName: 'kafka', // Kerberos service name (default: 'kafka')
+    principal: 'kafka-client@EXAMPLE.COM', // Client principal
+    keytab: '/etc/security/keytabs/client.keytab', // Path to keytab file
+  },
+})
+```
+
+**Configuration options:**
+
+| option | description | default |
+| --- | --- | --- |
+| `serviceName` | The Kerberos service name configured on the broker (`sasl.kerberos.service.name`) | `'kafka'` |
+| `principal` | The Kerberos principal for the client (e.g., `user@REALM`) | *uses default from krb5.conf* |
+| `keytab` | Path to the keytab file for authentication | *uses default TGT* |
+| `kerberosServicePrincipal` | Full service principal override (e.g., `kafka/broker-host@REALM`). If set, `serviceName` is ignored | *constructed from serviceName/host* |
+
+**Broker configuration** (`server.properties`):
+```properties
+sasl.enabled.mechanisms=GSSAPI
+sasl.kerberos.service.name=kafka
+```
 
 ### Use Encrypted Protocols
 

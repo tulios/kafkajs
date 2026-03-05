@@ -19,6 +19,11 @@ const versions = {
     const response = require('./v3/response')
     return { request: request({ topics, validateOnly, timeout }), response }
   },
+  5: ({ topics, validateOnly, timeout }) => {
+    const request = require('./v5/request')
+    const response = require('./v5/response')
+    return { request: request({ topics, validateOnly, timeout }), response }
+  },
 }
 
 module.exports = {

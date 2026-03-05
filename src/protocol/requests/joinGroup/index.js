@@ -127,6 +127,32 @@ const versions = {
       logResponseError: logResponseError(memberId),
     }
   },
+  6: ({
+    groupId,
+    sessionTimeout,
+    rebalanceTimeout,
+    memberId,
+    groupInstanceId,
+    protocolType,
+    groupProtocols,
+  }) => {
+    const request = require('./v6/request')
+    const response = require('./v6/response')
+    return {
+      request: request({
+        groupId,
+        sessionTimeout,
+        rebalanceTimeout,
+        memberId,
+        groupInstanceId,
+        protocolType,
+        groupProtocols,
+      }),
+      response,
+      requestTimeout: requestTimeout({ rebalanceTimeout, sessionTimeout }),
+      logResponseError: logResponseError(memberId),
+    }
+  },
 }
 
 module.exports = {

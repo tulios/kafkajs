@@ -8,6 +8,9 @@
       "admin": {
         "title": "Admin Client"
       },
+      "cdc-debezium": {
+        "title": "CDC with Debezium"
+      },
       "configuration": {
         "title": "Client Configuration"
       },
@@ -20,8 +23,14 @@
       "contribution-guide": {
         "title": "Contributing"
       },
+      "custom-authentication-mechanism": {
+        "title": "Custom Authentication Mechanisms"
+      },
       "custom-logger": {
         "title": "Custom Logger"
+      },
+      "dead-letter-queue": {
+        "title": "Dead Letter Queue"
       },
       "development-environment": {
         "title": "Development Environment"
@@ -46,6 +55,10 @@
       "migration-guide-v2.0.0": {
         "title": "Migrating to v2.0.0"
       },
+      "migration-guide-v3.0.0": {
+        "title": "Migration Guide v3.0.0",
+        "sidebar_label": "v3.0.0"
+      },
       "pre-releases": {
         "title": "Pre-releases"
       },
@@ -60,6 +73,9 @@
       },
       "retry-detailed": {
         "title": "Retry Mechanism Explained"
+      },
+      "sasl-authentication": {
+        "title": "SASL Authentication"
       },
       "testing": {
         "title": "Testing"
@@ -338,6 +354,116 @@
       },
       "version-2.0.0/version-2.0.0-producing": {
         "title": "Producing Messages"
+      },
+      "version-2.1.0/version-2.1.0-consuming": {
+        "title": "Consuming Messages"
+      },
+      "version-2.2.0/version-2.2.0-admin": {
+        "title": "Admin Client"
+      },
+      "version-2.2.0/version-2.2.0-configuration": {
+        "title": "Client Configuration"
+      },
+      "version-2.2.0/version-2.2.0-consumer-example": {
+        "title": "Consumer"
+      },
+      "version-2.2.0/version-2.2.0-custom-authentication-mechanism": {
+        "title": "Custom Authentication Mechanisms"
+      },
+      "version-2.2.4/version-2.2.4-consuming": {
+        "title": "Consuming Messages"
+      },
+      "version-2.2.4/version-2.2.4-custom-authentication-mechanism": {
+        "title": "Custom Authentication Mechanisms"
+      },
+      "version-2.2.4/version-2.2.4-custom-logger": {
+        "title": "Custom Logger"
+      },
+      "version-2.2.4/version-2.2.4-producer-example": {
+        "title": "Producer"
+      },
+      "version-2.2.4/version-2.2.4-producing": {
+        "title": "Producing Messages"
+      },
+      "version-3.0.0/version-3.0.0-admin": {
+        "title": "Admin Client"
+      },
+      "version-3.0.0/version-3.0.0-api-reference": {
+        "title": "API Reference & Types"
+      },
+      "version-3.0.0/version-3.0.0-cdc-debezium": {
+        "title": "CDC with Debezium"
+      },
+      "version-3.0.0/version-3.0.0-configuration": {
+        "title": "Client Configuration"
+      },
+      "version-3.0.0/version-3.0.0-consumer-example": {
+        "title": "Consumer"
+      },
+      "version-3.0.0/version-3.0.0-consuming": {
+        "title": "Consuming Messages"
+      },
+      "version-3.0.0/version-3.0.0-contribution-guide": {
+        "title": "Contributing"
+      },
+      "version-3.0.0/version-3.0.0-custom-authentication-mechanism": {
+        "title": "Custom Authentication Mechanisms"
+      },
+      "version-3.0.0/version-3.0.0-custom-logger": {
+        "title": "Custom Logger"
+      },
+      "version-3.0.0/version-3.0.0-development-environment": {
+        "title": "Development Environment"
+      },
+      "version-3.0.0/version-3.0.0-running-kafka-in-development": {
+        "title": "Running Kafka in Development"
+      },
+      "version-3.0.0/version-3.0.0-faq": {
+        "title": "FAQ"
+      },
+      "version-3.0.0/version-3.0.0-getting-started": {
+        "title": "Getting Started",
+        "sidebar_label": "Getting Started"
+      },
+      "version-3.0.0/version-3.0.0-instrumentation-events": {
+        "title": "Instrumentation Events"
+      },
+      "version-3.0.0/version-3.0.0-kafka-connect": {
+        "title": "Kafka Connect"
+      },
+      "version-3.0.0/version-3.0.0-introduction": {
+        "title": "A Brief Intro to Kafka",
+        "sidebar_label": "Intro to Kafka"
+      },
+      "version-3.0.0/version-3.0.0-kafka-streams": {
+        "title": "Kafka Streams"
+      },
+      "version-3.0.0/version-3.0.0-migration-guide-v2.0.0": {
+        "title": "Migrating to v2.0.0"
+      },
+      "version-3.0.0/version-3.0.0-migration-guide-v3.0.0": {
+        "title": "Migrating to v3.0.0"
+      },
+      "version-3.0.0/version-3.0.0-pre-releases": {
+        "title": "Pre-releases"
+      },
+      "version-3.0.0/version-3.0.0-producer-example": {
+        "title": "Producer"
+      },
+      "version-3.0.0/version-3.0.0-producing": {
+        "title": "Producing Messages"
+      },
+      "version-3.0.0/version-3.0.0-development-resources": {
+        "title": "Resources"
+      },
+      "version-3.0.0/version-3.0.0-retry-detailed": {
+        "title": "Retry Mechanism Explained"
+      },
+      "version-3.0.0/version-3.0.0-testing": {
+        "title": "Testing"
+      },
+      "version-3.0.0/version-3.0.0-transactions": {
+        "title": "Transactions"
       }
     },
     "links": {

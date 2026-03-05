@@ -632,6 +632,34 @@ module.exports = class Broker {
   }
 
   /**
+   * Send an `IncrementalAlterConfigs` request to incrementally alter configs.
+   * Unlike `AlterConfigs`, this only changes the specified config entries without
+   * replacing all configs for the resource.
+   *
+   * @public
+   * @param {object} request
+   * @param {Array} request.resources
+   *                 e.g: [{
+   *                   type: RESOURCE_TYPES.TOPIC,
+   *                   name: 'topic-name',
+   *                   configEntries: [{
+   *                     name: 'cleanup.policy',
+   *                     configOperation: 0, // SET=0, DELETE=1, APPEND=2, SUBTRACT=3
+   *                     value: 'compact',
+   *                   }]
+   *                 }]
+   * @param {boolean} [request.validateOnly=false]
+   * @returns {Promise}
+   */
+  async incrementalAlterConfigs({ resources, validateOnly = false }) {
+    const incrementalAlterConfigs = this.lookupRequest(
+      apiKeys.IncrementalAlterConfigs,
+      requests.IncrementalAlterConfigs
+    )
+    return await this[PRIVATE.SEND_REQUEST](incrementalAlterConfigs({ resources, validateOnly }))
+  }
+
+  /**
    * Send an `InitProducerId` request to fetch a PID and bump the producer epoch.
    *
    * Request should be made to the transaction coordinator.
@@ -894,6 +922,224 @@ module.exports = class Broker {
       requests.ListPartitionReassignments
     )
     return await this[PRIVATE.SEND_REQUEST](listPartitionReassignments({ topics, timeout }))
+  }
+
+  /**
+   * @public
+   * @param {Object} request
+   * @param {Object[]} request.topics
+   * @returns {Promise}
+   */
+  async offsetForLeaderEpoch({ replicaId = -1, topics }) {
+    const offsetForLeaderEpoch = this.lookupRequest(
+      apiKeys.OffsetForLeaderEpoch,
+      requests.OffsetForLeaderEpoch
+    )
+    return await this[PRIVATE.SEND_REQUEST](offsetForLeaderEpoch({ replicaId, topics }))
+  }
+
+  /**
+   * @public
+   * @param {Object} request
+   * @param {number} [request.electionType=0] 0=PREFERRED, 1=UNCLEAN
+   * @param {Object[]} [request.topicPartitions]
+   * @param {number} [request.timeout=30000]
+   * @returns {Promise}
+   */
+  async electLeaders({ electionType = 0, topicPartitions = null, timeout = 30000 }) {
+    const electLeaders = this.lookupRequest(apiKeys.ElectPreferredLeaders, requests.ElectLeaders)
+    return await this[PRIVATE.SEND_REQUEST](
+      electLeaders({ electionType, topicPartitions, timeout })
+    )
+  }
+
+  /**
+   * @public
+   * @param {Object} request
+   * @param {string} request.groupId
+   * @param {Object[]} request.topics
+   * @returns {Promise}
+   */
+  async offsetDelete({ groupId, topics }) {
+    const offsetDelete = this.lookupRequest(apiKeys.OffsetDelete, requests.OffsetDelete)
+    return await this[PRIVATE.SEND_REQUEST](offsetDelete({ groupId, topics }))
+  }
+
+  /**
+   * @public
+   * @param {Object} [request]
+   * @param {boolean} [request.includeClusterAuthorizedOperations=false]
+   * @returns {Promise}
+   */
+  async describeCluster({ includeClusterAuthorizedOperations = false } = {}) {
+    const describeCluster = this.lookupRequest(apiKeys.DescribeCluster, requests.DescribeCluster)
+    return await this[PRIVATE.SEND_REQUEST](describeCluster({ includeClusterAuthorizedOperations }))
+  }
+
+  /**
+   * @public
+   * @param {Object} request
+   * @param {Object[]} [request.topics]
+   * @returns {Promise}
+   */
+  async describeLogDirs({ topics = null } = {}) {
+    const describeLogDirs = this.lookupRequest(apiKeys.DescribeLogDirs, requests.DescribeLogDirs)
+    return await this[PRIVATE.SEND_REQUEST](describeLogDirs({ topics }))
+  }
+
+  /**
+   * @public
+   * @param {Object} request
+   * @param {Object[]} request.topics
+   * @returns {Promise}
+   */
+  async describeProducers({ topics }) {
+    const describeProducers = this.lookupRequest(
+      apiKeys.DescribeProducers,
+      requests.DescribeProducers
+    )
+    return await this[PRIVATE.SEND_REQUEST](describeProducers({ topics }))
+  }
+
+  /**
+   * @public
+   * @param {Object} request
+   * @param {string[]} request.transactionalIds
+   * @returns {Promise}
+   */
+  async describeTransactions({ transactionalIds }) {
+    const describeTransactions = this.lookupRequest(
+      apiKeys.DescribeTransactions,
+      requests.DescribeTransactions
+    )
+    return await this[PRIVATE.SEND_REQUEST](describeTransactions({ transactionalIds }))
+  }
+
+  /**
+   * @public
+   * @param {Object} [request]
+   * @param {string[]} [request.stateFilters=[]]
+   * @param {number[]} [request.producerIdFilters=[]]
+   * @returns {Promise}
+   */
+  async listTransactions({ stateFilters = [], producerIdFilters = [] } = {}) {
+    const listTransactions = this.lookupRequest(apiKeys.ListTransactions, requests.ListTransactions)
+    return await this[PRIVATE.SEND_REQUEST](listTransactions({ stateFilters, producerIdFilters }))
+  }
+
+  async shareGroupHeartbeat({
+    groupId,
+    memberId,
+    memberEpoch,
+    rackId = null,
+    subscribedTopicNames = null,
+    topicPartitions = null,
+  }) {
+    const shareGroupHeartbeat = this.lookupRequest(
+      apiKeys.ShareGroupHeartbeat,
+      requests.ShareGroupHeartbeat
+    )
+    return await this[PRIVATE.SEND_REQUEST](
+      shareGroupHeartbeat({
+        groupId,
+        memberId,
+        memberEpoch,
+        rackId,
+        subscribedTopicNames,
+        topicPartitions,
+      })
+    )
+  }
+
+  async shareGroupDescribe({ groupIds, includeAuthorizedOperations = false }) {
+    const shareGroupDescribe = this.lookupRequest(
+      apiKeys.ShareGroupDescribe,
+      requests.ShareGroupDescribe
+    )
+    return await this[PRIVATE.SEND_REQUEST](
+      shareGroupDescribe({ groupIds, includeAuthorizedOperations })
+    )
+  }
+
+  async shareFetch({
+    groupId,
+    memberId,
+    memberEpoch,
+    maxWaitMs = 500,
+    minBytes = 1,
+    maxBytes = 10485760,
+    topics = [],
+    forgottenTopicsData = [],
+  }) {
+    const shareFetch = this.lookupRequest(apiKeys.ShareFetch, requests.ShareFetch)
+    return await this[PRIVATE.SEND_REQUEST](
+      shareFetch({
+        groupId,
+        memberId,
+        memberEpoch,
+        maxWaitMs,
+        minBytes,
+        maxBytes,
+        topics,
+        forgottenTopicsData,
+      })
+    )
+  }
+
+  async shareAcknowledge({ groupId, memberId, memberEpoch, topics = [] }) {
+    const shareAcknowledge = this.lookupRequest(apiKeys.ShareAcknowledge, requests.ShareAcknowledge)
+    return await this[PRIVATE.SEND_REQUEST](
+      shareAcknowledge({ groupId, memberId, memberEpoch, topics })
+    )
+  }
+
+  async addRaftVoter({
+    clusterId = null,
+    timeoutMs = 30000,
+    voterId,
+    voterDirectoryId,
+    listeners = [],
+  }) {
+    const addRaftVoter = this.lookupRequest(apiKeys.AddRaftVoter, requests.AddRaftVoter)
+    return await this[PRIVATE.SEND_REQUEST](
+      addRaftVoter({ clusterId, timeoutMs, voterId, voterDirectoryId, listeners })
+    )
+  }
+
+  async removeRaftVoter({ clusterId = null, timeoutMs = 30000, voterId, voterDirectoryId }) {
+    const removeRaftVoter = this.lookupRequest(apiKeys.RemoveRaftVoter, requests.RemoveRaftVoter)
+    return await this[PRIVATE.SEND_REQUEST](
+      removeRaftVoter({ clusterId, timeoutMs, voterId, voterDirectoryId })
+    )
+  }
+
+  async updateRaftVoter({
+    clusterId = null,
+    currentLeaderEpoch,
+    voterId,
+    voterDirectoryId,
+    listeners = [],
+    kRaftVersionFeature = null,
+  }) {
+    const updateRaftVoter = this.lookupRequest(apiKeys.UpdateRaftVoter, requests.UpdateRaftVoter)
+    return await this[PRIVATE.SEND_REQUEST](
+      updateRaftVoter({
+        clusterId,
+        currentLeaderEpoch,
+        voterId,
+        voterDirectoryId,
+        listeners,
+        kRaftVersionFeature,
+      })
+    )
+  }
+
+  async readShareGroupStateSummary({ topics = [] }) {
+    const readShareGroupStateSummary = this.lookupRequest(
+      apiKeys.ReadShareGroupStateSummary,
+      requests.ReadShareGroupStateSummary
+    )
+    return await this[PRIVATE.SEND_REQUEST](readShareGroupStateSummary({ topics }))
   }
 
   /**
