@@ -36,7 +36,7 @@ When suppling a regular expression, the consumer will not match topics created a
 
 KafkaJS offers you two ways to process your data: `eachMessage` and `eachBatch`
 
-## <a name="each-message"></a> eachMessage
+## <a name="eachmessage"></a> eachMessage
 
 The `eachMessage` handler provides a convenient and easy to use API, feeding your function one message at a time. It is implemented on top of `eachBatch`, and it will automatically commit your offsets and heartbeat at the configured interval for you. If you are just looking to get started with Kafka consumers this a good place to start.
 
@@ -55,7 +55,7 @@ await consumer.run({
 Be aware that the `eachMessage` handler should not block for longer than the configured [session timeout](#options) or else the consumer will be removed from the group. If your workload involves very slow processing times for individual messages then you should either increase the session timeout or make periodic use of the `heartbeat` function exposed in the handler payload.
 The `pause` function is a convenience for `consumer.pause({ topic, partitions: [partition] })`. It will pause the current topic-partition and returns a function that allows you to resume consuming later.
 
-## <a name="each-batch"></a> eachBatch
+## <a name="eachbatch"></a> eachBatch
 
 Some use cases require dealing with batches directly. This handler will feed your function batches and provide some utility functions to give your code more flexibility: `resolveOffset`, `heartbeat`, `commitOffsetsIfNecessary`, `uncommittedOffsets`, `isRunning`, `isStale`, and `pause`. All resolved offsets will be automatically committed after the function is executed.
 
@@ -122,7 +122,7 @@ consumer.run({
 
 In the example above, if the consumer is shutting down in the middle of the batch, the remaining messages won't be resolved and therefore not committed. This way, you can quickly shut down the consumer without losing/skipping any messages. If the batch goes stale for some other reason (like calling `consumer.seek`) none of the remaining messages are processed either.
 
-## <a name="concurrent-processing"></a> Partition-aware concurrency
+## <a name="partition-aware-concurrency"></a> Partition-aware concurrency
 
 By default, [`eachMessage`](Consuming.md#each-message) is invoked sequentially for each message in each partition. In order to concurrently process several messages per once, you can increase the `partitionsConsumedConcurrently` option:
 
@@ -141,7 +141,7 @@ The same thing applies if you are using [`eachBatch`](Consuming.md#each-batch). 
 
 A guideline for setting `partitionsConsumedConcurrently` would be that it should not be larger than the number of partitions consumed. Depending on whether or not your workload is CPU bound, it may also not benefit you to set it to a higher number than the number of logical CPU cores. A recommendation is to start with a low number and measure if increasing leads to higher throughput.
 
-## <a name="auto-commit"></a> autoCommit
+## <a name="autocommit"></a> autoCommit
 
 The messages are always fetched in batches from Kafka, even when using the `eachMessage` handler. All resolved offsets will be committed to Kafka after processing the whole batch.
 
@@ -169,7 +169,7 @@ Having both flavors at the same time is also possible, the consumer will commit 
 
 `autoCommit`: Advanced option to disable auto committing altogether. Instead, you can [manually commit offsets](#manual-commits). Default: `true`
 
-## <a name="manual-commits"></a> Manual committing
+## <a name="manual-committing"></a> Manual committing
 
 When disabling [`autoCommit`](#auto-commit) you can still manually commit message offsets, in a couple of different ways:
 
@@ -202,7 +202,7 @@ The usual usage pattern for offsets stored outside of Kafka is as follows:
 - Store a message's `offset + 1` in the store together with the results of processing. `1` is added to prevent that same message from being consumed again.
 - Use the externally stored offset on restart to [seek](#seek) the consumer to it.
 
-## <a name="from-beginning"></a> fromBeginning
+## <a name="frombeginning"></a> fromBeginning
 
 The consumer group will use the latest committed offset when starting to fetch messages. If the offset is invalid or not defined, `fromBeginning` defines the behavior of the consumer group. This can be configured when subscribing to a topic:
 
@@ -251,7 +251,7 @@ kafka.consumer({
 | maxInFlightRequests | Max number of requests that may be in progress at any time. If falsey then no limit.                                    | `null` _(no limit)_ |
 | rackId                 | Configure the "rack" in which the consumer resides to enable [follower fetching](#follower-fetching)                 | `null` _(fetch from the leader always)_ |
 
-## <a name="pause-resume"></a> Pause & Resume
+## <a name="pause-amp-resume"></a> Pause & Resume
 
 In order to pause and resume consuming from one or more topics, the `Consumer` provides the methods `pause` and `resume`. It also provides the `paused` method to get the list of all paused topics. Note that pausing a topic means that it won't be fetched in the next cycle and subsequent messages within the current batch won't be passed to an `eachMessage` handler.
 

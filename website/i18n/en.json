@@ -20,6 +20,9 @@
       "contribution-guide": {
         "title": "Contributing"
       },
+      "custom-authentication-mechanism": {
+        "title": "Custom Authentication Mechanisms"
+      },
       "custom-logger": {
         "title": "Custom Logger"
       },
@@ -338,6 +341,39 @@
       },
       "version-2.0.0/version-2.0.0-producing": {
         "title": "Producing Messages"
+      },
+      "version-2.1.0/version-2.1.0-consuming": {
+        "title": "Consuming Messages"
+      },
+      "version-2.2.0/version-2.2.0-admin": {
+        "title": "Admin Client"
+      },
+      "version-2.2.0/version-2.2.0-configuration": {
+        "title": "Client Configuration"
+      },
+      "version-2.2.0/version-2.2.0-consumer-example": {
+        "title": "Consumer"
+      },
+      "version-2.2.0/version-2.2.0-custom-authentication-mechanism": {
+        "title": "Custom Authentication Mechanisms"
+      },
+      "version-2.2.4/version-2.2.4-consuming": {
+        "title": "Consuming Messages"
+      },
+      "version-2.2.4/version-2.2.4-custom-authentication-mechanism": {
+        "title": "Custom Authentication Mechanisms"
+      },
+      "version-2.2.4/version-2.2.4-custom-logger": {
+        "title": "Custom Logger"
+      },
+      "version-2.2.4/version-2.2.4-producer-example": {
+        "title": "Producer"
+      },
+      "version-2.2.4/version-2.2.4-producing": {
+        "title": "Producing Messages"
+      },
+      "version-2.2.5/version-2.2.5-consuming": {
+        "title": "Consuming Messages"
       }
     },
     "links": {
