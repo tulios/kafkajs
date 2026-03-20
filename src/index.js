@@ -37,7 +37,7 @@ module.exports = class Client {
   /**
    * @param {Object} options
    * @param {Array<string>} options.brokers example: ['127.0.0.1:9092', '127.0.0.1:9094']
-   * @param {Object} options.ssl
+   * @param {Object | (() => PromiseLike<Object>)} options.ssl
    * @param {Object} options.sasl
    * @param {string} options.clientId
    * @param {number} [options.connectionTimeout=1000] - in milliseconds

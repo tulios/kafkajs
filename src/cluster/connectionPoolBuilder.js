@@ -10,7 +10,7 @@ const ConnectionPool = require('../network/connectionPool')
  * @param {Object} options
  * @param {import("../../types").ISocketFactory} [options.socketFactory]
  * @param {string[]|(() => string[])} options.brokers
- * @param {Object} [options.ssl]
+ * @param {Object | (() => PromiseLike<Object>)} [options.ssl]
  * @param {Object} [options.sasl]
  * @param {string} options.clientId
  * @param {number} options.requestTimeout

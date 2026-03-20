@@ -84,6 +84,20 @@ new Kafka({
 
 Refer to [TLS create secure context](https://nodejs.org/dist/latest-v8.x/docs/api/tls.html#tls_tls_createsecurecontext_options) for more information. `NODE_EXTRA_CA_CERTS` can be used to add custom CAs. Use `ssl: true` if you don't have any extra configurations and want to enable SSL.
 
+### Dynamic SSL Configuration
+
+The `ssl` option also accepts an async function that will be called whenever a new creation is created. This is particularly useful for environments that use short-lived client certificates, such as systems using SPIFFE, where certificates may need to be fetched or rotated dynamically.
+
+```javascript
+new Kafka({
+  clientId: 'my-app',
+  brokers: ['kafka1:9092', 'kafka2:9092'],
+  ssl: async () => ({
+    ca: await fetchCa()
+  }),
+})
+```
+
 ## SASL
 
 Kafka has support for using SASL to authenticate clients. The `sasl` option can be used to configure the authentication mechanism. Currently, KafkaJS supports `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512`, and `AWS` mechanisms.
@@ -413,7 +427,7 @@ KAFKAJS_LOG_LEVEL=info node code.js
 To allow for custom socket configurations, the client accepts an optional `socketFactory` property that will be used to construct
 any socket.
 
-`socketFactory` should be a function that returns an object compatible with [`net.Socket`](https://nodejs.org/api/net.html#net_class_net_socket) (see the [default implementation](https://github.com/tulios/kafkajs/tree/master/src/network/socketFactory.js)).
+`socketFactory` should be a function that returns an object compatible with [`net.Socket`](https://nodejs.org/api/net.html#net_class_net_socket) (see the [default implementation](https://github.com/tulios/kafkajs/tree/master/src/network/socketFactory.js)). If `ssl` is a function, `socketFactory` is called with the awaited result of that function.
 
 ```javascript
 const { Kafka } = require('kafkajs')

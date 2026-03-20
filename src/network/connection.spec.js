@@ -45,6 +45,16 @@ describe('Network > Connection', () => {
         expect(connection.isConnected()).toEqual(true)
       })
 
+      test('supports an async function for SSL options', async () => {
+        connection = new Connection({
+          ...sslConnectionOpts(),
+          ssl: async () => sslConnectionOpts().ssl,
+        })
+
+        await expect(connection.connect()).resolves.toEqual(true)
+        expect(connection.isConnected()).toEqual(true)
+      })
+
       test('rejects the Promise in case of timeouts', async () => {
         const socketFactory = () => {
           const socket = new EventEmitter()

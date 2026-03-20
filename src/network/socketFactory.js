@@ -1,4 +1,4 @@
-const KEEP_ALIVE_DELAY = 60000 // in ms
+const KEEP_ALIVE_DELAY_MS = 60000
 
 /**
  * @returns {import("../../types").ISocketFactory}
@@ -15,7 +15,7 @@ module.exports = () => {
         )
       : net.connect({ host, port }, onConnect)
 
-    socket.setKeepAlive(true, KEEP_ALIVE_DELAY)
+    socket.setKeepAlive(true, KEEP_ALIVE_DELAY_MS)
 
     return socket
   }
