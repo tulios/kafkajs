@@ -40,8 +40,8 @@ module.exports = class Connection {
    * @param {number} options.requestTimeout The maximum amount of time the client will wait for the response of a request,
    *                                in milliseconds
    * @param {string} [options.rack=null]
-   * @param {Object} [options.ssl=null] Options for the TLS Secure Context. It accepts all options,
-   *                            usually "cert", "key" and "ca". More information at
+   * @param {Object | (() => PromiseLike<Object>)} [options.ssl=null] Options for the TLS Secure Context or factory for the options. It accepts
+   *                            all options, usually "cert", "key" and "ca". More information at
    *                            https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options
    * @param {Object} [options.sasl=null] Attributes used for SASL authentication. Options based on the
    *                             key "mechanism". Connection is not actively using the SASL attributes
@@ -171,8 +171,6 @@ module.exports = class Connection {
 
       this.authenticatedAt = null
 
-      let timeoutId
-
       const onConnect = () => {
         clearTimeout(timeoutId)
         this.connectionStatus = CONNECTION_STATUS.CONNECTED
@@ -235,27 +233,30 @@ module.exports = class Connection {
         sasl: !!this.sasl,
       })
 
-      try {
-        timeoutId = setTimeout(onTimeout, this.connectionTimeout)
-        this.socket = createSocket({
-          socketFactory: this.socketFactory,
-          host: this.host,
-          port: this.port,
-          ssl: this.ssl,
-          onConnect,
-          onData,
-          onEnd,
-          onError,
-          onTimeout,
+      const timeoutId = setTimeout(onTimeout, this.connectionTimeout)
+
+      createSocket({
+        socketFactory: this.socketFactory,
+        host: this.host,
+        port: this.port,
+        ssl: this.ssl,
+        onConnect,
+        onData,
+        onEnd,
+        onError,
+        onTimeout,
+      })
+        .then(socket => {
+          this.socket = socket
         })
-      } catch (e) {
-        clearTimeout(timeoutId)
-        reject(
-          new KafkaJSConnectionError(`Failed to connect: ${e.message}`, {
-            broker: `${this.host}:${this.port}`,
-          })
-        )
-      }
+        .catch(e => {
+          clearTimeout(timeoutId)
+          reject(
+            new KafkaJSConnectionError(`Failed to connect: ${e.message}`, {
+              broker: `${this.host}:${this.port}`,
+            })
+          )
+        })
     })
   }
 
