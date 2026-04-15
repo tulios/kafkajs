@@ -37,28 +37,47 @@ module.exports = ({ cluster }) => ({
    *                   ]
    */
   async assign({ members, topics }) {
-    const membersCount = members.length
     const sortedMembers = members.map(({ memberId }) => memberId).sort()
     const assignment = {}
 
-    const topicsPartitions = topics.flatMap(topic => {
+    // Decode per-member topic subscriptions from member metadata
+    const memberSubscriptions = {}
+    for (const { memberId, memberMetadata } of members) {
+      if (memberMetadata) {
+        try {
+          const decoded = MemberMetadata.decode(memberMetadata)
+          if (decoded.topics && decoded.topics.length > 0) {
+            memberSubscriptions[memberId] = decoded.topics
+            continue
+          }
+        } catch (e) {}
+      }
+      // Fallback: member is treated as subscribed to all topics
+      memberSubscriptions[memberId] = topics
+    }
+
+    for (const topic of topics) {
+      const eligibleMembers = sortedMembers.filter(memberId =>
+        memberSubscriptions[memberId].includes(topic)
+      )
+
+      if (eligibleMembers.length === 0) continue
+
       const partitionMetadata = cluster.findTopicPartitionMetadata(topic)
-      return partitionMetadata.map(m => ({ topic: topic, partitionId: m.partitionId }))
-    })
+      partitionMetadata.forEach((m, i) => {
+        const assignee = eligibleMembers[i % eligibleMembers.length]
 
-    topicsPartitions.forEach((topicPartition, i) => {
-      const assignee = sortedMembers[i % membersCount]
+        if (!assignment[assignee]) {
+          assignment[assignee] = Object.create(null)
+        }
 
-      if (!assignment[assignee]) {
-        assignment[assignee] = Object.create(null)
-      }
+        if (!assignment[assignee][topic]) {
+          assignment[assignee][topic] = []
+        }
 
-      if (!assignment[assignee][topicPartition.topic]) {
-        assignment[assignee][topicPartition.topic] = []
-      }
-
-      assignment[assignee][topicPartition.topic].push(topicPartition.partitionId)
-    })
+        assignment[assignee][topic].push(m.partitionId)
+      })
+    }
 
     return Object.keys(assignment).map(memberId => ({
       memberId,

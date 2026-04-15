@@ -11,7 +11,7 @@ const SubscriptionState = require('./subscriptionState')
 const {
   events: { GROUP_JOIN, HEARTBEAT, CONNECT, RECEIVED_UNSUBSCRIBED_TOPICS },
 } = require('./instrumentationEvents')
-const { MemberAssignment } = require('./assignerProtocol')
+const { MemberAssignment, MemberMetadata } = require('./assignerProtocol')
 const {
   KafkaJSError,
   KafkaJSNonRetriableError,
@@ -216,8 +216,28 @@ module.exports = class ConsumerGroup {
         )
       }
 
+      // Decode member metadata to find the union of all topics across the group,
+      // so the leader can load metadata and assign partitions for topics it may
+      // not be subscribed to itself (see https://github.com/tulios/kafkajs/issues/1040)
+      const allTopics = [
+        ...new Set(
+          members.flatMap(member => {
+            if (member.memberMetadata) {
+              try {
+                const decoded = MemberMetadata.decode(member.memberMetadata)
+                if (decoded.topics && decoded.topics.length > 0) {
+                  return decoded.topics
+                }
+              } catch (e) {}
+            }
+            return topicsSubscribed
+          })
+        ),
+      ]
+
+      await this.cluster.addMultipleTargetTopics(allTopics)
       await this.cluster.refreshMetadata()
-      assignment = await assigner.assign({ members, topics: topicsSubscribed })
+      assignment = await assigner.assign({ members, topics: allTopics })
 
       this.logger.debug('Group assignment', {
         groupId,
