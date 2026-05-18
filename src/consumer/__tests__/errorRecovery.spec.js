@@ -5,6 +5,7 @@ const {
   KafkaJSError,
   KafkaJSNumberOfRetriesExceeded,
   KafkaJSNonRetriableError,
+  KafkaJSOffsetOutOfRange,
 } = require('../../errors')
 
 const sleep = require('../../utils/sleep')
@@ -116,6 +117,158 @@ describe('Consumer', () => {
         }),
       }),
     ])
+  })
+
+  // ---------------------------------------------------------------------------
+  // SKIPPED — executable feature request. Un-skip once the option below
+  // exists.
+  //
+  // Context
+  //   KafkaJS's current handling of OFFSET_OUT_OF_RANGE is documented and
+  //   intentional: `consumerGroup.recoverFromOffsetOutOfRange` calls
+  //   `offsetManager.setDefaultOffset()` and resumes from EARLIEST or LATEST
+  //   based on the `fromBeginning` subscribe flag. That is the existing
+  //   contract, and changing it by default would be a breaking change.
+  //
+  // Gap
+  //   There is no way to opt out of the automatic reset. The Java client and
+  //   librdkafka both expose `auto.offset.reset=none` (librdkafka calls it
+  //   `error`) for exactly this case: when the committed position is lost
+  //   (topic recreated, retention expired, __consumer_offsets partition lost,
+  //   manual reset to a bad value) the consumer fails fast so the operator
+  //   can decide what to do.
+  //
+  //   Without this option, the same scenario in KafkaJS resolves to either
+  //     - silent reprocessing of the whole topic (`fromBeginning: true`), or
+  //     - silent skipping of every record between the lost offset and the
+  //       current log end (`fromBeginning: false`),
+  //   indistinguishable from normal operation in logs.
+  //
+  // What this test asserts (the proposed contract)
+  //   When the consumer is created with `autoOffsetReset: 'none'`, an
+  //   out-of-range committed offset surfaces as a `KafkaJSOffsetOutOfRange`
+  //   on the existing `consumer.crash` event, and no message is delivered
+  //   to `eachMessage`. The default (option omitted) is unchanged.
+  //
+  // Why this test is skipped today
+  //   `autoOffsetReset` is not a recognised option, so the consumer takes
+  //   the existing reset path and starts delivering messages. The
+  //   `waitFor(crashListener)` then times out — i.e. the test is skipped
+  //   because the feature it documents does not yet exist, not because of
+  //   a defect in current code.
+  //
+  // Suggested implementation (small, additive, backwards compatible)
+  //   1. Add `autoOffsetReset?: 'earliest' | 'latest' | 'none'` to
+  //      `ConsumerConfig` (types/index.d.ts) and thread it through
+  //      `src/consumer/index.js` into `consumerGroup`.
+  //   2. In `consumerGroup.recoverFromOffsetOutOfRange`, when
+  //      `autoOffsetReset === 'none'`, re-throw the `KafkaJSOffsetOutOfRange`
+  //      instead of calling `offsetManager.setDefaultOffset()`. The existing
+  //      crash machinery handles the rest (this test verifies that).
+  //   3. Omitted / any other value → existing behaviour, unchanged.
+  //
+  // Refs
+  //   https://github.com/tulios/kafkajs/issues/580
+  //   https://github.com/tulios/kafkajs/issues/1119
+  //   Java client: `auto.offset.reset=none`
+  //   librdkafka:  `auto.offset.reset=error`
+  // ---------------------------------------------------------------------------
+  it.skip('crashes with KafkaJSOffsetOutOfRange instead of silently resetting when autoOffsetReset is "none"', async () => {
+    // Arrange: a consumer that opts out of automatic offset reset.
+    consumer = createConsumer({
+      cluster,
+      groupId,
+      logger: newLogger(),
+      autoOffsetReset: 'none',
+      retry: { retries: 0 },
+    })
+
+    await consumer.connect()
+
+    // Arrange: commit offset 11 for a partition whose log will only contain
+    // offset 0. This is the canonical out-of-range scenario.
+    const coordinator = await cluster.findGroupCoordinator({ groupId })
+    const { generationId, memberId } = await coordinator.joinGroup({
+      groupId,
+      sessionTimeout: 6000,
+      groupProtocols: [
+        {
+          name: 'AssignerName',
+          metadata: MemberMetadata.encode({ version: 1, topics: [topicName] }),
+        },
+      ],
+    })
+
+    const memberAssignment = MemberAssignment.encode({
+      version: 1,
+      assignment: { [topicName]: [0] },
+    })
+
+    await coordinator.syncGroup({
+      groupId,
+      generationId,
+      memberId,
+      groupAssignment: [{ memberId, memberAssignment }],
+    })
+
+    await coordinator.offsetCommit({
+      groupId,
+      groupGenerationId: generationId,
+      memberId,
+      topics: [
+        {
+          topic: topicName,
+          partitions: [{ partition: 0, offset: '11' }],
+        },
+      ],
+    })
+
+    await coordinator.leaveGroup({ groupId, memberId })
+
+    // Arrange: log end offset = 1, committed offset = 11.
+    // Fetching from 11 will return OFFSET_OUT_OF_RANGE.
+    const key1 = secureRandom()
+    const message1 = { key: `key-${key1}`, value: `value-${key1}` }
+    await producer.send({ acks: 1, topic: topicName, messages: [message1] })
+
+    await consumer.subscribe({ topic: topicName, fromBeginning: true })
+
+    const crashListener = jest.fn()
+    consumer.on(consumer.events.CRASH, crashListener)
+
+    const eachMessage = jest.fn()
+
+    // Act: start consuming. The broker will respond with OFFSET_OUT_OF_RANGE
+    // for partition 0 on the first fetch.
+    consumer.run({ eachMessage })
+
+    // Assert: with autoOffsetReset='none' the consumer must surface the error
+    // as a crash. Today this option does not exist, so the consumer falls
+    // back to the default reset path and this wait times out — the timeout
+    // is what makes the gap observable.
+    await waitFor(() => crashListener.mock.calls.length > 0, {
+      maxWait: 8000,
+      ignoreTimeout: false,
+      timeoutMessage:
+        'Consumer did not crash on OFFSET_OUT_OF_RANGE — it silently reset offsets (no autoOffsetReset="none" opt-out available)',
+    })
+
+    // Assert: the crash payload is a KafkaJSOffsetOutOfRange, not a generic
+    // error, so application code can pattern-match on it.
+    expect(crashListener).toHaveBeenCalledWith({
+      id: expect.any(Number),
+      timestamp: expect.any(Number),
+      type: 'consumer.crash',
+      payload: {
+        groupId,
+        error: expect.any(KafkaJSOffsetOutOfRange),
+        restart: expect.any(Boolean),
+      },
+    })
+
+    // Assert: no message was delivered to the application. A silent reset
+    // would have delivered message1 here — that is the data-integrity hazard.
+    expect(eachMessage).not.toHaveBeenCalled()
   })
 
   it('recovers from crashes due to retriable errors', async () => {
