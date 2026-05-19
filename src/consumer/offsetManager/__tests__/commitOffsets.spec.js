@@ -29,6 +29,7 @@ describe('Consumer > OffsetMananger > commitOffsets', () => {
     mockCluster = {
       committedOffsets: jest.fn(() => ({})),
       refreshMetadata: jest.fn(() => ({})),
+      findGroupCoordinator: jest.fn(() => ({ isConnected: () => true, nodeId: 2 })),
     }
 
     mockCoordinator = {
@@ -129,5 +130,17 @@ describe('Consumer > OffsetMananger > commitOffsets', () => {
 
     await expect(offsetManager.commitOffsets(offsets)).rejects.toThrow()
     expect(mockCluster.refreshMetadata).toHaveBeenCalled()
+  })
+
+  it('re-discovers the coordinator on NOT_COORDINATOR_FOR_GROUP so the next commit targets the right broker', async () => {
+    mockCoordinator.offsetCommit.mockImplementation(() => {
+      throw createErrorFromCode(NOT_COORDINATOR_FOR_GROUP_CODE)
+    })
+
+    const offset = Math.random().toString()
+    const offsets = { topics: [{ topic: topic1, partitions: [{ partition: '0', offset }] }] }
+
+    await expect(offsetManager.commitOffsets(offsets)).rejects.toThrow()
+    expect(mockCluster.findGroupCoordinator).toHaveBeenCalledWith({ groupId })
   })
 })
