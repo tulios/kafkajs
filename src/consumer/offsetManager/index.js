@@ -87,7 +87,7 @@ module.exports = class OffsetManager {
    */
   async getCoordinator() {
     if (!this.coordinator.isConnected()) {
-      this.coordinator = await this.cluster.findBroker(this.coordinator)
+      this.coordinator = await this.cluster.findGroupCoordinator({ groupId: this.groupId })
     }
 
     return this.coordinator
@@ -281,9 +281,11 @@ module.exports = class OffsetManager {
       this.lastCommit = Date.now()
     } catch (e) {
       // metadata is stale, the coordinator has changed due to a restart or
-      // broker reassignment
+      // broker reassignment — re-discover the actual coordinator so the next
+      // commit attempt targets the right broker instead of the stale one
       if (e.type === 'NOT_COORDINATOR_FOR_GROUP') {
         await this.cluster.refreshMetadata()
+        this.coordinator = await this.cluster.findGroupCoordinator({ groupId: this.groupId })
       }
 
       throw e
