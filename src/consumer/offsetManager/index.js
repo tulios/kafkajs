@@ -87,7 +87,7 @@ module.exports = class OffsetManager {
    */
   async getCoordinator() {
     if (!this.coordinator.isConnected()) {
-      this.coordinator = await this.cluster.findBroker(this.coordinator)
+      this.coordinator = await this.cluster.findGroupCoordinator({ groupId: this.groupId })
     }
 
     return this.coordinator
