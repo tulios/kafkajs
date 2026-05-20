@@ -11,7 +11,7 @@ const SubscriptionState = require('./subscriptionState')
 const {
   events: { GROUP_JOIN, HEARTBEAT, CONNECT, RECEIVED_UNSUBSCRIBED_TOPICS },
 } = require('./instrumentationEvents')
-const { MemberAssignment } = require('./assignerProtocol')
+const { MemberAssignment, MemberMetadata } = require('./assignerProtocol')
 const {
   KafkaJSError,
   KafkaJSNonRetriableError,
@@ -37,6 +37,8 @@ const PRIVATE = {
   SHARED_HEARTBEAT: Symbol('private:ConsumerGroup:sharedHeartbeat'),
 }
 
+const MAX_COOPERATIVE_REJOIN_ROUNDS = 20
+
 module.exports = class ConsumerGroup {
   /**
    * @param {object} options
@@ -60,6 +62,7 @@ module.exports = class ConsumerGroup {
    * @param {number} options.isolationLevel
    * @param {string} options.rackId
    * @param {number} options.metadataMaxAge
+   * @param {number} [options.maxCooperativeRejoinRounds]
    */
   constructor({
     retry,
@@ -82,6 +85,7 @@ module.exports = class ConsumerGroup {
     isolationLevel,
     rackId,
     metadataMaxAge,
+    maxCooperativeRejoinRounds = MAX_COOPERATIVE_REJOIN_ROUNDS,
   }) {
     /** @type {import("../../types").Cluster} */
     this.cluster = cluster
@@ -105,6 +109,7 @@ module.exports = class ConsumerGroup {
     this.isolationLevel = isolationLevel
     this.rackId = rackId
     this.metadataMaxAge = metadataMaxAge
+    this.maxCooperativeRejoinRounds = maxCooperativeRejoinRounds
 
     this.seekOffset = new SeekOffsets()
     this.coordinator = null
@@ -113,6 +118,8 @@ module.exports = class ConsumerGroup {
     this.memberId = null
     this.members = null
     this.groupProtocol = null
+    this.needsCooperativeRejoin = false
+    this.cooperativeRejoinRequestedBy = []
 
     this.partitionsPerSubscribedTopic = null
     /**
@@ -216,8 +223,32 @@ module.exports = class ConsumerGroup {
         )
       }
 
+      // Decode member metadata to find the union of all topics across the group,
+      // so the leader can load metadata and assign partitions for topics it may
+      // not be subscribed to itself (see https://github.com/tulios/kafkajs/issues/1040)
+      const allTopics = [
+        ...new Set(
+          members.flatMap(member => {
+            if (member.memberMetadata) {
+              try {
+                const decoded = MemberMetadata.decode(member.memberMetadata)
+                if (decoded.topics && decoded.topics.length > 0) {
+                  return decoded.topics
+                }
+              } catch (e) {}
+            }
+            return topicsSubscribed
+          })
+        ),
+      ]
+
+      await this.cluster.addMultipleTargetTopics(allTopics)
       await this.cluster.refreshMetadata()
-      assignment = await assigner.assign({ members, topics: topicsSubscribed })
+      assignment = await assigner.assign({
+        members,
+        topics: topicsSubscribed,
+        allSubscribedTopics: allTopics,
+      })
 
       this.logger.debug('Group assignment', {
         groupId,
@@ -307,6 +338,32 @@ module.exports = class ConsumerGroup {
 
     this.topics = currentMemberAssignment.map(({ topic }) => topic)
     this.subscriptionState.assign(currentMemberAssignment)
+
+    // Notify stateful assigners (e.g. cooperative sticky) about successful
+    // assignment so they can persist owned partitions in protocol userData.
+    const assignmentMap = currentMemberAssignment.reduce(
+      (acc, { topic, partitions }) => ({ ...acc, [topic]: partitions }),
+      {}
+    )
+    const assignerName = this.groupProtocol
+    for (const assigner of this.assigners) {
+      if (assignerName && assigner.name !== assignerName) {
+        continue
+      }
+
+      if (typeof assigner.onAssignment === 'function') {
+        const shouldRejoin = assigner.onAssignment({
+          assignment: assignmentMap,
+          generationId: this.generationId,
+          userData: decodedMemberAssignment.userData,
+        })
+        if (shouldRejoin) {
+          this.needsCooperativeRejoin = true
+          this.cooperativeRejoinRequestedBy.push(assigner.name || 'unknown-assigner')
+        }
+      }
+    }
+
     this.offsetManager = new OffsetManager({
       cluster: this.cluster,
       topicConfigurations: this.topicConfigurations,
@@ -331,42 +388,84 @@ module.exports = class ConsumerGroup {
   joinAndSync() {
     const startJoin = Date.now()
     return this.retrier(async bail => {
-      try {
-        await this[PRIVATE.JOIN]()
-        await this[PRIVATE.SYNC]()
+      let cooperativeRejoinRound = 0
 
-        const memberAssignment = this.assigned().reduce(
-          (result, { topic, partitions }) => ({ ...result, [topic]: partitions }),
-          {}
-        )
+      while (true) {
+        cooperativeRejoinRound += 1
 
-        const payload = {
+        if (cooperativeRejoinRound > this.maxCooperativeRejoinRounds) {
+          const error = new KafkaJSNonRetriableError(
+            `Exceeded maximum cooperative rejoin rounds (${this.maxCooperativeRejoinRounds})`
+          )
+
+          this.logger.error('Exceeded cooperative rejoin round limit', {
+            groupId: this.groupId,
+            memberId: this.memberId,
+            leaderId: this.leaderId,
+            groupProtocol: this.groupProtocol,
+            cooperativeRejoinRound,
+            maxCooperativeRejoinRounds: this.maxCooperativeRejoinRounds,
+            requestedBy: this.cooperativeRejoinRequestedBy,
+          })
+
+          bail(error)
+          return
+        }
+
+        try {
+          this.needsCooperativeRejoin = false
+          this.cooperativeRejoinRequestedBy = []
+          await this[PRIVATE.JOIN]()
+          await this[PRIVATE.SYNC]()
+
+          const memberAssignment = this.assigned().reduce(
+            (result, { topic, partitions }) => ({ ...result, [topic]: partitions }),
+            {}
+          )
+
+          const payload = {
+            groupId: this.groupId,
+            memberId: this.memberId,
+            leaderId: this.leaderId,
+            isLeader: this.isLeader(),
+            memberAssignment,
+            groupProtocol: this.groupProtocol,
+            duration: Date.now() - startJoin,
+          }
+
+          this.instrumentationEmitter.emit(GROUP_JOIN, payload)
+          this.logger.info('Consumer has joined the group', payload)
+        } catch (e) {
+          if (isRebalancing(e)) {
+            // Rebalance in progress isn't a retriable protocol error since the consumer
+            // has to go through find coordinator and join again before it can
+            // actually retry the operation. We wrap the original error in a retriable error
+            // here instead in order to restart the join + sync sequence using the retrier.
+            throw new KafkaJSError(e)
+          }
+
+          if (e.type === 'UNKNOWN_MEMBER_ID') {
+            this.memberId = null
+            throw new KafkaJSError(e)
+          }
+
+          bail(e)
+          return
+        }
+
+        if (!this.needsCooperativeRejoin) {
+          break
+        }
+
+        this.logger.warn('Cooperative assigner requested additional join/sync round', {
           groupId: this.groupId,
           memberId: this.memberId,
           leaderId: this.leaderId,
-          isLeader: this.isLeader(),
-          memberAssignment,
           groupProtocol: this.groupProtocol,
-          duration: Date.now() - startJoin,
-        }
-
-        this.instrumentationEmitter.emit(GROUP_JOIN, payload)
-        this.logger.info('Consumer has joined the group', payload)
-      } catch (e) {
-        if (isRebalancing(e)) {
-          // Rebalance in progress isn't a retriable protocol error since the consumer
-          // has to go through find coordinator and join again before it can
-          // actually retry the operation. We wrap the original error in a retriable error
-          // here instead in order to restart the join + sync sequence using the retrier.
-          throw new KafkaJSError(e)
-        }
-
-        if (e.type === 'UNKNOWN_MEMBER_ID') {
-          this.memberId = null
-          throw new KafkaJSError(e)
-        }
-
-        bail(e)
+          cooperativeRejoinRound,
+          maxCooperativeRejoinRounds: this.maxCooperativeRejoinRounds,
+          requestedBy: this.cooperativeRejoinRequestedBy,
+        })
       }
     })
   }

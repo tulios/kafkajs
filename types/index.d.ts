@@ -152,6 +152,7 @@ export interface IHeaders {
 export interface ConsumerConfig {
   groupId: string
   partitionAssigners?: PartitionAssigner[]
+  maxCooperativeRejoinRounds?: number
   metadataMaxAge?: number
   sessionTimeout?: number
   rebalanceTimeout?: number
@@ -221,7 +222,11 @@ export type GroupState = { name: string; metadata: Buffer }
 export type Assigner = {
   name: string
   version: number
-  assign(group: { members: GroupMember[]; topics: string[] }): Promise<GroupMemberAssignment[]>
+  assign(group: {
+    members: GroupMember[]
+    topics: string[]
+    allSubscribedTopics?: string[]
+  }): Promise<GroupMemberAssignment[]>
   protocol(subscription: { topics: string[] }): GroupState
 }
 
@@ -577,7 +582,10 @@ export type Admin = {
   readonly events: AdminEvents
 }
 
-export const PartitionAssigners: { roundRobin: PartitionAssigner }
+export const PartitionAssigners: {
+  roundRobin: PartitionAssigner
+  cooperativeSticky: PartitionAssigner
+}
 
 export interface ISerializer<T> {
   encode(value: T): Buffer

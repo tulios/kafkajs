@@ -40,6 +40,7 @@ const specialOffsets = [
  * @param {number} [params.maxWaitTimeInMs]
  * @param {number} [params.isolationLevel]
  * @param {string} [params.rackId]
+ * @param {number} [params.maxCooperativeRejoinRounds]
  * @param {InstrumentationEventEmitter} [params.instrumentationEmitter]
  * @param {number} params.metadataMaxAge
  *
@@ -60,6 +61,7 @@ module.exports = ({
   maxWaitTimeInMs = 5000,
   isolationLevel = ISOLATION_LEVEL.READ_COMMITTED,
   rackId = '',
+  maxCooperativeRejoinRounds,
   instrumentationEmitter: rootInstrumentationEmitter,
   metadataMaxAge,
 }) => {
@@ -224,6 +226,7 @@ module.exports = ({
         autoCommit,
         autoCommitInterval,
         autoCommitThreshold,
+        maxCooperativeRejoinRounds,
       })
 
       runner = new Runner({

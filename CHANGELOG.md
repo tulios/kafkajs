@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+  - Document topic-scoped round-robin assignment behavior for mixed-subscription consumer groups
+
+### Fixed
+  - Add configurable cap for cooperative in-process rejoin rounds (`maxCooperativeRejoinRounds`)
+  - Preserve backward compatibility for custom partition assigners by passing all group topics via optional `allSubscribedTopics`
+
 ## [2.2.4] - 2023-02-27
 
 ### Added

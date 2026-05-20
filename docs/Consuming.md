@@ -219,6 +219,7 @@ When `fromBeginning` is `true`, the group will use the earliest offset. If set t
 kafka.consumer({
   groupId: <String>,
   partitionAssigners: <Array>,
+    maxCooperativeRejoinRounds: <Number>,
   sessionTimeout: <Number>,
   rebalanceTimeout: <Number>,
   heartbeatInterval: <Number>,
@@ -237,6 +238,7 @@ kafka.consumer({
 | option                 | description                                                                                                                                                                                                                                                                                                                                        | default                           |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
 | partitionAssigners     | List of partition assigners                                                                                                                                                                                                                                                                                                                        | `[PartitionAssigners.roundRobin]` |
+| maxCooperativeRejoinRounds | Maximum number of extra in-process JOIN/SYNC rounds allowed when a cooperative assigner asks for another rebalance cycle | `20` |
 | sessionTimeout         | Timeout in milliseconds used to detect failures. The consumer sends periodic heartbeats to indicate its liveness to the broker. If no heartbeats are received by the broker before the expiration of this session timeout, then the broker will remove this consumer from the group and initiate a rebalance                                       | `30000`                           |
 | rebalanceTimeout       | The maximum time that the coordinator will wait for each member to rejoin when rebalancing the group                                                                                                                                                                                                                                               | `60000`                           |
 | heartbeatInterval      | The expected time in milliseconds between heartbeats to the consumer coordinator. Heartbeats are used to ensure that the consumer's session stays active. The value must be set lower than session timeout                                                                                                                                         | `3000`                            |
@@ -375,10 +377,12 @@ A partition assigner is a function which returns an object with the following in
 const MyPartitionAssigner = ({ cluster }) => ({
     name: 'MyPartitionAssigner',
     version: 1,
-    async assign({ members, topics }) {},
+    async assign({ members, topics, allSubscribedTopics }) {},
     protocol({ topics }) {}
 })
 ```
+
+`topics` contains this member's subscribed topics (backward-compatible behavior). `allSubscribedTopics` is optional and contains the union of subscribed topics from the whole group.
 
 The method `assign` has to return an assignment plan with partitions per topic. A partition plan consists of a list of `memberId` and `memberAssignment`. The member assignment has to be encoded, use the `MemberAssignment` utility for that. Example:
 
