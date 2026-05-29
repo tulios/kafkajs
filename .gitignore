@@ -11,3 +11,6 @@ build/
 .idea/
 temp/
 jsconfig.json
+
+.claude
+plans/

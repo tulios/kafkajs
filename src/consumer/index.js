@@ -42,6 +42,7 @@ const specialOffsets = [
  * @param {string} [params.rackId]
  * @param {InstrumentationEventEmitter} [params.instrumentationEmitter]
  * @param {number} params.metadataMaxAge
+ * @param {number} [params.maxCooperativeRejoinRounds]
  *
  * @returns {import("../../types").Consumer}
  */
@@ -62,6 +63,7 @@ module.exports = ({
   rackId = '',
   instrumentationEmitter: rootInstrumentationEmitter,
   metadataMaxAge,
+  maxCooperativeRejoinRounds,
 }) => {
   if (!groupId) {
     throw new KafkaJSNonRetriableError('Consumer groupId must be a non-empty string.')
@@ -224,6 +226,7 @@ module.exports = ({
         autoCommit,
         autoCommitInterval,
         autoCommitThreshold,
+        maxCooperativeRejoinRounds,
       })
 
       runner = new Runner({

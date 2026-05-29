@@ -157,6 +157,8 @@ describe('Consumer > Instrumentation Events', () => {
         groupProtocol: expect.any(String),
         memberId: expect.any(String),
         memberAssignment: { [topicName]: [0] },
+        revoked: [],
+        added: [],
       },
     })
   })

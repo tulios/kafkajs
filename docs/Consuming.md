@@ -230,7 +230,8 @@ kafka.consumer({
   maxWaitTimeInMs: <Number>,
   retry: <Object>,
   maxInFlightRequests: <Number>,
-  rackId: <String>
+  rackId: <String>,
+  maxCooperativeRejoinRounds: <Number>
 })
 ```
 
@@ -250,6 +251,7 @@ kafka.consumer({
 | readUncommitted        | Configures the consumer isolation level. If `false` (default), the consumer will not return any transactional messages which were not committed.                                                                                                                                                                                                   | `false`                           |
 | maxInFlightRequests | Max number of requests that may be in progress at any time. If falsey then no limit.                                    | `null` _(no limit)_ |
 | rackId                 | Configure the "rack" in which the consumer resides to enable [follower fetching](#follower-fetching)                 | `null` _(fetch from the leader always)_ |
+| maxCooperativeRejoinRounds | Only applies to the [`cooperativeSticky`](#cooperative-sticky-assigner) assigner. Maximum number of consecutive cooperative rejoin rounds before the consumer commits, warns, and stops looping. KIP-429 normally converges in 2 rounds; raising this is a defensive escape hatch for pathological churn, not a tuning knob. | `2`                               |
 
 ## <a name="pause-resume"></a> Pause & Resume
 
@@ -364,6 +366,36 @@ consumer.run({
 // This will now only resolve the previous offset, not commit it
 consumer.seek({ topic: 'example', partition: 0, offset: "12384" })
 ```
+
+## <a name="cooperative-sticky-assigner"></a> Cooperative sticky assignment
+
+By default the consumer uses the round robin assigner, which is **eager**: on every rebalance each member revokes _all_ of its partitions, then receives a fresh assignment. This stops the world for the whole group whenever a member joins or leaves.
+
+The `cooperativeSticky` assigner implements **incremental cooperative rebalancing** ([KIP-429](https://cwiki.apache.org/confluence/display/KAFKA/KIP-429%3A+Kafka+Consumer+Incremental+Rebalance+Protocol)) together with **sticky** assignment:
+
+- **Sticky** — partitions stay with their current owner across rebalances whenever possible, so the assignment is stable and only the minimum number of partitions move.
+- **Cooperative** — members keep processing the partitions they retain. Only the partitions that actually need to move are revoked, in a brief second rebalance round, instead of revoking everything.
+
+```javascript
+const { PartitionAssigners: { cooperativeSticky } } = require('kafkajs')
+
+kafka.consumer({
+    groupId: 'my-group',
+    partitionAssigners: [cooperativeSticky]
+})
+```
+
+When a consumer joins or leaves, the `consumer.group_join` instrumentation event reports exactly which partitions moved via its `revoked` and `added` fields (both are empty arrays for eager assigners):
+
+```javascript
+consumer.on(consumer.events.GROUP_JOIN, ({ payload }) => {
+    console.log('added', payload.added, 'revoked', payload.revoked)
+})
+```
+
+> **Interop limitation:** like the other built-in KafkaJS assigners, `cooperativeSticky` uses the KafkaJS member-metadata format and encodes the owned partitions into `userData` (KafkaJS has no native `ownedPartitions` wire field). It therefore interoperates only within groups where every member is a KafkaJS consumer using `cooperativeSticky` — not in mixed Java/KafkaJS groups.
+
+To migrate an existing group without downtime, deploy in two steps: first roll out consumers listing both protocols (`[cooperativeSticky, roundRobin]`) so the group keeps negotiating `roundRobin`, then roll out again with `[cooperativeSticky]` once every member supports it. The broker always negotiates a protocol common to all members, so a single member that only offers `roundRobin` transparently degrades the whole group to eager rebalancing.
 
 ## <a name="custom-partition-assigner"></a> Custom partition assigner
 

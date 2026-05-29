@@ -31,10 +31,17 @@ const STALE_METADATA_ERRORS = [
   'UNKNOWN_TOPIC_OR_PARTITION',
 ]
 
+// Cooperative rebalancing normally converges in 2 rounds (revoke → rejoin →
+// assign). Beyond this, the degraded path commits + warns and proceeds rather
+// than looping forever (red-team S5). Configurable via the
+// `maxCooperativeRejoinRounds` consumer option as a defensive escape hatch.
+const DEFAULT_MAX_COOPERATIVE_ROUNDS = 2
+
 const PRIVATE = {
   JOIN: Symbol('private:ConsumerGroup:join'),
   SYNC: Symbol('private:ConsumerGroup:sync'),
   SHARED_HEARTBEAT: Symbol('private:ConsumerGroup:sharedHeartbeat'),
+  SHARED_JOIN_AND_SYNC: Symbol('private:ConsumerGroup:sharedJoinAndSync'),
 }
 
 module.exports = class ConsumerGroup {
@@ -60,6 +67,7 @@ module.exports = class ConsumerGroup {
    * @param {number} options.isolationLevel
    * @param {string} options.rackId
    * @param {number} options.metadataMaxAge
+   * @param {number} [options.maxCooperativeRejoinRounds]
    */
   constructor({
     retry,
@@ -82,6 +90,7 @@ module.exports = class ConsumerGroup {
     isolationLevel,
     rackId,
     metadataMaxAge,
+    maxCooperativeRejoinRounds = DEFAULT_MAX_COOPERATIVE_ROUNDS,
   }) {
     /** @type {import("../../types").Cluster} */
     this.cluster = cluster
@@ -105,6 +114,7 @@ module.exports = class ConsumerGroup {
     this.isolationLevel = isolationLevel
     this.rackId = rackId
     this.metadataMaxAge = metadataMaxAge
+    this.maxCooperativeRejoinRounds = maxCooperativeRejoinRounds
 
     this.seekOffset = new SeekOffsets()
     this.coordinator = null
@@ -115,6 +125,17 @@ module.exports = class ConsumerGroup {
     this.groupProtocol = null
 
     this.partitionsPerSubscribedTopic = null
+
+    // Cooperative (incremental) rebalancing state. Eager assigners never touch
+    // these. `ownedGenerationId` tracks the generation the currently-owned
+    // partitions were assigned under (S3); `rejoinNeeded` signals the runner to
+    // run a second JOIN→SYNC round after a cooperative revoke (S1/S2).
+    this.rejoinNeeded = false
+    this.ownedGenerationId = -1
+    this.cooperativeRounds = 0
+    this.lastRevoked = []
+    this.lastAdded = []
+
     /**
      * Preferred read replica per topic and partition
      *
@@ -145,10 +166,50 @@ module.exports = class ConsumerGroup {
         this.lastRequest = Date.now()
       }
     })
+
+    // Serialize join+sync. Multiple fetchers can each hit stale metadata and
+    // call joinAndSync() concurrently via recoverFromFetch(); in the
+    // cooperative branch that would interleave reads/writes of subscriptionState
+    // and the in-place OffsetManager and compute wrong revoked/added deltas.
+    // sharedPromiseTo collapses concurrent calls into the in-flight one.
+    this[PRIVATE.SHARED_JOIN_AND_SYNC] = sharedPromiseTo(() => this.joinAndSyncOnce())
   }
 
   isLeader() {
     return this.leaderId && this.memberId === this.leaderId
+  }
+
+  /**
+   * The assigner selected by the group's negotiated protocol, or null before
+   * the first JOIN. Cooperative behavior is gated on this assigner's
+   * `rebalanceProtocol` flag, never a name string (red-team N1).
+   *
+   * @returns {import('../../types').Assigner | null}
+   */
+  selectedAssigner() {
+    if (!this.groupProtocol) return null
+    return this.assigners.find(({ name }) => name === this.groupProtocol) || null
+  }
+
+  /**
+   * @returns {boolean} whether the negotiated assigner uses cooperative rebalancing
+   */
+  isCooperative() {
+    const assigner = this.selectedAssigner()
+    return Boolean(assigner && assigner.rebalanceProtocol === 'cooperative')
+  }
+
+  /**
+   * Currently-owned partitions in the `{ [topic]: number[] }` shape the
+   * cooperative assigner advertises in JOIN.
+   *
+   * @returns {Object<string, number[]>}
+   */
+  ownedPartitions() {
+    return this.subscriptionState.assigned().reduce((owned, { topic, partitions }) => {
+      owned[topic] = partitions
+      return owned
+    }, {})
   }
 
   getNodeIds() {
@@ -166,6 +227,13 @@ module.exports = class ConsumerGroup {
 
     this.coordinator = await this.cluster.findGroupCoordinator({ groupId })
 
+    // Cooperative members advertise the partitions they currently own, tagged
+    // with the generation those partitions were assigned under (S3), so the
+    // leader can preserve stickiness and resolve dual-claims. Eager assigners
+    // ignore these extra args (red-team N2).
+    const ownedPartitions = this.ownedPartitions()
+    const ownedGenerationId = this.ownedGenerationId
+
     const groupData = await this.coordinator.joinGroup({
       groupId,
       sessionTimeout,
@@ -174,6 +242,8 @@ module.exports = class ConsumerGroup {
       groupProtocols: this.assigners.map(assigner =>
         assigner.protocol({
           topics: this.topicsSubscribed,
+          ownedPartitions,
+          generationId: ownedGenerationId,
         })
       ),
     })
@@ -306,29 +376,200 @@ module.exports = class ConsumerGroup {
     }
 
     this.topics = currentMemberAssignment.map(({ topic }) => topic)
-    this.subscriptionState.assign(currentMemberAssignment)
-    this.offsetManager = new OffsetManager({
-      cluster: this.cluster,
-      topicConfigurations: this.topicConfigurations,
-      instrumentationEmitter: this.instrumentationEmitter,
-      memberAssignment: currentMemberAssignment.reduce(
-        (partitionsByTopic, { topic, partitions }) => ({
-          ...partitionsByTopic,
-          [topic]: partitions,
-        }),
-        {}
-      ),
-      autoCommit: this.autoCommit,
-      autoCommitInterval: this.autoCommitInterval,
-      autoCommitThreshold: this.autoCommitThreshold,
-      coordinator,
-      groupId,
-      generationId,
-      memberId,
-    })
+
+    const newAssignmentByTopic = currentMemberAssignment.reduce(
+      (partitionsByTopic, { topic, partitions }) => ({
+        ...partitionsByTopic,
+        [topic]: partitions,
+      }),
+      {}
+    )
+
+    if (this.isCooperative() && this.offsetManager) {
+      await this.applyCooperativeAssignment({
+        currentMemberAssignment,
+        newAssignmentByTopic,
+        generationId,
+        memberId,
+        coordinator,
+      })
+    } else {
+      this.subscriptionState.assign(currentMemberAssignment)
+      this.offsetManager = new OffsetManager({
+        cluster: this.cluster,
+        topicConfigurations: this.topicConfigurations,
+        instrumentationEmitter: this.instrumentationEmitter,
+        memberAssignment: newAssignmentByTopic,
+        autoCommit: this.autoCommit,
+        autoCommitInterval: this.autoCommitInterval,
+        autoCommitThreshold: this.autoCommitThreshold,
+        coordinator,
+        groupId,
+        generationId,
+        memberId,
+      })
+
+      // On the first cooperative SYNC there is nothing to retain, but we still
+      // record the generation our partitions are now owned under (S3) and clear
+      // any rejoin signal.
+      if (this.isCooperative()) {
+        this.ownedGenerationId = generationId
+        this.rejoinNeeded = false
+        this.cooperativeRounds = 0
+      }
+    }
   }
 
+  /**
+   * Cooperative SYNC branch. Unlike the eager path (which rebuilds the
+   * OffsetManager and drops all partitions), this:
+   *   1. computes revoked = owned − newAssigned and added = newAssigned − owned
+   *   2. re-points the in-place OffsetManager at the current generation, then
+   *      commits revoked-partition offsets before dropping them — JoinGroup +
+   *      SyncGroup already advanced the generation, so a commit under the old
+   *      one would throw ILLEGAL_GENERATION (red-team S6)
+   *   3. mutates the OffsetManager in place so retained partitions keep their
+   *      resolved-but-uncommitted offsets (red-team F1)
+   *   4. updates subscriptionState and records the generation we now own under
+   *   5. sets `rejoinNeeded` when partitions were revoked, so the runner runs a
+   *      second round and the freed partitions get assigned (red-team S1/S2)
+   *
+   * @private
+   */
+  async applyCooperativeAssignment({
+    currentMemberAssignment,
+    newAssignmentByTopic,
+    generationId,
+    memberId,
+    coordinator,
+  }) {
+    // `rejoinNeeded` is still true here only when this SYNC is the continuation
+    // of an in-flight cooperative rejoin cycle. If it is false, this is a fresh
+    // (natural) rebalance, so the round counter starts over — otherwise rounds
+    // would accumulate across logically separate rebalances and trip the cap
+    // prematurely under sustained churn.
+    if (!this.rejoinNeeded) {
+      this.cooperativeRounds = 0
+    }
+
+    const previousAssigned = this.subscriptionState.assigned()
+    const ownedKeys = new Set()
+    const ownedByKey = new Map()
+    for (const { topic, partitions } of previousAssigned) {
+      for (const partition of partitions) {
+        const key = `${topic}:${partition}`
+        ownedKeys.add(key)
+        ownedByKey.set(key, { topic, partition })
+      }
+    }
+
+    const newKeys = new Set()
+    const added = []
+    for (const { topic, partitions } of currentMemberAssignment) {
+      for (const partition of partitions) {
+        const key = `${topic}:${partition}`
+        newKeys.add(key)
+        if (!ownedKeys.has(key)) added.push({ topic, partition })
+      }
+    }
+
+    const revoked = []
+    for (const key of ownedKeys) {
+      if (!newKeys.has(key)) revoked.push(ownedByKey.get(key))
+    }
+
+    // The OffsetManager is mutated in place (not rebuilt), so it still carries
+    // the PREVIOUS generation. We have already completed JoinGroup + SyncGroup
+    // at the new generation, so the broker now expects commits under it — both
+    // for the revoked-partition commit below and for future autocommits of
+    // retained partitions. Sync the manager's protocol identity to the current
+    // generation before any commit, or every commit fails ILLEGAL_GENERATION.
+    this.offsetManager.generationId = generationId
+    this.offsetManager.memberId = memberId
+    this.offsetManager.coordinator = coordinator
+
+    // Commit revoked offsets before dropping them from the manager. This now
+    // uses the current (valid) generation set just above (red-team S6: the
+    // commit must carry a generation the broker still accepts).
+    if (revoked.length > 0) {
+      await this.commitRevokedOffsets(revoked)
+    }
+
+    this.subscriptionState.assign(currentMemberAssignment)
+    this.offsetManager.updateAssignment({ added, revoked })
+
+    this.ownedGenerationId = generationId
+    this.lastRevoked = revoked
+    this.lastAdded = added
+
+    if (revoked.length > 0 && this.cooperativeRounds < this.maxCooperativeRejoinRounds) {
+      this.rejoinNeeded = true
+      this.cooperativeRounds += 1
+    } else {
+      if (revoked.length > 0) {
+        // Degraded path: we revoked partitions but hit the round cap. Commit
+        // current offsets and warn loudly, then stop looping (red-team S5).
+        // The revoked partitions stay unowned until the next natural rebalance
+        // re-assigns them — a bounded, recoverable gap, preferred over an
+        // unbounded rejoin loop. Normal KIP-429 converges in 2 rounds, so the
+        // cap has headroom and this path is not expected in steady state.
+        this.logger.warn('Cooperative rebalance did not converge within the round cap', {
+          groupId: this.groupId,
+          memberId,
+          generationId,
+          rounds: this.cooperativeRounds,
+          revoked,
+        })
+        await this.offsetManager.commitOffsets()
+      }
+      this.rejoinNeeded = false
+      this.cooperativeRounds = 0
+    }
+  }
+
+  /**
+   * Commit offsets for revoked partitions using the still-valid (pre-rebuild)
+   * OffsetManager so the commit carries the generation those partitions were
+   * owned under (red-team S6). Only resolved offsets for the revoked partitions
+   * are committed; retained partitions are left untouched.
+   *
+   * @private
+   * @param {Array<{topic: string, partition: number}>} revoked
+   */
+  async commitRevokedOffsets(revoked) {
+    const { topics } = this.offsetManager.uncommittedOffsets()
+    const revokedSet = new Set(revoked.map(({ topic, partition }) => `${topic}:${partition}`))
+
+    const revokedTopics = topics
+      .map(({ topic, partitions }) => ({
+        topic,
+        partitions: partitions.filter(({ partition }) => revokedSet.has(`${topic}:${partition}`)),
+      }))
+      .filter(({ partitions }) => partitions.length > 0)
+
+    if (revokedTopics.length === 0) return
+
+    try {
+      await this.offsetManager.commitOffsets({ topics: revokedTopics })
+    } catch (e) {
+      this.logger.warn('Failed to commit revoked partition offsets during cooperative rebalance', {
+        groupId: this.groupId,
+        memberId: this.memberId,
+        error: e.message,
+      })
+    }
+  }
+
+  /**
+   * Join the group and sync the assignment. Concurrent callers (e.g. multiple
+   * fetchers recovering from stale metadata) share a single in-flight execution
+   * so the cooperative SYNC branch never interleaves.
+   */
   joinAndSync() {
+    return this[PRIVATE.SHARED_JOIN_AND_SYNC]()
+  }
+
+  joinAndSyncOnce() {
     const startJoin = Date.now()
     return this.retrier(async bail => {
       try {
@@ -348,6 +589,10 @@ module.exports = class ConsumerGroup {
           memberAssignment,
           groupProtocol: this.groupProtocol,
           duration: Date.now() - startJoin,
+          // Cooperative rebalancing surfaces what moved this round; empty for
+          // eager assigners so existing GROUP_JOIN listeners are unaffected.
+          revoked: this.isCooperative() ? this.lastRevoked : [],
+          added: this.isCooperative() ? this.lastAdded : [],
         }
 
         this.instrumentationEmitter.emit(GROUP_JOIN, payload)

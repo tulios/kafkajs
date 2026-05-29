@@ -109,6 +109,26 @@ module.exports = class Runner extends EventEmitter {
         return
       }
 
+      // Cooperative (incremental) rebalancing drives a second JOIN→SYNC round
+      // by setting `rejoinNeeded` in SYNC rather than a blocking loop inside
+      // joinAndSync. This mirrors the existing `isRebalancing` path: each
+      // JOIN/SYNC stays a single retrier pass and heartbeats resume between
+      // rounds (red-team S1/S2).
+      if (this.consumerGroup.rejoinNeeded) {
+        this.logger.debug('Cooperative rebalance needs another round, re-joining', {
+          groupId: this.consumerGroup.groupId,
+          memberId: this.consumerGroup.memberId,
+        })
+
+        this.instrumentationEmitter.emit(REBALANCING, {
+          groupId: this.consumerGroup.groupId,
+          memberId: this.consumerGroup.memberId,
+        })
+
+        await this.consumerGroup.joinAndSync()
+        return
+      }
+
       try {
         await this.fetchManager.start()
       } catch (e) {
