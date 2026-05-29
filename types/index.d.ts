@@ -221,8 +221,26 @@ export type GroupState = { name: string; metadata: Buffer }
 export type Assigner = {
   name: string
   version: number
+  /**
+   * Rebalance protocol the assigner participates in. Cooperative assigners
+   * keep partitions across a rebalance and only revoke what must move
+   * (KIP-429); eager assigners revoke everything. Defaults to 'eager'.
+   */
+  rebalanceProtocol?: 'eager' | 'cooperative'
   assign(group: { members: GroupMember[]; topics: string[] }): Promise<GroupMemberAssignment[]>
-  protocol(subscription: { topics: string[] }): GroupState
+  protocol(subscription: {
+    topics: string[]
+    /**
+     * Partitions the member currently owns, advertised in JOIN so a cooperative
+     * leader can preserve stickiness. Ignored by eager assigners.
+     */
+    ownedPartitions?: { [topic: string]: number[] }
+    /**
+     * Generation the owned partitions were assigned under, used to resolve
+     * dual-claims during cooperative rebalancing.
+     */
+    generationId?: number
+  }): GroupState
 }
 
 export interface RetryOptions {
@@ -577,7 +595,10 @@ export type Admin = {
   readonly events: AdminEvents
 }
 
-export const PartitionAssigners: { roundRobin: PartitionAssigner }
+export const PartitionAssigners: {
+  roundRobin: PartitionAssigner
+  cooperativeSticky: PartitionAssigner
+}
 
 export interface ISerializer<T> {
   encode(value: T): Buffer
@@ -936,6 +957,16 @@ export type ConsumerGroupJoinEvent = InstrumentationEvent<{
   groupProtocol: string
   memberId: string
   memberAssignment: IMemberAssignment
+  /**
+   * Partitions revoked this rebalance. Populated for cooperative assigners;
+   * always empty for eager assigners.
+   */
+  revoked: Array<{ topic: string; partition: number }>
+  /**
+   * Partitions newly added this rebalance. Populated for cooperative assigners;
+   * always empty for eager assigners.
+   */
+  added: Array<{ topic: string; partition: number }>
 }>
 export type ConsumerFetchStartEvent = InstrumentationEvent<{ nodeId: number }>
 export type ConsumerFetchEvent = InstrumentationEvent<{

@@ -24,6 +24,7 @@ import {
 } from './index'
 
 const { roundRobin } = PartitionAssigners
+const { cooperativeSticky } = PartitionAssigners
 
 // COMMON
 const host = 'localhost'
@@ -291,6 +292,11 @@ CompressionCodecs[CompressionTypes.Snappy] = SnappyCodec
 kafka.consumer({
   groupId: 'my-group',
   partitionAssigners: [roundRobin],
+})
+
+kafka.consumer({
+  groupId: 'my-cooperative-group',
+  partitionAssigners: [cooperativeSticky, roundRobin],
 })
 
 // ERROR

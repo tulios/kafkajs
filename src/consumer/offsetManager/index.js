@@ -372,6 +372,56 @@ module.exports = class OffsetManager {
     this.resolvedOffsets = indexTopics(this.topics)
   }
 
+  /**
+   * Cooperative (incremental) rebalancing: update the assignment in place
+   * instead of rebuilding the OffsetManager.
+   *
+   * The eager path rebuilds the manager on every rebalance, which calls
+   * clearAllOffsets() and discards resolvedOffsets for ALL partitions. That is
+   * harmless when every partition is revoked, but cooperative rebalancing
+   * RETAINS partitions and keeps processing them — rebuilding would drop
+   * resolved-but-uncommitted offsets for retained partitions and cause
+   * duplicate processing (red-team F1).
+   *
+   * This method adds offset bookkeeping for newly assigned partitions and
+   * removes it for revoked partitions, leaving retained partitions' resolved
+   * offsets untouched.
+   *
+   * @param {Object} delta
+   * @param {Array<{topic: string, partition: number}>} [delta.added]
+   * @param {Array<{topic: string, partition: number}>} [delta.revoked]
+   */
+  updateAssignment({ added = [], revoked = [] }) {
+    const committedOffsets = this.committedOffsets()
+
+    for (const { topic, partition } of added) {
+      if (!this.memberAssignment[topic]) this.memberAssignment[topic] = []
+      if (!this.memberAssignment[topic].includes(partition)) {
+        this.memberAssignment[topic].push(partition)
+      }
+      if (!this.resolvedOffsets[topic]) this.resolvedOffsets[topic] = {}
+      if (!committedOffsets[topic]) committedOffsets[topic] = {}
+    }
+
+    for (const { topic, partition } of revoked) {
+      if (this.memberAssignment[topic]) {
+        this.memberAssignment[topic] = this.memberAssignment[topic].filter(p => p !== partition)
+      }
+      if (this.resolvedOffsets[topic]) delete this.resolvedOffsets[topic][partition]
+      if (committedOffsets[topic]) delete committedOffsets[topic][partition]
+    }
+
+    // Drop topics that are no longer assigned at all.
+    for (const topic of keys(this.memberAssignment)) {
+      if (this.memberAssignment[topic].length === 0) {
+        delete this.memberAssignment[topic]
+        delete this.resolvedOffsets[topic]
+      }
+    }
+
+    this.topics = keys(this.memberAssignment)
+  }
+
   committedOffsets() {
     if (!this[PRIVATE.COMMITTED_OFFSETS]) {
       this[PRIVATE.COMMITTED_OFFSETS] = this.groupId
