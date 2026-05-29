@@ -33,8 +33,9 @@ const STALE_METADATA_ERRORS = [
 
 // Cooperative rebalancing normally converges in 2 rounds (revoke → rejoin →
 // assign). Beyond this, the degraded path commits + warns and proceeds rather
-// than looping forever (red-team S5).
-const MAX_COOPERATIVE_ROUNDS = 2
+// than looping forever (red-team S5). Configurable via the
+// `maxCooperativeRejoinRounds` consumer option as a defensive escape hatch.
+const DEFAULT_MAX_COOPERATIVE_ROUNDS = 2
 
 const PRIVATE = {
   JOIN: Symbol('private:ConsumerGroup:join'),
@@ -66,6 +67,7 @@ module.exports = class ConsumerGroup {
    * @param {number} options.isolationLevel
    * @param {string} options.rackId
    * @param {number} options.metadataMaxAge
+   * @param {number} [options.maxCooperativeRejoinRounds]
    */
   constructor({
     retry,
@@ -88,6 +90,7 @@ module.exports = class ConsumerGroup {
     isolationLevel,
     rackId,
     metadataMaxAge,
+    maxCooperativeRejoinRounds = DEFAULT_MAX_COOPERATIVE_ROUNDS,
   }) {
     /** @type {import("../../types").Cluster} */
     this.cluster = cluster
@@ -111,6 +114,7 @@ module.exports = class ConsumerGroup {
     this.isolationLevel = isolationLevel
     this.rackId = rackId
     this.metadataMaxAge = metadataMaxAge
+    this.maxCooperativeRejoinRounds = maxCooperativeRejoinRounds
 
     this.seekOffset = new SeekOffsets()
     this.coordinator = null
@@ -498,7 +502,7 @@ module.exports = class ConsumerGroup {
     this.lastRevoked = revoked
     this.lastAdded = added
 
-    if (revoked.length > 0 && this.cooperativeRounds < MAX_COOPERATIVE_ROUNDS) {
+    if (revoked.length > 0 && this.cooperativeRounds < this.maxCooperativeRejoinRounds) {
       this.rejoinNeeded = true
       this.cooperativeRounds += 1
     } else {

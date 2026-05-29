@@ -165,6 +165,7 @@ export interface ConsumerConfig {
   maxInFlightRequests?: number
   readUncommitted?: boolean
   rackId?: string
+  maxCooperativeRejoinRounds?: number
 }
 
 export type PartitionAssigner = (config: {
