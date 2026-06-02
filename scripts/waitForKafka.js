@@ -2,8 +2,10 @@
 
 const execa = require('execa')
 const crypto = require('crypto')
+const path = require('path')
 
 const secureRandom = (length = 10) => crypto.randomBytes(length).toString('hex')
+const dockerCompose = JSON.stringify(path.resolve(process.cwd(), 'scripts/dockerCompose.sh'))
 
 const findContainerId = node => {
   const cmd = `
@@ -64,7 +66,7 @@ waitForNode(kafka3ContainerId)
 console.log('\nAll nodes up:')
 console.log(
   execa
-    .commandSync(`docker-compose -f ${process.env.COMPOSE_FILE} ps`, { shell: true })
+    .commandSync(`${dockerCompose} -f ${process.env.COMPOSE_FILE} ps`, { shell: true })
     .stdout.toString('utf-8')
 )
 
