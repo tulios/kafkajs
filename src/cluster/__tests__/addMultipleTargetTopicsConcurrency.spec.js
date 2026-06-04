@@ -3,6 +3,16 @@ const { createErrorFromCode } = require('../../protocol/error')
 
 const INVALID_TOPIC_EXCEPTION = 17
 
+const populateMetadata = cluster => {
+  cluster.brokerPool.metadata = {
+    ...cluster.brokerPool.metadata,
+    topicMetadata: Array.from(cluster.targetTopics).map(topic => ({
+      topic,
+      partitionMetadata: [],
+    })),
+  }
+}
+
 describe('Cluster > addMultipleTargetTopics (per-topic memoization)', () => {
   let cluster
 
@@ -41,6 +51,7 @@ describe('Cluster > addMultipleTargetTopics (per-topic memoization)', () => {
     cluster.refreshMetadata = jest.fn(async () => {
       refreshes++
       await new Promise(resolve => setTimeout(resolve, 10))
+      populateMetadata(cluster)
     })
 
     await Promise.all([
@@ -54,7 +65,7 @@ describe('Cluster > addMultipleTargetTopics (per-topic memoization)', () => {
 
   test('a second call after the first resolved triggers a new refresh only if needed', async () => {
     const topic = `topic-${secureRandom()}`
-    cluster.refreshMetadata = jest.fn()
+    cluster.refreshMetadata = jest.fn(async () => populateMetadata(cluster))
 
     await cluster.addMultipleTargetTopics([topic])
     await cluster.addMultipleTargetTopics([topic])
@@ -62,6 +73,28 @@ describe('Cluster > addMultipleTargetTopics (per-topic memoization)', () => {
     // topic is now in targetTopics and brokerPool.metadata is still truthy,
     // so the second call short-circuits.
     expect(cluster.refreshMetadata).toHaveBeenCalledTimes(1)
+  })
+
+  test('post-check forces a second refresh when our topic missed the snapshot', async () => {
+    const topic = `topic-${secureRandom()}`
+    let callCount = 0
+    cluster.refreshMetadata = jest.fn(async () => {
+      callCount++
+      if (callCount === 1) {
+        // Simulate an in-flight refresh whose snapshot predated our add:
+        // the resulting cache is populated but doesn't contain our topic.
+        cluster.brokerPool.metadata = { topicMetadata: [] }
+      } else {
+        populateMetadata(cluster)
+      }
+    })
+
+    await cluster.addMultipleTargetTopics([topic])
+
+    expect(cluster.refreshMetadata).toHaveBeenCalledTimes(2)
+    expect(
+      cluster.brokerPool.metadata.topicMetadata.some(t => t.topic === topic)
+    ).toBe(true)
   })
 
   test('on INVALID_TOPIC_EXCEPTION, removes only the topic this call newly added', async () => {

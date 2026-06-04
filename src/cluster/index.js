@@ -239,8 +239,21 @@ module.exports = class Cluster {
     const wasNew = !this.targetTopics.has(topic)
     this.targetTopics.add(topic)
 
-    const promise = this.refreshMetadata()
-      .catch(e => {
+    const isInCache = () =>
+      !!this.brokerPool.metadata &&
+      !!this.brokerPool.metadata.topicMetadata &&
+      this.brokerPool.metadata.topicMetadata.some(t => t.topic === topic)
+
+    const promise = (async () => {
+      try {
+        await this.refreshMetadata()
+        if (!isInCache()) {
+          // The deduped refresh's topic snapshot predated our add. Force a
+          // fresh refresh here rather than letting the caller (e.g. produce)
+          // fail with KafkaJSMetadataNotLoaded and recover via its retry loop.
+          await this.refreshMetadata()
+        }
+      } catch (e) {
         if (
           e.type === 'INVALID_TOPIC_EXCEPTION' ||
           e.type === 'UNKNOWN_TOPIC_OR_PARTITION' ||
@@ -249,10 +262,10 @@ module.exports = class Cluster {
           if (wasNew) this.targetTopics.delete(topic)
         }
         throw e
-      })
-      .finally(() => {
+      } finally {
         this.inFlightMetadataByTopic.delete(topic)
-      })
+      }
+    })()
 
     this.inFlightMetadataByTopic.set(topic, promise)
     return promise

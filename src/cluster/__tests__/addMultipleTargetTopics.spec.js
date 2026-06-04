@@ -32,7 +32,17 @@ describe('Cluster > addMultipleTargetTopics', () => {
   })
 
   test('refresh metadata if no metadata was loaded before', async () => {
-    cluster.refreshMetadata = jest.fn()
+    // Populate topicMetadata so the post-refresh cache check in
+    // addTopicAndRefresh sees our topic and skips its second refresh.
+    cluster.refreshMetadata = jest.fn(async () => {
+      cluster.brokerPool.metadata = {
+        ...cluster.brokerPool.metadata,
+        topicMetadata: Array.from(cluster.targetTopics).map(topic => ({
+          topic,
+          partitionMetadata: [],
+        })),
+      }
+    })
     const topic1 = `topic-${secureRandom()}`
     await cluster.addMultipleTargetTopics([topic1])
     await cluster.addMultipleTargetTopics([topic1])
