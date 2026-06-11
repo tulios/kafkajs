@@ -1,6 +1,7 @@
 jest.mock('./groupMessagesPerPartition')
 const { newLogger } = require('testHelpers')
 const { errorCodes, createErrorFromCode } = require('../protocol/error')
+const { KafkaJSRequestTimeoutError } = require('../errors')
 const retry = require('../retry')
 const createSendMessages = require('./sendMessages')
 
@@ -66,6 +67,8 @@ describe('Producer > sendMessages', () => {
       findBroker: jest.fn(({ nodeId }) => brokers[nodeId]),
       targetTopics: new Set(),
       isConnected: jest.fn(() => true),
+      connect: jest.fn(),
+      removeBroker: jest.fn(),
     }
     messagesPerPartition = {
       '0': [{ key: '3' }, { key: '6' }, { key: '9' }],
@@ -159,6 +162,28 @@ describe('Producer > sendMessages', () => {
       expect(cluster.refreshMetadata).toHaveBeenCalled()
     })
   }
+
+  test('removes the broker and refreshes metadata on a request timeout', async () => {
+    const sendMessages = createSendMessages({
+      retrier,
+      logger: newLogger(),
+      cluster,
+      partitioner,
+      eosManager,
+    })
+
+    brokers[1].produce
+      .mockImplementationOnce(() => {
+        throw new KafkaJSRequestTimeoutError('Request timed out', { broker: 'localhost:9092' })
+      })
+      .mockImplementationOnce(() => createProducerResponse(topic, 0))
+
+    await sendMessages({ topicMessages: [{ topic, messages }] })
+
+    expect(cluster.removeBroker).toHaveBeenCalledWith({ host: 'localhost', port: 9092 })
+    expect(cluster.refreshMetadata).toHaveBeenCalled()
+    expect(brokers[1].produce).toHaveBeenCalledTimes(2)
+  })
 
   test('does not re-produce messages to brokers that are no longer leaders after metadata refresh', async () => {
     const sendMessages = createSendMessages({
