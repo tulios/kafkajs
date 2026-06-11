@@ -137,6 +137,21 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
           cluster.removeBroker({ host: e.host, port: e.port })
         }
 
+        // On a request timeout, drop the broker so the next attempt builds a
+        // fresh connection instead of reusing a socket whose peer may be gone
+        // (e.g. a broker replaced without a TCP RST/FIN, where the socket still
+        // looks connected and keeps retransmitting). The error's broker field is
+        // a "host:port" string.
+        if (e.name === 'KafkaJSRequestTimeoutError' && typeof e.broker === 'string') {
+          const splitAt = e.broker.lastIndexOf(':')
+          if (splitAt > 0) {
+            cluster.removeBroker({
+              host: e.broker.slice(0, splitAt),
+              port: Number(e.broker.slice(splitAt + 1)),
+            })
+          }
+        }
+
         if (!cluster.isConnected()) {
           logger.debug(`Cluster has disconnected, reconnecting: ${e.message}`, {
             retryCount,
@@ -149,11 +164,17 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
 
         // This is necessary in case the metadata is stale and the number of partitions
         // for this topic has increased in the meantime
+        //
+        // Also refresh on KafkaJSRequestTimeoutError: a request that timed out
+        // against an unresponsive broker (e.g. a rolling restart where partition
+        // leadership has moved) would otherwise be retried against the same stale
+        // leader until metadataMaxAge expires.
         if (
           staleMetadata(e) ||
           e.name === 'KafkaJSMetadataNotLoaded' ||
           e.name === 'KafkaJSConnectionError' ||
           e.name === 'KafkaJSConnectionClosedError' ||
+          e.name === 'KafkaJSRequestTimeoutError' ||
           (e.name === 'KafkaJSProtocolError' && e.retriable)
         ) {
           logger.error(`Failed to send messages: ${e.message}`, { retryCount, retryTime })

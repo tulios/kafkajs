@@ -138,6 +138,13 @@ module.exports = class BrokerPool {
       delete this.brokers[removedBroker.nodeId]
       this.metadataExpireAt = null
 
+      // Release the removed broker's connection. Once it is deleted from the
+      // pool it is never disconnected by the metadata refresh rebuild, so a hung
+      // socket (e.g. to a broker that vanished without a TCP RST/FIN) would
+      // otherwise linger until the kernel gives up retransmitting. Run it in the
+      // background: disconnect() only resolves once pending requests time out.
+      removedBroker.disconnect().catch(() => {})
+
       if (this.seedBroker.nodeId === removedBroker.nodeId) {
         this.seedBroker = shuffle(values(this.brokers))[0]
       }
