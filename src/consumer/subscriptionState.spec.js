@@ -106,6 +106,17 @@ describe('Consumer > SubcriptionState > assignments', () => {
     expect(subscriptionState.active()).toEqual([{ topic: 'topic2', partitions: [3, 4] }])
   })
 
+  it('sorts partitions numerically', () => {
+    subscriptionState.assign([{ topic: 'topic1', partitions: [0, 2, 10, 1, 11] }])
+    subscriptionState.pause([{ topic: 'topic1', partitions: [10, 2] }])
+
+    expect(subscriptionState.assigned()).toEqual([
+      { topic: 'topic1', partitions: [0, 1, 2, 10, 11] },
+    ])
+    expect(subscriptionState.active()).toEqual([{ topic: 'topic1', partitions: [0, 1, 11] }])
+    expect(subscriptionState.paused()).toEqual([{ topic: 'topic1', partitions: [2, 10] }])
+  })
+
   it('can return which topic partitions are assigned and not paused', () => {
     subscriptionState.assign([{ topic: 'topic1', partitions: [0, 1] }])
     subscriptionState.pause([{ topic: 'topic1', partitions: [0] }])
