@@ -73,6 +73,10 @@ describe('Producer > eosManager', () => {
     eosManager.updateSequence(topic, 3, 100)
     expect(eosManager.getSequence(topic, 3)).toEqual(0) // Rotates once we reach 2 ^ 31 (max Int32)
 
+    eosManager.updateSequence(topic, 4, Math.pow(2, 31) - 1 - 5)
+    eosManager.updateSequence(topic, 4, 5)
+    expect(eosManager.getSequence(topic, 4)).toEqual(Math.pow(2, 31) - 1) // Int32 max is a valid sequence
+
     await eosManager.initProducerId()
     expect(eosManager.getSequence(topic, 1)).toEqual(0) // Sequences reset by initProducerId
   })
