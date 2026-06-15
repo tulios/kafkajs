@@ -221,7 +221,7 @@ module.exports = ({
 
         // Sequence is defined as Int32 in the Record Batch,
         // so theoretically should need to rotate here
-        if (sequence >= INT_32_MAX_VALUE) {
+        if (sequence > INT_32_MAX_VALUE) {
           logger.debug(
             `Sequence for ${topic} ${partition} exceeds max value (${sequence}). Rotating to 0.`
           )
