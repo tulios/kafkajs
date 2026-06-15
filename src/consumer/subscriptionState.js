@@ -80,7 +80,7 @@ module.exports = class SubscriptionState {
   assigned() {
     return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => ({
       topic,
-      partitions: partitions.sort(),
+      partitions: partitions.sort((a, b) => a - b),
     }))
   }
 
@@ -91,7 +91,9 @@ module.exports = class SubscriptionState {
   active() {
     return Object.values(this.assignedPartitionsByTopic).map(({ topic, partitions }) => ({
       topic,
-      partitions: partitions.filter(partition => !this.isPaused(topic, partition)).sort(),
+      partitions: partitions
+        .filter(partition => !this.isPaused(topic, partition))
+        .sort((a, b) => a - b),
     }))
   }
 
@@ -103,7 +105,9 @@ module.exports = class SubscriptionState {
     return Object.values(this.assignedPartitionsByTopic)
       .map(({ topic, partitions }) => ({
         topic,
-        partitions: partitions.filter(partition => this.isPaused(topic, partition)).sort(),
+        partitions: partitions
+          .filter(partition => this.isPaused(topic, partition))
+          .sort((a, b) => a - b),
       }))
       .filter(({ partitions }) => partitions.length !== 0)
   }
