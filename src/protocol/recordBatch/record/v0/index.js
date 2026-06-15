@@ -52,13 +52,13 @@ const sizeOfHeaders = headersArray => {
 
   for (const header of headersArray) {
     const keySize = Buffer.byteLength(header.key)
-    const valueSize = Buffer.byteLength(header.value)
 
     size += Encoder.sizeOfVarInt(keySize) + keySize
 
     if (header.value === null) {
       size += Encoder.sizeOfVarInt(-1)
     } else {
+      const valueSize = Buffer.byteLength(header.value)
       size += Encoder.sizeOfVarInt(valueSize) + valueSize
     }
   }
