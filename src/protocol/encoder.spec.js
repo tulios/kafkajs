@@ -197,6 +197,7 @@ describe('Protocol > Encoder', () => {
     test('decode signed int32 boundaries', () => {
       expect(decode32(signed32(MAX_SAFE_POSITIVE_SIGNED_INT))).toEqual(MAX_SAFE_POSITIVE_SIGNED_INT)
       expect(decode32(signed32(MIN_SAFE_NEGATIVE_SIGNED_INT))).toEqual(MIN_SAFE_NEGATIVE_SIGNED_INT)
+      expect(() => decode32(B(0x80, 0x80, 0x80, 0x80, 0x80, 0x80))).toThrow()
     })
   })
 
