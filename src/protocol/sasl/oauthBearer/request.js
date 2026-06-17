@@ -46,7 +46,7 @@ function formatExtensions(extensions) {
 }
 
 module.exports = async ({ authorizationIdentity = null }, oauthBearerToken) => {
-  const authzid = authorizationIdentity == null ? '' : `"a=${authorizationIdentity}`
+  const authzid = authorizationIdentity == null ? '' : `a=${authorizationIdentity}`
   let ext = formatExtensions(oauthBearerToken.extensions)
   if (ext.length > 0) {
     ext = `${SEPARATOR}${ext}`
