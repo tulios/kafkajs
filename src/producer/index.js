@@ -242,5 +242,6 @@ module.exports = ({
     sendBatch,
     transaction,
     logger: getLogger,
+    clusterId: () => cluster.clusterId(),
   }
 }
