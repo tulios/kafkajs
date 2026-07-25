@@ -1,4 +1,4 @@
-const { secureRandom, newLogger, createCluster } = require('testHelpers')
+const { newLogger, createCluster } = require('testHelpers')
 const createProducer = require('../index')
 
 describe('Producer > clusterId', () => {
