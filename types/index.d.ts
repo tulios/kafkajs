@@ -815,6 +815,7 @@ export type Producer = Sender & {
   ): RemoveInstrumentationEventListener<typeof eventName>
   transaction(): Promise<Transaction>
   logger(): Logger
+  clusterId(): string | null
 }
 
 export type Transaction = Sender & {
@@ -1111,6 +1112,7 @@ export type Consumer = {
   ): RemoveInstrumentationEventListener<typeof eventName>
   logger(): Logger
   readonly events: ConsumerEvents
+  clusterId(): string | null
 }
 
 export enum CompressionTypes {

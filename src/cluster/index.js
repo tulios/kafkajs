@@ -139,6 +139,18 @@ module.exports = class Cluster {
   }
 
   /**
+   * Returns the Kafka cluster ID from the most recently cached broker metadata,
+   * or null if metadata has not yet been fetched.
+   *
+   * @public
+   * @returns {string | null}
+   */
+  clusterId() {
+    const { metadata } = this.brokerPool
+    return (metadata && metadata.clusterId) || null
+  }
+
+  /**
    * @public
    * @returns {Promise<void>}
    */

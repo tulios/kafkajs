@@ -518,5 +518,6 @@ module.exports = ({
     on,
     events,
     logger: getLogger,
+    clusterId: () => cluster.clusterId(),
   }
 }
