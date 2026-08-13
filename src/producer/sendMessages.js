@@ -16,9 +16,6 @@ const { keys } = Object
  */
 module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
   return async ({ acks, timeout, compression, topicMessages }) => {
-    /** @type {Map<import("../../types").Broker, any[]>} */
-    const responsePerBroker = new Map()
-
     /** @param {Map<import("../../types").Broker, any[]>} responsePerBroker */
     const createProducerRequests = async responsePerBroker => {
       const topicMetadata = new Map()
@@ -129,6 +126,11 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
       await cluster.addMultipleTargetTopics(topics)
 
       try {
+        // A new map per attempt so a Produce that returned error 0 is not kept
+        // when a sibling broker fails with stale metadata. Otherwise send() can
+        // resolve with a zombie leader's ack that is later truncated.
+        /** @type {Map<import("../../types").Broker, any[]>} */
+        const responsePerBroker = new Map()
         const requests = await createProducerRequests(responsePerBroker)
         await Promise.all(requests)
         return Array.from(responsePerBroker.values()).flat()

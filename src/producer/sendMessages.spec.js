@@ -4,14 +4,14 @@ const { errorCodes, createErrorFromCode } = require('../protocol/error')
 const retry = require('../retry')
 const createSendMessages = require('./sendMessages')
 
-const createProducerResponse = (topicName, partition) => ({
+const createProducerResponse = (topicName, partition, offset = `${partition}`) => ({
   topics: [
     {
       topicName,
       partitions: [
         {
           errorCode: 0,
-          offset: `${partition}`,
+          offset,
           partition,
           timestamp: '-1',
         },
@@ -94,7 +94,7 @@ describe('Producer > sendMessages', () => {
     require('./groupMessagesPerPartition').mockImplementation(() => messagesPerPartition)
   })
 
-  test('only retry failed brokers', async () => {
+  test('retries every broker after a failed produce', async () => {
     const sendMessages = createSendMessages({
       retrier,
       logger: newLogger(),
@@ -107,7 +107,7 @@ describe('Producer > sendMessages', () => {
       .mockImplementationOnce(() => {
         throw createErrorFromCode(5)
       })
-      .mockImplementationOnce(() => createProducerResponse(topic, 0))
+      .mockImplementation(() => createProducerResponse(topic, 0))
 
     brokers[3].produce
       .mockImplementationOnce(() => {
@@ -116,21 +116,105 @@ describe('Producer > sendMessages', () => {
       .mockImplementationOnce(() => {
         throw createErrorFromCode(5)
       })
-      .mockImplementationOnce(() => createProducerResponse(topic, 2))
+      .mockImplementation(() => createProducerResponse(topic, 2))
 
     const response = await sendMessages({ topicMessages: [{ topic, messages }] })
 
     expect(cluster.refreshMetadataIfNecessary).toHaveBeenCalled()
     expect(eosManager.addPartitionsToTransaction).not.toHaveBeenCalled()
 
-    expect(brokers[1].produce).toHaveBeenCalledTimes(2)
-    expect(brokers[2].produce).toHaveBeenCalledTimes(1)
+    expect(brokers[1].produce).toHaveBeenCalledTimes(3)
+    expect(brokers[2].produce).toHaveBeenCalledTimes(3)
     expect(brokers[3].produce).toHaveBeenCalledTimes(3)
     expect(response).toEqual([
-      { errorCode: 0, offset: '1', partition: 1, timestamp: '-1', topicName: 'topic-name' },
       { errorCode: 0, offset: '0', partition: 0, timestamp: '-1', topicName: 'topic-name' },
+      { errorCode: 0, offset: '1', partition: 1, timestamp: '-1', topicName: 'topic-name' },
       { errorCode: 0, offset: '2', partition: 2, timestamp: '-1', topicName: 'topic-name' },
     ])
+  })
+
+  /**
+   * responsePerBroker lives outside the retrier. After a sibling NOT_LEADER,
+   * metadata can move partition 0 to a new leader and we will Produce there,
+   * but the original broker object is still in the map with its first ack.
+   * send() concatenates both. The caller sees the stale offset as success even
+   * if that append is later truncated.
+   */
+  test('does not keep a stale produce ack when a sibling NOT_LEADER moves that partition to a new leader', async () => {
+    const sendMessages = createSendMessages({
+      retrier,
+      logger: newLogger(),
+      cluster,
+      partitioner,
+      eosManager,
+    })
+
+    const notLeader = createErrorFromCode(
+      errorCodes.find(({ type }) => type === 'NOT_LEADER_FOR_PARTITION').code
+    )
+
+    brokers[1].produce.mockImplementation(() => createProducerResponse(topic, 0, 'stale-ack'))
+    brokers[2].produce
+      .mockImplementationOnce(() => {
+        throw notLeader
+      })
+      .mockImplementationOnce(() => createProducerResponse(topic, 1))
+    brokers[5] = {
+      nodeId: 5,
+      produce: jest.fn(() => createProducerResponse(topic, 0, 'new-leader-ack')),
+    }
+
+    cluster.findLeaderForPartitions
+      .mockImplementationOnce(() => partitionsPerLeader)
+      .mockImplementationOnce(() => ({
+        5: [0],
+        4: [1],
+        3: [2],
+      }))
+
+    const response = await sendMessages({ topicMessages: [{ topic, messages }] })
+    const partition0 = response.filter(({ partition }) => partition === 0)
+
+    expect(brokers[5].produce).toHaveBeenCalled()
+    expect(partition0).toHaveLength(1)
+    expect(partition0[0]).toMatchObject({
+      partition: 0,
+      errorCode: 0,
+      offset: 'new-leader-ack',
+    })
+    expect(response).not.toContainEqual(expect.objectContaining({ offset: 'stale-ack' }))
+  })
+
+  /**
+   * Truncation window: the sibling NOT_LEADER refreshes metadata, but the
+   * controller has not yet moved partition 0 off the broker that already
+   * acked. That broker is skipped. send() resolves with the first ack.
+   * If the broker is then fenced and the append truncated, the caller has
+   * already treated the produce as successful.
+   */
+  test('retries a previously successful broker after a sibling NOT_LEADER when metadata still lists it as leader', async () => {
+    const sendMessages = createSendMessages({
+      retrier,
+      logger: newLogger(),
+      cluster,
+      partitioner,
+      eosManager,
+    })
+
+    const notLeader = createErrorFromCode(
+      errorCodes.find(({ type }) => type === 'NOT_LEADER_FOR_PARTITION').code
+    )
+
+    brokers[1].produce.mockImplementation(() => createProducerResponse(topic, 0, 'zombie-ack'))
+    brokers[2].produce
+      .mockImplementationOnce(() => {
+        throw notLeader
+      })
+      .mockImplementationOnce(() => createProducerResponse(topic, 1))
+
+    await sendMessages({ topicMessages: [{ topic, messages }] })
+
+    expect(brokers[1].produce).toHaveBeenCalledTimes(2)
   })
 
   const PRODUCE_ERRORS = [
