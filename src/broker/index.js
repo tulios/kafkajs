@@ -765,6 +765,22 @@ module.exports = class Broker {
   }
 
   /**
+   * Send request to delete consumer group offsets
+   * @public
+   * @param {object} request
+   * @param {string} request.groupId
+   * @param {Array<{ topic: string, partitions: number[] }>} request.topics
+   * @returns {Promise}
+   */
+  async deleteConsumerGroupOffsets({ groupId, topics }) {
+    const deleteConsumerGroupOffsets = this.lookupRequest(
+      apiKeys.DeleteConsumerGroupOffsets,
+      requests.DeleteConsumerGroupOffsets
+    )
+    return await this[PRIVATE.SEND_REQUEST](deleteConsumerGroupOffsets({ groupId, topics }))
+  }
+
+  /**
    * Send request to delete records
    * @public
    * @param {object} request
