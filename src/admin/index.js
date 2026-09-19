@@ -1113,6 +1113,86 @@ module.exports = ({
   }
 
   /**
+   * @param {Object} request
+   * @param {string} request.groupId
+   * @param {Array<{ topic: string, partitions: number[] }>} request.topics
+   * @param {number} [request.timeout]
+   * @return {Promise<Array<{ topic: string, partitions: Array<{ partition: number, errorCode: number, error?: any }> }>>}
+   */
+  const deleteConsumerGroupOffsets = async ({ groupId, topics, timeout }) => {
+    if (!groupId) {
+      throw new KafkaJSNonRetriableError(`Invalid groupId ${groupId}`)
+    }
+
+    if (!topics) {
+      throw new KafkaJSNonRetriableError('Missing required topics array')
+    }
+
+    if (!Array.isArray(topics)) {
+      throw new KafkaJSNonRetriableError('Expected topics array to be set')
+    }
+
+    for (const { topic, partitions } of topics) {
+      if (!topic || typeof topic !== 'string') {
+        throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+      }
+
+      if (!partitions || partitions.length === 0) {
+        throw new KafkaJSNonRetriableError(`Invalid partitions for topic ${topic}`)
+      }
+
+      for (const partition of partitions) {
+        if (!partition || typeof partition !== 'number' || partition < 0) {
+          throw new KafkaJSNonRetriableError(`Invalid partition entry for topic ${topic}`)
+        }
+      }
+    }
+
+    const retrier = createRetry(retry)
+
+    return retrier(async (bail, retryCount, retryTime) => {
+      try {
+        await cluster.refreshMetadata()
+
+        const brokersPerGroups = {}
+        const brokersPerNode = {}
+
+        for (const { topic, partitions } of topics) {
+          const broker = await cluster.findGroupCoordinator({ groupId })
+          if (!brokersPerGroups[broker.nodeId]) {
+            brokersPerGroups[broker.nodeId] = []
+          }
+          brokersPerGroups[broker.nodeId].push({ topic, partitions })
+          brokersPerNode[broker.nodeId] = broker
+        }
+
+        const res = await Promise.all(
+          Object.keys(brokersPerNode).map(
+            async nodeId =>
+              await brokersPerNode[nodeId].deleteConsumerGroupOffsets({
+                groupId,
+                topics: brokersPerGroups[nodeId],
+                timeout,
+              })
+          )
+        )
+
+        return res.flatMap(({ results }) => results)
+      } catch (e) {
+        if (e.type === 'NOT_CONTROLLER' || e.type === 'COORDINATOR_NOT_AVAILABLE') {
+          logger.warn('Could not delete consumer group offsets', {
+            error: e.message,
+            retryCount,
+            retryTime,
+          })
+          throw e
+        }
+        bail(e)
+      }
+    })
+  }
+
+  /**
    * @param {Array<ACLEntry>} acl
    * @return {Promise<void>}
    *
@@ -1600,6 +1680,7 @@ module.exports = ({
     deleteAcls,
     createAcls,
     deleteTopicRecords,
+    deleteConsumerGroupOffsets,
     alterPartitionReassignments,
     listPartitionReassignments,
   }

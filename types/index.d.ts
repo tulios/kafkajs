@@ -541,6 +541,20 @@ export type Admin = {
   deleteAcls(options: { filters: AclFilter[] }): Promise<DeleteAclResponse>
   createAcls(options: { acl: AclEntry[] }): Promise<boolean>
   deleteTopicRecords(options: { topic: string; partitions: SeekEntry[] }): Promise<void>
+  deleteConsumerGroupOffsets(options: {
+    groupId: string
+    topics: Array<{
+      topic: string
+      partitions: number[]
+    }>
+    timeout?: number
+  }): Promise<Array<{
+    topic: string
+    partitions: Array<{
+      partition: number
+      errorCode: number
+    }>
+  >>
   alterPartitionReassignments(request: {
     topics: PartitionReassignment[]
     timeout?: number

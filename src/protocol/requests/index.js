@@ -70,6 +70,7 @@ const requests = {
   ExpireDelegationToken: noImplementedRequestDefinitions,
   DescribeDelegationToken: noImplementedRequestDefinitions,
   DeleteGroups: require('./deleteGroups'),
+  DeleteConsumerGroupOffsets: require('./deleteConsumerGroupOffsets'),
   ElectLeaders: noImplementedRequestDefinitions,
   IncrementalAlterConfigs: noImplementedRequestDefinitions,
   AlterPartitionReassignments: require('./alterPartitionReassignments'),
