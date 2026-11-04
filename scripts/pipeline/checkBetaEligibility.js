@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 
-const execa = require('execa')
+const { execSync } = require('node:child_process')
 const { SKIP_BETA_ELIGIBILITY } = process.env
 
-const changedFiles = execa
-  .commandSync('git diff --name-only HEAD^1...HEAD', { shell: true })
-  .stdout.toString('utf-8')
+const changedFiles = execSync('git diff --name-only HEAD^1...HEAD', { encoding: 'utf8' })
   .trim()
   .split('\n')
 

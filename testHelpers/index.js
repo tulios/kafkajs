@@ -3,7 +3,7 @@ const crypto = require("node:crypto");
 
 const { test } = require("@jest/globals");
 
-const execa = require("execa");
+const { execSync } = require("node:child_process");
 const semver = require("semver");
 const Cluster = require("../src/cluster");
 const waitFor = require("../src/utils/waitFor");
@@ -243,7 +243,7 @@ const addPartitions = async ({ topic, partitions }) => {
   await cluster.connect();
   await cluster.addTargetTopic(topic);
 
-  execa.commandSync(cmd, { shell: true });
+  execSync(cmd);
 
   waitFor(async () => {
     await cluster.refreshMetadata();

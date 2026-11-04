@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const execa = require("execa");
+const { execSync } = require("node:child_process");
 const crypto = require("node:crypto");
 
 const secureRandom = (length = 10) => crypto.randomBytes(length).toString("hex");
@@ -14,7 +14,7 @@ const findContainerId = (node) => {
       --no-trunc \
       -q
   `;
-  const containerId = execa.commandSync(cmd, { shell: true }).stdout.toString("utf-8");
+  const containerId = execSync(cmd, { encoding: "utf8" }).trim();
   console.log(`${node}: ${containerId}`);
   return containerId;
 };
@@ -27,7 +27,7 @@ const waitForNode = (containerId) => {
     sleep 5
   `;
 
-  execa.commandSync(cmd, { shell: true });
+  execSync(cmd);
   console.log(`Kafka container ${containerId} is running`);
 };
 
@@ -38,7 +38,7 @@ const createTopic = (containerId, topicName) => {
       bash -c "JMX_PORT=9998 kafka-topics --create --if-not-exists --topic ${topicName} --replication-factor 1 --partitions 2 --zookeeper zookeeper:2181 2> /dev/null"
   `;
 
-  return execa.commandSync(cmd, { shell: true }).stdout.toString("utf-8");
+  return execSync(cmd, { encoding: "utf8" }).trimEnd();
 };
 
 const consumerGroupDescribe = (containerId) => {
@@ -48,7 +48,7 @@ const consumerGroupDescribe = (containerId) => {
       bash -c "JMX_PORT=9998 kafka-consumer-groups --bootstrap-server kafka1:9092 --group test-group-${secureRandom()} --describe > /dev/null 2>&1"
     sleep 1
   `;
-  return execa.commandSync(cmd, { shell: true }).stdout.toString("utf-8");
+  return execSync(cmd, { encoding: "utf8" }).trimEnd();
 };
 
 console.log("\nFinding container ids...");
@@ -63,9 +63,9 @@ waitForNode(kafka3ContainerId);
 
 console.log("\nAll nodes up:");
 console.log(
-  execa
-    .commandSync(`docker compose -f "${process.env.COMPOSE_FILE}" ps`, { shell: true })
-    .stdout.toString("utf-8"),
+  execSync(`docker compose -f "${process.env.COMPOSE_FILE}" ps`, {
+    encoding: "utf8",
+  }).trimEnd(),
 );
 
 console.log("\nCreating default topics...");
