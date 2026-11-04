@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const https = require('https')
-const execa = require('execa')
+const { execSync } = require('node:child_process')
 
 console.log('Env:')
 for (const env of Object.keys(process.env)) {
@@ -55,10 +55,7 @@ const githubApi = async ({ payload }) =>
 const commentOnPR = async () => {
   const commitMessage =
     BUILD_SOURCEVERSIONMESSAGE ||
-    execa
-      .commandSync('git log -1 --pretty=%B', { shell: true })
-      .stdout.toString('utf-8')
-      .trim()
+    execSync('git log -1 --pretty=%B', { encoding: 'utf8' }).trim()
 
   const PR_NUMBER_REGEXP = /^Merge pull request #([^\s]+)/
   const result = commitMessage.match(PR_NUMBER_REGEXP)

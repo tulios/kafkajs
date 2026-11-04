@@ -2,7 +2,7 @@
 
 const path = require('path')
 const fs = require('fs')
-const execa = require('execa')
+const { execSync } = require('node:child_process')
 const getCurrentVersion = require('./getCurrentNPMVersion')
 
 console.log('Env:')
@@ -22,10 +22,7 @@ if (!/\d+\.\d+\.\d+-beta\.\d+/.test(PRE_RELEASE_VERSION)) {
 
 console.log('Update package.json')
 const packageJson = require('../../package.json')
-const commitSha = execa
-  .commandSync('git rev-parse --verify HEAD', { shell: true })
-  .stdout.toString('utf-8')
-  .trim()
+const commitSha = execSync('git rev-parse --verify HEAD', { encoding: 'utf8' }).trim()
 
 getCurrentVersion().then(({ latest }) => {
   packageJson.version = PRE_RELEASE_VERSION
