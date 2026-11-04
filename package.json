@@ -52,7 +52,6 @@
     "eslint": "^10.13.0",
     "eslint-config-prettier": "^10",
     "eslint-plugin-prettier": "^5.5.7",
-    "glob": "^7.1.4",
     "globals": "^17.13.0",
     "ip": "^2.0.1",
     "jest": "^30",
