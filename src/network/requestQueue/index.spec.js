@@ -97,6 +97,17 @@ describe('Network > RequestQueue', () => {
     })
   })
 
+  describe('#scheduleCheckPendingRequests', () => {
+    it('never schedules a negative timeout when not throttled and pending queue is empty', () => {
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout')
+      requestQueue.scheduleCheckPendingRequests()
+
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 0)
+      setTimeoutSpy.mockRestore()
+      clearTimeout(requestQueue.throttleCheckTimeoutId)
+    })
+  })
+
   describe('#push', () => {
     let request, send
 
