@@ -37,7 +37,7 @@ const createRetriable = (configs, resolve, reject, fn) => {
     const shouldRetry = retryCount < retries
 
     const scheduleRetry = () => {
-      setTimeout(() => retry(nextRetryTime, retryCount + 1), retryTime)
+      setTimeout(() => retry(nextRetryTime, retryCount + 1), Math.max(0, retryTime))
     }
 
     fn(bail, retryCount, retryTime)
