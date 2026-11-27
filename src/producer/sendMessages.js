@@ -16,12 +16,23 @@ const { keys } = Object
  */
 module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
   return async ({ acks, timeout, compression, topicMessages }) => {
-    /** @type {Map<import("../../types").Broker, any[]>} */
-    const responsePerBroker = new Map()
+    /**
+     * Messages of each topic, assigned to their partitions on the first attempt that has the
+     * topic's metadata.
+     * @type {Map<string, Object<string, any[]>>}
+     */
+    const messagesPerPartitionPerTopic = new Map()
 
-    /** @param {Map<import("../../types").Broker, any[]>} responsePerBroker */
-    const createProducerRequests = async responsePerBroker => {
+    /**
+     * Produced partitions, keyed by `topic:partition`, with their response (null with acks 0).
+     * @type {Map<string, any>}
+     */
+    const responsePerPartition = new Map()
+    const partitionKey = (topic, partition) => `${topic}:${partition}`
+
+    const createProducerRequests = async () => {
       const topicMetadata = new Map()
+      const brokers = new Map()
 
       await cluster.refreshMetadataIfNecessary()
 
@@ -37,34 +48,37 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
           throw new KafkaJSMetadataNotLoaded('Producing to topic without metadata')
         }
 
-        const messagesPerPartition = groupMessagesPerPartition({
-          topic,
-          partitionMetadata,
-          messages,
-          partitioner,
-        })
+        if (!messagesPerPartitionPerTopic.has(topic)) {
+          messagesPerPartitionPerTopic.set(
+            topic,
+            groupMessagesPerPartition({ topic, partitionMetadata, messages, partitioner })
+          )
+        }
+        const messagesPerPartition = messagesPerPartitionPerTopic.get(topic)
 
-        const partitions = keys(messagesPerPartition)
-        const partitionsPerLeader = cluster.findLeaderForPartitions(topic, partitions)
-        const leaders = keys(partitionsPerLeader)
+        const pendingPartitions = keys(messagesPerPartition).filter(
+          partition => !responsePerPartition.has(partitionKey(topic, partition))
+        )
+        const partitionsPerLeader = cluster.findLeaderForPartitions(topic, pendingPartitions)
+
+        const ledPartitions = Object.values(partitionsPerLeader).flat()
+        if (ledPartitions.length < pendingPartitions.length) {
+          throw new KafkaJSMetadataNotLoaded('Producing to a partition missing from the metadata')
+        }
 
         topicMetadata.set(topic, {
           partitionsPerLeader,
           messagesPerPartition,
         })
 
-        for (const nodeId of leaders) {
-          const broker = await cluster.findBroker({ nodeId })
-          if (!responsePerBroker.has(broker)) {
-            responsePerBroker.set(broker, null)
+        for (const nodeId of keys(partitionsPerLeader)) {
+          if (!brokers.has(nodeId)) {
+            brokers.set(nodeId, await cluster.findBroker({ nodeId }))
           }
         }
       }
 
-      const brokers = Array.from(responsePerBroker.keys())
-      const brokersWithoutResponse = brokers.filter(broker => !responsePerBroker.get(broker))
-
-      return brokersWithoutResponse.map(async broker => {
+      return Array.from(brokers.values()).map(async broker => {
         const entries = Array.from(topicMetadata.entries())
         const topicDataForBroker = entries
           .filter(([_, { partitionsPerLeader }]) => !!partitionsPerLeader[broker.nodeId])
@@ -114,10 +128,15 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
           const expectResponse = acks !== 0
           const formattedResponse = expectResponse ? responseSerializer(response) : []
 
-          responsePerBroker.set(broker, formattedResponse)
-        } catch (e) {
-          responsePerBroker.delete(broker)
-          throw e
+          topicData.forEach(({ topic, partitions }) => {
+            partitions.forEach(({ partition }) => {
+              responsePerPartition.set(partitionKey(topic, partition), null)
+            })
+          })
+          formattedResponse.forEach(partitionResponse => {
+            const { topicName, partition } = partitionResponse
+            responsePerPartition.set(partitionKey(topicName, partition), partitionResponse)
+          })
         } finally {
           await eosManager.releaseBrokerLock(broker)
         }
@@ -129,9 +148,9 @@ module.exports = ({ logger, cluster, partitioner, eosManager, retrier }) => {
       await cluster.addMultipleTargetTopics(topics)
 
       try {
-        const requests = await createProducerRequests(responsePerBroker)
+        const requests = await createProducerRequests()
         await Promise.all(requests)
-        return Array.from(responsePerBroker.values()).flat()
+        return Array.from(responsePerPartition.values()).filter(Boolean)
       } catch (e) {
         if (e.name === 'KafkaJSConnectionClosedError') {
           cluster.removeBroker({ host: e.host, port: e.port })

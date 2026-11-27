@@ -20,6 +20,15 @@ const createProducerResponse = (topicName, partition) => ({
   ],
 })
 
+// Like Cluster#findLeaderForPartitions, only returns the requested partitions
+const leadersOf = partitionsPerLeader => (_topic, partitions) =>
+  Object.entries(partitionsPerLeader).reduce((result, [leader, leaderPartitions]) => {
+    const requested = leaderPartitions.filter(partition =>
+      partitions.map(id => parseInt(id, 10)).includes(partition)
+    )
+    return requested.length > 0 ? { ...result, [leader]: requested } : result
+  }, {})
+
 describe('Producer > sendMessages', () => {
   const topic = 'topic-name'
   const partitionsPerLeader = {
@@ -62,7 +71,7 @@ describe('Producer > sendMessages', () => {
       refreshMetadata: jest.fn(),
       refreshMetadataIfNecessary: jest.fn(),
       findTopicPartitionMetadata: jest.fn(() => topicPartitionMetadata),
-      findLeaderForPartitions: jest.fn(() => partitionsPerLeader),
+      findLeaderForPartitions: jest.fn(leadersOf(partitionsPerLeader)),
       findBroker: jest.fn(({ nodeId }) => brokers[nodeId]),
       targetTopics: new Set(),
       isConnected: jest.fn(() => true),
@@ -177,12 +186,14 @@ describe('Producer > sendMessages', () => {
       })
       .mockImplementationOnce(() => createProducerResponse(topic, 0))
     cluster.findLeaderForPartitions
-      .mockImplementationOnce(() => partitionsPerLeader)
-      .mockImplementationOnce(() => ({
-        1: [0],
-        4: [1], // Broker 4 replaces broker 2 as leader for partition 1
-        3: [2],
-      }))
+      .mockImplementationOnce(leadersOf(partitionsPerLeader))
+      .mockImplementationOnce(
+        leadersOf({
+          1: [0],
+          4: [1], // Broker 4 replaces broker 2 as leader for partition 1
+          3: [2],
+        })
+      )
 
     const response = await sendMessages({ topicMessages: [{ topic, messages }] })
 
@@ -191,6 +202,78 @@ describe('Producer > sendMessages', () => {
       { errorCode: 0, offset: '2', partition: 2, timestamp: '-1', topicName: 'topic-name' },
       { errorCode: 0, offset: '1', partition: 1, timestamp: '-1', topicName: 'topic-name' },
     ])
+  })
+
+  test('re-produces a partition whose new leader already answered', async () => {
+    const sendMessages = createSendMessages({
+      retrier,
+      logger: newLogger(),
+      cluster,
+      partitioner,
+      eosManager,
+    })
+
+    brokers[1].produce
+      .mockImplementationOnce(() => createProducerResponse(topic, 0))
+      .mockImplementationOnce(() => createProducerResponse(topic, 1))
+    brokers[2].produce.mockImplementationOnce(() => {
+      throw createErrorFromCode(
+        errorCodes.find(({ type }) => type === 'NOT_LEADER_FOR_PARTITION').code
+      )
+    })
+    cluster.findLeaderForPartitions
+      .mockImplementationOnce(leadersOf(partitionsPerLeader))
+      .mockImplementationOnce(
+        leadersOf({
+          1: [0, 1], // Broker 1 replaces broker 2 as leader for partition 1
+          3: [2],
+        })
+      )
+
+    const response = await sendMessages({ topicMessages: [{ topic, messages }] })
+
+    expect(response).toEqual([
+      { errorCode: 0, offset: '0', partition: 0, timestamp: '-1', topicName: 'topic-name' },
+      { errorCode: 0, offset: '2', partition: 2, timestamp: '-1', topicName: 'topic-name' },
+      { errorCode: 0, offset: '1', partition: 1, timestamp: '-1', topicName: 'topic-name' },
+    ])
+    expect(brokers[1].produce).toHaveBeenCalledTimes(2)
+    expect(brokers[1].produce.mock.calls[1][0].topicData).toEqual([
+      {
+        topic,
+        partitions: [expect.objectContaining({ partition: 1, messages: messagesPerPartition[1] })],
+      },
+    ])
+  })
+
+  test('retries while a pending partition is missing from the leaders', async () => {
+    const sendMessages = createSendMessages({
+      retrier,
+      logger: newLogger(),
+      cluster,
+      partitioner,
+      eosManager,
+    })
+
+    brokers[2].produce.mockImplementationOnce(() => {
+      throw createErrorFromCode(
+        errorCodes.find(({ type }) => type === 'NOT_LEADER_FOR_PARTITION').code
+      )
+    })
+    cluster.findLeaderForPartitions
+      .mockImplementationOnce(leadersOf(partitionsPerLeader))
+      .mockImplementationOnce(leadersOf({ 1: [0], 3: [2] }))
+      .mockImplementationOnce(leadersOf({ 1: [0], 4: [1], 3: [2] }))
+
+    const response = await sendMessages({ topicMessages: [{ topic, messages }] })
+
+    expect(response).toEqual([
+      { errorCode: 0, offset: '0', partition: 0, timestamp: '-1', topicName: 'topic-name' },
+      { errorCode: 0, offset: '2', partition: 2, timestamp: '-1', topicName: 'topic-name' },
+      { errorCode: 0, offset: '1', partition: 1, timestamp: '-1', topicName: 'topic-name' },
+    ])
+    expect(cluster.refreshMetadata).toHaveBeenCalledTimes(2)
+    expect(brokers[4].produce).toHaveBeenCalledTimes(1)
   })
 
   test('refreshes metadata if partition metadata is empty', async () => {
