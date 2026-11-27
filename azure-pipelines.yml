@@ -69,8 +69,8 @@ jobs:
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
-      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker compose -f ${COMPOSE_FILE} pull
+        displayName: docker compose pull
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:broker:ci
         displayName: test
       - task: PublishTestResults@2
@@ -94,8 +94,8 @@ jobs:
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
-      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker compose -f ${COMPOSE_FILE} pull
+        displayName: docker compose pull
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:admin:ci
         displayName: test
       - task: PublishTestResults@2
@@ -119,8 +119,8 @@ jobs:
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
-      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker compose -f ${COMPOSE_FILE} pull
+        displayName: docker compose pull
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:producer:ci
         displayName: test
       - task: PublishTestResults@2
@@ -144,8 +144,8 @@ jobs:
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
-      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker compose -f ${COMPOSE_FILE} pull
+        displayName: docker compose pull
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:consumer:ci
         displayName: test
         env:
@@ -171,8 +171,8 @@ jobs:
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
-      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker compose -f ${COMPOSE_FILE} pull
+        displayName: docker compose pull
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:others:ci
         displayName: test
       - task: PublishTestResults@2
@@ -199,8 +199,8 @@ jobs:
         displayName: should skip tests
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn install
         displayName: yarn install
-      - bash: test $SKIP_TESTS && echo "Skipped!" || docker-compose -f ${COMPOSE_FILE} pull
-        displayName: docker-compose pull
+      - bash: test $SKIP_TESTS && echo "Skipped!" || docker compose -f ${COMPOSE_FILE} pull
+        displayName: docker compose pull
       - bash: test $SKIP_TESTS && echo "Skipped!" || yarn test:group:oauthbearer:ci
         displayName: test
       - task: PublishTestResults@2
